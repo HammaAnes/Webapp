@@ -1,0 +1,161 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+    line-height: 1.6;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display font-semibold tracking-tight;
+    line-height: 1.2;
+  }
+
+  p {
+    @apply text-base leading-relaxed;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply relative inline-flex items-center justify-center bg-primary text-white px-7 py-3 rounded-lg font-semibold transition-all duration-200 hover:bg-primary/90 hover:shadow-md active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center border-2 border-primary text-primary px-7 py-3 rounded-lg font-semibold transition-all duration-200 hover:bg-primary hover:text-white;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center border border-gray-300 text-gray-700 px-7 py-3 rounded-lg font-semibold transition-all duration-200 hover:border-gray-400 hover:bg-gray-50;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 transition-shadow duration-200;
+  }
+
+  .card-interactive {
+    @apply card hover:shadow-md hover:-translate-y-0.5 cursor-pointer transition-all duration-200;
+  }
+
+  .input {
+    @apply w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/10 focus:outline-none transition-all duration-200 placeholder:text-gray-400 text-sm;
+  }
+
+  .input-error {
+    @apply border-red-400 focus:border-red-400 focus:ring-red-400/10;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary/10 text-primary;
+  }
+
+  .badge-success {
+    @apply badge bg-emerald-50 text-emerald-700;
+  }
+
+  .badge-warning {
+    @apply badge bg-amber-50 text-amber-700;
+  }
+
+  .badge-danger {
+    @apply badge bg-red-50 text-red-700;
+  }
+
+  .section-title {
+    @apply text-3xl md:text-4xl font-display font-bold text-primary mb-4 tracking-tight;
+  }
+
+  .section-subtitle {
+    @apply text-lg text-gray-500 max-w-2xl mx-auto;
+  }
+
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-sm;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+::selection {
+  background-color: #0f172a;
+  color: white;
+}
+
+:focus-visible {
+  outline: 2px solid #0f172a;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.react-datepicker__day--saturday-optional {
+  position: relative;
+  color: #b45309 !important;
+  background-color: #fffbeb !important;
+  border-radius: 0.5rem;
+}
+
+.react-datepicker__day--saturday-optional:hover {
+  background-color: #fef3c7 !important;
+}
+
+.react-datepicker__day--saturday-optional::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #f59e0b;
+}
+
+.react-datepicker__day--disabled-custom {
+  color: #d1d5db !important;
+  background-color: #f9fafb !important;
+  cursor: not-allowed !important;
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.react-datepicker__day--disabled-custom:hover {
+  background-color: #f9fafb !important;
+}

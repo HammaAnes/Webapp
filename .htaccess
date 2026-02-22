@@ -1,0 +1,93 @@
+# =====================================================
+# COFFICE - Configuration Apache pour cPanel
+# Application React (frontend statique) + API PHP
+# =====================================================
+
+# MIME Types pour assets
+<IfModule mod_mime.c>
+  AddType text/javascript .js
+  AddType text/css .css
+  AddType application/wasm .wasm
+  AddType application/json .json
+</IfModule>
+
+# Activer le moteur de reecriture
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # CRITIQUE: Passer le header Authorization a PHP (pour JWT)
+  # MULTIPLE METHODES pour compatibilite maximale avec cPanel/Apache
+  RewriteCond %{HTTP:Authorization} ^(.*)
+  RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+  # Methode 2: Backup via REDIRECT (pour sous-requetes)
+  RewriteCond %{HTTP:Authorization} ^(.*)
+  RewriteRule .* - [E=REDIRECT_HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+  # Ne pas reecrire index.html directement
+  RewriteRule ^index\.html$ - [L]
+
+  # Routage API - Diriger /api vers le dossier api/
+  RewriteRule ^api/(.*)$ api/$1 [L,QSA]
+
+  # Ne pas reecrire les fichiers reels
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+
+  # Routage React - Tout le reste vers index.html
+  RewriteRule . index.html [L]
+</IfModule>
+
+# Configuration PHP
+<IfModule mod_php.c>
+    php_value upload_max_filesize 20M
+    php_value post_max_size 25M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    php_value memory_limit 256M
+</IfModule>
+
+# Headers de securite
+<IfModule mod_headers.c>
+    # CORS pour API
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+    Header always set Access-Control-Max-Age "3600"
+
+    # Securite
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Cache pour assets statiques
+    <FilesMatch "\.(jpg|jpeg|png|gif|svg|webp|ico|css|js|woff|woff2|ttf|eot)$">
+        Header set Cache-Control "max-age=31536000, public"
+    </FilesMatch>
+</IfModule>
+
+# Compression gzip
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml
+</IfModule>
+
+# Desactiver le listing des repertoires
+Options -Indexes
+
+# Protection fichiers sensibles
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "^\.env$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "\.(log|ini|conf|sql)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

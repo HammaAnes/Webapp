@@ -1,0 +1,21 @@
+{
+    "name": "coffice/api",
+    "description": "Coffice Coworking & Domiciliation API",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "phpmailer/phpmailer": "^6.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "Coffice\\": "api/"
+        }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "@php -r \"if (!file_exists('api/uploads')) { mkdir('api/uploads', 0755, true); }\"",
+            "@php -r \"if (!file_exists('api/uploads/documents')) { mkdir('api/uploads/documents', 0755, true); }\"",
+            "@php -r \"if (!file_exists('api/logs')) { mkdir('api/logs', 0755, true); }\""
+        ]
+    }
+}

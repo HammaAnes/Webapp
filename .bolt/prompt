@@ -1,0 +1,22 @@
+🧠 Project Knowledge — Coffice (Coworking & Domiciliation • Mohammadia Mall, Alger)
+🎯 Contexte
+
+Ce projet concerne la création d’une application web complète pour Coffice, un espace de coworking nouvelle génération situé au 4ᵉ étage du Mohammadia Mall (bureau 1178) à Alger.
+
+L’espace comprend :
+
+2 box de 4 places, 1 box de 3 places,
+
+1 table open space de 12 places (dont 2 postes informatiques puissants),
+
+1 salle de réunion avec terrasse,
+
+1 kitchenette entièrement équipée.
+
+
+L'application doit être aux normes d'une application pleinement fonctionnelle. 
+- Tu dois supprimer tout ce qui est lié à boltdatabase ou supabase pour le remplacer par un mysql propre et sécurisé. 
+- Tu dois optimiser l'environnement pour fonctionner en mysql. 
+- Toutes les fonctionnalités doivent être actionnables et utilisables. 
+- Fais attention aux fonctionnalités qui existent dans le code mais ne sont pas apparente dans l'application.
+- A chaque demande, ne laisse qu'un seul fichier de documentation et mets le à jour. Ne laisse pas de documentation en plus.

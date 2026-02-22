@@ -1,0 +1,30 @@
+version = 1
+
+[[analyzers]]
+name = "javascript"
+
+  [analyzers.meta]
+  plugins = ["react"]
+  environment = [
+    "browser",
+    "nodejs",
+    "vitest"
+  ]
+
+[[analyzers]]
+name = "php"
+
+[[analyzers]]
+name = "sql"
+
+[[analyzers]]
+name = "secrets"
+
+[[analyzers]]
+name = "shell"
+
+[[code_formatters]]
+name = "prettier"
+
+[[code_formatters]]
+name = "php-cs-fixer"

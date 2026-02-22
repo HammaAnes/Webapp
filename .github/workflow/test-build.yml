@@ -1,0 +1,58 @@
+name: Test Build
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+  push:
+    branches-ignore:
+      - main
+      - master
+
+jobs:
+  build:
+    name: Test Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Build project
+        run: npm run build
+
+      - name: Check build output
+        run: |
+          if [ ! -f "dist/index.html" ]; then
+            echo "❌ Erreur: dist/index.html n'existe pas"
+            exit 1
+          fi
+          if [ ! -d "dist/assets" ]; then
+            echo "❌ Erreur: dist/assets n'existe pas"
+            exit 1
+          fi
+          echo "✅ Build réussi - tous les fichiers générés"
+
+      - name: Build size report
+        run: |
+          echo "📊 Taille du build:"
+          du -sh dist/
+          echo ""
+          echo "📦 Fichiers JavaScript:"
+          du -h dist/assets/*.js | sort -h
+          echo ""
+          echo "🎨 Fichiers CSS:"
+          du -h dist/assets/*.css | sort -h
