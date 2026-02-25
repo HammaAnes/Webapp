@@ -499,7 +499,6 @@ export default function DomiciliationDetailModal({ isOpen, onClose, demande, onA
             </div>
           </div>
         </div>
-        <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"><X className="w-5 h-5" /></button>
       </div>
       <div className="border-b border-gray-200 px-6">
         <nav className="flex space-x-6" role="tablist">

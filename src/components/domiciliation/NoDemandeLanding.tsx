@@ -40,6 +40,7 @@ const NoDemandeLanding: React.FC<NoDemandeLandingProps> = ({ onStartDemande }) =
               <Button
                 onClick={onStartDemande}
                 size="lg"
+                variant="default"
                 className="bg-white text-amber-600 hover:bg-gray-100 shadow-xl"
               >
                 <Plus className="w-5 h-5 mr-2" />

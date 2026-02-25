@@ -340,6 +340,7 @@ const MonEspace = () => {
             {activeTab === "domiciliation" && (!demande || isTerminal) && (
               <Button
                 onClick={() => setShowWizard(true)}
+                variant="default"
                 className="bg-white text-gray-900 hover:bg-gray-100 font-semibold shadow-lg"
               >
                 <Plus className="w-5 h-5 mr-2" />
