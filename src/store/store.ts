@@ -130,30 +130,33 @@ export const useAppStore = create<AppState>()(
       loading: false,
 
       initializeData: async () => {
-        const state = get();
-        if (state.loading) return;
+      const state = get();
+      if (state.loading) return;
+      set({ loading: true });
 
-        set({ loading: true });
+      try {
+        await get().loadEspaces();
 
-        try {
-          await get().loadEspaces();
+        const { useAuthStore: authRef } = await import("./authStore");
+        const { user } = authRef.getState();
+        const isAdmin = user?.role === "admin";
 
-          await Promise.all([
-            get().loadReservations(),
-            get().loadUsers(),
-            get().loadDemandesDomiciliation(),
-            get().loadCodesPromo(),
-            get().loadAbonnements(),
-          ]);
+        await Promise.all([
+          get().loadReservations(),
+          get().loadDemandesDomiciliation(),
+          get().loadAbonnements(),
+          isAdmin ? get().loadUsers() : Promise.resolve(),      // admin only
+          isAdmin ? get().loadCodesPromo() : Promise.resolve(), // admin only
+        ]);
 
-          set({ initialized: true });
-        } catch (error) {
-          logger.error("Erreur initialisation:", error instanceof Error ? error.message : String(error));
-          toast.error("Erreur lors du chargement des donn\u00e9es");
-        } finally {
-          set({ loading: false });
-        }
-      },
+        set({ initialized: true });
+      } catch (error) {
+        logger.error("Erreur initialisation:", error instanceof Error ? error.message : String(error));
+        toast.error("Erreur lors du chargement des données");
+      } finally {
+        set({ loading: false });
+      }
+    },
 
       loadEspaces: async () => {
         try {

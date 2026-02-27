@@ -29,6 +29,7 @@ import { fr } from "date-fns/locale";
 import { DOMICILIATION_STATUT_LABELS } from "../../constants";
 import { apiClient } from "../../lib/api-client";
 import "react-datepicker/dist/react-datepicker.css";
+import { use } from "i18next";
 
 registerLocale("fr", fr);
 
@@ -60,7 +61,10 @@ const MonEspace = () => {
 
   useEffect(() => {
     if (user) {
-      loadDemandesDomiciliation().finally(() => setDataLoading(false));
+      loadDemandesDomiciliation().finally(() => {
+        const { demandesDomiciliation } = useAppStore.getState();
+        setDataLoading(false);
+      });
     }
   }, [user, loadDemandesDomiciliation]);
 
@@ -408,7 +412,7 @@ const MonEspace = () => {
           )}
 
           {activeTab === "entreprise" && (
-            <EntrepriseTab user={user} demande={demande} />
+            <EntrepriseTab user={user} demande={demande} loading = {dataLoading} />
           )}
 
           {activeTab === "courrier" && demande && hasActiveDomiciliation && (

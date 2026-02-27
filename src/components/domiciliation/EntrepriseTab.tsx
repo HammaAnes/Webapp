@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Building, Pencil, Save, Briefcase, Hash, FileText, MapPin, Banknote } from "lucide-react";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
@@ -12,6 +12,7 @@ import type { User, DemandeDomiciliation } from "../../types";
 interface EntrepriseTabProps {
   user: User;
   demande: DemandeDomiciliation | null;
+  loading?: boolean; 
 }
 
 interface FormData {
@@ -55,13 +56,19 @@ const F: React.FC<{ label: string; value?: string | null; icon?: React.ReactNode
 const isSociete = (d: DemandeDomiciliation | null, u: User) =>
   d ? d.typeStructure === "societe" : u.typeEntreprise !== "auto_entrepreneur";
 
-export default function EntrepriseTab({ user, demande }: EntrepriseTabProps) {
+export default function EntrepriseTab({ user, demande, loading }: EntrepriseTabProps) {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState<FormData>(buildFormData(user));
   const [saving, setSaving] = useState(false);
   const updateUser = useAppStore((s) => s.updateUser);
   const societe = isSociete(demande, user);
   const hasInfo = user.raisonSociale || user.nif || user.numeroAutoEntrepreneur || demande;
+
+  useEffect(() => {
+    if (user) {
+      setFormData(buildFormData(user));
+    }
+  }, [user]);
 
   const handleChange = (field: keyof FormData, value: string) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -77,6 +84,16 @@ export default function EntrepriseTab({ user, demande }: EntrepriseTabProps) {
       setSaving(false);
     }
   };
+  
+  if (loading) {
+    return (
+      <Card className="p-12 text-center">
+        <div className="flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </Card>
+    );
+  }
 
   const openModal = () => { setFormData(buildFormData(user)); setShowModal(true); };
 
