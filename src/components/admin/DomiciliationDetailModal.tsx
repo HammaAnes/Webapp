@@ -567,10 +567,22 @@ function DocumentsTab({ demande }: { demande: DemandeDomiciliation }) {
 
   const handleStatusChange = async (docId: string, status: string) => {
     try {
-      await apiClient.put(`/documents/update.php?id=${docId}`, { status });
+      await apiClient.updateDocumentStatus(docId, status);
       toast.success("Statut du document mis a jour");
       await loadDocs();
     } catch { toast.error("Erreur"); }
+  };
+
+  const handleDownload = async (doc: DocumentRecord) => {
+    try {
+      const res = await apiClient.downloadDocument(doc.id);
+      const dlData = res.data as Record<string, unknown> | undefined;
+      if (dlData && typeof dlData === "object" && "url" in dlData && dlData.url) {
+        window.open(dlData.url as string, "_blank");
+        return;
+      }
+      toast.error("Impossible de telecharger le document");
+    } catch { toast.error("Erreur lors du telechargement"); }
   };
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-amber-500" /></div>;
@@ -592,6 +604,13 @@ function DocumentsTab({ demande }: { demande: DemandeDomiciliation }) {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDownload(doc)}
+                  className="text-xs px-2 py-1 text-amber-700 hover:text-amber-900 hover:bg-amber-50 rounded-lg transition-colors"
+                  title="Telecharger"
+                >
+                  Voir
+                </button>
                 <select
                   value={doc.status || "en_attente"}
                   onChange={(e) => handleStatusChange(doc.id, e.target.value)}
@@ -660,11 +679,11 @@ function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliat
 
   const actions = getAvailableActions(demande.statut);
 
-  const handleAction = (action: string) => {
+  const handleAction = async (action: string) => {
     if (action === "rejeter" || action === "resilier") {
       if (!confirmDestructive) { setConfirmDestructive(action); return; }
       if (!motif.trim()) { toast.error("Le motif est obligatoire"); return; }
-      onAction(action, { motif });
+      await onAction(action, { motif });
       setConfirmDestructive(null);
       setMotif("");
       return;
@@ -675,7 +694,7 @@ function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliat
         toast.error("Tous les champs du contrat sont requis");
         return;
       }
-      onAction("signer", {
+      await onAction("signer", {
         numeroBureau: parseInt(signerForm.numeroBureau),
         referenceContratNotarie: signerForm.referenceContratNotarie,
         dateDebutContrat: signerForm.dateDebutContrat,
@@ -685,7 +704,7 @@ function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliat
       return;
     }
 
-    onAction(action, motif ? { motif } : undefined);
+    await onAction(action, motif ? { motif } : undefined);
   };
 
   if (actions.length === 0) {
@@ -801,7 +820,7 @@ function getAvailableActions(statut: string): string[] {
       return ["signer", "rejeter"];
     case "domiciliation_creee":
     case "en_attente_complements":
-      return ["activer"];
+      return ["activer", "rejeter"];
     case "active":
       return ["resilier"];
     default:

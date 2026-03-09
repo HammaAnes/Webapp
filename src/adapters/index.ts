@@ -50,19 +50,6 @@ interface ApiAbonnementData {
   ordre?: number;
 }
 
-interface ApiDomiciliationData {
-  raison_sociale?: string;
-  forme_juridique?: string;
-  nif?: string;
-  nis?: string;
-  registre_commerce?: string;
-  article_imposition?: string;
-  representant_legal?: unknown;
-  domaine_activite?: string;
-  adresse_siege_social?: string;
-  capital?: string;
-  date_creation_entreprise?: string;
-}
 
 export const espaceAdapter = {
   fromAPI: (apiData: ApiEspace): Espace => ({
@@ -361,19 +348,4 @@ export const domiciliationAdapter = {
     };
   },
 
-  toAPI: (domiciliation: Partial<DemandeDomiciliation>): ApiDomiciliationData => ({
-    raison_sociale: domiciliation.raisonSociale,
-    forme_juridique: domiciliation.formeJuridique,
-    nif: domiciliation.nif,
-    nis: domiciliation.nis,
-    registre_commerce: domiciliation.registreCommerce,
-    article_imposition: domiciliation.articleImposition,
-    representant_legal: domiciliation.representantLegal,
-    domaine_activite: domiciliation.domaineActivite,
-    adresse_siege_social: domiciliation.adresseSiegeSocial,
-    capital: domiciliation.capital !== undefined ? String(domiciliation.capital) : undefined,
-    date_creation_entreprise: domiciliation.dateCreationEntreprise ?
-      (typeof domiciliation.dateCreationEntreprise === 'string' ? domiciliation.dateCreationEntreprise : domiciliation.dateCreationEntreprise.toISOString())
-      : undefined,
-  }),
 };

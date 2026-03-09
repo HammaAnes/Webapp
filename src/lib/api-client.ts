@@ -743,6 +743,13 @@ class ApiClient {
     return this.request(`/documents/download.php?id=${documentId}`);
   }
 
+  async updateDocumentStatus(documentId: string, status: string) {
+    return this.request(`/documents/update.php?id=${documentId}`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    });
+  }
+
   async deleteDocument(documentId: string) {
     return this.request(`/documents/delete.php?id=${documentId}`, {
       method: "DELETE",

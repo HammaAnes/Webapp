@@ -166,8 +166,13 @@ const AdminDomiciliations = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadDemandesDomiciliation();
-    setRefreshing(false);
+    try {
+      await loadDemandesDomiciliation();
+    } catch {
+      toast.error("Erreur lors du rafraichissement");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const openDetail = (d: DemandeDomiciliation) => {
@@ -243,8 +248,9 @@ const AdminDomiciliations = () => {
           });
         }
 
-        setShowModal(false);
         await loadDemandesDomiciliation();
+        setSelectedDemande(null);
+        setShowModal(false);
       } else {
         toast.error(response?.error || "Une erreur est survenue");
       }

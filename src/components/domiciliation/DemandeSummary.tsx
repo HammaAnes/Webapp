@@ -25,13 +25,13 @@ import Button from "../ui/Button";
 import WorkflowTracker from "./WorkflowTracker";
 import PostCreationForm from "./PostCreationForm";
 import { getStatusInfo, OPTIONS_PRICING, BASE_MONTHLY_PRICE, calculateTotalMonthly } from "./constants";
-import type { DemandeDomiciliationWithDetails } from "./types";
+import type { DemandeDomiciliation } from "../../types";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import toast from "react-hot-toast";
 
 interface DemandeSummaryProps {
-  demande: DemandeDomiciliationWithDetails;
+  demande: DemandeDomiciliation;
   loading: boolean;
   onPostCreationSubmit: (data: Record<string, string>) => void;
   onNewDemande: () => void;
@@ -341,7 +341,7 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
   );
 };
 
-const ContractCard: React.FC<{ demande: DemandeDomiciliationWithDetails }> = ({ demande }) => (
+const ContractCard: React.FC<{ demande: DemandeDomiciliation }> = ({ demande }) => (
   <Card className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200">
     <div className="flex items-start gap-4">
       <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -439,7 +439,7 @@ const OptionsCard: React.FC<{ options: Array<{ key: string; label: string; price
   </Card>
 );
 
-const CompanyInfoCard: React.FC<{ demande: DemandeDomiciliationWithDetails }> = ({ demande }) => (
+const CompanyInfoCard: React.FC<{ demande: DemandeDomiciliation }> = ({ demande }) => (
   <Card className="p-6">
     <div className="flex items-center gap-4 mb-6">
       <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/25">
@@ -491,7 +491,7 @@ const InfoField: React.FC<{ label: string; value: string }> = ({ label, value })
   </div>
 );
 
-const ContactCard: React.FC<{ demande: DemandeDomiciliationWithDetails }> = ({ demande }) => {
+const ContactCard: React.FC<{ demande: DemandeDomiciliation }> = ({ demande }) => {
   if (!demande.representantLegal) return null;
   const rep = demande.representantLegal;
 
