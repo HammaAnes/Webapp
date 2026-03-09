@@ -108,7 +108,7 @@ const PostCreationForm: React.FC<PostCreationFormProps> = ({ demande, onSubmit, 
 
         <div className="p-4 bg-sky-50 border border-sky-200 rounded-xl">
           <p className="text-sm text-sky-700">
-            Une fois ces informations soumises, votre dossier sera verrouillé et la domiciliation deviendra pleinement conforme.
+            Une fois ces informations soumises, notre equipe les verifiera et activera votre domiciliation. Vous serez notifie par email.
           </p>
         </div>
 

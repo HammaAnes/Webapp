@@ -99,7 +99,7 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
   };
 
   const isTerminal = demande.statut === "refusee" || demande.statut === "expiree" || demande.statut === "resiliee";
-  const showContract = (demande.statut === "active" || demande.statut === "domiciliation_creee" || demande.statut === "en_attente_complements") && demande.montantMensuel;
+  const showContract = ["active", "domiciliation_creee", "en_attente_complements", "expiree"].includes(demande.statut) && demande.montantMensuel;
   const showPostCreation =
     (demande.statut === "domiciliation_creee" || demande.statut === "en_attente_complements") &&
     demande.situationAdministrative === "en_cours_creation";
@@ -214,15 +214,23 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
         </Card>
       )}
 
-      {daysUntilExpiry !== null && daysUntilExpiry <= 60 && daysUntilExpiry > 0 && demande.statut === "active" && (() => {
-        const urgency = daysUntilExpiry <= 7 ? "critical" : daysUntilExpiry <= 15 ? "high" : daysUntilExpiry <= 30 ? "medium" : "low";
+      {daysUntilExpiry !== null && daysUntilExpiry <= 60 && (demande.statut === "active" || demande.statut === "expiree") && (() => {
+        const urgency = daysUntilExpiry <= 0 ? "expired" : daysUntilExpiry <= 7 ? "critical" : daysUntilExpiry <= 15 ? "high" : daysUntilExpiry <= 30 ? "medium" : "low";
         const colors = {
+          expired: { border: "border-red-400", bg: "bg-red-50", iconBg: "bg-red-100", iconColor: "text-red-600", title: "text-red-900", text: "text-red-700" },
           critical: { border: "border-red-400", bg: "bg-red-50", iconBg: "bg-red-100", iconColor: "text-red-600", title: "text-red-900", text: "text-red-700" },
           high: { border: "border-orange-400", bg: "bg-orange-50", iconBg: "bg-orange-100", iconColor: "text-orange-600", title: "text-orange-900", text: "text-orange-700" },
           medium: { border: "border-amber-300", bg: "bg-amber-50", iconBg: "bg-amber-100", iconColor: "text-amber-600", title: "text-amber-900", text: "text-amber-700" },
           low: { border: "border-sky-200", bg: "bg-sky-50", iconBg: "bg-sky-100", iconColor: "text-sky-600", title: "text-sky-900", text: "text-sky-700" },
         };
         const c = colors[urgency];
+        const titles: Record<string, string> = {
+          expired: "Contrat expire",
+          critical: "Expiration imminente",
+          high: "Expiration tres proche",
+          medium: "Contrat bientot a echeance",
+          low: "Contrat bientot a echeance",
+        };
         return (
           <Card className={`p-5 border-2 ${c.border} ${c.bg}`}>
             <div className="flex items-start gap-4">
@@ -230,12 +238,13 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
                 <AlertTriangle className={`w-5 h-5 ${c.iconColor}`} />
               </div>
               <div className="flex-1">
-                <h4 className={`font-bold ${c.title} mb-1`}>
-                  {urgency === "critical" ? "Expiration imminente" : urgency === "high" ? "Expiration tres proche" : "Contrat bientot a echeance"}
-                </h4>
+                <h4 className={`font-bold ${c.title} mb-1`}>{titles[urgency]}</h4>
                 <p className={`text-sm ${c.text}`}>
-                  Votre contrat expire dans <strong>{daysUntilExpiry} jour{daysUntilExpiry > 1 ? "s" : ""}</strong> (le{" "}
-                  {format(new Date(demande.dateFinContrat!), "dd MMMM yyyy", { locale: fr })}).
+                  {daysUntilExpiry <= 0 ? (
+                    <>Votre contrat a expire le {format(new Date(demande.dateFinContrat!), "dd MMMM yyyy", { locale: fr })}.</>
+                  ) : (
+                    <>Votre contrat expire dans <strong>{daysUntilExpiry} jour{daysUntilExpiry > 1 ? "s" : ""}</strong> (le {format(new Date(demande.dateFinContrat!), "dd MMMM yyyy", { locale: fr })}).</>
+                  )}
                 </p>
                 {onRenewalRequest && (
                   <Button
@@ -278,18 +287,21 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
         </Card>
       )}
 
-      {showContract && <ContractCard demande={demande} daysUntilExpiry={daysUntilExpiry} />}
+      {showContract && <ContractCard demande={demande} />}
 
       {showPostCreation && (
         <PostCreationForm demande={demande} loading={loading} onSubmit={onPostCreationSubmit} />
       )}
 
-      {isTerminal && (
+      {isTerminal && demande.statut !== "expiree" && (
         <Card className="p-8 text-center bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200">
           <FileCheck className="w-12 h-12 text-amber-500 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-900 mb-2">Soumettre une nouvelle demande</h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Vous pouvez corriger les informations et soumettre une nouvelle demande.
+            {demande.statut === "refusee"
+              ? "Vous pouvez corriger les informations et soumettre une nouvelle demande."
+              : "Vous pouvez soumettre une nouvelle demande de domiciliation."
+            }
           </p>
           <Button
             onClick={onNewDemande}
@@ -300,11 +312,36 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
           </Button>
         </Card>
       )}
+
+      {demande.statut === "expiree" && (
+        <Card className="p-8 text-center bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200">
+          <RefreshCw className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Renouveler votre domiciliation</h3>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            Votre contrat a expire. Contactez notre equipe ou soumettez une demande de renouvellement.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            {onRenewalRequest && (
+              <Button
+                onClick={onRenewalRequest}
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+              >
+                <RefreshCw className="w-5 h-5 mr-2" />
+                Demander le renouvellement
+              </Button>
+            )}
+            <Button variant="outline" onClick={onNewDemande}>
+              <Plus className="w-5 h-5 mr-2" />
+              Nouvelle demande
+            </Button>
+          </div>
+        </Card>
+      )}
     </motion.div>
   );
 };
 
-const ContractCard: React.FC<{ demande: DemandeDomiciliationWithDetails; daysUntilExpiry: number | null }> = ({ demande }) => (
+const ContractCard: React.FC<{ demande: DemandeDomiciliationWithDetails }> = ({ demande }) => (
   <Card className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200">
     <div className="flex items-start gap-4">
       <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
