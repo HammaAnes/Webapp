@@ -23,6 +23,7 @@ export type TypeEntreprise =
   | "spa"
   | "snc"
   | "scs"
+  | "startup"
   | "freelance"
   | "autre";
 
