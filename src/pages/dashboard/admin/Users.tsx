@@ -237,10 +237,10 @@ const Users = () => {
       u.nom,
       u.prenom,
       u.email,
-      u.telephone,
+      u.telephone || "",
       u.entreprise || "",
       u.role,
-      u.statut,
+      u.statut || "",
       formatDate(u.dateCreation ?? new Date()),
     ]);
 

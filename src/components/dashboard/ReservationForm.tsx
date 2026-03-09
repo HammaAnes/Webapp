@@ -238,8 +238,8 @@ const STEPS = [
 
 const TIME_OPTIONS = (() => {
   const options: { value: string; label: string }[] = [];
-  let h = OPENING_HOUR;
-  let m = OPENING_MINUTE;
+  let h: number = OPENING_HOUR;
+  let m: number = OPENING_MINUTE;
   while (h < CLOSING_HOUR || (h === CLOSING_HOUR && m <= CLOSING_MINUTE)) {
     const val = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
     const label = `${h}h${m === 0 ? "00" : m}`;

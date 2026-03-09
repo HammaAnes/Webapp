@@ -29,7 +29,6 @@ import { fr } from "date-fns/locale";
 import { DOMICILIATION_STATUT_LABELS } from "../../constants";
 import { apiClient } from "../../lib/api-client";
 import "react-datepicker/dist/react-datepicker.css";
-import { use } from "i18next";
 
 registerLocale("fr", fr);
 
@@ -257,7 +256,7 @@ const MonEspace = () => {
   };
 
   const handleRenewalRequest = async () => {
-    if (!demande) return;
+    if (!demande || !user) return;
     setDomLoading(true);
     try {
       const response = await apiClient.updateDemandeDomiciliation(demande.id, {

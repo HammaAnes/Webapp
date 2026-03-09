@@ -480,23 +480,23 @@ const SystemTests = () => {
       const response = await apiClient.post("/admin/tests/run", {
         testId: test.id,
         category: test.category,
-      });
+      }) as unknown as Record<string, unknown>;
 
       const duration = Date.now() - startTime;
 
       if (response.success) {
         updateTestResult(test.id, {
           status: "success",
-          message: response.message || "Test réussi",
+          message: (response.message as string) || "Test réussi",
           duration,
-          details: response.details,
+          details: response.details as string,
         });
       } else {
         updateTestResult(test.id, {
           status: "error",
-          message: response.error || "Test échoué",
+          message: (response.error as string) || "Test échoué",
           duration,
-          details: response.details,
+          details: response.details as string,
         });
       }
     } catch (error: any) {
