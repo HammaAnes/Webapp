@@ -659,8 +659,33 @@ class ApiClient {
   }
 
   // ============= DOCUMENTS =============
+  private normalizeDocument(doc: Record<string, unknown>): Record<string, unknown> {
+    return {
+      ...doc,
+      document_type: doc.document_type || doc.type_document || "",
+      file_name: doc.file_name || doc.nom_original || doc.nom_fichier || "",
+      file_size: doc.file_size || doc.taille || null,
+      created_at: doc.created_at || doc.uploaded_at || "",
+      url: doc.url || doc.chemin_fichier || "",
+      status: doc.status || "en_attente",
+    };
+  }
+
   async getDocuments(entityType: string, entityId: string) {
-    return this.request(`/documents/index.php?entity_type=${entityType}&entity_id=${entityId}`);
+    const response = await this.request(`/documents/index.php?entity_type=${entityType}&entity_id=${entityId}`);
+    if (response.success && response.data) {
+      const raw = response.data as unknown;
+      if (Array.isArray(raw)) {
+        response.data = raw.map((d) => this.normalizeDocument(d as Record<string, unknown>)) as typeof response.data;
+      } else if (raw && typeof raw === "object" && "documents" in (raw as Record<string, unknown>)) {
+        const obj = raw as Record<string, unknown>;
+        if (Array.isArray(obj.documents)) {
+          obj.documents = obj.documents.map((d) => this.normalizeDocument(d as Record<string, unknown>));
+          response.data = obj as typeof response.data;
+        }
+      }
+    }
+    return response;
   }
 
   async uploadDocument(file: File, entityType: string, entityId: string, documentType: string) {
@@ -741,6 +766,13 @@ class ApiClient {
 
   async downloadDocument(documentId: string) {
     return this.request(`/documents/download.php?id=${documentId}`);
+  }
+
+  async updateDocumentStatus(documentId: string, status: string) {
+    return this.request(`/documents/update.php?id=${documentId}`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    });
   }
 
   async deleteDocument(documentId: string) {

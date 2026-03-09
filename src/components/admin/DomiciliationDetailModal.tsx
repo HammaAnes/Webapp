@@ -1,522 +1,831 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Building, User, FileText, Mail, Package, CheckCircle, XCircle, Scale, Ban, PlayCircle, AlertCircle, Save, Plus, Loader2, StickyNote, Briefcase, Pencil, X, FileCheck } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import {
+  Building, User, FileText, Scale, Hash, Phone, Mail, MapPin,
+  Calendar, Save, Pencil, X, CheckCircle, XCircle, AlertTriangle,
+  Send, Package, Loader2, StickyNote, Zap, Ban,
+  Plus, Banknote,
+} from "lucide-react";
+import Modal from "../ui/Modal";
+import Card from "../ui/Card";
+import Button from "../ui/Button";
+import Badge from "../ui/Badge";
+import Input from "../ui/Input";
 import toast from "react-hot-toast";
-import Modal from "../../components/ui/Modal";
-import Card from "../../components/ui/Card";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import Input from "../../components/ui/Input";
 import { apiClient } from "../../lib/api-client";
 import { formatDate, formatCurrency } from "../../utils/formatters";
+import { LEGAL_FORM_OPTIONS_SHORT } from "../domiciliation/constants";
+import type { DemandeDomiciliation } from "../../types";
 
 interface DomiciliationDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  demande: any;
+  demande: DemandeDomiciliation | null;
   onAction: (action: string, data?: Record<string, unknown>) => Promise<void>;
   onUpdate: (data: Record<string, unknown>) => Promise<void>;
   loading: boolean;
 }
 
-type TabId = "informations" | "contrat" | "courrier" | "documents" | "notes" | "actions";
-interface CourrierItem { id: string; type: string; expediteur: string; description: string; statut: string; dateReception: string; dateRetrait?: string; }
-interface DocumentItem { id: string; type: string; nom: string; url?: string; statut: "en_attente" | "valide" | "rejete"; dateUpload: string; }
+type TabKey = "informations" | "contrat" | "courrier" | "documents" | "notes" | "actions";
 
-const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
-  { id: "informations", label: "Informations", icon: Building },
-  { id: "contrat", label: "Contrat", icon: FileCheck },
-  { id: "courrier", label: "Courrier", icon: Mail },
-  { id: "documents", label: "Documents", icon: FileText },
-  { id: "notes", label: "Notes", icon: StickyNote },
-  { id: "actions", label: "Actions", icon: Scale },
+const TABS: { key: TabKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { key: "informations", label: "Informations", icon: Building },
+  { key: "contrat", label: "Contrat", icon: Scale },
+  { key: "courrier", label: "Courrier", icon: Mail },
+  { key: "documents", label: "Documents", icon: FileText },
+  { key: "notes", label: "Notes", icon: StickyNote },
+  { key: "actions", label: "Actions", icon: Zap },
 ];
 
-const STATUS_BADGES: Record<string, { variant: "warning" | "success" | "danger" | "default" | "info" | "teal"; label: string }> = {
-  dossier_preparatoire: { variant: "warning", label: "Dossier preparatoire" },
-  en_attente_signature: { variant: "info", label: "Attente signature" },
-  domiciliation_creee: { variant: "teal", label: "Domiciliation creee" },
-  en_attente_complements: { variant: "warning", label: "Attente complements" },
-  active: { variant: "success", label: "Active" },
-  refusee: { variant: "danger", label: "Refusee" },
-  expiree: { variant: "default", label: "Expiree" },
-  resiliee: { variant: "danger", label: "Resiliee" },
-};
+const DomiciliationDetailModal: React.FC<DomiciliationDetailModalProps> = ({
+  isOpen,
+  onClose,
+  demande,
+  onAction,
+  onUpdate,
+  loading,
+}) => {
+  const [activeTab, setActiveTab] = useState<TabKey>("informations");
 
-const Field = ({ label, value }: { label: string; value: string }) => (
-  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-    <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">{label}</p>
-    <p className="font-medium text-gray-900 text-sm">{value || "-"}</p>
-  </div>
-);
-
-const SectionHeader = ({ icon: Icon, title, color }: { icon: React.ElementType; title: string; color: string }) => (
-  <div className="flex items-center gap-3 mb-4">
-    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center`}>
-      <Icon className="w-6 h-6 text-white" />
-    </div>
-    <h4 className="font-bold text-gray-900 text-base">{title}</h4>
-  </div>
-);
-
-function InformationsTab({ demande, onUpdate, loading }: { demande: any; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
-  const [editing, setEditing] = useState(false);
-  const rep = demande.representantLegal || {};
-  const initForm = useCallback(() => ({
-    raisonSociale: demande.raisonSociale || "", formeJuridique: demande.formeJuridique || "",
-    nif: demande.nif || "", nis: demande.nis || "", registreCommerce: demande.registreCommerce || "",
-    articleImposition: demande.articleImposition || "", codeNae: demande.codeNae || "",
-    activiteExercee: demande.activiteExercee || "", numeroAutoEntrepreneur: demande.numeroAutoEntrepreneur || "",
-    repNom: rep.nom || "", repPrenom: rep.prenom || "", repTel: rep.telephone || "",
-    repEmail: rep.email || "", repVille: rep.ville || "", repAdresse: rep.adresseResidence || "",
-  }), [demande]);
-  const [form, setForm] = useState(initForm);
-  useEffect(() => { setForm(initForm()); }, [initForm]);
-  const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
-  const handleSave = async () => {
-    try {
-      await onUpdate({
-        raisonSociale: form.raisonSociale, formeJuridique: form.formeJuridique, nif: form.nif,
-        nis: form.nis, registreCommerce: form.registreCommerce, articleImposition: form.articleImposition,
-        codeNae: form.codeNae, activiteExercee: form.activiteExercee, numeroAutoEntrepreneur: form.numeroAutoEntrepreneur,
-        representantLegal: { nom: form.repNom, prenom: form.repPrenom, telephone: form.repTel, email: form.repEmail, ville: form.repVille, adresseResidence: form.repAdresse },
-      });
-      setEditing(false);
-    } catch {
-      toast.error("Erreur lors de l'enregistrement");
-    }
-  };
-  const isSociete = demande.typeStructure === "societe";
-  const isAE = demande.typeStructure === "auto_entrepreneur";
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button size="sm" variant={editing ? "danger" : "outline"} onClick={() => setEditing(!editing)}>
-          {editing ? <><X className="w-4 h-4" /> Annuler</> : <><Pencil className="w-4 h-4" /> Modifier</>}
-        </Button>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-          <p className="text-xs text-amber-700 uppercase tracking-wide font-semibold">Situation</p>
-          <p className="font-semibold text-amber-900 text-sm mt-1">{demande.situationAdministrative === "en_cours_creation" ? "En cours de creation" : "Deja creee"}</p>
-        </div>
-        <div className="bg-sky-50 rounded-xl p-4 border border-sky-200">
-          <p className="text-xs text-sky-700 uppercase tracking-wide font-semibold">Type</p>
-          <p className="font-semibold text-sky-900 text-sm mt-1">{isAE ? "Auto-entrepreneur" : "Societe"}</p>
-        </div>
-      </div>
-      <div>
-        <SectionHeader icon={Briefcase} title="Entreprise" color="from-amber-500 to-orange-500" />
-        {editing ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Input label="Raison sociale" value={form.raisonSociale} onChange={(e) => set("raisonSociale", e.target.value)} />
-            <Input label="Forme juridique" value={form.formeJuridique} onChange={(e) => set("formeJuridique", e.target.value)} />
-            <Input label="NIF" value={form.nif} onChange={(e) => set("nif", e.target.value)} maxLength={20} />
-            <Input label="NIS" value={form.nis} onChange={(e) => set("nis", e.target.value)} maxLength={15} />
-            <Input label="Registre Commerce" value={form.registreCommerce} onChange={(e) => set("registreCommerce", e.target.value)} />
-            <Input label="Article Imposition" value={form.articleImposition} onChange={(e) => set("articleImposition", e.target.value)} />
-            {isAE && <><Input label="Activite exercee" value={form.activiteExercee} onChange={(e) => set("activiteExercee", e.target.value)} /><Input label="N. Auto-entrepreneur" value={form.numeroAutoEntrepreneur} onChange={(e) => set("numeroAutoEntrepreneur", e.target.value)} /></>}
-            {isSociete && <Input label="Code NAE" value={form.codeNae} onChange={(e) => set("codeNae", e.target.value)} />}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Raison sociale" value={demande.raisonSociale} />
-            <Field label="Forme juridique" value={demande.formeJuridique} />
-            {isSociete && <><Field label="NIF" value={demande.nif} /><Field label="NIS" value={demande.nis} /><Field label="Registre Commerce" value={demande.registreCommerce} /><Field label="Article Imposition" value={demande.articleImposition} /><Field label="Code NAE" value={demande.codeNae} /></>}
-            {isAE && <><Field label="Activite exercee" value={demande.activiteExercee} /><Field label="N. Auto-entrepreneur" value={demande.numeroAutoEntrepreneur} /></>}
-          </div>
-        )}
-      </div>
-      <div>
-        <SectionHeader icon={User} title="Representant Legal" color="from-sky-500 to-cyan-500" />
-        {editing ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Input label="Prenom" value={form.repPrenom} onChange={(e) => set("repPrenom", e.target.value)} />
-            <Input label="Nom" value={form.repNom} onChange={(e) => set("repNom", e.target.value)} />
-            <Input label="Telephone" value={form.repTel} onChange={(e) => set("repTel", e.target.value)} />
-            <Input label="Email" value={form.repEmail} onChange={(e) => set("repEmail", e.target.value)} />
-            <Input label="Ville" value={form.repVille} onChange={(e) => set("repVille", e.target.value)} />
-            <div className="col-span-2"><Input label="Adresse" value={form.repAdresse} onChange={(e) => set("repAdresse", e.target.value)} /></div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Nom complet" value={`${rep.prenom || ""} ${rep.nom || ""}`} />
-            <Field label="Telephone" value={rep.telephone} />
-            <Field label="Email" value={rep.email} />
-            <Field label="Ville" value={rep.ville} />
-            {rep.adresseResidence && <div className="col-span-2"><Field label="Adresse" value={rep.adresseResidence} /></div>}
-          </div>
-        )}
-      </div>
-      {demande.options && (
-        <div>
-          <SectionHeader icon={CheckCircle} title="Options selectionnees" color="from-teal-500 to-emerald-500" />
-          <div className="flex flex-wrap gap-2">
-            {demande.options.domiciliationSimple && <Badge variant="success">Domiciliation simple</Badge>}
-            {demande.options.receptionCourrier && <Badge variant="info">Reception courrier</Badge>}
-            {demande.options.scanNotificationEmail && <Badge variant="info">Scan email</Badge>}
-            {demande.options.reexpeditionCourrier && <Badge variant="info">Reexpedition</Badge>}
-            {demande.options.accesPonctuelEspaces && <Badge variant="teal">Acces espaces</Badge>}
-          </div>
-        </div>
-      )}
-      {editing && <div className="flex justify-end pt-2"><Button onClick={handleSave} loading={loading}><Save className="w-4 h-4" /> Enregistrer</Button></div>}
-    </div>
-  );
-}
-
-function ContratTab({ demande, onUpdate, loading }: { demande: any; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
-  const [bureau, setBureau] = useState(demande.numeroBureau || "");
-  const [visible, setVisible] = useState(demande.visibleSurSite ?? false);
-  const [editing, setEditing] = useState(false);
-  const [contrat, setContrat] = useState({
-    referenceContratNotarie: demande.referenceContratNotarie || "",
-    dateDebutContrat: demande.dateDebutContrat ? String(demande.dateDebutContrat).split("T")[0] : "",
-    dateFinContrat: demande.dateFinContrat ? String(demande.dateFinContrat).split("T")[0] : "",
-    montantMensuel: demande.montantMensuel || "",
-  });
-  const [saving, setSaving] = useState(false);
   useEffect(() => {
-    setBureau(demande.numeroBureau || "");
-    setVisible(demande.visibleSurSite ?? false);
-    setContrat({
-      referenceContratNotarie: demande.referenceContratNotarie || "",
-      dateDebutContrat: demande.dateDebutContrat ? String(demande.dateDebutContrat).split("T")[0] : "",
-      dateFinContrat: demande.dateFinContrat ? String(demande.dateFinContrat).split("T")[0] : "",
-      montantMensuel: demande.montantMensuel || "",
-    });
-  }, [demande]);
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const data: Record<string, unknown> = { numeroBureau: bureau ? Number(bureau) : undefined, visibleSurSite: visible };
-      if (editing) {
-        if (contrat.referenceContratNotarie) data.referenceContratNotarie = contrat.referenceContratNotarie;
-        if (contrat.dateDebutContrat) data.dateDebutContrat = contrat.dateDebutContrat;
-        if (contrat.dateFinContrat) data.dateFinContrat = contrat.dateFinContrat;
-        if (contrat.montantMensuel) data.montantMensuel = Number(contrat.montantMensuel);
-      }
-      await onUpdate(data);
-      setEditing(false);
-    } catch { toast.error("Erreur lors de la mise a jour"); }
-    finally { setSaving(false); }
-  };
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <SectionHeader icon={FileCheck} title="Details du contrat" color="from-emerald-500 to-teal-500" />
-        <Button size="sm" variant={editing ? "danger" : "outline"} onClick={() => setEditing(!editing)}>
-          {editing ? <><X className="w-4 h-4" /> Annuler</> : <><Pencil className="w-4 h-4" /> Modifier</>}
-        </Button>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Numero de bureau</label>
-          <select value={bureau} onChange={(e) => setBureau(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
-            <option value="">Non attribue</option>
-            {Array.from({ length: 36 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>Bureau {n}</option>)}
-          </select>
-        </div>
-        {editing ? (
-          <Input label="Reference contrat" value={contrat.referenceContratNotarie} onChange={(e) => setContrat({ ...contrat, referenceContratNotarie: e.target.value })} />
-        ) : (
-          <Field label="Reference contrat" value={demande.referenceContratNotarie || "-"} />
-        )}
-      </div>
-      <div className="grid grid-cols-3 gap-4">
-        {editing ? (
-          <>
-            <Input label="Date debut" type="date" value={contrat.dateDebutContrat} onChange={(e) => setContrat({ ...contrat, dateDebutContrat: e.target.value })} />
-            <Input label="Date fin" type="date" value={contrat.dateFinContrat} onChange={(e) => setContrat({ ...contrat, dateFinContrat: e.target.value })} />
-            <Input label="Montant mensuel (DA)" type="number" value={String(contrat.montantMensuel)} onChange={(e) => setContrat({ ...contrat, montantMensuel: e.target.value })} />
-          </>
-        ) : (
-          <>
-            <Field label="Date debut" value={demande.dateDebutContrat ? formatDate(demande.dateDebutContrat) : "-"} />
-            <Field label="Date fin" value={demande.dateFinContrat ? formatDate(demande.dateFinContrat) : "-"} />
-            <Field label="Montant mensuel" value={demande.montantMensuel ? formatCurrency(demande.montantMensuel) : "-"} />
-          </>
-        )}
-      </div>
-      <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4 border border-gray-200">
-        <div>
-          <p className="font-medium text-gray-900">Visible sur le site</p>
-          <p className="text-sm text-gray-500">Afficher cette domiciliation dans la liste publique</p>
-        </div>
-        <button onClick={() => setVisible(!visible)} className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${visible ? "bg-teal-500" : "bg-gray-300"}`}>
-          <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${visible ? "translate-x-6" : "translate-x-1"}`} />
-        </button>
-      </div>
-      <div className="flex justify-end"><Button onClick={handleSave} loading={saving || loading}><Save className="w-4 h-4" /> Enregistrer</Button></div>
-    </div>
-  );
-}
+    if (isOpen) setActiveTab("informations");
+  }, [isOpen]);
 
-function CourrierTab({ demande }: { demande: any }) {
-  const [courriers, setCourriers] = useState<CourrierItem[]>([]);
-  const [loadingList, setLoadingList] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [nc, setNc] = useState({ type: "lettre", expediteur: "", description: "" });
-  const load = useCallback(async () => {
-    setLoadingList(true);
-    try { const r = await apiClient.getUserCourrier(demande.id); setCourriers(((r.data as any)?.courriers || []) as CourrierItem[]); }
-    catch { setCourriers([]); }
-    finally { setLoadingList(false); }
-  }, [demande.id]);
-  useEffect(() => { load(); }, [load]);
-  const handleCreate = async () => {
-    if (!nc.expediteur.trim()) { toast.error("Expediteur requis"); return; }
-    setSubmitting(true);
-    try { await apiClient.createCourrier({ domiciliationId: demande.id, ...nc }); toast.success("Courrier ajoute"); setNc({ type: "lettre", expediteur: "", description: "" }); setShowForm(false); await load(); }
-    catch { toast.error("Erreur lors de la creation"); }
-    finally { setSubmitting(false); }
-  };
-  const markRetire = async (id: string) => {
-    try { await apiClient.updateCourrier(id, { action: "marquer_retire" }); toast.success("Statut mis a jour"); await load(); }
-    catch { toast.error("Erreur lors de la mise a jour"); }
-  };
-  const tc: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-    lettre: { label: "Lettre", icon: Mail, color: "bg-blue-50 text-blue-600" },
-    colis: { label: "Colis", icon: Package, color: "bg-teal-50 text-teal-600" },
-    recommande: { label: "Recommande", icon: FileText, color: "bg-red-50 text-red-600" },
-    autre: { label: "Autre", icon: Mail, color: "bg-gray-50 text-gray-600" },
-  };
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <SectionHeader icon={Mail} title={`Courrier (${courriers.length})`} color="from-sky-500 to-blue-500" />
-        <Button size="sm" onClick={() => setShowForm(!showForm)}>{showForm ? <><X className="w-4 h-4" /> Fermer</> : <><Plus className="w-4 h-4" /> Ajouter</>}</Button>
-      </div>
-      {showForm && (
-        <Card className="p-4 border-2 border-amber-200 bg-amber-50/30">
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-              <select value={nc.type} onChange={(e) => setNc({ ...nc, type: e.target.value })} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500">
-                <option value="lettre">Lettre</option><option value="colis">Colis</option><option value="recommande">Recommande</option><option value="autre">Autre</option>
-              </select>
-            </div>
-            <Input label="Expediteur" value={nc.expediteur} onChange={(e) => setNc({ ...nc, expediteur: e.target.value })} required />
-            <Input label="Description" value={nc.description} onChange={(e) => setNc({ ...nc, description: e.target.value })} />
-          </div>
-          <div className="flex justify-end mt-3"><Button size="sm" onClick={handleCreate} loading={submitting}><Plus className="w-4 h-4" /> Creer</Button></div>
-        </Card>
-      )}
-      {loadingList ? <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div> : courriers.length === 0 ? <div className="text-center py-8 text-gray-500">Aucun courrier enregistre</div> : (
-        <div className="space-y-2">
-          {courriers.map((c) => { const t = tc[c.type] || tc.autre; const TI = t.icon; return (
-            <div key={c.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${t.color}`}><TI className="w-5 h-5" /></div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2"><p className="font-medium text-gray-900 text-sm">{t.label}</p><Badge variant={c.statut === "retire" ? "success" : c.statut === "notifie" ? "info" : "warning"} size="sm">{c.statut}</Badge></div>
-                <p className="text-xs text-gray-500">{c.expediteur}{c.dateReception && ` - ${format(new Date(c.dateReception), "d MMM yyyy", { locale: fr })}`}</p>
-              </div>
-              {c.statut !== "retire" && <Button size="sm" variant="ghost" onClick={() => markRetire(c.id)}><CheckCircle className="w-4 h-4" /></Button>}
-            </div>
-          ); })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DocumentsTab({ demande }: { demande: any }) {
-  const [docs, setDocs] = useState<DocumentItem[]>([]);
-  const [loadingDocs, setLoadingDocs] = useState(true);
-  useEffect(() => { (async () => {
-    setLoadingDocs(true);
-    try { const r = await apiClient.getDocuments("domiciliation", demande.id); setDocs(((r.data as any)?.documents || []) as DocumentItem[]); }
-    catch { setDocs([]); }
-    finally { setLoadingDocs(false); }
-  })(); }, [demande.id]);
-  const changeStatus = async (id: string, s: string) => {
-    try { await apiClient.put(`/documents/update.php?id=${id}`, { statut: s }); setDocs((p) => p.map((d) => d.id === id ? { ...d, statut: s as DocumentItem["statut"] } : d)); toast.success("Statut du document mis a jour"); }
-    catch { toast.error("Erreur lors de la mise a jour"); }
-  };
-  const sc: Record<string, { label: string; variant: "warning" | "success" | "danger" }> = { en_attente: { label: "En attente", variant: "warning" }, valide: { label: "Valide", variant: "success" }, rejete: { label: "Rejete", variant: "danger" } };
-  if (loadingDocs) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;
-  return (
-    <div className="space-y-4">
-      <SectionHeader icon={FileText} title={`Documents (${docs.length})`} color="from-teal-500 to-emerald-500" />
-      {docs.length === 0 ? <div className="text-center py-8 text-gray-500">Aucun document televerse</div> : (
-        <div className="space-y-2">
-          {docs.map((d) => { const s = sc[d.statut] || sc.en_attente; return (
-            <div key={d.id} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-              <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0"><FileText className="w-5 h-5 text-teal-700" /></div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 text-sm truncate">{d.nom || d.type}</p>
-                <p className="text-xs text-gray-500">{d.dateUpload ? format(new Date(d.dateUpload), "d MMM yyyy", { locale: fr }) : ""}</p>
-              </div>
-              <Badge variant={s.variant} size="sm">{s.label}</Badge>
-              <select value={d.statut} onChange={(e) => changeStatus(d.id, e.target.value)} className="text-xs px-2 py-1 border border-gray-300 rounded-lg bg-white">
-                <option value="en_attente">En attente</option><option value="valide">Valide</option><option value="rejete">Rejete</option>
-              </select>
-            </div>
-          ); })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function NotesTab({ demande, onUpdate, loading }: { demande: any; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
-  const [notes, setNotes] = useState(demande.commentaireAdmin || "");
-  const [saving, setSaving] = useState(false);
-  useEffect(() => { setNotes(demande.commentaireAdmin || ""); }, [demande.commentaireAdmin]);
-  const handleSave = async () => {
-    setSaving(true);
-    try { await onUpdate({ commentaireAdmin: notes }); }
-    catch { toast.error("Erreur lors de l'enregistrement"); }
-    finally { setSaving(false); }
-  };
-  return (
-    <div className="space-y-4">
-      <SectionHeader icon={StickyNote} title="Notes administratives" color="from-amber-500 to-yellow-500" />
-      <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={8} placeholder="Ajoutez vos notes internes ici..." className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-y" />
-      <div className="flex justify-end"><Button onClick={handleSave} loading={saving || loading}><Save className="w-4 h-4" /> Enregistrer</Button></div>
-    </div>
-  );
-}
-
-function ActionsTab({ demande, onAction, loading }: { demande: any; onAction: (action: string, data?: Record<string, unknown>) => Promise<void>; loading: boolean }) {
-  const [activeAction, setActiveAction] = useState<string | null>(null);
-  const [confirmAction, setConfirmAction] = useState<string | null>(null);
-  const [motif, setMotif] = useState("");
-  const [sd, setSd] = useState({ numeroBureau: 1, referenceContratNotarie: "", dateDebutContrat: new Date().toISOString().split("T")[0], dateFinContrat: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], montantMensuel: 12000 });
-  const [occupiedBureaux, setOccupiedBureaux] = useState<number[]>([]);
-  useEffect(() => {
-    apiClient.getDomiciliations().then(res => {
-      if (res.success && res.data) {
-        const all = (Array.isArray(res.data) ? res.data : (res.data as Record<string, unknown>).data as unknown[] || []) as Record<string, unknown>[];
-        const occupied = all
-          .filter(d => ["active", "domiciliation_creee", "en_attente_complements", "en_attente_signature"].includes(String(d.statut || "")) && d.numero_bureau && String(d.id) !== demande.id)
-          .map(d => Number(d.numero_bureau));
-        setOccupiedBureaux(occupied);
-      }
-    }).catch(() => {});
-  }, [demande.id]);
-  const defs: { key: string; label: string; icon: React.ElementType; variant: string; statuts: string[]; destructive?: boolean }[] = [
-    { key: "valider", label: "Valider le dossier", icon: CheckCircle, variant: "success", statuts: ["dossier_preparatoire"] },
-    { key: "rejeter", label: "Refuser la demande", icon: XCircle, variant: "danger", statuts: ["dossier_preparatoire", "en_attente_signature"], destructive: true },
-    { key: "signer", label: "Enregistrer signature notaire", icon: Scale, variant: "primary", statuts: ["en_attente_signature"] },
-    { key: "completer", label: "Completer et activer", icon: FileCheck, variant: "success", statuts: ["domiciliation_creee", "en_attente_complements"] },
-    { key: "activer", label: "Activer", icon: PlayCircle, variant: "success", statuts: ["domiciliation_creee", "en_attente_complements"] },
-    { key: "resilier", label: "Resilier la domiciliation", icon: Ban, variant: "danger", statuts: ["active"], destructive: true },
-  ];
-  const available = defs.filter((a) => a.statuts.includes(demande.statut));
-  const handleSubmit = async (key: string) => {
-    if (key === "rejeter" && !motif.trim()) { toast.error("Veuillez preciser le motif du refus"); return; }
-    if (key === "resilier" && !motif.trim()) { toast.error("Veuillez preciser le motif de la resiliation"); return; }
-    if (key === "signer" && !sd.referenceContratNotarie.trim()) { toast.error("Reference du contrat requise"); return; }
-    if (key === "signer" && occupiedBureaux.includes(sd.numeroBureau)) { toast.error(`Le bureau ${sd.numeroBureau} est deja attribue a une autre domiciliation active`); return; }
-    const data: Record<string, unknown> = {};
-    if (key === "rejeter" || key === "resilier") data.motif = motif;
-    if (key === "signer") Object.assign(data, sd);
-    await onAction(key, data);
-    setActiveAction(null); setConfirmAction(null); setMotif("");
-  };
-  if (available.length === 0) return (
-    <div className="text-center py-12">
-      <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4"><AlertCircle className="w-8 h-8 text-gray-400" /></div>
-      <p className="text-gray-500 font-medium">Aucune action disponible pour le statut actuel</p>
-    </div>
-  );
-  return (
-    <div className="space-y-4">
-      <SectionHeader icon={Scale} title="Actions disponibles" color="from-sky-500 to-indigo-500" />
-      <div className="space-y-3">
-        {available.map((a) => { const Icon = a.icon; const isAct = activeAction === a.key; return (
-          <div key={a.key} className="border border-gray-200 rounded-xl overflow-hidden">
-            <button onClick={() => setActiveAction(isAct ? null : a.key)} className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-left">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${a.variant === "danger" ? "bg-red-100 text-red-600" : a.variant === "success" ? "bg-emerald-100 text-emerald-600" : "bg-sky-100 text-sky-600"}`}><Icon className="w-5 h-5" /></div>
-              <span className="font-medium text-gray-900">{a.label}</span>
-              {a.destructive && <Badge variant="danger" size="sm">Irreversible</Badge>}
-            </button>
-            {isAct && (
-              <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
-                {a.key === "signer" && (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Numero de bureau (1-36)</label>
-                      <select value={sd.numeroBureau} onChange={(e) => setSd({ ...sd, numeroBureau: parseInt(e.target.value) })} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg">
-                        {Array.from({ length: 36 }, (_, i) => i + 1).map((n) => {
-                          const isOccupied = occupiedBureaux.includes(n);
-                          return <option key={n} value={n} className={isOccupied ? "text-red-500 bg-red-50" : ""}>Bureau {n}{isOccupied ? " (occupe)" : ""}</option>;
-                        })}
-                      </select>
-                      {occupiedBureaux.includes(sd.numeroBureau) && (
-                        <p className="text-xs text-red-600 mt-1 font-medium">Ce bureau est deja attribue a une autre domiciliation active</p>
-                      )}
-                    </div>
-                    <Input label="Reference contrat notarie" value={sd.referenceContratNotarie} onChange={(e) => setSd({ ...sd, referenceContratNotarie: e.target.value })} required />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input label="Date debut" type="date" value={sd.dateDebutContrat} onChange={(e) => setSd({ ...sd, dateDebutContrat: e.target.value })} />
-                      <Input label="Date fin" type="date" value={sd.dateFinContrat} onChange={(e) => setSd({ ...sd, dateFinContrat: e.target.value })} />
-                    </div>
-                    <Input label="Montant mensuel (DA)" type="number" value={sd.montantMensuel.toString()} onChange={(e) => setSd({ ...sd, montantMensuel: parseInt(e.target.value) || 0 })} />
-                  </div>
-                )}
-                {(a.key === "rejeter" || a.key === "resilier") && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Motif <span className="text-red-500">*</span></label>
-                    <textarea value={motif} onChange={(e) => setMotif(e.target.value)} rows={3} placeholder={a.key === "rejeter" ? "Raison du refus..." : "Raison de la resiliation..."} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500" />
-                  </div>
-                )}
-                {a.destructive ? (confirmAction === a.key ? (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setConfirmAction(null)} className="flex-1">Annuler</Button>
-                    <Button variant="danger" size="sm" onClick={() => handleSubmit(a.key)} loading={loading} className="flex-1">Confirmer</Button>
-                  </div>
-                ) : <Button variant="danger" size="sm" onClick={() => setConfirmAction(a.key)} className="w-full">{a.label}</Button>
-                ) : <Button variant={a.variant as "primary" | "success"} size="sm" onClick={() => handleSubmit(a.key)} loading={loading} className="w-full">{a.label}</Button>}
-              </div>
-            )}
-          </div>
-        ); })}
-      </div>
-    </div>
-  );
-}
-
-export default function DomiciliationDetailModal({ isOpen, onClose, demande, onAction, onUpdate, loading }: DomiciliationDetailModalProps) {
-  const [activeTab, setActiveTab] = useState<TabId>("informations");
-  useEffect(() => { if (isOpen) setActiveTab("informations"); }, [isOpen]);
   if (!demande) return null;
-  const badge = STATUS_BADGES[demande.statut] || STATUS_BADGES.dossier_preparatoire;
-  const displayName = demande.raisonSociale || `${demande.representantLegal?.prenom || ""} ${demande.representantLegal?.nom || ""}`.trim() || "Non renseigne";
+
+  const getDisplayName = () =>
+    demande.raisonSociale || `${demande.representantLegal?.prenom || ""} ${demande.representantLegal?.nom || ""}`.trim() || "Non renseigne";
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl" noPadding>
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center"><Building className="w-5 h-5 text-amber-600" /></div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">{displayName}</h3>
-            <div className="flex items-center gap-2 mt-0.5">
-              <Badge variant={badge.variant} size="sm">{badge.label}</Badge>
-              {demande.numeroBureau && <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">N{demande.numeroBureau}</span>}
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="border-b border-gray-200 px-6">
-        <nav className="flex space-x-6" role="tablist">
-          {TABS.map((tab) => { const Icon = tab.icon; const isActive = activeTab === tab.id; return (
-            <button key={tab.id} role="tab" aria-selected={isActive} onClick={() => setActiveTab(tab.id)} className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-1.5 ${isActive ? "border-amber-500 text-amber-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}`}>
-              <Icon className="w-4 h-4" />{tab.label}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={getDisplayName()}
+      subtitle={`Bureau ${demande.numeroBureau || "-"} | ${demande.typeStructure === "auto_entrepreneur" ? "Auto-entrepreneur" : (demande.formeJuridique || "Societe")}`}
+      size="xl"
+      noPadding
+    >
+      <div className="flex flex-col" style={{ maxHeight: "75vh" }}>
+        <div className="flex border-b border-gray-100 bg-gray-50/50 overflow-x-auto flex-shrink-0">
+          {TABS.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
+                activeTab === key
+                  ? "border-amber-500 text-amber-700 bg-white"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
             </button>
-          ); })}
-        </nav>
-      </div>
-      <div className="px-6 py-5 max-h-[65vh] overflow-y-auto">
-        {activeTab === "informations" && <InformationsTab demande={demande} onUpdate={onUpdate} loading={loading} />}
-        {activeTab === "contrat" && <ContratTab demande={demande} onUpdate={onUpdate} loading={loading} />}
-        {activeTab === "courrier" && <CourrierTab demande={demande} />}
-        {activeTab === "documents" && <DocumentsTab demande={demande} />}
-        {activeTab === "notes" && <NotesTab demande={demande} onUpdate={onUpdate} loading={loading} />}
-        {activeTab === "actions" && <ActionsTab demande={demande} onAction={onAction} loading={loading} />}
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          {activeTab === "informations" && <InformationsTab demande={demande} onUpdate={onUpdate} loading={loading} />}
+          {activeTab === "contrat" && <ContratTab demande={demande} onUpdate={onUpdate} loading={loading} />}
+          {activeTab === "courrier" && <CourrierTab demande={demande} />}
+          {activeTab === "documents" && <DocumentsTab demande={demande} />}
+          {activeTab === "notes" && <NotesTab demande={demande} onUpdate={onUpdate} loading={loading} />}
+          {activeTab === "actions" && <ActionsTab demande={demande} onAction={onAction} loading={loading} />}
+        </div>
       </div>
     </Modal>
   );
+};
+
+function Field({ label, value, icon }: { label: string; value?: string | number | null; icon?: React.ReactNode }) {
+  return (
+    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+      <div className="flex items-center gap-2 mb-1">
+        {icon && <span className="text-gray-400">{icon}</span>}
+        <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">{label}</p>
+      </div>
+      <p className="font-semibold text-gray-900 text-sm">{value || "Non renseigne"}</p>
+    </div>
+  );
 }
+
+function InformationsTab({ demande, onUpdate, loading }: { demande: DemandeDomiciliation; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({
+    raisonSociale: demande.raisonSociale || "",
+    formeJuridique: demande.formeJuridique || "",
+    nif: demande.nif || "",
+    nis: demande.nis || "",
+    registreCommerce: demande.registreCommerce || "",
+    articleImposition: demande.articleImposition || "",
+    capital: demande.capital?.toString() || "",
+    adresseSiegeSocial: demande.adresseSiegeSocial || "",
+    domaineActivite: demande.domaineActivite || "",
+    activiteExercee: demande.activiteExercee || "",
+    numeroAutoEntrepreneur: demande.numeroAutoEntrepreneur || "",
+    codeNae: demande.codeNae || "",
+  });
+
+  useEffect(() => {
+    setForm({
+      raisonSociale: demande.raisonSociale || "",
+      formeJuridique: demande.formeJuridique || "",
+      nif: demande.nif || "",
+      nis: demande.nis || "",
+      registreCommerce: demande.registreCommerce || "",
+      articleImposition: demande.articleImposition || "",
+      capital: demande.capital?.toString() || "",
+      adresseSiegeSocial: demande.adresseSiegeSocial || "",
+      domaineActivite: demande.domaineActivite || "",
+      activiteExercee: demande.activiteExercee || "",
+      numeroAutoEntrepreneur: demande.numeroAutoEntrepreneur || "",
+      codeNae: demande.codeNae || "",
+    });
+    setEditing(false);
+  }, [demande]);
+
+  const handleSave = async () => {
+    try {
+      await onUpdate(form);
+      setEditing(false);
+    } catch { /* handled upstream */ }
+  };
+
+  const isSociete = demande.typeStructure === "societe";
+  const rep = demande.representantLegal;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Badge variant={demande.situationAdministrative === "en_cours_creation" ? "warning" : "info"}>
+            {demande.situationAdministrative === "en_cours_creation" ? "En cours de creation" : "Deja creee"}
+          </Badge>
+          <Badge variant={isSociete ? "default" : "info"}>
+            {isSociete ? "Societe" : "Auto-entrepreneur"}
+          </Badge>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setEditing(!editing)}>
+          {editing ? <><X className="w-4 h-4 mr-1" />Annuler</> : <><Pencil className="w-4 h-4 mr-1" />Modifier</>}
+        </Button>
+      </div>
+
+      {editing ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input label="Raison Sociale" value={form.raisonSociale} onChange={(e) => setForm({ ...form, raisonSociale: e.target.value })} />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Forme Juridique</label>
+              <select
+                value={form.formeJuridique}
+                onChange={(e) => setForm({ ...form, formeJuridique: e.target.value })}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-sm"
+              >
+                <option value="">Selectionner</option>
+                {LEGAL_FORM_OPTIONS_SHORT.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                <option value="Auto-entrepreneur">Auto-entrepreneur</option>
+              </select>
+            </div>
+          </div>
+          {isSociete ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input label="NIF" value={form.nif} onChange={(e) => setForm({ ...form, nif: e.target.value })} />
+                <Input label="NIS" value={form.nis} onChange={(e) => setForm({ ...form, nis: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input label="Registre Commerce" value={form.registreCommerce} onChange={(e) => setForm({ ...form, registreCommerce: e.target.value })} />
+                <Input label="Article Imposition" value={form.articleImposition} onChange={(e) => setForm({ ...form, articleImposition: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input label="Capital (DA)" value={form.capital} onChange={(e) => setForm({ ...form, capital: e.target.value })} />
+                <Input label="Code NAE" value={form.codeNae} onChange={(e) => setForm({ ...form, codeNae: e.target.value })} />
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input label="N. Auto-Entrepreneur" value={form.numeroAutoEntrepreneur} onChange={(e) => setForm({ ...form, numeroAutoEntrepreneur: e.target.value })} />
+              <Input label="Activite" value={form.activiteExercee} onChange={(e) => setForm({ ...form, activiteExercee: e.target.value })} />
+            </div>
+          )}
+          <Input label="Domaine d'activite" value={form.domaineActivite} onChange={(e) => setForm({ ...form, domaineActivite: e.target.value })} />
+          <Input label="Siege Social" value={form.adresseSiegeSocial} onChange={(e) => setForm({ ...form, adresseSiegeSocial: e.target.value })} />
+          <div className="flex justify-end">
+            <Button onClick={handleSave} loading={loading} className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+              <Save className="w-4 h-4 mr-1" />Enregistrer
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <Field label="Raison Sociale" value={demande.raisonSociale} icon={<Building className="w-3.5 h-3.5" />} />
+            <Field label="Forme Juridique" value={demande.formeJuridique} icon={<FileText className="w-3.5 h-3.5" />} />
+            {isSociete ? (
+              <>
+                <Field label="NIF" value={demande.nif} icon={<Hash className="w-3.5 h-3.5" />} />
+                <Field label="NIS" value={demande.nis} icon={<Hash className="w-3.5 h-3.5" />} />
+                <Field label="Registre Commerce" value={demande.registreCommerce} icon={<FileText className="w-3.5 h-3.5" />} />
+                <Field label="Article Imposition" value={demande.articleImposition} icon={<FileText className="w-3.5 h-3.5" />} />
+                {demande.capital && <Field label="Capital" value={`${demande.capital} DA`} icon={<Banknote className="w-3.5 h-3.5" />} />}
+              </>
+            ) : (
+              <>
+                <Field label="N. Auto-Entrepreneur" value={demande.numeroAutoEntrepreneur} icon={<Hash className="w-3.5 h-3.5" />} />
+                <Field label="Activite" value={demande.activiteExercee} icon={<FileText className="w-3.5 h-3.5" />} />
+              </>
+            )}
+            {demande.domaineActivite && <Field label="Domaine" value={demande.domaineActivite} />}
+            {demande.codeNae && <Field label="Code NAE" value={demande.codeNae} />}
+            {demande.adresseSiegeSocial && <Field label="Siege Social" value={demande.adresseSiegeSocial} icon={<MapPin className="w-3.5 h-3.5" />} />}
+            {demande.villeImmatriculation && <Field label="Ville Immat." value={demande.villeImmatriculation} icon={<MapPin className="w-3.5 h-3.5" />} />}
+          </div>
+        </div>
+      )}
+
+      {rep && (
+        <div>
+          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <User className="w-4 h-4 text-amber-600" />
+            Representant Legal
+          </h3>
+          <div className="bg-amber-50 rounded-xl p-5 border border-amber-200">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-amber-200 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-amber-700" />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">{rep.prenom} {rep.nom}</p>
+                {rep.fonction && <p className="text-sm text-gray-600">{rep.fonction}</p>}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              {rep.email && (
+                <a href={`mailto:${rep.email}`} className="flex items-center gap-2 text-amber-700 hover:text-amber-800">
+                  <Mail className="w-3.5 h-3.5" />{rep.email}
+                </a>
+              )}
+              {rep.telephone && (
+                <a href={`tel:${rep.telephone}`} className="flex items-center gap-2 text-amber-700 hover:text-amber-800">
+                  <Phone className="w-3.5 h-3.5" />{rep.telephone}
+                </a>
+              )}
+              {rep.ville && (
+                <div className="flex items-center gap-2 text-amber-700">
+                  <MapPin className="w-3.5 h-3.5" />{rep.ville}
+                </div>
+              )}
+              {rep.adresseResidence && (
+                <div className="flex items-center gap-2 text-amber-700">
+                  <MapPin className="w-3.5 h-3.5" />{rep.adresseResidence}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="text-xs text-gray-400 flex items-center gap-4">
+        <span>Cree le {formatDate(demande.dateCreation)}</span>
+        {demande.updatedAt && <span>Mis a jour le {formatDate(demande.updatedAt)}</span>}
+      </div>
+    </div>
+  );
+}
+
+function ContratTab({ demande, onUpdate, loading }: { demande: DemandeDomiciliation; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({
+    numeroBureau: demande.numeroBureau?.toString() || "",
+    referenceContratNotarie: demande.referenceContratNotarie || "",
+    dateDebutContrat: "",
+    dateFinContrat: "",
+    montantMensuel: demande.montantMensuel?.toString() || "",
+    modePaiement: demande.modePaiement || "",
+    visibleSurSite: demande.visibleSurSite || false,
+  });
+
+  useEffect(() => {
+    const toDateStr = (v: Date | string | undefined) => {
+      if (!v) return "";
+      try { return new Date(v as string).toISOString().split("T")[0]; } catch { return ""; }
+    };
+    setForm({
+      numeroBureau: demande.numeroBureau?.toString() || "",
+      referenceContratNotarie: demande.referenceContratNotarie || "",
+      dateDebutContrat: toDateStr(demande.dateDebutContrat),
+      dateFinContrat: toDateStr(demande.dateFinContrat),
+      montantMensuel: demande.montantMensuel?.toString() || "",
+      modePaiement: demande.modePaiement || "",
+      visibleSurSite: demande.visibleSurSite || false,
+    });
+    setEditing(false);
+  }, [demande]);
+
+  const handleSave = async () => {
+    try {
+      await onUpdate({
+        numeroBureau: form.numeroBureau ? parseInt(form.numeroBureau) : null,
+        referenceContratNotarie: form.referenceContratNotarie,
+        dateDebutContrat: form.dateDebutContrat || null,
+        dateFinContrat: form.dateFinContrat || null,
+        montantMensuel: form.montantMensuel ? parseFloat(form.montantMensuel) : null,
+        modePaiement: form.modePaiement,
+        visibleSurSite: form.visibleSurSite,
+      });
+      setEditing(false);
+    } catch { /* handled upstream */ }
+  };
+
+  const opts = demande.options;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-gray-900">Details du contrat</h3>
+        <Button variant="outline" size="sm" onClick={() => setEditing(!editing)}>
+          {editing ? <><X className="w-4 h-4 mr-1" />Annuler</> : <><Pencil className="w-4 h-4 mr-1" />Modifier</>}
+        </Button>
+      </div>
+
+      {editing ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Numero de bureau (1-36)</label>
+              <select
+                value={form.numeroBureau}
+                onChange={(e) => setForm({ ...form, numeroBureau: e.target.value })}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-sm"
+              >
+                <option value="">Non attribue</option>
+                {Array.from({ length: 36 }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>Bureau {n}</option>
+                ))}
+              </select>
+            </div>
+            <Input label="Reference contrat notarie" value={form.referenceContratNotarie} onChange={(e) => setForm({ ...form, referenceContratNotarie: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input label="Date debut" type="date" value={form.dateDebutContrat} onChange={(e) => setForm({ ...form, dateDebutContrat: e.target.value })} />
+            <Input label="Date fin" type="date" value={form.dateFinContrat} onChange={(e) => setForm({ ...form, dateFinContrat: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input label="Montant mensuel (DA)" value={form.montantMensuel} onChange={(e) => setForm({ ...form, montantMensuel: e.target.value })} />
+            <Input label="Mode de paiement" value={form.modePaiement} onChange={(e) => setForm({ ...form, modePaiement: e.target.value })} />
+          </div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" checked={form.visibleSurSite} onChange={(e) => setForm({ ...form, visibleSurSite: e.target.checked })} className="w-5 h-5 text-amber-600 border-gray-300 rounded" />
+            <span className="text-sm text-gray-700">Visible sur le site</span>
+          </label>
+          <div className="flex justify-end">
+            <Button onClick={handleSave} loading={loading} className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+              <Save className="w-4 h-4 mr-1" />Enregistrer
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <Field label="Bureau" value={demande.numeroBureau ? `Bureau ${demande.numeroBureau}` : null} icon={<Hash className="w-3.5 h-3.5" />} />
+          <Field label="Reference contrat" value={demande.referenceContratNotarie} icon={<Scale className="w-3.5 h-3.5" />} />
+          <Field label="Montant mensuel" value={demande.montantMensuel ? formatCurrency(demande.montantMensuel) : null} icon={<Banknote className="w-3.5 h-3.5" />} />
+          <Field label="Date debut" value={demande.dateDebutContrat ? formatDate(demande.dateDebutContrat) : null} icon={<Calendar className="w-3.5 h-3.5" />} />
+          <Field label="Date fin" value={demande.dateFinContrat ? formatDate(demande.dateFinContrat) : null} icon={<Calendar className="w-3.5 h-3.5" />} />
+          <Field label="Mode paiement" value={demande.modePaiement} />
+          <Field label="Visible sur site" value={demande.visibleSurSite ? "Oui" : "Non"} />
+        </div>
+      )}
+
+      {opts && (
+        <div>
+          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Package className="w-4 h-4 text-amber-600" />
+            Options souscrites
+          </h3>
+          <div className="space-y-2">
+            {Object.entries(opts).map(([key, val]) => (
+              <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                <span className="text-sm text-gray-700">{key.replace(/([A-Z])/g, " $1").trim()}</span>
+                <Badge variant={val ? "success" : "default"} size="sm">{val ? "Actif" : "Inactif"}</Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface CourrierItem {
+  id: string;
+  type: string;
+  expediteur: string;
+  description: string;
+  statut: string;
+  dateReception: string;
+  dateRetrait?: string;
+}
+
+function CourrierTab({ demande }: { demande: DemandeDomiciliation }) {
+  const [courriers, setCourriers] = useState<CourrierItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [newCourrier, setNewCourrier] = useState({ type: "lettre", expediteur: "", description: "" });
+  const [saving, setSaving] = useState(false);
+
+  const loadCourrier = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.getUserCourrier(demande.id);
+      const data = response.data as Record<string, unknown> | undefined;
+      setCourriers((data?.courriers || []) as CourrierItem[]);
+    } catch { setCourriers([]); }
+    finally { setLoading(false); }
+  }, [demande.id]);
+
+  useEffect(() => { loadCourrier(); }, [loadCourrier]);
+
+  const handleCreate = async () => {
+    if (!newCourrier.expediteur.trim()) { toast.error("L'expediteur est requis"); return; }
+    setSaving(true);
+    try {
+      await apiClient.createCourrier({
+        domiciliation_id: demande.id,
+        ...newCourrier,
+      });
+      toast.success("Courrier ajoute");
+      setCreating(false);
+      setNewCourrier({ type: "lettre", expediteur: "", description: "" });
+      await loadCourrier();
+    } catch { toast.error("Erreur lors de l'ajout"); }
+    finally { setSaving(false); }
+  };
+
+  const handleMarkRetire = async (id: string) => {
+    try {
+      await apiClient.updateCourrier(id, { statut: "retire" });
+      toast.success("Courrier marque comme retire");
+      await loadCourrier();
+    } catch { toast.error("Erreur"); }
+  };
+
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-amber-500" /></div>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-gray-900">{courriers.length} courrier{courriers.length !== 1 ? "s" : ""}</h3>
+        <Button size="sm" onClick={() => setCreating(!creating)} variant={creating ? "outline" : "primary"}>
+          {creating ? <><X className="w-4 h-4 mr-1" />Annuler</> : <><Plus className="w-4 h-4 mr-1" />Ajouter</>}
+        </Button>
+      </div>
+
+      {creating && (
+        <Card className="p-4 border-amber-200 bg-amber-50/30">
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <select
+                  value={newCourrier.type}
+                  onChange={(e) => setNewCourrier({ ...newCourrier, type: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
+                >
+                  <option value="lettre">Lettre</option>
+                  <option value="colis">Colis</option>
+                  <option value="recommande">Recommande</option>
+                  <option value="autre">Autre</option>
+                </select>
+              </div>
+              <Input label="Expediteur" value={newCourrier.expediteur} onChange={(e) => setNewCourrier({ ...newCourrier, expediteur: e.target.value })} />
+            </div>
+            <Input label="Description" value={newCourrier.description} onChange={(e) => setNewCourrier({ ...newCourrier, description: e.target.value })} />
+            <div className="flex justify-end">
+              <Button size="sm" onClick={handleCreate} loading={saving} className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+                <Send className="w-4 h-4 mr-1" />Enregistrer
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {courriers.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">Aucun courrier enregistre</div>
+      ) : (
+        <div className="space-y-2">
+          {courriers.map((c) => (
+            <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+              <div className="flex items-center gap-3">
+                <Mail className="w-4 h-4 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{c.type} - {c.expediteur}</p>
+                  {c.description && <p className="text-xs text-gray-500">{c.description}</p>}
+                  <p className="text-xs text-gray-400">{formatDate(c.dateReception)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant={c.statut === "retire" ? "success" : c.statut === "notifie" ? "info" : "warning"} size="sm">
+                  {c.statut}
+                </Badge>
+                {c.statut !== "retire" && (
+                  <Button size="sm" variant="outline" onClick={() => handleMarkRetire(c.id)}>
+                    <CheckCircle className="w-3.5 h-3.5 mr-1" />Retire
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface DocumentRecord {
+  id: string;
+  document_type: string;
+  file_name: string;
+  status?: string;
+  created_at: string;
+}
+
+function DocumentsTab({ demande }: { demande: DemandeDomiciliation }) {
+  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadDocs = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.getDocuments("domiciliation", demande.id);
+      const data = response.data;
+      if (Array.isArray(data)) setDocuments(data as DocumentRecord[]);
+      else if (data && typeof data === "object" && "documents" in data) setDocuments((data as Record<string, unknown>).documents as DocumentRecord[] || []);
+      else setDocuments([]);
+    } catch { setDocuments([]); }
+    finally { setLoading(false); }
+  }, [demande.id]);
+
+  useEffect(() => { loadDocs(); }, [loadDocs]);
+
+  const handleStatusChange = async (docId: string, status: string) => {
+    try {
+      await apiClient.updateDocumentStatus(docId, status);
+      toast.success("Statut du document mis a jour");
+      await loadDocs();
+    } catch { toast.error("Erreur"); }
+  };
+
+  const handleDownload = async (doc: DocumentRecord) => {
+    try {
+      const res = await apiClient.downloadDocument(doc.id);
+      const dlData = res.data as Record<string, unknown> | undefined;
+      if (dlData && typeof dlData === "object" && "url" in dlData && dlData.url) {
+        window.open(dlData.url as string, "_blank");
+        return;
+      }
+      toast.error("Impossible de telecharger le document");
+    } catch { toast.error("Erreur lors du telechargement"); }
+  };
+
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-amber-500" /></div>;
+
+  return (
+    <div className="space-y-4">
+      <h3 className="font-semibold text-gray-900">{documents.length} document{documents.length !== 1 ? "s" : ""}</h3>
+      {documents.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">Aucun document soumis</div>
+      ) : (
+        <div className="space-y-2">
+          {documents.map((doc) => (
+            <div key={doc.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+              <div className="flex items-center gap-3">
+                <FileText className="w-4 h-4 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{doc.file_name}</p>
+                  <p className="text-xs text-gray-500">{doc.document_type} - {formatDate(doc.created_at)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDownload(doc)}
+                  className="text-xs px-2 py-1 text-amber-700 hover:text-amber-900 hover:bg-amber-50 rounded-lg transition-colors"
+                  title="Telecharger"
+                >
+                  Voir
+                </button>
+                <select
+                  value={doc.status || "en_attente"}
+                  onChange={(e) => handleStatusChange(doc.id, e.target.value)}
+                  className="text-xs px-2 py-1 border border-gray-200 rounded-lg bg-white"
+                >
+                  <option value="en_attente">En attente</option>
+                  <option value="valide">Valide</option>
+                  <option value="rejete">Rejete</option>
+                </select>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NotesTab({ demande, onUpdate, loading }: { demande: DemandeDomiciliation; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
+  const [notes, setNotes] = useState(demande.commentaireAdmin || "");
+  const [changed, setChanged] = useState(false);
+
+  useEffect(() => {
+    setNotes(demande.commentaireAdmin || "");
+    setChanged(false);
+  }, [demande]);
+
+  const handleSave = async () => {
+    try {
+      await onUpdate({ commentaireAdmin: notes });
+      setChanged(false);
+    } catch { /* handled upstream */ }
+  };
+
+  return (
+    <div className="space-y-4">
+      <h3 className="font-semibold text-gray-900">Notes administratives</h3>
+      <textarea
+        value={notes}
+        onChange={(e) => { setNotes(e.target.value); setChanged(true); }}
+        rows={8}
+        placeholder="Ajouter des notes internes sur cette domiciliation..."
+        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-sm resize-y"
+      />
+      {changed && (
+        <div className="flex justify-end">
+          <Button onClick={handleSave} loading={loading} className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+            <Save className="w-4 h-4 mr-1" />Enregistrer les notes
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliation; onAction: (a: string, d?: Record<string, unknown>) => Promise<void>; loading: boolean }) {
+  const [motif, setMotif] = useState("");
+  const [signerForm, setSignerForm] = useState({
+    numeroBureau: "",
+    referenceContratNotarie: "",
+    dateDebutContrat: "",
+    dateFinContrat: "",
+    montantMensuel: "12000",
+  });
+  const [confirmDestructive, setConfirmDestructive] = useState<string | null>(null);
+
+  const actions = getAvailableActions(demande.statut);
+
+  const handleAction = async (action: string) => {
+    if (action === "rejeter" || action === "resilier") {
+      if (!confirmDestructive) { setConfirmDestructive(action); return; }
+      if (!motif.trim()) { toast.error("Le motif est obligatoire"); return; }
+      await onAction(action, { motif });
+      setConfirmDestructive(null);
+      setMotif("");
+      return;
+    }
+
+    if (action === "signer") {
+      if (!signerForm.numeroBureau || !signerForm.referenceContratNotarie || !signerForm.dateDebutContrat || !signerForm.dateFinContrat) {
+        toast.error("Tous les champs du contrat sont requis");
+        return;
+      }
+      await onAction("signer", {
+        numeroBureau: parseInt(signerForm.numeroBureau),
+        referenceContratNotarie: signerForm.referenceContratNotarie,
+        dateDebutContrat: signerForm.dateDebutContrat,
+        dateFinContrat: signerForm.dateFinContrat,
+        montantMensuel: parseFloat(signerForm.montantMensuel),
+      });
+      return;
+    }
+
+    await onAction(action, motif ? { motif } : undefined);
+  };
+
+  if (actions.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        Aucune action disponible pour le statut actuel.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+        <p className="text-sm text-gray-600">
+          Statut actuel : <span className="font-semibold text-gray-900">{demande.statut.replace(/_/g, " ")}</span>
+        </p>
+      </div>
+
+      {actions.includes("signer") && (
+        <Card className="p-5 border-sky-200 bg-sky-50/30">
+          <h4 className="font-semibold text-sky-900 mb-4 flex items-center gap-2">
+            <Scale className="w-4 h-4" />
+            Enregistrement du contrat notarie
+          </h4>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bureau</label>
+                <select
+                  value={signerForm.numeroBureau}
+                  onChange={(e) => setSignerForm({ ...signerForm, numeroBureau: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
+                >
+                  <option value="">Selectionner</option>
+                  {Array.from({ length: 36 }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>Bureau {n}</option>
+                  ))}
+                </select>
+              </div>
+              <Input label="Reference contrat" value={signerForm.referenceContratNotarie} onChange={(e) => setSignerForm({ ...signerForm, referenceContratNotarie: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input label="Date debut" type="date" value={signerForm.dateDebutContrat} onChange={(e) => setSignerForm({ ...signerForm, dateDebutContrat: e.target.value })} />
+              <Input label="Date fin" type="date" value={signerForm.dateFinContrat} onChange={(e) => setSignerForm({ ...signerForm, dateFinContrat: e.target.value })} />
+            </div>
+            <Input label="Montant mensuel (DA)" value={signerForm.montantMensuel} onChange={(e) => setSignerForm({ ...signerForm, montantMensuel: e.target.value })} />
+          </div>
+        </Card>
+      )}
+
+      {confirmDestructive && (
+        <Card className="p-5 border-red-200 bg-red-50/30">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+            <h4 className="font-semibold text-red-900">
+              {confirmDestructive === "rejeter" ? "Confirmer le refus" : "Confirmer la resiliation"}
+            </h4>
+          </div>
+          <textarea
+            value={motif}
+            onChange={(e) => setMotif(e.target.value)}
+            rows={3}
+            placeholder="Motif obligatoire..."
+            className="w-full px-3 py-2 bg-white border border-red-200 rounded-lg text-sm mb-3"
+          />
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => { setConfirmDestructive(null); setMotif(""); }}>
+              Annuler
+            </Button>
+            <Button variant="danger" size="sm" loading={loading} onClick={() => handleAction(confirmDestructive)}>
+              Confirmer
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      <div className="flex flex-wrap gap-3">
+        {actions.includes("valider") && (
+          <Button onClick={() => handleAction("valider")} loading={loading} className="bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600 text-white">
+            <CheckCircle className="w-4 h-4 mr-2" />Valider le dossier
+          </Button>
+        )}
+        {actions.includes("signer") && (
+          <Button onClick={() => handleAction("signer")} loading={loading} className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white">
+            <Scale className="w-4 h-4 mr-2" />Enregistrer la signature
+          </Button>
+        )}
+        {actions.includes("activer") && (
+          <Button onClick={() => handleAction("activer")} loading={loading} className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white">
+            <CheckCircle className="w-4 h-4 mr-2" />Activer la domiciliation
+          </Button>
+        )}
+        {actions.includes("rejeter") && !confirmDestructive && (
+          <Button variant="danger" onClick={() => handleAction("rejeter")} loading={loading}>
+            <XCircle className="w-4 h-4 mr-2" />Refuser
+          </Button>
+        )}
+        {actions.includes("resilier") && !confirmDestructive && (
+          <Button variant="danger" onClick={() => handleAction("resilier")} loading={loading}>
+            <Ban className="w-4 h-4 mr-2" />Resilier
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function getAvailableActions(statut: string): string[] {
+  switch (statut) {
+    case "dossier_preparatoire":
+      return ["valider", "rejeter"];
+    case "en_attente_signature":
+      return ["signer", "rejeter"];
+    case "domiciliation_creee":
+    case "en_attente_complements":
+      return ["activer", "rejeter"];
+    case "active":
+      return ["resilier"];
+    default:
+      return [];
+  }
+}
+
+export default DomiciliationDetailModal;

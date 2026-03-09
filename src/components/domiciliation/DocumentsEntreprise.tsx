@@ -99,8 +99,8 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
     const file = e.target.files?.[0];
     if (!file || !uploadTarget) return;
     if (file.size > 5 * 1024 * 1024) { toast.error("Le fichier ne doit pas dépasser 5 Mo"); return; }
-    if (!["application/pdf", "image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
-      toast.error("Format accepté : PDF, JPG, PNG"); return;
+    if (!["application/pdf", "image/jpeg", "image/png", "image/jpg", "image/webp"].includes(file.type)) {
+      toast.error("Format accepté : PDF, JPG, PNG, WebP"); return;
     }
     try {
       setUploading(uploadTarget);
@@ -148,7 +148,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
 
   return (
     <div className="space-y-6">
-      <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleFileChange} />
+      <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden" onChange={handleFileChange} />
 
       <Card className="p-5">
         <div className="flex items-center justify-between mb-3">
@@ -239,7 +239,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
             <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-amber-800">
               <p className="font-medium mb-1">Formats acceptés</p>
-              <p>PDF, JPG, PNG -- Taille maximale : 5 Mo par fichier</p>
+              <p>PDF, JPG, PNG, WebP -- Taille maximale : 5 Mo par fichier</p>
             </div>
           </div>
         </div>

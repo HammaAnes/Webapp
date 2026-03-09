@@ -350,7 +350,7 @@ const WizardForm: React.FC<WizardFormProps> = ({ isOpen, onClose, user, onSubmit
       resetForm();
       onClose();
     } catch {
-      toast.error("Une erreur est survenue");
+      // error toast handled by parent (MonEspace.handleWizardSubmit)
     } finally {
       setLoading(false);
     }

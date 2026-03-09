@@ -20,6 +20,10 @@ Coffice est une plateforme moderne de reservation et gestion d'espaces de cowork
 - React Router - Navigation
 - React Hook Form - Gestion des formulaires
 - date-fns - Manipulation des dates
+- Zustand - State management
+- Framer Motion - Animations
+- Recharts - Visualisation de donnees
+- i18next - Internationalisation
 
 ### Backend
 - PHP 8+ - API REST
@@ -82,6 +86,7 @@ mysql -u root -p cofficed_coffice < database/migrations/007_operational_features
 mysql -u root -p cofficed_coffice < database/migrations/008_domiciliation_workflow.sql
 mysql -u root -p cofficed_coffice < database/migrations/009_fix_codes_promo_columns.sql
 mysql -u root -p cofficed_coffice < database/migrations/010_walk_ins.sql
+mysql -u root -p cofficed_coffice < database/migrations/011_erp_tables.sql
 
 mysql -u root -p cofficed_coffice -e "ANALYZE TABLE users, reservations, domiciliations, espaces, abonnements, codes_promo, parrainages;"
 ```
@@ -119,6 +124,8 @@ coffice-app/
 │   ├── types/             # Types TypeScript
 │   └── utils/             # Utilitaires
 ├── database/              # Scripts SQL
+│   └── migrations/        # Migrations (002 a 011)
+├── scripts/               # Scripts PHP et Bash
 └── dist/                  # Build de production
 ```
 
@@ -193,13 +200,33 @@ coffice-app/
 - `GET /api/admin/blocages.php` - Blocages d'espaces
 - `GET /api/admin/walk-ins.php` - Walk-ins
 - `GET /api/admin/courrier.php` - Courrier domiciliation
+- `POST /api/admin/tests/run` - Tests systeme
 
 ## Tests
 
+### Tests API
 ```bash
 php scripts/test_api.php https://coffice.dz/api
 php scripts/test_api.php http://localhost/api
 ```
+
+### Tests systeme (via interface admin)
+1. Connectez-vous en tant qu'administrateur
+2. Accedez au menu Admin > Tests Systeme
+3. Lancez les tests par categorie ou tous ensemble
+
+Categories de tests :
+- Interface utilisateur (Frontend)
+- Authentification
+- Gestion utilisateurs
+- Gestion espaces
+- Reservations
+- Abonnements
+- Domiciliation
+- Codes promo et parrainage
+- Base de donnees
+- API Backend
+- Notifications email
 
 ## Deploiement Production
 
@@ -283,7 +310,10 @@ Ajouter dans cron (cPanel -> Cron Jobs) :
 
 ```cron
 # Nettoyage quotidien a 2h
-0 2 * * * mysql cofficed_coffice -e "DELETE FROM password_resets WHERE expires_at < NOW() - INTERVAL 24 HOUR;"
+0 2 * * * php /home/user/public_html/scripts/cleanup_expired.php
+
+# Rappels quotidiens a 9h
+0 9 * * * php /home/user/public_html/scripts/send_reminders.php
 
 # Optimisation hebdomadaire
 0 3 * * 0 mysql cofficed_coffice -e "OPTIMIZE TABLE users, reservations, domiciliations, espaces;"
@@ -294,7 +324,7 @@ Ajouter dans cron (cPanel -> Cron Jobs) :
 - Page blanche : F12 -> Console, verifier index.html et .htaccess, vider cache
 - API ne repond pas : verifier .env, tester /api/check.php, consulter api/logs/app.log
 - Reservations en erreur : `php scripts/init_espaces.php`, consulter logs PHP
-- Emails ne partent pas : verifier config SMTP dans .env, verifier mot de passe d'application Gmail
+- Emails ne partent pas : verifier config SMTP dans .env, verifier mot de passe d'application
 
 ## Mises a jour
 

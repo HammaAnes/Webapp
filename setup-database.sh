@@ -66,6 +66,11 @@ MIGRATIONS=(
     "004_performance_indexes.sql"
     "005_audit_logging.sql"
     "006_add_code_parrainage.sql"
+    "007_operational_features.sql"
+    "008_domiciliation_workflow.sql"
+    "009_fix_codes_promo_columns.sql"
+    "010_walk_ins.sql"
+    "011_erp_tables.sql"
 )
 
 echo "🔄 Exécution des migrations..."

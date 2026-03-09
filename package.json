@@ -13,9 +13,6 @@
     "test:local": "php scripts/test_api.php http://localhost:8080/api"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.83.0",
-    "@tanstack/react-table": "^8.21.3",
-    "@types/qrcode.react": "^1.0.5",
     "date-fns": "^2.30.0",
     "framer-motion": "^10.16.16",
     "i18next": "^25.7.1",
@@ -23,7 +20,6 @@
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.294.0",
-    "qrcode.react": "^4.2.0",
     "react": "^18.2.0",
     "react-datepicker": "^8.4.0",
     "react-dom": "^18.2.0",

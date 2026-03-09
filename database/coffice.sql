@@ -62,7 +62,7 @@ CREATE TABLE users (
   commune VARCHAR(100) COMMENT 'Commune',
 
   -- Informations entreprise détaillées
-  type_entreprise ENUM('auto_entrepreneur', 'eurl', 'sarl', 'spa', 'snc', 'scs', 'freelance', 'autre') COMMENT 'Type juridique',
+  type_entreprise ENUM('auto_entrepreneur', 'eurl', 'sarl', 'spa', 'snc', 'scs', 'startup', 'freelance', 'autre') COMMENT 'Type juridique',
   nif VARCHAR(50) COMMENT 'Numéro d\'Identification Fiscale (20 caractères)',
   nis VARCHAR(50) COMMENT 'Numéro d\'Identification Statistique (15 caractères)',
   registre_commerce VARCHAR(50) COMMENT 'Numéro de registre de commerce',
@@ -298,8 +298,11 @@ CREATE TABLE domiciliations (
 
   -- Paiement et gestion
   montant_mensuel DECIMAL(10,2) COMMENT 'Montant mensuel en DA',
+  mode_paiement VARCHAR(50) COMMENT 'Mode de paiement (cash, virement, etc.)',
   documents JSON COMMENT 'Documents uploadés',
   notes_admin TEXT COMMENT 'Notes internes admin',
+  commentaire_admin TEXT COMMENT 'Commentaire administratif',
+  date_validation DATETIME COMMENT 'Date de validation du dossier',
   visible_sur_site BOOLEAN DEFAULT FALSE COMMENT 'Affichage public',
 
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -497,14 +500,20 @@ CREATE TABLE documents_uploads (
   type_fichier VARCHAR(100) COMMENT 'Type MIME',
   taille INT COMMENT 'Taille en octets',
   chemin_fichier TEXT NOT NULL COMMENT 'Chemin du fichier',
+  type_document VARCHAR(50) COMMENT 'Type de document (cni, rc, nif, etc.)',
+  status ENUM('en_attente', 'valide', 'rejete') NOT NULL DEFAULT 'en_attente' COMMENT 'Statut de validation',
 
   uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Date de creation',
 
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
 
   INDEX idx_user_id (user_id),
   INDEX idx_entity (entity_type, entity_id),
-  INDEX idx_uploaded_at (uploaded_at)
+  INDEX idx_uploaded_at (uploaded_at),
+  INDEX idx_type_document (type_document),
+  INDEX idx_status (status),
+  INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Documents uploadés';
 

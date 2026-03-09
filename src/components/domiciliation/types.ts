@@ -1,4 +1,4 @@
-import type { DomiciliationOptions, DemandeDomiciliation } from "../../types";
+import type { DomiciliationOptions } from "../../types";
 
 export type SituationAdministrative = "en_cours_creation" | "deja_creee" | null;
 export type TypeStructureChoice = "societe" | "auto_entrepreneur" | null;
@@ -60,5 +60,3 @@ export interface StatusInfo {
   label: string;
   description: string;
 }
-
-export type DemandeDomiciliationWithDetails = DemandeDomiciliation;

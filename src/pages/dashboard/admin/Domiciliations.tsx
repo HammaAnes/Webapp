@@ -22,6 +22,8 @@ import {
   ArrowUp,
   ArrowDown,
   Loader2,
+  FileCheck,
+  Hash,
 } from "lucide-react";
 import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
@@ -42,41 +44,41 @@ type SortKey = "entreprise" | "bureau" | "statut" | "date";
 type SortDir = "asc" | "desc";
 
 const STATUS_BADGES: Record<string, { variant: "warning" | "success" | "danger" | "default" | "info" | "teal"; icon: React.ReactNode; label: string }> = {
-  dossier_preparatoire: { variant: "warning", icon: <Clock className="w-3 h-3 mr-1" />, label: "Dossier préparatoire" },
+  dossier_preparatoire: { variant: "warning", icon: <Clock className="w-3 h-3 mr-1" />, label: "Dossier preparatoire" },
   en_attente_signature: { variant: "info", icon: <Scale className="w-3 h-3 mr-1" />, label: "Attente signature" },
-  domiciliation_creee: { variant: "teal", icon: <CheckCircle className="w-3 h-3 mr-1" />, label: "Domiciliation créée" },
-  en_attente_complements: { variant: "warning", icon: <FileText className="w-3 h-3 mr-1" />, label: "Attente compléments" },
+  domiciliation_creee: { variant: "teal", icon: <CheckCircle className="w-3 h-3 mr-1" />, label: "Domiciliation creee" },
+  en_attente_complements: { variant: "warning", icon: <FileText className="w-3 h-3 mr-1" />, label: "Attente complements" },
   active: { variant: "success", icon: <PlayCircle className="w-3 h-3 mr-1" />, label: "Active" },
-  refusee: { variant: "danger", icon: <XCircle className="w-3 h-3 mr-1" />, label: "Refusée" },
-  expiree: { variant: "default", icon: <AlertCircle className="w-3 h-3 mr-1" />, label: "Expirée" },
-  resiliee: { variant: "danger", icon: <Ban className="w-3 h-3 mr-1" />, label: "Résiliée" },
+  refusee: { variant: "danger", icon: <XCircle className="w-3 h-3 mr-1" />, label: "Refusee" },
+  expiree: { variant: "default", icon: <AlertCircle className="w-3 h-3 mr-1" />, label: "Expiree" },
+  resiliee: { variant: "danger", icon: <Ban className="w-3 h-3 mr-1" />, label: "Resiliee" },
 };
 
 const STATUS_FILTERS = [
   { key: "tous", label: "Tous" },
-  { key: "dossier_preparatoire", label: "Préparatoires" },
+  { key: "dossier_preparatoire", label: "Preparatoires" },
   { key: "en_attente_signature", label: "Att. signature" },
-  { key: "domiciliation_creee", label: "Créées" },
-  { key: "en_attente_complements", label: "Att. compléments" },
+  { key: "domiciliation_creee", label: "Creees" },
+  { key: "en_attente_complements", label: "Att. complements" },
   { key: "active", label: "Actives" },
-  { key: "refusee", label: "Refusées" },
-  { key: "resiliee", label: "Résiliées" },
-  { key: "expiree", label: "Expirées" },
+  { key: "refusee", label: "Refusees" },
+  { key: "resiliee", label: "Resiliees" },
+  { key: "expiree", label: "Expirees" },
 ];
 
 function getDisplayName(d: DemandeDomiciliation) {
   return d.raisonSociale || (d.typeStructure === "auto_entrepreneur"
-    ? `${d.representantLegal?.prenom || ""} ${d.representantLegal?.nom || ""}`.trim() || "Non renseigné"
-    : "Non renseigné"
+    ? `${d.representantLegal?.prenom || ""} ${d.representantLegal?.nom || ""}`.trim() || "Non renseigne"
+    : "Non renseigne"
   );
 }
 
 function getSituationLabel(s: string) {
-  return s === "en_cours_creation" ? "En cours de création" : "Déjà créée";
+  return s === "en_cours_creation" ? "En cours de creation" : "Deja creee";
 }
 
 function getTypeLabel(t: string) {
-  return t === "auto_entrepreneur" ? "Auto-entrepreneur" : "Société";
+  return t === "auto_entrepreneur" ? "Auto-entrepreneur" : "Societe";
 }
 
 const AdminDomiciliations = () => {
@@ -146,6 +148,11 @@ const AdminDomiciliations = () => {
     revenuMensuel: demandesDomiciliation
       .filter((d) => d.statut === "active")
       .reduce((sum, d) => sum + (d.montantMensuel || 0), 0),
+    bureauOccupes: new Set(
+      demandesDomiciliation
+        .filter((d) => ["active", "domiciliation_creee", "en_attente_complements", "en_attente_signature"].includes(d.statut) && d.numeroBureau)
+        .map((d) => d.numeroBureau)
+    ).size,
   }), [demandesDomiciliation]);
 
   const handleSort = (key: SortKey) => {
@@ -159,8 +166,13 @@ const AdminDomiciliations = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadDemandesDomiciliation();
-    setRefreshing(false);
+    try {
+      await loadDemandesDomiciliation();
+    } catch {
+      toast.error("Erreur lors du rafraichissement");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const openDetail = (d: DemandeDomiciliation) => {
@@ -192,7 +204,6 @@ const AdminDomiciliations = () => {
             montantMensuel: data?.montantMensuel as number,
           });
           break;
-        case "completer":
         case "activer":
           response = await apiClient.activateDomiciliation(selectedDemande.id);
           break;
@@ -208,20 +219,19 @@ const AdminDomiciliations = () => {
 
       if (response?.success) {
         const msgs: Record<string, string> = {
-          valider: "Dossier validé - en attente de signature notariale",
-          rejeter: "Demande refusée",
-          signer: "Domiciliation créée - contrat enregistré",
-          completer: "Domiciliation activée",
-          activer: "Domiciliation activée",
-          resilier: "Domiciliation résiliée",
+          valider: "Dossier valide - en attente de signature notariale",
+          rejeter: "Demande refusee",
+          signer: "Domiciliation creee - contrat enregistre",
+          activer: "Domiciliation activee",
+          resilier: "Domiciliation resiliee",
         };
-        toast.success(msgs[action] || "Action effectuée");
+        toast.success(msgs[action] || "Action effectuee");
 
         const email = selectedDemande.representantLegal?.email;
         if (email) {
           const statusMap: Record<string, string> = {
             valider: "en_attente_signature", rejeter: "refusee",
-            signer: "domiciliation_creee", completer: "active",
+            signer: "domiciliation_creee",
             activer: "active", resilier: "resiliee",
           };
           const newStatut = statusMap[action];
@@ -238,8 +248,9 @@ const AdminDomiciliations = () => {
           });
         }
 
-        setShowModal(false);
         await loadDemandesDomiciliation();
+        setSelectedDemande(null);
+        setShowModal(false);
       } else {
         toast.error(response?.error || "Une erreur est survenue");
       }
@@ -341,7 +352,7 @@ const AdminDomiciliations = () => {
         </div>
       </div>
 
-      <StatsCards stats={stats} onFilter={setStatusFilter} />
+      <StatsCards stats={stats} activeFilter={statusFilter} onFilter={setStatusFilter} />
 
       <Card className="p-4">
         <div className="flex flex-col lg:flex-row gap-4">
@@ -354,24 +365,27 @@ const AdminDomiciliations = () => {
             />
           </div>
           <div className="flex gap-2 flex-wrap">
-            {STATUS_FILTERS.map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setStatusFilter(key)}
-                className={`px-3 py-2 text-sm rounded-lg transition-all whitespace-nowrap ${
-                  statusFilter === key
-                    ? "bg-amber-500 text-white shadow-md"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                {label}
-                {key !== "tous" && (
-                  <span className="ml-1.5 text-xs opacity-75">
-                    {demandesDomiciliation.filter((d) => d.statut === key).length}
+            {STATUS_FILTERS.map(({ key, label }) => {
+              const count = key === "tous"
+                ? demandesDomiciliation.length
+                : demandesDomiciliation.filter((d) => d.statut === key).length;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setStatusFilter(key)}
+                  className={`px-3 py-2 text-sm rounded-lg transition-all whitespace-nowrap ${
+                    statusFilter === key
+                      ? "bg-gray-900 text-white shadow-md"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {label}
+                  <span className={`ml-1.5 text-xs ${statusFilter === key ? "text-gray-300" : "opacity-60"}`}>
+                    {count}
                   </span>
-                )}
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         </div>
       </Card>
@@ -384,7 +398,7 @@ const AdminDomiciliations = () => {
                 <SortableHeader label="Entreprise" col="entreprise" onSort={handleSort}><SortIcon col="entreprise" /></SortableHeader>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Situation/Type</th>
                 <SortableHeader label="Bureau" col="bureau" onSort={handleSort}><SortIcon col="bureau" /></SortableHeader>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Représentant</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Representant</th>
                 <SortableHeader label="Statut" col="statut" onSort={handleSort}><SortIcon col="statut" /></SortableHeader>
                 <SortableHeader label="Date" col="date" onSort={handleSort}><SortIcon col="date" /></SortableHeader>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
@@ -394,7 +408,7 @@ const AdminDomiciliations = () => {
               {paginated.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
-                    Aucune domiciliation trouvée
+                    Aucune domiciliation trouvee
                   </td>
                 </tr>
               ) : paginated.map((demande) => (
@@ -425,7 +439,7 @@ const AdminDomiciliations = () => {
                     <button
                       onClick={() => setPage(p)}
                       className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                        page === p ? "bg-amber-500 text-white" : "hover:bg-gray-200 text-gray-600"
+                        page === p ? "bg-gray-900 text-white" : "hover:bg-gray-200 text-gray-600"
                       }`}
                     >
                       {p}
@@ -471,14 +485,15 @@ function DomiciliationRow({ demande, onDetail }: { demande: DemandeDomiciliation
   const badge = STATUS_BADGES[demande.statut] || STATUS_BADGES.dossier_preparatoire;
   const name = getDisplayName(demande);
   const ageJours = Math.floor((Date.now() - new Date(demande.dateCreation).getTime()) / (1000 * 60 * 60 * 24));
-  const isStale = !["active", "refusee", "resiliee", "expiree"].includes(demande.statut) && ageJours > 7;
-  const isVerySale = isStale && ageJours > 30;
+  const isPending = !["active", "refusee", "resiliee", "expiree"].includes(demande.statut);
+  const isStale = isPending && ageJours > 7;
+  const isVeryStale = isStale && ageJours > 30;
 
   return (
     <motion.tr
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`hover:bg-gray-50 transition-colors cursor-pointer ${isVerySale ? "bg-red-50/40" : isStale ? "bg-amber-50/40" : ""}`}
+      className={`hover:bg-gray-50 transition-colors cursor-pointer ${isVeryStale ? "bg-red-50/40" : isStale ? "bg-amber-50/40" : ""}`}
       onClick={() => onDetail(demande)}
     >
       <td className="px-4 py-4">
@@ -499,16 +514,15 @@ function DomiciliationRow({ demande, onDetail }: { demande: DemandeDomiciliation
         </div>
       </td>
       <td className="px-4 py-4">
-        <div className="space-y-1">
-          <Badge variant={demande.situationAdministrative === "en_cours_creation" ? "warning" : "info"} size="sm">
-            {getSituationLabel(demande.situationAdministrative)}
-          </Badge>
-        </div>
+        <Badge variant={demande.situationAdministrative === "en_cours_creation" ? "warning" : "info"} size="sm">
+          {getSituationLabel(demande.situationAdministrative)}
+        </Badge>
       </td>
       <td className="px-4 py-4">
         {demande.numeroBureau ? (
-          <span className="inline-flex items-center px-3 py-1 bg-amber-100 text-amber-700 rounded-lg font-bold text-sm">
-            N{demande.numeroBureau}
+          <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-lg font-bold text-sm">
+            <Hash className="w-3 h-3" />
+            {demande.numeroBureau}
           </span>
         ) : (
           <span className="text-gray-400 text-sm">-</span>
@@ -531,8 +545,8 @@ function DomiciliationRow({ demande, onDetail }: { demande: DemandeDomiciliation
       <td className="px-4 py-4">
         <div className="text-sm text-gray-500">{formatDate(demande.dateCreation)}</div>
         {isStale && (
-          <span className={`text-xs font-medium ${isVerySale ? "text-red-600" : "text-amber-600"}`}>
-            {ageJours}j {isVerySale ? "(stagnant)" : "(en attente)"}
+          <span className={`text-xs font-medium ${isVeryStale ? "text-red-600" : "text-amber-600"}`}>
+            {ageJours}j {isVeryStale ? "(stagnant)" : "(en attente)"}
           </span>
         )}
       </td>
@@ -550,22 +564,23 @@ function DomiciliationRow({ demande, onDetail }: { demande: DemandeDomiciliation
   );
 }
 
-function StatsCards({ stats, onFilter }: { stats: Record<string, number>; onFilter: (v: string) => void }) {
+function StatsCards({ stats, activeFilter, onFilter }: { stats: Record<string, number>; activeFilter: string; onFilter: (v: string) => void }) {
   const cards = [
-    { value: stats.preparatoires, label: "Préparatoires", icon: Clock, bg: "from-amber-50 to-orange-50", border: "border-amber-200", text: "text-amber-700", sub: "text-amber-600", iconBg: "bg-amber-100", iconColor: "text-amber-600", filter: "dossier_preparatoire" },
-    { value: stats.enAttenteSignature, label: "Att. signature", icon: Scale, bg: "from-sky-50 to-cyan-50", border: "border-sky-200", text: "text-sky-700", sub: "text-sky-600", iconBg: "bg-sky-100", iconColor: "text-sky-600", filter: "en_attente_signature" },
-    { value: stats.actives, label: "Actives", icon: PlayCircle, bg: "from-emerald-50 to-green-50", border: "border-emerald-200", text: "text-emerald-700", sub: "text-emerald-600", iconBg: "bg-emerald-100", iconColor: "text-emerald-600", filter: "active" },
-    { value: stats.expirees, label: "Expirées", icon: AlertCircle, bg: "from-gray-50 to-slate-50", border: "border-gray-300", text: "text-gray-700", sub: "text-gray-600", iconBg: "bg-gray-200", iconColor: "text-gray-600", filter: "expiree" },
-    { value: stats.refusees + stats.resiliees, label: "Refusées/Résiliées", icon: XCircle, bg: "from-red-50 to-rose-50", border: "border-red-200", text: "text-red-700", sub: "text-red-600", iconBg: "bg-red-100", iconColor: "text-red-600", filter: "refusee" },
+    { value: stats.preparatoires, label: "Preparatoires", icon: Clock, bg: "from-amber-50 to-orange-50", border: "border-amber-200", text: "text-amber-700", sub: "text-amber-600", iconBg: "bg-amber-100", iconColor: "text-amber-600", filter: "dossier_preparatoire", activeBorder: "ring-2 ring-amber-400" },
+    { value: stats.enAttenteSignature, label: "Att. signature", icon: Scale, bg: "from-sky-50 to-cyan-50", border: "border-sky-200", text: "text-sky-700", sub: "text-sky-600", iconBg: "bg-sky-100", iconColor: "text-sky-600", filter: "en_attente_signature", activeBorder: "ring-2 ring-sky-400" },
+    { value: stats.actives, label: "Actives", icon: PlayCircle, bg: "from-emerald-50 to-green-50", border: "border-emerald-200", text: "text-emerald-700", sub: "text-emerald-600", iconBg: "bg-emerald-100", iconColor: "text-emerald-600", filter: "active", activeBorder: "ring-2 ring-emerald-400" },
+    { value: stats.expirees, label: "Expirees", icon: AlertCircle, bg: "from-gray-50 to-slate-50", border: "border-gray-300", text: "text-gray-700", sub: "text-gray-600", iconBg: "bg-gray-200", iconColor: "text-gray-600", filter: "expiree", activeBorder: "ring-2 ring-gray-400" },
+    { value: stats.refusees, label: "Refusees", icon: XCircle, bg: "from-red-50 to-rose-50", border: "border-red-200", text: "text-red-700", sub: "text-red-600", iconBg: "bg-red-100", iconColor: "text-red-600", filter: "refusee", activeBorder: "ring-2 ring-red-400" },
+    { value: stats.resiliees, label: "Resiliees", icon: Ban, bg: "from-rose-50 to-red-50", border: "border-rose-200", text: "text-rose-700", sub: "text-rose-600", iconBg: "bg-rose-100", iconColor: "text-rose-600", filter: "resiliee", activeBorder: "ring-2 ring-rose-400" },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      {cards.map(({ value, label, icon: Icon, bg, border, text, sub, iconBg, iconColor, filter }) => (
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+      {cards.map(({ value, label, icon: Icon, bg, border, text, sub, iconBg, iconColor, filter, activeBorder }) => (
         <Card
           key={label}
-          className={`p-4 bg-gradient-to-br ${bg} ${border} cursor-pointer hover:shadow-md transition-shadow`}
-          onClick={() => onFilter(filter)}
+          className={`p-4 bg-gradient-to-br ${bg} ${border} cursor-pointer hover:shadow-md transition-all ${activeFilter === filter ? activeBorder : ""}`}
+          onClick={() => onFilter(activeFilter === filter ? "tous" : filter)}
         >
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 ${iconBg} rounded-lg flex items-center justify-center`}>
@@ -584,8 +599,9 @@ function StatsCards({ stats, onFilter }: { stats: Record<string, number>; onFilt
             <Banknote className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <p className="text-xl font-bold text-emerald-700">{formatCurrency(stats.revenuMensuel)}</p>
+            <p className="text-lg font-bold text-emerald-700">{formatCurrency(stats.revenuMensuel)}</p>
             <p className="text-xs text-emerald-600">Rev. mensuel</p>
+            <p className="text-[10px] text-emerald-500">{stats.bureauOccupes}/36 bureaux</p>
           </div>
         </div>
       </Card>

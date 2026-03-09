@@ -29,11 +29,12 @@ import { fr } from "date-fns/locale";
 import { DOMICILIATION_STATUT_LABELS } from "../../constants";
 import { apiClient } from "../../lib/api-client";
 import "react-datepicker/dist/react-datepicker.css";
-import { use } from "i18next";
 
 registerLocale("fr", fr);
 
 type TabId = "domiciliation" | "entreprise" | "courrier" | "documents";
+
+const LOCKED_TAB_REASON = "Disponible uniquement avec une domiciliation active";
 
 const ALL_TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }>; requiresActive: boolean }[] = [
   { id: "domiciliation", label: "Domiciliation", icon: Shield, requiresActive: false },
@@ -70,8 +71,9 @@ const MonEspace = () => {
 
   const demande = user ? getUserDemandeDomiciliation(user.id) : null;
   const hasDemande = !!demande;
-  const isTerminal = demande && (demande.statut === "refusee" || demande.statut === "expiree" || demande.statut === "resiliee");
-  const hasActiveDomiciliation = hasDemande && !isTerminal;
+  const isTerminal = !!demande && ["refusee", "expiree", "resiliee"].includes(demande.statut);
+  const isActiveOrNearActive = !!demande && ["active", "domiciliation_creee", "en_attente_complements"].includes(demande.statut);
+  const hasActiveDomiciliation = hasDemande && isActiveOrNearActive;
 
   const handleTabChange = (tab: TabId) => {
     const tabConfig = ALL_TABS.find(t => t.id === tab);
@@ -215,7 +217,9 @@ const MonEspace = () => {
       if (data.registreCommerce) updateData.registreCommerce = data.registreCommerce;
       if (data.articleImposition) updateData.articleImposition = data.articleImposition;
       if (data.numeroAutoEntrepreneur) updateData.numeroAutoEntrepreneur = data.numeroAutoEntrepreneur;
-      updateData.statut = "en_attente_complements";
+      if (demande.statut === "domiciliation_creee") {
+        updateData.statut = "en_attente_complements";
+      }
 
       const response = await apiClient.updateDemandeDomiciliation(demande.id, updateData);
       if (response.success) {
@@ -257,11 +261,15 @@ const MonEspace = () => {
   };
 
   const handleRenewalRequest = async () => {
-    if (!demande) return;
+    if (!demande || !user) return;
     setDomLoading(true);
     try {
+      const existingNotes = (demande.commentaireAdmin || "").trim();
+      const renewalNote = `[RENOUVELLEMENT ${new Date().toLocaleDateString("fr-FR")}] Demande de renouvellement par ${user.prenom || ""} ${user.nom || ""}`;
+      const updatedNotes = existingNotes ? `${existingNotes}\n\n${renewalNote}` : renewalNote;
+
       const response = await apiClient.updateDemandeDomiciliation(demande.id, {
-        commentaireAdmin: `[RENOUVELLEMENT] Demande de renouvellement soumise le ${new Date().toLocaleDateString("fr-FR")}. ${demande.commentaireAdmin || ""}`,
+        commentaireAdmin: updatedNotes,
       });
       if (response.success) {
         toast.success("Votre demande de renouvellement a ete envoyee. L'equipe Coffice vous contactera.");
@@ -362,31 +370,38 @@ const MonEspace = () => {
             const isActive = activeTab === tab.id;
             const isDisabled = tab.requiresActive && !hasActiveDomiciliation;
             return (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                disabled={isDisabled}
-                className={`relative flex items-center gap-2.5 px-5 py-4 text-sm font-medium transition-all whitespace-nowrap flex-1 justify-center min-w-0 ${
-                  isDisabled
-                    ? "text-gray-300 cursor-not-allowed"
-                    : isActive
-                      ? "text-gray-900 bg-gray-50"
-                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-50/50"
-                } ${index > 0 ? "border-l border-gray-100" : ""}`}
-              >
-                {isDisabled ? (
-                  <Lock className="w-3.5 h-3.5 flex-shrink-0" />
-                ) : (
-                  <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-gray-900" : ""}`} />
+              <div key={tab.id} className="relative flex-1 min-w-0 group">
+                <button
+                  onClick={() => handleTabChange(tab.id)}
+                  disabled={isDisabled}
+                  className={`relative flex items-center gap-2.5 px-5 py-4 text-sm font-medium transition-all whitespace-nowrap w-full justify-center ${
+                    isDisabled
+                      ? "text-gray-300 cursor-not-allowed"
+                      : isActive
+                        ? "text-gray-900 bg-gray-50"
+                        : "text-gray-500 hover:text-gray-700 hover:bg-gray-50/50"
+                  } ${index > 0 ? "border-l border-gray-100" : ""}`}
+                >
+                  {isDisabled ? (
+                    <Lock className="w-3.5 h-3.5 flex-shrink-0" />
+                  ) : (
+                    <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-gray-900" : ""}`} />
+                  )}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeTabIndicator"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"
+                    />
+                  )}
+                </button>
+                {isDisabled && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-20 shadow-lg">
+                    {LOCKED_TAB_REASON}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                  </div>
                 )}
-                <span className="hidden sm:inline">{tab.label}</span>
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTabIndicator"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"
-                  />
-                )}
-              </button>
+              </div>
             );
           })}
         </nav>
@@ -452,9 +467,22 @@ interface DomiciliationTabProps {
   onRenewalRequest?: () => void;
 }
 
-function DomiciliationTab({ demande, loading, onOpenWizard, onPostCreationSubmit, onRenewalRequest }: DomiciliationTabProps) {
-  if (!demande) {
-    return <NoDemandeLanding onStartDemande={onOpenWizard} />;
+function DomiciliationTab({ demande, loading, isTerminal, onOpenWizard, onPostCreationSubmit, onRenewalRequest }: DomiciliationTabProps) {
+  if (!demande || isTerminal) {
+    return (
+      <div className="space-y-6">
+        {demande && isTerminal && (
+          <DemandeSummary
+            demande={demande}
+            loading={loading}
+            onPostCreationSubmit={onPostCreationSubmit}
+            onNewDemande={onOpenWizard}
+            onRenewalRequest={onRenewalRequest}
+          />
+        )}
+        {!demande && <NoDemandeLanding onStartDemande={onOpenWizard} />}
+      </div>
+    );
   }
 
   return (
