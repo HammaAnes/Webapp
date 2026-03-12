@@ -26,7 +26,7 @@ const Blog = lazy(() => import("./pages/Blog"));
 const BlogArticle = lazy(() => import("./pages/BlogArticle"));
 
 import { BLOG_ENABLED } from "./data/blogArticles";
-
+//
 function App() {
   useScrollAnimation();
   const authStore = useAuthStore();
