@@ -21,7 +21,6 @@ const Register = lazy(() => import("./pages/Register"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Legal = lazy(() => import("./pages/Legal"));
-const ERPSystem = lazy(() => import("./pages/ERPSystem"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogArticle = lazy(() => import("./pages/BlogArticle"));
 
@@ -120,15 +119,6 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/erp/*"
-              element={
-                <ProtectedRoute requireAdmin>
-                  <ERPSystem />
                 </ProtectedRoute>
               }
             />

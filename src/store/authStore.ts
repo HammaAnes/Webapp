@@ -113,9 +113,7 @@ login: async (email: string, password: string) => {
     
     apiClient.setToken(responseData.token, responseData.refreshToken);
 
-    // FIX: Map snake_case to camelCase right here
-    const rawUser = responseData.user;
-    const adaptedUser= adaptUser(responseData.user);
+    const adaptedUser = adaptUser(responseData.user);
 
     set({
       user: adaptedUser,
@@ -147,13 +145,14 @@ login: async (email: string, password: string) => {
       const responseData = response.data as {
         token: string;
         refreshToken?: string;
-        user: User;
+        user: any;
       };
       apiClient.setToken(responseData.token, responseData.refreshToken);
 
+      const adaptedUser = adaptUser(responseData.user as Record<string, unknown>);
       set({
-        user: responseData.user,
-        isAdmin: responseData.user.role === "admin",
+        user: adaptedUser,
+        isAdmin: adaptedUser.role === "admin",
         isLoading: false,
       });
 

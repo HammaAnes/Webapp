@@ -464,18 +464,16 @@ class ApiClient {
   }
 
   async createEspace(data: Record<string, unknown>) {
-    const snakeCaseData = objectToSnakeCase(data);
     return this.request("/espaces/create.php", {
       method: "POST",
-      body: JSON.stringify(snakeCaseData),
+      body: JSON.stringify(data),
     });
   }
 
   async updateEspace(id: string, data: Record<string, unknown>) {
-    const snakeCaseData = objectToSnakeCase(data);
     return this.request("/espaces/update.php", {
       method: "PUT",
-      body: JSON.stringify({ id, ...snakeCaseData }),
+      body: JSON.stringify({ id, ...data }),
     });
   }
 
@@ -903,28 +901,6 @@ class ApiClient {
       method: "POST",
       body: JSON.stringify({ to, subject, html }),
     });
-  }
-
-  // ============= WALK-INS =============
-  async createWalkIn(data: Record<string, unknown>) {
-    const snakeCaseData = objectToSnakeCase(data);
-    return this.request("/admin/walk-ins.php", {
-      method: "POST",
-      body: JSON.stringify(snakeCaseData),
-    });
-  }
-
-  async updateWalkIn(id: string, data: Record<string, unknown>) {
-    const snakeCaseData = objectToSnakeCase(data);
-    return this.request(`/admin/walk-ins.php?id=${id}`, {
-      method: "PUT",
-      body: JSON.stringify(snakeCaseData),
-    });
-  }
-
-  // ============= BLOCAGES =============
-  async getBlocages() {
-    return this.request("/admin/blocages.php");
   }
 }
 

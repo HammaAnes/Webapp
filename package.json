@@ -8,14 +8,9 @@
     "build": "vite build",
     "type-check": "tsc --noEmit",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "test": "php scripts/test_api.php https://coffice.dz/api",
-    "test:local": "php scripts/test_api.php http://localhost:8080/api"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.83.0",
-    "@tanstack/react-table": "^8.21.3",
-    "@types/qrcode.react": "^1.0.5",
     "date-fns": "^2.30.0",
     "framer-motion": "^10.16.16",
     "i18next": "^25.7.1",
@@ -23,7 +18,6 @@
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.294.0",
-    "qrcode.react": "^4.2.0",
     "react": "^18.2.0",
     "react-datepicker": "^8.4.0",
     "react-dom": "^18.2.0",

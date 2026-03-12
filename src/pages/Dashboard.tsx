@@ -12,7 +12,6 @@ import Notifications from "./dashboard/Notifications";
 import Profile from "./dashboard/Profile";
 import MonEspace from "./dashboard/MonEspace";
 import Parrainage from "./dashboard/Parrainage";
-import CodesPromo from "./dashboard/CodesPromo";
 import Abonnements from "./dashboard/Abonnements";
 // Admin pages
 import AdminUsers from "./dashboard/admin/Users";
@@ -27,9 +26,6 @@ import AdminParrainages from "./dashboard/admin/Parrainages";
 import AdminSettings from "./dashboard/admin/Settings";
 import AdminAbonnements from "./dashboard/admin/Abonnements";
 import Aujourdhui from "./dashboard/admin/Aujourdhui";
-import WalkIns from "./dashboard/admin/WalkIns";
-import Blocages from "./dashboard/admin/Blocages";
-import SystemTests from "./dashboard/admin/SystemTests";
 
 const Dashboard = () => {
   const { user } = useAuthStore();
@@ -54,7 +50,6 @@ const Dashboard = () => {
           <Route path="domiciliation" element={<Navigate to="/app/mon-espace?tab=domiciliation" replace />} />
           <Route path="mon-entreprise" element={<Navigate to="/app/mon-espace?tab=entreprise" replace />} />
           <Route path="abonnements" element={<Abonnements />} />
-          <Route path="codes-promo" element={<CodesPromo />} />
           <Route path="parrainage" element={<Parrainage />} />
           <Route path="profil" element={<Profile />} />
 
@@ -62,8 +57,6 @@ const Dashboard = () => {
           {user?.role === "admin" && (
             <>
               <Route path="admin/aujourdhui" element={<Aujourdhui />} />
-              <Route path="admin/walk-ins" element={<WalkIns />} />
-              <Route path="admin/blocages" element={<Blocages />} />
               <Route path="admin/users" element={<AdminUsers />} />
               <Route path="admin/users/:id" element={<UserDetail />} />
               <Route path="admin/spaces" element={<AdminSpaces />} />
@@ -81,7 +74,6 @@ const Dashboard = () => {
               <Route path="admin/parrainages" element={<AdminParrainages />} />
               <Route path="admin/reports" element={<AdminReports />} />
               <Route path="admin/settings" element={<AdminSettings />} />
-              <Route path="admin/tests" element={<SystemTests />} />
             </>
           )}
 

@@ -19,10 +19,7 @@ import {
   Gift,
   Bell,
   Clock,
-  UserPlus,
-  Lock,
   ChevronDown,
-  Zap,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useAppStore } from "../../store/store";
@@ -117,7 +114,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { name: "Notifications", href: "/app/notifications", icon: Bell },
     { name: "Mon Espace Pro", href: "/app/mon-espace", icon: Building },
     { name: "Abonnements", href: "/app/abonnements", icon: CreditCard },
-    { name: "Codes Promo", href: "/app/codes-promo", icon: Tag },
     { name: "Parrainage", href: "/app/parrainage", icon: Gift },
     { name: "Profil", href: "/app/profil", icon: User },
   ];
@@ -127,8 +123,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       label: "Opérations",
       items: [
         { name: "Aujourd'hui", href: "/app/admin/aujourdhui", icon: Clock },
-        { name: "Walk-ins", href: "/app/admin/walk-ins", icon: UserPlus },
-        { name: "Blocages", href: "/app/admin/blocages", icon: Lock },
       ],
     },
     {
@@ -157,7 +151,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       label: "Analyse & Configuration",
       items: [
         { name: "Rapports", href: "/app/admin/reports", icon: BarChart3 },
-        { name: "Tests Système", href: "/app/admin/tests", icon: Zap },
         { name: "Paramètres", href: "/app/admin/settings", icon: Settings },
       ],
     },

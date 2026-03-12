@@ -70,12 +70,6 @@ interface AppState {
     id: string,
     data: Partial<Reservation>,
   ) => Promise<{ success: boolean; error?: string }>;
-  calculateReservationAmount: (
-    espaceId: string,
-    dateDebut: Date,
-    dateFin: Date,
-    codePromo?: string,
-  ) => number;
 
   loadCodesPromo: () => Promise<void>;
 
@@ -307,68 +301,6 @@ export const useAppStore = create<AppState>()(
         } catch (error) {
           return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
-      },
-
-      calculateReservationAmount: (espaceId, dateDebut, dateFin, codePromo) => {
-        const espace = get().espaces.find((e) => e.id === espaceId);
-        if (!espace) return 0;
-
-        const diffMs = dateFin.getTime() - dateDebut.getTime();
-        const diffHours = diffMs / (1000 * 60 * 60);
-
-        let amount = 0;
-
-        if (diffHours <= 4 && espace.prixDemiJournee > 0) {
-          amount = espace.prixDemiJournee;
-        } else if (diffHours < 24) {
-          amount = Math.ceil(diffHours) * espace.prixHeure;
-        } else {
-          const diffDays = Math.ceil(diffHours / 24);
-
-          if (diffDays >= 7 && espace.prixSemaine) {
-            const weeks = Math.floor(diffDays / 7);
-            const remainingDays = diffDays % 7;
-            amount =
-              weeks * espace.prixSemaine + remainingDays * espace.prixJour;
-          } else {
-            amount = diffDays * espace.prixJour;
-          }
-        }
-
-        amount = Math.round(amount);
-
-        if (codePromo) {
-          const now = new Date();
-          const promo = get().codesPromo.find(
-            (c) =>
-              c.code === codePromo &&
-              c.actif &&
-              c.utilisationsActuelles < c.utilisationsMax &&
-              (!c.dateDebut || new Date(c.dateDebut) <= now) &&
-              (!c.dateFin || new Date(c.dateFin) >= now),
-          );
-
-          if (promo) {
-            if (promo.montantMin && amount < promo.montantMin) {
-              return amount;
-            }
-
-            let reduction = 0;
-            if (promo.type === "pourcentage") {
-              reduction = amount * (promo.valeur / 100);
-            } else {
-              reduction = promo.valeur;
-            }
-
-            if (promo.montantMaxReduction) {
-              reduction = Math.min(reduction, promo.montantMaxReduction);
-            }
-
-            amount = Math.max(0, amount - Math.round(reduction));
-          }
-        }
-
-        return amount;
       },
 
       loadCodesPromo: async () => {
@@ -610,8 +542,7 @@ export const useAppStore = create<AppState>()(
 
         const totalCapacity = state.espaces.reduce((sum, e) => sum + (e.capacite || 1), 0);
         const occupiedCapacity = activeReservations.reduce((sum, r) => {
-          const espace = state.espaces.find((e) => e.id === r.espaceId || e.id === r.espace?.id);
-          return sum + (espace?.capacite || 1);
+          return sum + (r.participants || 1);
         }, 0);
         const tauxOccupation = totalCapacity > 0
           ? Math.round((occupiedCapacity / totalCapacity) * 100)
