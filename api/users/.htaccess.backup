@@ -1,0 +1,8 @@
+# Configuration pour api/users/
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Passer le header Authorization a PHP
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>

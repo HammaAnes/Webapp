@@ -1,0 +1,315 @@
+[11-Feb-2026 18:22:52 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 18:22:52 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[11-Feb-2026 19:22:52 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 18:22:52 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 18:22:52 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[11-Feb-2026 19:22:52 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 18:22:52 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 18:22:52 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[11-Feb-2026 19:22:52 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 18:22:52 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 18:22:52 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[11-Feb-2026 19:22:52 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 19:12:10 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 19:12:10 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[11-Feb-2026 20:12:10 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 19:12:11 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 19:12:11 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[11-Feb-2026 20:12:11 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 22:30:38 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 22:30:38 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[11-Feb-2026 23:30:38 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 22:30:38 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 22:30:38 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[11-Feb-2026 23:30:38 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 22:30:38 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 22:30:38 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[11-Feb-2026 23:30:38 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 22:30:38 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 22:30:38 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[11-Feb-2026 23:30:38 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 22:30:43 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 22:30:43 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[11-Feb-2026 23:30:43 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 22:30:54 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 22:30:54 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[11-Feb-2026 23:30:54 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 23:27:51 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 23:27:51 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 00:27:51 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 23:27:51 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 23:27:51 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 00:27:51 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 23:29:21 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 23:29:21 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 00:29:21 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 23:29:21 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 23:29:21 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 00:29:21 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[11-Feb-2026 23:29:29 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[11-Feb-2026 23:29:29 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 00:29:29 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[12-Feb-2026 02:57:47 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[12-Feb-2026 02:57:47 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 03:57:47 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[12-Feb-2026 02:57:47 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[12-Feb-2026 02:57:47 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 03:57:47 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[12-Feb-2026 02:57:47 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[12-Feb-2026 02:57:47 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 03:57:47 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[12-Feb-2026 02:57:47 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[12-Feb-2026 02:57:47 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 03:57:47 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[12-Feb-2026 03:06:02 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[12-Feb-2026 03:06:02 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 04:06:02 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[12-Feb-2026 03:06:03 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[12-Feb-2026 03:06:03 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 04:06:03 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[12-Feb-2026 20:49:11 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[12-Feb-2026 20:49:11 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[12-Feb-2026 20:49:11 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 20:49:11 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 21:49:11 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[12-Feb-2026 21:49:11 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[12-Feb-2026 20:49:11 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[12-Feb-2026 20:49:11 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 21:49:11 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[12-Feb-2026 20:49:12 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[12-Feb-2026 20:49:12 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 21:49:12 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[12-Feb-2026 20:49:50 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[12-Feb-2026 20:49:50 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 21:49:50 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[12-Feb-2026 20:49:51 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[12-Feb-2026 20:49:51 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 21:49:51 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[12-Feb-2026 20:49:51 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[12-Feb-2026 20:49:51 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 21:49:51 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[12-Feb-2026 20:49:51 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[12-Feb-2026 20:49:51 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[12-Feb-2026 21:49:51 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[14-Feb-2026 11:04:58 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[14-Feb-2026 11:04:58 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[14-Feb-2026 11:04:58 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[14-Feb-2026 11:04:58 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[14-Feb-2026 12:04:58 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[14-Feb-2026 12:04:58 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[14-Feb-2026 11:04:58 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[14-Feb-2026 11:04:58 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[14-Feb-2026 12:04:58 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[14-Feb-2026 11:04:58 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[14-Feb-2026 11:04:58 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[14-Feb-2026 12:04:58 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[16-Feb-2026 11:42:50 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[16-Feb-2026 11:42:50 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[16-Feb-2026 11:42:50 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[16-Feb-2026 12:42:50 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[16-Feb-2026 11:42:50 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[16-Feb-2026 12:42:50 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[16-Feb-2026 11:42:50 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[16-Feb-2026 11:42:50 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[16-Feb-2026 12:42:50 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[16-Feb-2026 11:42:51 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[16-Feb-2026 11:42:51 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[16-Feb-2026 12:42:51 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[16-Feb-2026 11:42:55 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[16-Feb-2026 11:42:55 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[16-Feb-2026 12:42:55 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[16-Feb-2026 11:42:56 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[16-Feb-2026 11:42:56 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[16-Feb-2026 12:42:56 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[19-Feb-2026 21:49:52 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[19-Feb-2026 21:49:52 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[19-Feb-2026 22:49:52 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[19-Feb-2026 21:49:52 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[19-Feb-2026 21:49:52 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[19-Feb-2026 22:49:52 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[19-Feb-2026 21:49:53 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[19-Feb-2026 21:49:53 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[19-Feb-2026 22:49:53 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[19-Feb-2026 21:49:53 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[19-Feb-2026 21:49:53 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[19-Feb-2026 22:49:53 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[25-Feb-2026 16:42:33 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[25-Feb-2026 16:42:33 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[25-Feb-2026 17:42:33 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[25-Feb-2026 16:42:35 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[25-Feb-2026 16:42:35 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[25-Feb-2026 17:42:35 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[25-Feb-2026 16:42:37 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[25-Feb-2026 16:42:37 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[25-Feb-2026 17:42:37 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[25-Feb-2026 16:42:39 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[25-Feb-2026 16:42:40 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[25-Feb-2026 17:42:40 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[28-Feb-2026 03:00:15 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[28-Feb-2026 03:00:15 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[28-Feb-2026 04:00:15 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[28-Feb-2026 03:01:45 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[28-Feb-2026 03:01:45 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[28-Feb-2026 04:01:45 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[28-Feb-2026 22:54:52 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[28-Feb-2026 22:54:52 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[28-Feb-2026 23:54:52 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[28-Feb-2026 22:54:52 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[28-Feb-2026 22:54:52 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[28-Feb-2026 23:54:52 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[28-Feb-2026 22:54:54 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[28-Feb-2026 22:54:54 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[28-Feb-2026 23:54:54 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[28-Feb-2026 22:54:55 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[28-Feb-2026 22:54:55 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[28-Feb-2026 23:54:55 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[28-Feb-2026 22:55:26 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[28-Feb-2026 22:55:26 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[28-Feb-2026 23:55:26 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[28-Feb-2026 22:55:27 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[28-Feb-2026 22:55:27 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[28-Feb-2026 23:55:27 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[08-Mar-2026 21:42:51 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[08-Mar-2026 21:42:51 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[08-Mar-2026 22:42:51 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[08-Mar-2026 21:42:53 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[08-Mar-2026 21:42:53 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[08-Mar-2026 22:42:53 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[08-Mar-2026 21:42:54 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[08-Mar-2026 21:42:54 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[08-Mar-2026 22:42:54 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[08-Mar-2026 21:44:18 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[08-Mar-2026 21:44:18 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[08-Mar-2026 22:44:18 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 01:05:22 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 01:05:22 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 02:05:22 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 01:05:22 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 01:05:22 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 02:05:22 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 01:05:22 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 01:05:22 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 02:05:22 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 01:05:22 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 01:05:22 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 02:05:22 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 01:05:28 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 01:05:28 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 02:05:28 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 01:05:29 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 01:05:29 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 02:05:29 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 01:06:07 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 01:06:07 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 02:06:07 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 01:06:07 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 01:06:07 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 02:06:07 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 04:45:19 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 04:45:19 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 04:45:19 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 05:45:19 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 04:45:19 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 05:45:19 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 04:45:19 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 04:45:19 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 05:45:19 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 04:45:19 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 04:45:19 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 05:45:19 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 04:55:48 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 04:55:48 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 05:55:48 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 04:55:48 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 04:55:48 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 05:55:48 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 04:55:49 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 04:55:49 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 05:55:49 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 04:55:50 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 04:55:50 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 05:55:50 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 04:56:45 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 04:56:45 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 04:56:45 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 05:56:45 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 04:56:45 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 05:56:45 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 04:56:45 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 04:56:45 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 05:56:45 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 04:56:46 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 04:56:46 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 05:56:46 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 04:57:30 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 04:57:30 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 05:57:30 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 04:57:31 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 04:57:31 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 05:57:31 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 05:59:48 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 05:59:48 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 06:59:48 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 05:59:48 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 05:59:48 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 06:59:48 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 05:59:48 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 05:59:48 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 06:59:48 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 05:59:48 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 05:59:48 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 06:59:48 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:01:33 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:01:33 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:01:33 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:01:33 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:01:33 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:01:33 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:01:34 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:01:34 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:01:34 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:01:34 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:01:34 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:01:34 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:01:44 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:01:44 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:01:44 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:01:44 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:01:44 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:01:44 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:01:44 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:01:44 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:01:44 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:01:44 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:01:44 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:01:44 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:01:55 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:01:55 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:01:55 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:01:55 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:01:55 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:01:55 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:02:09 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:02:09 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:02:09 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:02:10 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:02:10 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:02:10 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:03:22 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:03:23 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:03:23 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:03:23 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:03:23 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:03:23 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:03:38 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:03:38 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:03:38 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:03:38 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:03:38 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:03:38 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:12:13 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:12:13 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:12:13 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
+[09-Mar-2026 06:12:13 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Mar-2026 06:12:13 UTC] PHP Deprecated:  jsonSuccess(): Implicitly marking parameter $message as nullable is deprecated, the explicit nullable type must be used instead in /home/cofficed/public_html/api/bootstrap.php on line 403
+[09-Mar-2026 07:12:13 Africa/Algiers] PHP Deprecated:  Constant E_STRICT is deprecated in /home/cofficed/public_html/api/bootstrap.php on line 26
