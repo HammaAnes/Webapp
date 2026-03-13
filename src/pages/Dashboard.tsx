@@ -26,6 +26,7 @@ import AdminParrainages from "./dashboard/admin/Parrainages";
 import AdminSettings from "./dashboard/admin/Settings";
 import AdminAbonnements from "./dashboard/admin/Abonnements";
 import Aujourdhui from "./dashboard/admin/Aujourdhui";
+import Caisse from "./dashboard/admin/Caisse";
 
 const Dashboard = () => {
   const { user } = useAuthStore();
@@ -72,6 +73,7 @@ const Dashboard = () => {
               <Route path="admin/abonnements" element={<AdminAbonnements />} />
               <Route path="admin/codes-promo" element={<AdminCodesPromo />} />
               <Route path="admin/parrainages" element={<AdminParrainages />} />
+              <Route path="admin/caisse" element={<Caisse />} />
               <Route path="admin/reports" element={<AdminReports />} />
               <Route path="admin/settings" element={<AdminSettings />} />
             </>

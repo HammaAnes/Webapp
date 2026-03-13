@@ -20,6 +20,7 @@ import {
   Bell,
   Clock,
   ChevronDown,
+  Wallet,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useAppStore } from "../../store/store";
@@ -148,8 +149,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       ],
     },
     {
-      label: "Analyse & Configuration",
+      label: "Finances & Analyse",
       items: [
+        { name: "Caisse", href: "/app/admin/caisse", icon: Wallet },
         { name: "Rapports", href: "/app/admin/reports", icon: BarChart3 },
         { name: "Paramètres", href: "/app/admin/settings", icon: Settings },
       ],

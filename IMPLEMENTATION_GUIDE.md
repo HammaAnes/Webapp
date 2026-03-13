@@ -52,9 +52,82 @@
 - Stats publiques: nombre entreprises domiciliées actives
 - GET sans authentification
 
+### Phase 3: Backend PHP (100% complété)
+
+#### Endpoints Check-in / Check-out créés
+
+**api/checkins/create.php** ✅
+- POST - Enregistrer arrivée client
+- Calcul automatique du retard
+- Mise à jour statut réservation → "en_cours"
+- Vérifications: réservation confirmée, pas de check-in existant
+
+**api/checkins/checkout.php** ✅
+- PUT - Enregistrer départ client
+- Calcul durée de présence
+- Mise à jour statut réservation → "terminee"
+
+**api/checkins/index.php** ✅
+- GET - Liste check-ins du jour
+- Compteur présences actuelles en temps réel
+
+#### Endpoints Caisse créés
+
+**api/caisse/transactions.php** ✅
+- GET - Transactions du jour avec totaux par mode de paiement
+- POST - Enregistrer nouvelle transaction
+- Génération auto numéro reçu (REC-AAAA-XXXX)
+
+**api/caisse/cloture.php** ✅
+- POST - Clôturer une journée
+- Calcul automatique totaux par mode
+- Liaison transactions à la clôture
+- GET - Historique des clôtures
+
+#### Endpoint Courrier créé
+
+**api/admin/courrier.php** ✅
+- GET - Liste courriers (admin OU propriétaire domiciliation)
+- POST - Enregistrer réception courrier (admin uniquement)
+- Envoi automatique email + notification client
+- PUT - Client donne instruction (récupérer/scanner/réexpédier)
+
+### Phase 4: Frontend (50% complété)
+
+#### Page Admin Caisse créée ✅
+
+**Fichier:** `src/pages/dashboard/admin/Caisse.tsx`
+**Route:** `/app/admin/caisse`
+
+**Fonctionnalités:**
+- Sélection de date
+- Widgets totaux par mode de paiement (cash, virement, chèque, TPE, crédit)
+- Total général du jour
+- Tableau transactions avec: heure, type, mode, référence, numéro reçu, montant
+- Modal clôture avec récapitulatif
+- Intégration dans menu sidebar admin (section "Finances & Analyse")
+
+#### Méthodes API ajoutées dans api-client.ts ✅
+
+**Check-ins:**
+- `createCheckin()`
+- `checkout()`
+- `getCheckins()`
+
+**Caisse:**
+- `getTransactionsCaisse()`
+- `createTransactionCaisse()`
+- `cloturerCaisse()`
+- `getClotures()`
+
+**Courrier:**
+- `getCourriers()`
+- `createCourrier()`
+- `donnerInstructionCourrier()`
+
 ---
 
-## 📋 Phase 3: Backend PHP à développer
+## 📋 Phase 5: Frontend à compléter
 
 ### Endpoints Check-in / Check-out
 

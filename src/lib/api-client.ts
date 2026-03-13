@@ -902,6 +902,76 @@ class ApiClient {
       body: JSON.stringify({ to, subject, html }),
     });
   }
+
+  // ============= CHECK-INS =============
+  async createCheckin(data: Record<string, unknown>) {
+    return this.request("/checkins/create.php", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async checkout(checkinId: string, heureDepart?: string) {
+    return this.request("/checkins/checkout.php", {
+      method: "PUT",
+      body: JSON.stringify({
+        checkin_id: checkinId,
+        heure_depart_reel: heureDepart,
+      }),
+    });
+  }
+
+  async getCheckins(date?: string) {
+    const dateParam = date || new Date().toISOString().split("T")[0];
+    return this.request(`/checkins/index.php?date=${dateParam}`);
+  }
+
+  // ============= CAISSE =============
+  async getTransactionsCaisse(date?: string) {
+    const dateParam = date || new Date().toISOString().split("T")[0];
+    return this.request(`/caisse/transactions.php?date=${dateParam}`);
+  }
+
+  async createTransactionCaisse(data: Record<string, unknown>) {
+    return this.request("/caisse/transactions.php", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async cloturerCaisse(dateCloture: string, notes?: string) {
+    return this.request("/caisse/cloture.php", {
+      method: "POST",
+      body: JSON.stringify({ date_cloture: dateCloture, notes }),
+    });
+  }
+
+  async getClotures() {
+    return this.request("/caisse/cloture.php");
+  }
+
+  // ============= COURRIER =============
+  async getCourriers(domiciliationId?: string) {
+    const params = domiciliationId ? `?domiciliation_id=${domiciliationId}` : "";
+    return this.request(`/admin/courrier.php${params}`);
+  }
+
+  async createCourrier(data: Record<string, unknown>) {
+    return this.request("/admin/courrier.php", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async donnerInstructionCourrier(courrierId: string, instruction: string) {
+    return this.request("/admin/courrier.php", {
+      method: "PUT",
+      body: JSON.stringify({
+        courrier_id: courrierId,
+        instruction_client: instruction,
+      }),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();
