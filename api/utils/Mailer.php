@@ -235,9 +235,9 @@ class Mailer
 
     public static function wrapInLayout(string $title, string $content, string $preheader = ''): string
     {
-        $brandColor = '#0F766E';
+        $brandColor = '#0284c7';
         $cofficeUrl = env('APP_URL', 'https://coffice.dz');
-        $logoUrl = $cofficeUrl . '/logo-web-transparent-black.png';
+        $logoUrl = $cofficeUrl . '/logo_coffice.png';
 
         return '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
@@ -278,7 +278,29 @@ a{color:' . $brandColor . '}
 <tr><td align="center" style="font-size:13px;line-height:1.6;color:#8b8f96;">
 <p style="margin:0 0 4px;">Mohammadia Mall, 4&egrave;me &eacute;tage, Bureau 1178, Alger</p>
 <p style="margin:0 0 4px;">T&eacute;l. : +213 23 804 924 | Mobile : +213 795 38 01 24</p>
-<p style="margin:0;"><a href="mailto:desk@coffice.dz" style="color:' . $brandColor . ';text-decoration:none;">desk@coffice.dz</a> | <a href="' . $cofficeUrl . '" style="color:' . $brandColor . ';text-decoration:none;">coffice.dz</a></p>
+</td></tr>
+<tr><td align="center" style="padding-top:16px;">
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+<tr>
+<td style="padding:0 6px;" valign="middle">
+<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:32px;height:32px;border-radius:8px;background-color:#0284c7;text-align:center;vertical-align:middle;">
+<a href="mailto:desk@coffice.dz" style="text-decoration:none;color:#ffffff;font-size:16px;line-height:32px;display:block;">&#9993;</a>
+</td></tr></table>
+</td>
+<td style="padding:0 6px;" valign="middle">
+<a href="mailto:desk@coffice.dz" style="color:' . $brandColor . ';text-decoration:none;font-size:13px;font-weight:600;">desk@coffice.dz</a>
+</td>
+<td style="padding:0 12px;color:#d1d5db;" valign="middle">|</td>
+<td style="padding:0 6px;" valign="middle">
+<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:32px;height:32px;border-radius:8px;background-color:#0284c7;text-align:center;vertical-align:middle;">
+<a href="' . $cofficeUrl . '" style="text-decoration:none;color:#ffffff;font-size:16px;line-height:32px;display:block;">&#9737;</a>
+</td></tr></table>
+</td>
+<td style="padding:0 6px;" valign="middle">
+<a href="' . $cofficeUrl . '" style="color:' . $brandColor . ';text-decoration:none;font-size:13px;font-weight:600;">coffice.dz</a>
+</td>
+</tr>
+</table>
 </td></tr>
 <tr><td align="center" style="padding-top:20px;border-top:1px solid #e8eaed;">
 <p style="margin:0;font-size:11px;color:#a0a4ab;">Vous recevez cet e-mail car vous disposez d\'un compte sur Coffice.</p>
@@ -309,7 +331,7 @@ a{color:' . $brandColor . '}
 
     public static function ctaButton(string $href, string $text, bool $secondary = false): string
     {
-        $bg = $secondary ? '#1f2937' : '#0F766E';
+        $bg = $secondary ? '#1f2937' : '#0284c7';
         return '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px auto 0;">
 <tr><td align="center" style="border-radius:12px;background-color:' . $bg . ';">
 <a href="' . htmlspecialchars($href) . '" target="_blank" style="display:inline-block;padding:16px 36px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:12px;background-color:' . $bg . ';font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif;">' . htmlspecialchars($text) . '</a>

@@ -12,12 +12,11 @@ function baseLayout(title: string, content: string, preheader = ""): string {
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>${title}</title>
 <style>
-body{margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}
-.wrapper{max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+body{margin:0;padding:0;background:#f0f2f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}
+.wrapper{max-width:600px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
 .header{background:#ffffff;padding:32px 32px 24px;text-align:center;border-bottom:1px solid #e5e7eb}
 .header img{height:48px;display:inline-block}
-.header h1{color:#111827;font-size:18px;font-weight:700;margin:12px 0 0;letter-spacing:-0.3px}
-.body{padding:32px}
+.body{padding:40px 32px 36px}
 .body h2{font-size:22px;font-weight:700;color:#111827;margin:0 0 8px;line-height:1.3}
 .body p{font-size:15px;line-height:1.65;color:#4b5563;margin:0 0 16px}
 .info-box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin:20px 0}
@@ -25,8 +24,8 @@ body{margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSys
 .info-row:last-child{border-bottom:none}
 .info-label{color:#6b7280;font-weight:500}
 .info-value{color:#111827;font-weight:600;text-align:right}
-.cta-btn{display:inline-block;background:#059669;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:600;margin:16px 0;text-align:center}
-.cta-btn:hover{background:#047857}
+.cta-btn{display:inline-block;background:#0284c7;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:600;margin:16px 0;text-align:center}
+.cta-btn:hover{background:#0369a1}
 .cta-secondary{background:#111827}
 .cta-secondary:hover{background:#1f2937}
 .status-badge{display:inline-block;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600}
@@ -38,25 +37,36 @@ body{margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSys
 .highlight-box .amount{font-size:32px;font-weight:800;color:#ffffff;margin:0}
 .highlight-box .label{font-size:13px;color:#9ca3af;margin:4px 0 0}
 .divider{height:1px;background:#e5e7eb;margin:24px 0}
-.footer{background:#f9fafb;padding:24px 32px;text-align:center;border-top:1px solid #e5e7eb}
+.footer{background:#f9fafb;padding:28px 32px;text-align:center;border-top:1px solid #e5e7eb}
 .footer p{font-size:12px;color:#9ca3af;margin:4px 0;line-height:1.5}
-.footer a{color:#059669;text-decoration:none}
-.preheader{display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#f4f5f7}
-@media(max-width:640px){.wrapper{margin:0 12px;border-radius:0}.body{padding:24px 20px}.header{padding:20px}.info-row{flex-direction:column;gap:4px}.info-value{text-align:left}}
+.footer a{color:#0284c7;text-decoration:none}
+.contact-icon{display:inline-block;width:32px;height:32px;border-radius:8px;background:#0284c7;color:#ffffff;text-align:center;line-height:32px;font-size:16px;text-decoration:none;vertical-align:middle}
+.preheader{display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#f0f2f5}
+@media(max-width:640px){.wrapper{margin:0 12px;border-radius:0}.body{padding:24px 20px}.header{padding:20px}.footer{padding:20px}.info-row{flex-direction:column;gap:4px}.info-value{text-align:left}}
 </style>
 </head>
-<body style="margin:0;padding:20px 0;background:#f4f5f7">
+<body style="margin:0;padding:20px 0;background:#f0f2f5">
 <div class="preheader">${preheader}</div>
 <div class="wrapper">
 <div class="header">
-<a href="${COFFICE_URL}" style="text-decoration:none"><img src="${COFFICE_URL}/logo-web-transparent-black.png" alt="Coffice" style="height:48px;display:inline-block" /></a>
+<a href="${COFFICE_URL}" style="text-decoration:none"><img src="${COFFICE_URL}/logo_coffice.png" alt="Coffice" style="height:48px;display:inline-block" /></a>
 </div>
 <div class="body">${content}</div>
 <div class="footer">
-<a href="${COFFICE_URL}" style="text-decoration:none"><img src="${COFFICE_URL}/logo-web-transparent-black.png" alt="Coffice" style="height:28px;display:inline-block;margin-bottom:12px;opacity:0.6" /></a>
+<a href="${COFFICE_URL}" style="text-decoration:none"><img src="${COFFICE_URL}/logo_coffice.png" alt="Coffice" style="height:28px;display:inline-block;margin-bottom:12px;opacity:0.5" /></a>
 <p>${COFFICE_ADDRESS}</p>
-<p>T\u00e9l\u00e9phone : ${COFFICE_PHONE} | Mobile : ${COFFICE_MOBILE}</p>
-<p>Email : <a href="mailto:${COFFICE_EMAIL}">${COFFICE_EMAIL}</a> | <a href="${COFFICE_URL}">${COFFICE_URL}</a></p>
+<p>T\u00e9l. : ${COFFICE_PHONE} | Mobile : ${COFFICE_MOBILE}</p>
+<div style="margin:16px 0">
+<table style="margin:0 auto;border-spacing:0" role="presentation">
+<tr>
+<td style="padding:0 6px" valign="middle"><a href="mailto:${COFFICE_EMAIL}" class="contact-icon" style="display:inline-block;width:32px;height:32px;border-radius:8px;background:#0284c7;color:#ffffff;text-align:center;line-height:32px;font-size:16px;text-decoration:none">&#9993;</a></td>
+<td style="padding:0 6px" valign="middle"><a href="mailto:${COFFICE_EMAIL}" style="color:#0284c7;text-decoration:none;font-size:13px;font-weight:600">${COFFICE_EMAIL}</a></td>
+<td style="padding:0 12px;color:#d1d5db" valign="middle">|</td>
+<td style="padding:0 6px" valign="middle"><a href="${COFFICE_URL}" class="contact-icon" style="display:inline-block;width:32px;height:32px;border-radius:8px;background:#0284c7;color:#ffffff;text-align:center;line-height:32px;font-size:16px;text-decoration:none">&#9737;</a></td>
+<td style="padding:0 6px" valign="middle"><a href="${COFFICE_URL}" style="color:#0284c7;text-decoration:none;font-size:13px;font-weight:600">coffice.dz</a></td>
+</tr>
+</table>
+</div>
 <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb">
 <p style="font-size:11px">Vous recevez cet e-mail car vous disposez d\u2019un compte sur Coffice.</p>
 </div>
