@@ -43,6 +43,12 @@ export default defineConfig({
         target: "https://coffice.dz",
         changeOrigin: true,
         secure: true,
+        rewrite: (path) => path,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('Origin', 'https://coffice.dz');
+          });
+        },
       },
     },
   },
