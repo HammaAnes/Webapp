@@ -31,8 +31,6 @@ import { logger } from "../../../utils/logger";
 import { apiClient } from "../../../lib/api-client";
 import { emailService } from "../../../services/email-service";
 
-const SETTINGS_KEY = "coffice-admin-settings";
-
 interface GeneralSettings {
   nom_entreprise: string;
   email: string;
@@ -99,30 +97,6 @@ const defaultSettings: AllSettings = {
   },
 };
 
-const loadSettings = (): AllSettings => {
-  try {
-    const saved = localStorage.getItem(SETTINGS_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return {
-        general: { ...defaultSettings.general, ...parsed.general },
-        notifications: { ...defaultSettings.notifications, ...parsed.notifications },
-        mailing: { ...defaultSettings.mailing, ...parsed.mailing },
-      };
-    }
-  } catch (e) {
-    logger.error("Erreur chargement paramètres :", e as Error);
-  }
-  return defaultSettings;
-};
-
-const saveSettingsLocal = (settings: AllSettings): void => {
-  try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  } catch (e) {
-    logger.error("Erreur sauvegarde paramètres :", e as Error);
-  }
-};
 
 type SettingsTab = "general" | "notifications" | "mailing" | "comptes" | "maintenance";
 
@@ -149,18 +123,20 @@ const Settings = () => {
   const [sendingTest, setSendingTest] = useState(false);
 
   useEffect(() => {
-    const localSettings = loadSettings();
-    setSettings(localSettings);
+    setSettings(defaultSettings);
     apiClient.get('/admin/settings.php').then((res) => {
       if (res.success && res.data) {
         const serverData = res.data as Record<string, unknown>;
-        setSettings((prev) => ({
-          general: { ...prev.general, ...(serverData.general as Record<string, unknown> || {}) } as AllSettings["general"],
-          notifications: { ...prev.notifications, ...(serverData.notifications as Record<string, unknown> || {}) } as AllSettings["notifications"],
-          mailing: { ...prev.mailing, ...(serverData.mailing as Record<string, unknown> || {}) } as AllSettings["mailing"],
-        }));
+        setSettings({
+          general: { ...defaultSettings.general, ...(serverData.general as Record<string, unknown> || {}) } as AllSettings["general"],
+          notifications: { ...defaultSettings.notifications, ...(serverData.notifications as Record<string, unknown> || {}) } as AllSettings["notifications"],
+          mailing: { ...defaultSettings.mailing, ...(serverData.mailing as Record<string, unknown> || {}) } as AllSettings["mailing"],
+        });
       }
-    }).catch(() => {});
+    }).catch((error) => {
+      logger.error("Erreur chargement paramètres:", error as Error);
+      toast.error("Erreur lors du chargement des paramètres");
+    });
   }, []);
 
   useEffect(() => {
@@ -173,12 +149,15 @@ const Settings = () => {
   const handleSaveGeneral = async () => {
     setLoading(true);
     try {
-      saveSettingsLocal(settings);
-      await apiClient.post('/admin/settings.php', settings.general as unknown as Record<string, unknown>);
-      toast.success("Parametres generaux enregistres");
-    } catch {
-      saveSettingsLocal(settings);
-      toast("Sauvegarde locale uniquement - le serveur n'a pas repondu", { icon: "\u26A0\uFE0F" });
+      const response = await apiClient.post('/admin/settings.php', settings.general as unknown as Record<string, unknown>);
+      if (response.success) {
+        toast.success("Parametres generaux enregistres");
+      } else {
+        toast.error(response.error || "Erreur lors de la sauvegarde");
+      }
+    } catch (error) {
+      logger.error("Erreur sauvegarde paramètres:", error as Error);
+      toast.error("Erreur lors de la sauvegarde des paramètres");
     } finally {
       setLoading(false);
     }
@@ -187,12 +166,15 @@ const Settings = () => {
   const handleSaveNotifications = async () => {
     setLoading(true);
     try {
-      saveSettingsLocal(settings);
-      await apiClient.post('/admin/settings.php', { section: 'notifications', data: settings.notifications } as unknown as Record<string, unknown>);
-      toast.success("Preferences de notification enregistrees");
-    } catch {
-      saveSettingsLocal(settings);
-      toast("Sauvegarde locale uniquement - le serveur n'a pas repondu", { icon: "\u26A0\uFE0F" });
+      const response = await apiClient.post('/admin/settings.php', { section: 'notifications', data: settings.notifications } as unknown as Record<string, unknown>);
+      if (response.success) {
+        toast.success("Preferences de notification enregistrees");
+      } else {
+        toast.error(response.error || "Erreur lors de la sauvegarde");
+      }
+    } catch (error) {
+      logger.error("Erreur sauvegarde notifications:", error as Error);
+      toast.error("Erreur lors de la sauvegarde des notifications");
     } finally {
       setLoading(false);
     }
@@ -201,23 +183,31 @@ const Settings = () => {
   const handleSaveMailing = async () => {
     setLoading(true);
     try {
-      saveSettingsLocal(settings);
-      await apiClient.post('/admin/settings.php', { section: 'mailing', data: settings.mailing } as unknown as Record<string, unknown>);
-      toast.success("Parametres mailing enregistres");
-    } catch {
-      saveSettingsLocal(settings);
-      toast("Sauvegarde locale uniquement - le serveur n'a pas repondu", { icon: "\u26A0\uFE0F" });
+      const response = await apiClient.post('/admin/settings.php', { section: 'mailing', data: settings.mailing } as unknown as Record<string, unknown>);
+      if (response.success) {
+        toast.success("Parametres mailing enregistres");
+      } else {
+        toast.error(response.error || "Erreur lors de la sauvegarde");
+      }
+    } catch (error) {
+      logger.error("Erreur sauvegarde mailing:", error as Error);
+      toast.error("Erreur lors de la sauvegarde des paramètres mailing");
     } finally {
       setLoading(false);
     }
   };
 
   const handleClearCache = () => {
+    if (!window.confirm("Êtes-vous sûr de vouloir effacer le cache ? Vous allez être déconnecté.")) {
+      return;
+    }
+
     try {
       localStorage.removeItem("coffice-app-storage");
       toast.success("Cache effacé avec succès");
-      window.location.reload();
-    } catch {
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (error) {
+      logger.error("Erreur suppression cache:", error as Error);
       toast.error("Erreur lors de la suppression du cache");
     }
   };
@@ -258,7 +248,8 @@ const Settings = () => {
         : [];
       setAllUsers(users);
       setUsersLoaded(true);
-    } catch {
+    } catch (error) {
+      logger.error("Erreur chargement utilisateurs:", error as Error);
       toast.error("Erreur chargement utilisateurs");
     } finally {
       setSearchingUsers(false);
@@ -317,7 +308,8 @@ const Settings = () => {
       } else {
         toast.error(response.error || "Erreur lors de la mise à jour");
       }
-    } catch {
+    } catch (error) {
+      logger.error("Erreur reset password:", error as Error);
       toast.error("Erreur lors de la mise à jour du mot de passe");
     } finally {
       setSavingPassword(false);
@@ -343,7 +335,8 @@ const Settings = () => {
         </body></html>`
       );
       toast.success(`Email de test envoyé à ${testEmailTo}`);
-    } catch {
+    } catch (error) {
+      logger.error("Erreur envoi email test:", error as Error);
       toast.error("Erreur lors de l'envoi du test");
     } finally {
       setSendingTest(false);

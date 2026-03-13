@@ -107,8 +107,11 @@ export default function Caisse() {
         setTransactions(data.transactions || []);
         setTotaux(data.totaux || []);
         setTotalGeneral(data.total_general || 0);
+      } else {
+        toast.error(response.error || "Erreur lors du chargement");
       }
-    } catch {
+    } catch (error) {
+      console.error("Erreur chargement transactions:", error);
       toast.error("Erreur lors du chargement des transactions");
     } finally {
       setLoading(false);
@@ -116,6 +119,10 @@ export default function Caisse() {
   };
 
   const handleCloture = async () => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir clôturer la caisse pour le ${new Date(selectedDate).toLocaleDateString("fr-FR")} ?`)) {
+      return;
+    }
+
     try {
       const response = await apiClient.cloturerCaisse(selectedDate, clotureNotes);
       if (response.success) {
@@ -126,7 +133,8 @@ export default function Caisse() {
       } else {
         toast.error(response.error || "Erreur lors de la cloture");
       }
-    } catch {
+    } catch (error) {
+      console.error("Erreur clôture caisse:", error);
       toast.error("Erreur lors de la cloture");
     }
   };
@@ -162,7 +170,8 @@ export default function Caisse() {
       } else {
         toast.error(response.error || "Erreur lors de l'enregistrement");
       }
-    } catch {
+    } catch (error) {
+      console.error("Erreur création transaction:", error);
       toast.error("Erreur lors de l'enregistrement");
     } finally {
       setSubmitting(false);

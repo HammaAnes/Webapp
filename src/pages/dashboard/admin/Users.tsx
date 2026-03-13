@@ -146,20 +146,46 @@ const Users = () => {
     }
   };
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("tous");
   const [statutFilter, setStatutFilter] = useState<string>("tous");
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const handleStatusChange = async (userId: string, newStatus: string) => {
     try {
-      await updateUser(userId, { statut: newStatus as User['statut'] });
-    } catch {
+      const result = await updateUser(userId, { statut: newStatus as User['statut'] });
+      if (result.success) {
+        toast.success(`Statut mis à jour avec succès`);
+      } else {
+        toast.error(result.error || "Erreur lors de la mise à jour du statut");
+      }
+    } catch (error) {
+      logger.error("Erreur mise à jour statut:", error as Error);
+      toast.error("Erreur lors de la mise à jour du statut");
     }
   };
 
   const handleRoleChange = async (userId: string, newRole: string) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir changer le rôle de cet utilisateur ?`)) {
+      return;
+    }
+
     try {
-      await updateUser(userId, { role: newRole as User['role'] });
-    } catch {
+      const result = await updateUser(userId, { role: newRole as User['role'] });
+      if (result.success) {
+        toast.success(`Rôle mis à jour avec succès`);
+      } else {
+        toast.error(result.error || "Erreur lors de la mise à jour du rôle");
+      }
+    } catch (error) {
+      logger.error("Erreur mise à jour rôle:", error as Error);
+      toast.error("Erreur lors de la mise à jour du rôle");
     }
   };
 
@@ -180,12 +206,12 @@ const Users = () => {
     return users
       .filter((user) => {
         const matchSearch =
-          searchTerm === "" ||
-          user.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          debouncedSearch === "" ||
+          user.nom.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          user.prenom.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          user.email.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
           (user.entreprise &&
-            user.entreprise.toLowerCase().includes(searchTerm.toLowerCase()));
+            user.entreprise.toLowerCase().includes(debouncedSearch.toLowerCase()));
 
         const matchRole = roleFilter === "tous" || user.role === roleFilter;
         const matchStatut =
@@ -198,7 +224,7 @@ const Users = () => {
           new Date(b.dateCreation ?? 0).getTime() -
           new Date(a.dateCreation ?? 0).getTime(),
       );
-  }, [users, searchTerm, roleFilter, statutFilter]);
+  }, [users, debouncedSearch, roleFilter, statutFilter]);
 
   const stats = useMemo(() => {
     const total = users.length;
