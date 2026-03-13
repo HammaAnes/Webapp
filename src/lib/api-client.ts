@@ -668,7 +668,7 @@ class ApiClient {
   async updateCourrier(courrierId: string, data: Record<string, unknown>) {
     return this.request(`/admin/courrier.php`, {
       method: "PUT",
-      body: JSON.stringify(objectToSnakeCase({ id: courrierId, ...data })),
+      body: JSON.stringify(objectToSnakeCase({ courrier_id: courrierId, ...data })),
     });
   }
 

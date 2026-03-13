@@ -129,7 +129,12 @@ try {
         ]);
 
     } elseif ($method === 'PUT') {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $rawInput = file_get_contents('php://input');
+        $data = json_decode($rawInput, true);
+
+        if (!$data) {
+            Response::error('Données invalides', 400);
+        }
 
         $courrierId = $data['courrier_id'] ?? $data['id'] ?? null;
         if (!$courrierId) {

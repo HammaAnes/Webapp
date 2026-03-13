@@ -4,7 +4,7 @@ import {
   Building, User, FileText, Mail, Package, CheckCircle, XCircle, Scale,
   Ban, PlayCircle, AlertCircle, Save, Plus, Loader2, StickyNote, Briefcase,
   Pencil, X, FileCheck, Eye, Download, Upload, Trash2, File, RefreshCw,
-  ArrowLeft, Clock,
+  ArrowLeft, Clock, Settings,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -515,7 +515,7 @@ function ContratTab({ demande, onUpdate, loading }: { demande: DemandeDomiciliat
       dateFinContrat: demande.dateFinContrat ? String(demande.dateFinContrat).split("T")[0] : "",
       montantMensuel: demande.montantMensuel?.toString() || "",
     });
-  }, [demande]);
+  }, [demande.numeroBureau, demande.visibleSurSite, demande.referenceContratNotarie, demande.dateDebutContrat, demande.dateFinContrat, demande.montantMensuel]);
 
   const mois = contrat.dateDebutContrat && contrat.dateFinContrat
     ? Math.max(1, Math.round((new Date(contrat.dateFinContrat).getTime() - new Date(contrat.dateDebutContrat).getTime()) / (30.44 * 24 * 60 * 60 * 1000)))
@@ -646,40 +646,65 @@ function CourrierTab({ demande }: { demande: DemandeDomiciliation }) {
     if (!nc.expediteur.trim()) { toast.error("Expediteur requis"); return; }
     setSubmitting(true);
     try {
-      await apiClient.createCourrier({ domiciliationId: demande.id, ...nc });
-      toast.success("Courrier ajoute");
-      setNc({ type: "lettre", expediteur: "", description: "" });
-      setShowForm(false);
-      await load();
-    } catch { toast.error("Erreur lors de la creation"); }
-    finally { setSubmitting(false); }
+      const response = await apiClient.createCourrier({ domiciliationId: demande.id, ...nc });
+      if (response.success) {
+        toast.success("Courrier ajoute");
+        setNc({ type: "lettre", expediteur: "", description: "" });
+        setShowForm(false);
+        await load();
+      } else {
+        toast.error(response.error || "Erreur lors de la creation");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erreur lors de la creation");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const markRetire = async () => {
     if (!retireModal) return;
     try {
-      await apiClient.updateCourrier(retireModal, { action: "marquer_retire", retire_par: retirePar });
-      toast.success("Courrier marque comme retire");
-      setRetireModal(null);
-      setRetirePar("");
-      await load();
-    } catch { toast.error("Erreur lors de la mise a jour"); }
+      const response = await apiClient.updateCourrier(retireModal, { action: "marquer_retire", retire_par: retirePar });
+      if (response.success) {
+        toast.success("Courrier marque comme retire");
+        setRetireModal(null);
+        setRetirePar("");
+        await load();
+      } else {
+        toast.error(response.error || "Erreur lors de la mise a jour");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erreur lors de la mise a jour");
+    }
   };
 
   const markEnvoye = async (id: string) => {
     try {
-      await apiClient.updateCourrier(id, { action: "marquer_envoye" });
-      toast.success("Courrier marque comme envoye");
-      await load();
-    } catch { toast.error("Erreur"); }
+      const response = await apiClient.updateCourrier(id, { action: "marquer_envoye" });
+      if (response.success) {
+        toast.success("Courrier marque comme envoye");
+        await load();
+      } else {
+        toast.error(response.error || "Erreur");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erreur");
+    }
   };
 
   const archiver = async (id: string) => {
     try {
-      await apiClient.updateCourrier(id, { action: "archiver" });
-      toast.success("Courrier archive");
-      await load();
-    } catch { toast.error("Erreur"); }
+      const response = await apiClient.updateCourrier(id, { action: "archiver" });
+      if (response.success) {
+        toast.success("Courrier archive");
+        await load();
+      } else {
+        toast.error(response.error || "Erreur");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erreur");
+    }
   };
 
   const tc: Record<string, { label: string; icon: React.ElementType; color: string }> = {
@@ -808,6 +833,7 @@ function DocumentsTab({ demande }: { demande: DemandeDomiciliation }) {
   const [uploadTarget, setUploadTarget] = useState("");
   const [rejectModal, setRejectModal] = useState<DocumentRecord | null>(null);
   const [rejectComment, setRejectComment] = useState("");
+  const [showManageDocs, setShowManageDocs] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const apiSlots = demande.typeStructure === "auto_entrepreneur" ? AUTO_ENTREPRENEUR_DOCS : SOCIETE_DOCS;
@@ -903,6 +929,14 @@ function DocumentsTab({ demande }: { demande: DemandeDomiciliation }) {
       <div className="flex items-center justify-between">
         <SectionHeader icon={FileText} title={`Documents (${docs.length})`} color="from-teal-500 to-emerald-500" />
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowManageDocs(true)}
+            className="text-xs bg-gray-800 text-white hover:bg-gray-900 flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
+            title="Configurer les documents requis"
+          >
+            <Settings className="w-3 h-3" />
+            Configurer
+          </button>
           <span className={`text-lg font-bold ${pct === 100 ? "text-emerald-600" : "text-amber-600"}`}>{pct}%</span>
           <span className="text-xs text-gray-500">{uploadedRequired}/{requiredSlots.length} requis</span>
         </div>
@@ -1035,6 +1069,48 @@ function DocumentsTab({ demande }: { demande: DemandeDomiciliation }) {
 
       <Modal isOpen={!!previewUrl} onClose={() => { if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }} title="Apercu du document" size="lg">
         {previewUrl && <iframe src={previewUrl} className="w-full h-[60vh] rounded-lg border border-gray-200" title="Apercu" />}
+      </Modal>
+
+      <Modal isOpen={showManageDocs} onClose={() => setShowManageDocs(false)} title="Configurer les documents requis" size="lg">
+        <div className="space-y-6">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <p className="text-sm text-amber-800">
+              <strong>Note:</strong> Cette configuration affecte uniquement cette domiciliation. Les modifications ne s'appliquent pas aux autres dossiers.
+            </p>
+          </div>
+
+          <div className="text-sm text-gray-600">
+            <p><strong>Situation:</strong> {demande.situationAdministrative === "en_cours_creation" ? "En cours de création" : "Déjà créée"}</p>
+            <p><strong>Type:</strong> {demande.typeStructure === "auto_entrepreneur" ? "Auto-entrepreneur" : "Société"}</p>
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="font-semibold text-gray-900">Documents actuellement configurés</h4>
+            {allSlots.map((slot) => (
+              <div key={slot.type} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-medium text-sm">{slot.label}</p>
+                  <p className="text-xs text-gray-500">ID: {slot.type}</p>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded ${slot.required ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-700"}`}>
+                  {slot.required ? "Requis" : "Optionnel"}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-sky-50 border border-sky-200 rounded-lg p-4">
+            <p className="text-sm text-sky-800">
+              Pour modifier la liste des documents requis, veuillez contacter le développeur ou modifier le fichier de configuration.
+            </p>
+          </div>
+
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setShowManageDocs(false)}>
+              Fermer
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

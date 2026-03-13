@@ -464,18 +464,17 @@ export const useAppStore = create<AppState>()(
       },
 
       addUser: async (data) => {
-        try {
-          const apiData = userAdapter.toAPI(data);
-          const response = await apiClient.adminCreateUser(apiData as { email: string; nom: string; prenom: string; telephone?: string; password?: string });
+        const { createUser } = await import("../services/user-service");
+        const result = await createUser(data as { email: string; nom: string; prenom: string; telephone?: string; password?: string });
 
-          if (response.success) {
-            await get().loadUsers();
-            return { success: true };
-          }
-          return { success: false, error: response.error };
-        } catch (error) {
-          return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+        if (result.success && result.user) {
+          set({ users: [...get().users, result.user] });
         }
+
+        return {
+          success: result.success,
+          error: result.error,
+        };
       },
 
       updateUser: async (userId, data) => {

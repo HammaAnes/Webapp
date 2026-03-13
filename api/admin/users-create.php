@@ -75,6 +75,12 @@ try {
         'nom' => $data['nom'],
         'prenom' => $data['prenom'],
         'telephone' => $data['telephone'] ?? null,
+        'profession' => $data['profession'] ?? null,
+        'entreprise' => $data['entreprise'] ?? null,
+        'code_parrainage' => $code_parrainage,
+        'role' => 'user',
+        'statut' => 'actif',
+        'created_at' => date('Y-m-d H:i:s'),
         'temp_password' => $password
     ], 'Utilisateur créé avec succès', 201);
 
