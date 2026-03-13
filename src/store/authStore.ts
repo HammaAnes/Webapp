@@ -12,7 +12,7 @@ interface AuthState {
 
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (idToken: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
@@ -129,10 +129,10 @@ login: async (email: string, password: string) => {
   }
 },
 
-loginWithGoogle: async (idToken: string) => {
+loginWithGoogle: async (credential: string) => {
   try {
     set({ isLoading: true });
-    const response = await apiClient.loginWithGoogle(idToken);
+    const response = await apiClient.loginWithGoogle(credential);
 
     if (!response.success || !response.data) {
       throw new Error(response.error || "Erreur de connexion Google");

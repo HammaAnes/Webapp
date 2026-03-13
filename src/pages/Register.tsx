@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Mail, User, Phone, ArrowRight, Gift, Building, Briefcase } from "lucide-react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { Input, PasswordInput, Button, Checkbox, GoogleLoginButton } from "../components/ui";
+import { Input, PasswordInput, Button, Checkbox, GoogleButton } from "../components/ui";
 import { useAuthStore } from "../store/authStore";
 import { UserForm } from "../types";
 import { apiClient } from "../lib/api-client";
@@ -91,19 +91,15 @@ const Register = () => {
     }
   };
 
-  const handleGoogleSuccess = async (idToken: string) => {
+  const handleGoogleSuccess = async (credential: string) => {
     setIsGoogleLoading(true);
     try {
-      await loginWithGoogle(idToken);
+      await loginWithGoogle(credential);
     } catch {
       // error is already handled by authStore toast
     } finally {
       setIsGoogleLoading(false);
     }
-  };
-
-  const handleGoogleError = (error: string) => {
-    toast.error(error);
   };
 
   return (
@@ -127,9 +123,8 @@ const Register = () => {
             Créez votre compte Coffice
           </p>
 
-          <GoogleLoginButton
+          <GoogleButton
             onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
             text="S'inscrire avec Google"
             loading={isGoogleLoading}
           />

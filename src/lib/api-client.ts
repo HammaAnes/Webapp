@@ -182,7 +182,7 @@ class ApiClient {
       ...((options.headers as Record<string, string>) || {}),
     };
 
-    const publicEndpoints = ["/auth/login.php", "/auth/register.php", "/auth/forgot-password.php", "/auth/verify-reset-token.php", "/auth/reset-password.php", "/domiciliations/public-stats.php", "/espaces/index.php", "/parrainages/verify.php"];
+    const publicEndpoints = ["/auth/login.php", "/auth/register.php", "/auth/google.php", "/auth/forgot-password.php", "/auth/verify-reset-token.php", "/auth/reset-password.php", "/domiciliations/public-stats.php", "/espaces/index.php", "/parrainages/verify.php"];
     const isPublicEndpoint = publicEndpoints.some((ep) =>
       endpoint.includes(ep),
     );
@@ -420,13 +420,6 @@ class ApiClient {
     return this.request("/auth/google.php", {
       method: "POST",
       body: JSON.stringify({ credential }),
-    });
-  }
-
-  async loginWithGoogle(idToken: string) {
-    return this.request("/auth/google-callback.php", {
-      method: "POST",
-      body: JSON.stringify({ idToken }),
     });
   }
 
