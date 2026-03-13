@@ -33,10 +33,15 @@ try {
                    e.prix_jour,
                    u.nom as user_nom,
                    u.prenom as user_prenom,
-                   u.email as user_email
+                   u.email as user_email,
+                   c.nom as contact_nom,
+                   c.prenom as contact_prenom,
+                   c.email as contact_email,
+                   c.telephone as contact_telephone
             FROM reservations r
             JOIN espaces e ON r.espace_id = e.id
-            JOIN users u ON r.user_id = u.id
+            LEFT JOIN users u ON r.user_id = u.id
+            LEFT JOIN contacts c ON r.contact_id = c.id
             WHERE 1=1
         ";
     } else {

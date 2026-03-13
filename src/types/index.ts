@@ -16,6 +16,44 @@ export type {
   TypeReservation,
 };
 
+export type ContactSource =
+  | 'whatsapp'
+  | 'instagram'
+  | 'tiktok'
+  | 'fixe'
+  | 'mobile'
+  | 'physique'
+  | 'email'
+  | 'autre';
+
+export type ContactStatut = 'prospect' | 'client' | 'perdu';
+
+export interface Contact {
+  id: string;
+  nom: string;
+  prenom: string;
+  email?: string;
+  telephone?: string;
+  entreprise?: string;
+  source: ContactSource;
+  statut: ContactStatut;
+  notes?: string;
+  userId?: string;
+  user?: User;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContactHistory {
+  type: 'reservation' | 'domiciliation' | 'abonnement';
+  entityId: string;
+  date: string;
+  description: string;
+  montant?: number;
+  statut: string;
+}
+
 export type TypeEntreprise =
   | "auto_entrepreneur"
   | "eurl"
@@ -105,9 +143,11 @@ export interface Espace {
 
 export interface Reservation {
   id: string;
-  userId: string;
+  userId?: string;
+  contactId?: string;
   espaceId: string;
   utilisateur?: User;
+  contact?: Contact;
   espace?: Espace | { id: string; nom: string; type: EspaceType };
   dateDebut: Date | string;
   dateFin: Date | string;
@@ -166,8 +206,10 @@ export interface DomiciliationOptions {
 
 export interface DemandeDomiciliation {
   id: string;
-  userId: string;
+  userId?: string;
+  contactId?: string;
   utilisateur?: User;
+  contact?: Contact;
   situationAdministrative: "en_cours_creation" | "deja_creee";
   typeStructure: "societe" | "auto_entrepreneur";
   raisonSociale: string;

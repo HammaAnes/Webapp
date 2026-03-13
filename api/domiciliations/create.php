@@ -31,19 +31,40 @@ try {
     $database = Database::getInstance();
     $db = $database->getConnection();
 
-    $target_user_id = $auth['id'];
+    $target_user_id = null;
+    $target_contact_id = null;
     $is_admin_creation = false;
 
-    if ($auth['role'] === 'admin' && !empty($data->user_id)) {
-        $target_user_id = $data->user_id;
+    if ($auth['role'] === 'admin') {
         $is_admin_creation = true;
 
-        $query = "SELECT id FROM users WHERE id = :user_id";
-        $stmt = $db->prepare($query);
-        $stmt->execute([':user_id' => $target_user_id]);
-        if (!$stmt->fetch()) {
-            Response::error("Utilisateur introuvable", 404);
+        if (!empty($data->user_id) && !empty($data->contact_id)) {
+            Response::error("Une domiciliation ne peut être liée qu'à un utilisateur OU un contact, pas les deux", 400);
         }
+
+        if (!empty($data->user_id)) {
+            $target_user_id = $data->user_id;
+
+            $query = "SELECT id FROM users WHERE id = :user_id";
+            $stmt = $db->prepare($query);
+            $stmt->execute([':user_id' => $target_user_id]);
+            if (!$stmt->fetch()) {
+                Response::error("Utilisateur introuvable", 404);
+            }
+        } elseif (!empty($data->contact_id)) {
+            $target_contact_id = $data->contact_id;
+
+            $query = "SELECT id FROM contacts WHERE id = :contact_id";
+            $stmt = $db->prepare($query);
+            $stmt->execute([':contact_id' => $target_contact_id]);
+            if (!$stmt->fetch()) {
+                Response::error("Contact introuvable", 404);
+            }
+        } else {
+            Response::error("Un utilisateur ou un contact est requis", 400);
+        }
+    } else {
+        $target_user_id = $auth['id'];
     }
 
     if (!$is_admin_creation) {
@@ -70,7 +91,7 @@ try {
     }
 
     $query = "INSERT INTO domiciliations
-              (id, user_id, situation_administrative, type_structure,
+              (id, user_id, contact_id, situation_administrative, type_structure,
                raison_sociale, forme_juridique, capital,
                activite_principale, nif, nis, registre_commerce, article_imposition,
                numero_auto_entrepreneur, code_nae, activite_exercee, description_activite,
@@ -83,7 +104,7 @@ try {
                options, cgu_acceptees, date_cgu_acceptation, date_debut_souhaitee,
                statut, montant_mensuel, date_debut, date_fin, notes_admin, commentaire_admin)
               VALUES
-              (:id, :user_id, :situation_administrative, :type_structure,
+              (:id, :user_id, :contact_id, :situation_administrative, :type_structure,
                :raison_sociale, :forme_juridique, :capital,
                :activite_principale, :nif, :nis, :registre_commerce, :article_imposition,
                :numero_auto_entrepreneur, :code_nae, :activite_exercee, :description_activite,
@@ -100,6 +121,7 @@ try {
     $stmt->execute([
         ':id' => $id,
         ':user_id' => $target_user_id,
+        ':contact_id' => $target_contact_id,
         ':situation_administrative' => $data->situation_administrative ?? 'deja_creee',
         ':type_structure' => $data->type_structure ?? 'societe',
         ':raison_sociale' => $data->raison_sociale ?? null,

@@ -10,7 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 try {
     $auth = Auth::verifyAuth();
-    $userId = $auth['id'];
+    $authUserId = $auth['id'];
+    $authUser = (new Auth())->getUserById($authUserId);
 
     $input = file_get_contents("php://input");
     $data = json_decode($input, true);
@@ -18,19 +19,36 @@ try {
     error_log("=== RESERVATION CREATE REQUEST ===");
     error_log("Raw input: " . $input);
     error_log("Decoded data: " . json_encode($data));
-    error_log("User ID: " . $userId);
+    error_log("Auth User ID: " . $authUserId);
+    error_log("Auth User Role: " . $authUser['role']);
 
     if (!$data || json_last_error() !== JSON_ERROR_NONE) {
         error_log("JSON decode error: " . json_last_error_msg());
         Response::error("Donnees JSON invalides", 400);
     }
 
+    $targetUserId = $data['user_id'] ?? null;
+    $targetContactId = $data['contact_id'] ?? null;
     $espaceId = $data['espace_id'] ?? null;
     $dateDebut = $data['date_debut'] ?? null;
     $dateFin = $data['date_fin'] ?? null;
     $participants = isset($data['participants']) ? intval($data['participants']) : 1;
     $notes = isset($data['notes']) ? trim($data['notes']) : '';
     $codePromo = $data['code_promo'] ?? null;
+
+    if ($authUser['role'] === 'admin') {
+        if ($targetUserId && $targetContactId) {
+            Response::error("Une reservation ne peut etre liee qu'a un utilisateur OU un contact, pas les deux", 400);
+        }
+        if (!$targetUserId && !$targetContactId) {
+            Response::error("Un utilisateur ou un contact est requis pour la reservation", 400);
+        }
+        $userId = $targetUserId;
+        $contactId = $targetContactId;
+    } else {
+        $userId = $authUserId;
+        $contactId = null;
+    }
 
     if (empty($espaceId)) {
         error_log("ERROR: espace_id is empty");
@@ -184,13 +202,14 @@ try {
 
     $stmt = $db->prepare("
         INSERT INTO reservations
-        (id, user_id, espace_id, date_debut, date_fin, statut, type_reservation, montant_total, montant_paye, participants, notes, code_promo_id, created_at)
-        VALUES (?, ?, ?, ?, ?, 'en_attente', ?, ?, 0, ?, ?, ?, NOW())
+        (id, user_id, contact_id, espace_id, date_debut, date_fin, statut, type_reservation, montant_total, montant_paye, participants, notes, code_promo_id, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, 'en_attente', ?, ?, 0, ?, ?, ?, NOW())
     ");
 
     $result = $stmt->execute([
         $id,
         $userId,
+        $contactId,
         $espaceId,
         $debutMysql,
         $finMysql,
@@ -224,20 +243,32 @@ try {
     }
 
     $stmt = $db->prepare("
-        SELECT r.*, e.nom as espace_nom, e.type as espace_type
+        SELECT r.*, e.nom as espace_nom, e.type as espace_type,
+               u.nom as user_nom, u.prenom as user_prenom, u.email as user_email,
+               c.nom as contact_nom, c.prenom as contact_prenom, c.email as contact_email
         FROM reservations r
         JOIN espaces e ON r.espace_id = e.id
+        LEFT JOIN users u ON r.user_id = u.id
+        LEFT JOIN contacts c ON r.contact_id = c.id
         WHERE r.id = ?
     ");
     $stmt->execute([$id]);
     $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
 
     try {
-        $userStmt = $db->prepare("SELECT prenom, nom, email FROM users WHERE id = ?");
-        $userStmt->execute([$userId]);
-        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
-        if ($user) {
-            AdminNotifier::newReservation($reservation, $user['prenom'] . ' ' . $user['nom'], $user['email']);
+        $clientName = '';
+        $clientEmail = '';
+
+        if ($userId) {
+            $clientName = $reservation['user_prenom'] . ' ' . $reservation['user_nom'];
+            $clientEmail = $reservation['user_email'];
+        } elseif ($contactId) {
+            $clientName = $reservation['contact_prenom'] . ' ' . $reservation['contact_nom'];
+            $clientEmail = $reservation['contact_email'] ?? '';
+        }
+
+        if ($clientName) {
+            AdminNotifier::newReservation($reservation, $clientName, $clientEmail);
         }
     } catch (Exception $notifErr) {
         error_log("Admin notification error: " . $notifErr->getMessage());
