@@ -311,7 +311,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
-                  {user.prenom} {user.nom}
+                  {user.prenom || ""} {user.nom || ""}
                 </p>
                 <p className="text-xs text-gray-500 truncate">{user.email}</p>
               </div>

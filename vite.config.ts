@@ -57,6 +57,8 @@ export default defineConfig({
           "ui-vendor": ["framer-motion", "lucide-react"],
           "form-vendor": ["react-hook-form", "react-datepicker"],
           utils: ["date-fns", "zustand"],
+          "pdf-vendor": ["jspdf", "jspdf-autotable"],
+          "chart-vendor": ["recharts"],
         },
       },
     },

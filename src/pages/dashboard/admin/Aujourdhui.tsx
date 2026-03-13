@@ -137,7 +137,7 @@ export default function Aujourdhui() {
         toast.success(msg);
         await refreshData();
       } else {
-        toast.error((response as Record<string, string>).error || "Erreur lors du check-in");
+        toast.error(response.error || "Erreur lors du check-in");
       }
     } catch {
       toast.error("Erreur lors du check-in");
@@ -158,7 +158,7 @@ export default function Aujourdhui() {
         toast.success("Check-out effectue");
         await refreshData();
       } else {
-        toast.error((response as Record<string, string>).error || "Erreur lors du check-out");
+        toast.error(response.error || "Erreur lors du check-out");
       }
     } catch {
       toast.error("Erreur lors du check-out");
@@ -175,7 +175,7 @@ export default function Aujourdhui() {
         toast.success("Reservation marquee comme no-show");
         await refreshData();
       } else {
-        toast.error((response as Record<string, string>).error || "Erreur");
+        toast.error(response.error || "Erreur");
       }
     } catch {
       toast.error("Erreur lors du marquage no-show");

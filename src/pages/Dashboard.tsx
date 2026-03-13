@@ -1,10 +1,9 @@
-import React, { Suspense } from "react";
+import React, { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import LoadingScreen from "../components/LoadingScreen";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 
-// Import direct des composants
 import DashboardHome from "../components/dashboard/DashboardHome";
 import Reservations from "./dashboard/Reservations";
 import ReservationDetail from "./dashboard/ReservationDetail";
@@ -13,26 +12,25 @@ import Profile from "./dashboard/Profile";
 import MonEspace from "./dashboard/MonEspace";
 import Parrainage from "./dashboard/Parrainage";
 import Abonnements from "./dashboard/Abonnements";
-// Admin pages
-import AdminUsers from "./dashboard/admin/Users";
-import UserDetail from "./dashboard/admin/UserDetail";
-import AdminSpaces from "./dashboard/admin/Spaces";
-import EspaceDetail from "./dashboard/EspaceDetail";
-import AdminReservations from "./dashboard/admin/Reservations";
-import AdminReports from "./dashboard/admin/Reports";
-import AdminDomiciliations from "./dashboard/admin/Domiciliations";
-import DomiciliationDetail from "./dashboard/admin/DomiciliationDetail";
-import AdminCodesPromo from "./dashboard/admin/CodesPromo";
-import AdminParrainages from "./dashboard/admin/Parrainages";
-import AdminSettings from "./dashboard/admin/Settings";
-import AdminAbonnements from "./dashboard/admin/Abonnements";
-import Aujourdhui from "./dashboard/admin/Aujourdhui";
-import Caisse from "./dashboard/admin/Caisse";
+
+const AdminUsers = lazy(() => import("./dashboard/admin/Users"));
+const UserDetail = lazy(() => import("./dashboard/admin/UserDetail"));
+const AdminSpaces = lazy(() => import("./dashboard/admin/Spaces"));
+const EspaceDetail = lazy(() => import("./dashboard/EspaceDetail"));
+const AdminReservations = lazy(() => import("./dashboard/admin/Reservations"));
+const AdminReports = lazy(() => import("./dashboard/admin/Reports"));
+const AdminDomiciliations = lazy(() => import("./dashboard/admin/Domiciliations"));
+const DomiciliationDetail = lazy(() => import("./dashboard/admin/DomiciliationDetail"));
+const AdminCodesPromo = lazy(() => import("./dashboard/admin/CodesPromo"));
+const AdminParrainages = lazy(() => import("./dashboard/admin/Parrainages"));
+const AdminSettings = lazy(() => import("./dashboard/admin/Settings"));
+const AdminAbonnements = lazy(() => import("./dashboard/admin/Abonnements"));
+const Aujourdhui = lazy(() => import("./dashboard/admin/Aujourdhui"));
+const Caisse = lazy(() => import("./dashboard/admin/Caisse"));
 
 const Dashboard = () => {
   const { user } = useAuthStore();
 
-  // Redirection si non authentifié
   if (!user) {
     return <Navigate to="/connexion" replace />;
   }
@@ -41,10 +39,8 @@ const Dashboard = () => {
     <DashboardLayout>
       <Suspense fallback={<LoadingScreen />}>
         <Routes>
-          {/* Page d'accueil du dashboard */}
           <Route index element={<DashboardHome />} />
 
-          {/* Routes utilisateur standard */}
           <Route path="reservations" element={<Reservations />} />
           <Route path="reservations/:id" element={<ReservationDetail />} />
           <Route path="notifications" element={<Notifications />} />
@@ -55,7 +51,6 @@ const Dashboard = () => {
           <Route path="parrainage" element={<Parrainage />} />
           <Route path="profil" element={<Profile />} />
 
-          {/* Routes admin */}
           {user?.role === "admin" && (
             <>
               <Route path="admin/aujourdhui" element={<Aujourdhui />} />
@@ -63,18 +58,9 @@ const Dashboard = () => {
               <Route path="admin/users/:id" element={<UserDetail />} />
               <Route path="admin/spaces" element={<AdminSpaces />} />
               <Route path="admin/spaces/:id" element={<EspaceDetail />} />
-              <Route
-                path="admin/reservations"
-                element={<AdminReservations />}
-              />
-              <Route
-                path="admin/domiciliations"
-                element={<AdminDomiciliations />}
-              />
-              <Route
-                path="admin/domiciliations/:id"
-                element={<DomiciliationDetail />}
-              />
+              <Route path="admin/reservations" element={<AdminReservations />} />
+              <Route path="admin/domiciliations" element={<AdminDomiciliations />} />
+              <Route path="admin/domiciliations/:id" element={<DomiciliationDetail />} />
               <Route path="admin/abonnements" element={<AdminAbonnements />} />
               <Route path="admin/codes-promo" element={<AdminCodesPromo />} />
               <Route path="admin/parrainages" element={<AdminParrainages />} />
@@ -84,7 +70,6 @@ const Dashboard = () => {
             </>
           )}
 
-          {/* Route par défaut */}
           <Route path="*" element={<Navigate to="/app" replace />} />
         </Routes>
       </Suspense>

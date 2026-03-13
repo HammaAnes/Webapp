@@ -363,7 +363,8 @@ function SortableHeader({ label, col, onSort, children }: { label: string; col: 
 function DomiciliationRow({ demande, onDetail }: { demande: DemandeDomiciliation; onDetail: (d: DemandeDomiciliation) => void }) {
   const badge = STATUS_BADGES[demande.statut] || STATUS_BADGES.dossier_preparatoire;
   const name = getDisplayName(demande);
-  const ageJours = Math.floor((Date.now() - new Date(demande.dateCreation).getTime()) / (1000 * 60 * 60 * 24));
+  const createdTs = demande.dateCreation ? new Date(demande.dateCreation).getTime() : Date.now();
+  const ageJours = Math.floor((Date.now() - createdTs) / (1000 * 60 * 60 * 24));
   const isStale = !["active", "refusee", "resiliee", "expiree"].includes(demande.statut) && ageJours > 7;
   const isVeryStale = isStale && ageJours > 30;
 
@@ -410,9 +411,9 @@ function DomiciliationRow({ demande, onDetail }: { demande: DemandeDomiciliation
       <td className="px-4 py-4">
         <div>
           <p className="font-medium text-gray-900 text-sm">
-            {demande.representantLegal?.prenom} {demande.representantLegal?.nom}
+            {demande.representantLegal?.prenom || ""} {demande.representantLegal?.nom || ""}
           </p>
-          <p className="text-xs text-gray-500">{demande.representantLegal?.telephone}</p>
+          <p className="text-xs text-gray-500">{demande.representantLegal?.telephone || "-"}</p>
         </div>
       </td>
       <td className="px-4 py-4">

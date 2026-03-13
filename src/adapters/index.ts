@@ -65,6 +65,7 @@ export const reservationAdapter = {
     participants: apiData.participants != null ? parseInt(String(apiData.participants), 10) || 1 : 1,
     notes: apiData.notes as string | undefined,
     codePromo: (apiData.code_promo_id || apiData.code_promo) as string | undefined,
+    checkinId: apiData.checkin_id ? String(apiData.checkin_id) : undefined,
     dateCreation: apiData.created_at ? new Date(String(apiData.created_at)) : undefined,
     createdAt: apiData.created_at ? String(apiData.created_at) : undefined,
     updatedAt: apiData.updated_at ? String(apiData.updated_at) : undefined,

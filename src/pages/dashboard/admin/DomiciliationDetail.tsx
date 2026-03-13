@@ -72,7 +72,7 @@ const STATUS_BADGES: Record<string, { variant: "warning" | "success" | "danger" 
   resiliee: { variant: "danger", label: "Resiliee" },
 };
 
-const Field = ({ label, value }: { label: string; value: string }) => (
+const Field = ({ label, value }: { label: string; value?: string }) => (
   <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
     <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">{label}</p>
     <p className="font-medium text-gray-900 text-sm">{value || "-"}</p>
