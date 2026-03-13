@@ -2,25 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
-import {
-  Building,
-  Plus,
-  Edit,
-  Trash2,
-  Search,
-  Users,
-  Banknote,
-  CheckCircle,
-  XCircle,
-  Wifi,
-  Monitor,
-  Coffee,
-  Printer,
-  Video,
-  Grid,
-  List,
-  Eye,
-} from "lucide-react";
+import { Building, Plus, FileEdit as Edit, Trash2, Search, Users, Banknote, CheckCircle, XCircle, Wifi, Monitor, Coffee, Printer, Video, Grid2x2 as Grid, List, Eye } from "lucide-react";
 import { useAppStore } from "../../../store/store";
 import { Input, Select, Textarea, Checkbox, Button, Card, Modal } from "../../../components/ui";
 import toast from "react-hot-toast";
