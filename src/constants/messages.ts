@@ -58,7 +58,7 @@ export const STATUS_LABELS = {
 export const VALIDATION_MESSAGES = {
   PHONE: {
     INVALID:
-      "Numéro de téléphone invalide (format: 0555123456 ou +213555123456)",
+      "Numéro de téléphone invalide (formats acceptés: +213555123456, +33612345678 ou 0555123456)",
     REQUIRED: "Le numéro de téléphone est requis",
   },
   NIF: {

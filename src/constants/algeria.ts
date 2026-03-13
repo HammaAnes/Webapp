@@ -50,5 +50,8 @@ export function validateNIS(nis: string): boolean {
 export function validateAlgerianPhone(phone: string): boolean {
   if (!phone) return false;
   const cleaned = phone.replace(/[\s\-\(\)]/g, "");
-  return /^(\+213|0)?[5-7][0-9]{8}$/.test(cleaned);
+  const algerianPattern = /^(\+213|0)?[5-7][0-9]{8}$/;
+  const frenchPattern = /^(\+33|0)[1-9][0-9]{8}$/;
+
+  return algerianPattern.test(cleaned) || frenchPattern.test(cleaned);
 }

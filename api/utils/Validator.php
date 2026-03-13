@@ -130,7 +130,7 @@ class Validator
     }
 
     /**
-     * Valider un numéro de téléphone algérien
+     * Valider un numéro de téléphone algérien ou français
      */
     public function validatePhone($phone, $fieldName = 'telephone', $required = false)
     {
@@ -142,13 +142,17 @@ class Validator
             return true; // Optionnel et vide = valide
         }
 
-        // Formats acceptés: +213XXXXXXXXX, 0XXXXXXXXX, XXXXXXXXX
-        $phone = preg_replace('/[\s\-\(\)]/', '', $phone); // Nettoyer les espaces et caractères
+        // Nettoyer les espaces et caractères
+        $phone = preg_replace('/[\s\-\(\)]/', '', $phone);
 
-        $pattern = '/^(\+213|0)?[5-7][0-9]{8}$/';
+        // Formats algériens: +213XXXXXXXXX, 0XXXXXXXXX, XXXXXXXXX
+        $algerianPattern = '/^(\+213|0)?[5-7][0-9]{8}$/';
 
-        if (!preg_match($pattern, $phone)) {
-            $this->errors[$fieldName] = "Le numéro de téléphone n'est pas valide (format: +213XXXXXXXXX ou 0XXXXXXXXX)";
+        // Formats français: +33XXXXXXXXX, 0XXXXXXXXX
+        $frenchPattern = '/^(\+33|0)[1-9][0-9]{8}$/';
+
+        if (!preg_match($algerianPattern, $phone) && !preg_match($frenchPattern, $phone)) {
+            $this->errors[$fieldName] = "Le numéro de téléphone n'est pas valide (formats acceptés: +213XXXXXXXXX, +33XXXXXXXXX ou 0XXXXXXXXX)";
             return false;
         }
 

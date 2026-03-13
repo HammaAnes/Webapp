@@ -41,10 +41,6 @@ export const validationRules = {
   }),
 
   phone: {
-    pattern: {
-      value: /^(\+213|0)?[5-7][0-9]{8}$/,
-      message: VALIDATION_MESSAGES.PHONE.INVALID,
-    },
     validate: (value: string) =>
       !value ||
       validateAlgerianPhone(value) ||
@@ -53,10 +49,6 @@ export const validationRules = {
 
   phoneRequired: {
     required: VALIDATION_MESSAGES.PHONE.REQUIRED,
-    pattern: {
-      value: /^(\+213|0)?[5-7][0-9]{8}$/,
-      message: VALIDATION_MESSAGES.PHONE.INVALID,
-    },
     validate: (value: string) =>
       validateAlgerianPhone(value) || VALIDATION_MESSAGES.PHONE.INVALID,
   },
