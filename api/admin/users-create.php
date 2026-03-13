@@ -47,9 +47,11 @@ try {
     $id = UuidHelper::generate();
     $code_parrainage = 'CPF' . strtoupper(substr($id, 0, 6));
 
+    $role = isset($data['role']) && in_array($data['role'], ['user', 'admin']) ? $data['role'] : 'user';
+
     $stmt = $db->prepare("
         INSERT INTO users (id, email, password_hash, nom, prenom, telephone, profession, entreprise, code_parrainage, role, statut)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'user', 'actif')
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'actif')
     ");
     $stmt->execute([
         $id,
@@ -60,7 +62,8 @@ try {
         $data['telephone'] ?? null,
         $data['profession'] ?? null,
         $data['entreprise'] ?? null,
-        $code_parrainage
+        $code_parrainage,
+        $role
     ]);
 
     Logger::info('Admin created user', [
@@ -78,7 +81,7 @@ try {
         'profession' => $data['profession'] ?? null,
         'entreprise' => $data['entreprise'] ?? null,
         'code_parrainage' => $code_parrainage,
-        'role' => 'user',
+        'role' => $role,
         'statut' => 'actif',
         'created_at' => date('Y-m-d H:i:s'),
         'temp_password' => $password

@@ -93,15 +93,14 @@ const Users = () => {
 
     setCreateLoading(true);
     try {
-      const response = await apiClient.post("/auth/register.php", {
+      const response = await apiClient.adminCreateUser({
         nom: formData.nom,
         prenom: formData.prenom,
         email: formData.email,
         password: formData.password,
-        telephone: formData.telephone || null,
-        entreprise: formData.entreprise || null,
-        profession: formData.profession || null,
-        role: formData.role,
+        telephone: formData.telephone || undefined,
+        entreprise: formData.entreprise || undefined,
+        profession: formData.profession || undefined,
       });
 
       if (response.success) {
@@ -110,7 +109,7 @@ const Users = () => {
         resetForm();
         await loadUsers();
       } else {
-        toast.error(response.message || "Erreur lors de la création");
+        toast.error(response.error || response.message || "Erreur lors de la création");
       }
     } catch (error) {
       logger.error("Erreur creation utilisateur:", error as Error);
