@@ -7,7 +7,6 @@ import EmptyState from '../../../components/ui/EmptyState';
 import { ContactCard } from '../../../components/contacts/ContactCard';
 import { ContactFilters } from '../../../components/contacts/ContactFilters';
 import { Users, Plus } from 'lucide-react';
-import type { ContactSource, ContactStatut } from '../../../types';
 
 export default function Contacts() {
   const navigate = useNavigate();
@@ -16,7 +15,7 @@ export default function Contacts() {
 
   useEffect(() => {
     fetchContacts();
-  }, []);
+  }, [fetchContacts]);
 
   const handleSearch = (value: string) => {
     setSearchInput(value);
@@ -24,6 +23,10 @@ export default function Contacts() {
       setFilters({ search: value });
     }, 300);
     return () => clearTimeout(debounce);
+  };
+
+  const handleCreateContact = () => {
+    navigate('/dashboard/admin/contacts/nouveau');
   };
 
   return (
@@ -36,7 +39,7 @@ export default function Contacts() {
           </p>
         </div>
         <Button
-          onClick={() => navigate('/dashboard/admin/contacts/nouveau')}
+          onClick={handleCreateContact}
           className="flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -67,7 +70,7 @@ export default function Contacts() {
             description="Commencez par créer votre premier contact"
             action={{
               label: 'Créer un contact',
-              onClick: () => navigate('/dashboard/admin/contacts/nouveau'),
+              onClick: handleCreateContact,
             }}
           />
         ) : (
