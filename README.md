@@ -2,6 +2,22 @@
 
 Application web complete de gestion d'espaces de coworking au Mohammadia Mall, Alger.
 
+## 🎉 Nouvelle architecture (v4.2.0)
+
+Le projet a été **entièrement refactorisé** avec une architecture modulaire moderne :
+
+- ✅ **Stores modulaires** par domaine métier
+- ✅ **Couche service** séparant logique métier et UI
+- ✅ **Composants UI réutilisables** (DataTable, FilterBar, etc.)
+- ✅ **Hooks personnalisés** pour logique réutilisable
+- ✅ **Gestion d'erreurs standardisée**
+- ✅ **Documentation complète**
+
+📚 **Voir** :
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Architecture complète
+- [REFACTORING.md](./REFACTORING.md) - Détails de la refactorisation
+- [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) - Guide de migration
+
 ## Vue d'ensemble
 
 Coffice est une plateforme moderne de reservation et gestion d'espaces de coworking comprenant :
@@ -19,7 +35,9 @@ Coffice est une plateforme moderne de reservation et gestion d'espaces de cowork
 - TailwindCSS - Design system
 - React Router - Navigation
 - React Hook Form - Gestion des formulaires
+- Zustand - State management
 - date-fns - Manipulation des dates
+- Recharts - Visualisations
 
 ### Backend
 - PHP 8+ - API REST

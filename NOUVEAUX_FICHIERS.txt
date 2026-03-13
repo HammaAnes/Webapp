@@ -1,0 +1,51 @@
+# Fichiers créés lors de la refactorisation - Coffice v4.2.0
+
+## Stores (6 fichiers)
+src/store/user.store.ts
+src/store/espace.store.ts
+src/store/reservation.store.ts
+src/store/domiciliation.store.ts
+src/store/abonnement.store.ts
+src/store/promo.store.ts
+
+## Services (6 fichiers)
+src/services/user.service.ts
+src/services/espace.service.ts
+src/services/reservation.service.ts
+src/services/domiciliation.service.ts
+src/services/abonnement.service.ts
+src/services/index.ts
+
+## Composants UI (4 fichiers)
+src/components/ui/DataTable.tsx
+src/components/ui/FilterBar.tsx
+src/components/ui/ConfirmDialog.tsx
+src/components/ui/StatCard.tsx
+
+## Hooks (9 fichiers)
+src/hooks/useAsync.ts
+src/hooks/useConfirm.tsx
+src/hooks/useDebounce.ts
+src/hooks/useLocalStorage.ts
+src/hooks/useIntersectionObserver.ts
+src/hooks/useMediaQuery.ts
+src/hooks/usePagination.ts
+src/hooks/useSearch.ts
+src/hooks/useSort.ts
+
+## Utils (2 fichiers)
+src/utils/error-handler.ts
+src/utils/export.ts
+
+## Lib (1 fichier)
+src/lib/api-client-v2.ts
+
+## Documentation (5 fichiers)
+ARCHITECTURE.md
+REFACTORING.md
+MIGRATION_GUIDE.md
+REFACTORISATION_COMPLETE.md
+SUMMARY.md
+NOUVEAUX_FICHIERS.txt (ce fichier)
+
+## Total : 33 fichiers créés

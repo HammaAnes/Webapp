@@ -15,3 +15,12 @@ export { default as EmptyState } from './EmptyState';
 export { default as ErrorMessage } from './ErrorMessage';
 export { default as NotificationCenter } from './NotificationCenter';
 export { GoogleButton } from './GoogleButton';
+export { DataTable } from './DataTable';
+export { FilterBar } from './FilterBar';
+export { ConfirmDialog } from './ConfirmDialog';
+export { StatCard } from './StatCard';
+
+export type { Column, DataTableProps } from './DataTable';
+export type { Filter, FilterBarProps } from './FilterBar';
+export type { ConfirmDialogProps } from './ConfirmDialog';
+export type { StatCardProps } from './StatCard';
