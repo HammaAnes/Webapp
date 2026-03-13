@@ -181,6 +181,14 @@ try {
         ]);
     }
 
+    try {
+        AdminNotifier::newUser($data->prenom . ' ' . $data->nom, $data->email);
+    } catch (Exception $e) {
+        Logger::error('Failed to send admin notification for new user', [
+            'error' => $e->getMessage()
+        ]);
+    }
+
     Response::success([
         'token' => $token,
         'refreshToken' => $refreshToken,

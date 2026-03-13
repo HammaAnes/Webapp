@@ -228,6 +228,9 @@ require_once __DIR__ . '/utils/ErrorHandler.php';
 // Mailer
 require_once __DIR__ . '/utils/Mailer.php';
 
+// Admin Notifier
+require_once __DIR__ . '/utils/AdminNotifier.php';
+
 // =====================================================
 // FONCTIONS GLOBALES HELPERS
 // =====================================================

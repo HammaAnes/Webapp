@@ -66,6 +66,14 @@ try {
             $results[] = sendAdminNotification('Domiciliation – ' . $statusLabel, $data, $adminEmail, $appUrl);
             break;
 
+        case 'user_registered':
+            $results[] = sendAdminNotification('Nouvel utilisateur inscrit', $data, $adminEmail, $appUrl);
+            break;
+
+        case 'subscription_created':
+            $results[] = sendAdminNotification('Nouvel abonnement souscrit', $data, $adminEmail, $appUrl);
+            break;
+
         default:
             Response::error('Type d\'email inconnu: ' . $type, 400);
             exit;

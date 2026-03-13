@@ -55,6 +55,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $creditsRestants
         ]);
 
+        try {
+            $userStmt = $db->prepare("SELECT prenom, nom, email FROM users WHERE id = ?");
+            $userStmt->execute([$userId]);
+            $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+            if ($user) {
+                $montant = number_format((float)($abonnement['prix'] ?? 0), 0, ',', ' ') . ' DA';
+                AdminNotifier::newSubscription(
+                    $user['prenom'] . ' ' . $user['nom'],
+                    $user['email'],
+                    $abonnement['nom'] ?? 'Abonnement',
+                    $montant
+                );
+            }
+        } catch (Exception $notifErr) {
+            error_log("Admin notification error: " . $notifErr->getMessage());
+        }
+
         Response::success([
             'id' => $id,
             'message' => 'Abonnement souscrit avec succès'

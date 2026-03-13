@@ -5,11 +5,7 @@
  * POST /api/domiciliations/create.php
  */
 
-require_once '../config/cors.php';
-require_once '../config/database.php';
-require_once '../utils/Auth.php';
-require_once '../utils/Response.php';
-require_once '../utils/UuidHelper.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 try {
     $auth = Auth::verifyAuth();
@@ -174,6 +170,23 @@ try {
             ':reference' => 'DOM-' . date('YmdHis'),
             ':description' => 'Domiciliation ' . $mois . ' mois - ' . ($data->raison_sociale ?? '')
         ]);
+    }
+
+    if (!$is_admin_creation) {
+        try {
+            $userStmt = $db->prepare("SELECT prenom, nom, email FROM users WHERE id = ?");
+            $userStmt->execute([$target_user_id]);
+            $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+            if ($user) {
+                AdminNotifier::newDomiciliation(
+                    $data->raison_sociale ?? '',
+                    $user['prenom'] . ' ' . $user['nom'],
+                    $user['email']
+                );
+            }
+        } catch (Exception $notifErr) {
+            error_log("Admin notification error: " . $notifErr->getMessage());
+        }
     }
 
     Response::success(['id' => $id], "Demande de domiciliation créée avec succès", 201);

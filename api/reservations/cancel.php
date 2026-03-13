@@ -1,9 +1,6 @@
 <?php
 
-require_once '../config/cors.php';
-require_once '../config/database.php';
-require_once '../utils/Auth.php';
-require_once '../utils/Response.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 header('Content-Type: application/json');
 
@@ -62,6 +59,17 @@ try {
     ");
     $stmt->execute([$id]);
     $updated = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    try {
+        $userStmt = $db->prepare("SELECT prenom, nom, email FROM users WHERE id = ?");
+        $userStmt->execute([$userId]);
+        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+        if ($user) {
+            AdminNotifier::reservationCancelled($updated, $user['prenom'] . ' ' . $user['nom'], $user['email']);
+        }
+    } catch (Exception $notifErr) {
+        error_log("Admin notification error: " . $notifErr->getMessage());
+    }
 
     Response::success($updated, "Reservation annulee");
 

@@ -1,0 +1,94 @@
+<?php
+
+class AdminNotifier
+{
+    public static function notify(string $title, array $infoRows, string $dashboardPath = '/erp'): void
+    {
+        try {
+            if (empty(Mailer::$config ?? [])) {
+                Mailer::init();
+            }
+
+            $adminEmail = env('MAIL_ADMIN', 'desk@coffice.dz');
+            $appUrl = env('APP_URL', 'https://coffice.dz');
+
+            $content = '
+<h2 style="font-size:24px;font-weight:800;color:#111827;margin:0 0 8px;">' . htmlspecialchars($title) . '</h2>
+<p style="font-size:14px;color:#6b7280;margin:0 0 16px;">Notification automatique du syst&egrave;me Coffice</p>
+' . Mailer::infoBox($infoRows) . '
+' . Mailer::ctaButton($appUrl . $dashboardPath, 'Acc&eacute;der au tableau de bord', true);
+
+            $subject = '[Admin] ' . $title;
+            $html = Mailer::wrapInLayout($title, $content, $title);
+
+            Mailer::send($adminEmail, $subject, $html);
+        } catch (Exception $e) {
+            Logger::error('Admin notification failed', [
+                'title' => $title,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public static function newReservation(array $reservation, string $userName, string $userEmail): void
+    {
+        $montant = number_format((float)($reservation['montant_total'] ?? 0), 0, ',', ' ') . ' DA';
+        $rows = [
+            'Utilisateur' => $userName,
+            'E-mail' => $userEmail,
+            'Espace' => $reservation['espace_nom'] ?? $reservation['espace_name'] ?? '',
+            'Date' => isset($reservation['date_debut']) ? date('d/m/Y', strtotime($reservation['date_debut'])) : '',
+            'Horaire' => isset($reservation['date_debut']) && isset($reservation['date_fin'])
+                ? date('H:i', strtotime($reservation['date_debut'])) . ' - ' . date('H:i', strtotime($reservation['date_fin']))
+                : '',
+            'Montant' => $montant,
+        ];
+
+        self::notify('Nouvelle reservation', $rows, '/erp/reservations');
+    }
+
+    public static function reservationCancelled(array $reservation, string $userName, string $userEmail): void
+    {
+        $rows = [
+            'Utilisateur' => $userName,
+            'E-mail' => $userEmail,
+            'Espace' => $reservation['espace_nom'] ?? $reservation['espace_name'] ?? '',
+            'Date' => isset($reservation['date_debut']) ? date('d/m/Y', strtotime($reservation['date_debut'])) : '',
+        ];
+
+        self::notify('Reservation annulee', $rows, '/erp/reservations');
+    }
+
+    public static function newDomiciliation(string $raisonSociale, string $userName, string $userEmail): void
+    {
+        $rows = [
+            'Utilisateur' => $userName,
+            'E-mail' => $userEmail,
+            'Raison sociale' => $raisonSociale,
+        ];
+
+        self::notify('Nouvelle demande de domiciliation', $rows, '/erp/domiciliations');
+    }
+
+    public static function newUser(string $userName, string $userEmail): void
+    {
+        $rows = [
+            'Nom' => $userName,
+            'E-mail' => $userEmail,
+        ];
+
+        self::notify('Nouvel utilisateur inscrit', $rows, '/erp/users');
+    }
+
+    public static function newSubscription(string $userName, string $userEmail, string $planName, string $montant): void
+    {
+        $rows = [
+            'Utilisateur' => $userName,
+            'E-mail' => $userEmail,
+            'Plan' => $planName,
+            'Montant' => $montant,
+        ];
+
+        self::notify('Nouvel abonnement souscrit', $rows, '/erp/abonnements');
+    }
+}

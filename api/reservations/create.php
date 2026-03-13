@@ -1,10 +1,6 @@
 <?php
 
-require_once '../config/cors.php';
-require_once '../config/database.php';
-require_once '../utils/Auth.php';
-require_once '../utils/Response.php';
-require_once '../utils/UuidHelper.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 header('Content-Type: application/json');
 
@@ -235,6 +231,17 @@ try {
     ");
     $stmt->execute([$id]);
     $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    try {
+        $userStmt = $db->prepare("SELECT prenom, nom, email FROM users WHERE id = ?");
+        $userStmt->execute([$userId]);
+        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+        if ($user) {
+            AdminNotifier::newReservation($reservation, $user['prenom'] . ' ' . $user['nom'], $user['email']);
+        }
+    } catch (Exception $notifErr) {
+        error_log("Admin notification error: " . $notifErr->getMessage());
+    }
 
     Response::success($reservation, "Reservation creee avec succes", 201);
 
