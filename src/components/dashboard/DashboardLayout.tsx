@@ -124,6 +124,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       label: "Opérations",
       items: [
         { name: "Aujourd'hui", href: "/app/admin/aujourdhui", icon: Clock },
+        { name: "Caisse", href: "/app/admin/caisse", icon: Wallet },
       ],
     },
     {
@@ -138,7 +139,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       items: [
         { name: "Utilisateurs", href: "/app/admin/users", icon: Users },
         { name: "Domiciliations", href: "/app/admin/domiciliations", icon: FileText },
-        { name: "Abonnements", href: "/app/admin/abonnements", icon: CreditCard },
       ],
     },
     {
@@ -151,7 +151,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     {
       label: "Finances & Analyse",
       items: [
-        { name: "Caisse", href: "/app/admin/caisse", icon: Wallet },
+        { name: "Abonnements", href: "/app/admin/abonnements", icon: CreditCard },
         { name: "Rapports", href: "/app/admin/reports", icon: BarChart3 },
         { name: "Paramètres", href: "/app/admin/settings", icon: Settings },
       ],
