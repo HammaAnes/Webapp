@@ -84,9 +84,6 @@ if (file_exists($envFile)) {
     }
 }
 
-// Redéfinir $isProduction après chargement .env
-$isProduction = ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?? 'production') === 'production';
-
 // =====================================================
 // CHARGEMENT CORS
 // =====================================================
