@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { FileText, Upload, Download, Trash2, CheckCircle, AlertCircle, Loader2, File, Eye, FolderOpen } from "lucide-react";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
@@ -8,7 +8,7 @@ import Modal from "../ui/Modal";
 import { apiClient } from "../../lib/api-client";
 import toast from "react-hot-toast";
 
-interface DocumentRecord {
+export interface DocumentRecord {
   id: string;
   document_type: string;
   file_name: string;
@@ -16,33 +16,81 @@ interface DocumentRecord {
   created_at: string;
   url?: string;
   status?: "en_attente" | "valide" | "rejete";
+  commentaire_rejet?: string;
 }
 
-interface DocumentSlot { type: string; label: string; required: boolean; description: string }
+export interface DocumentSlot { type: string; label: string; required: boolean; description: string }
 
-const SOCIETE_DOCS: DocumentSlot[] = [
+export const SOCIETE_DOCS: DocumentSlot[] = [
   { type: "rc", label: "Registre de Commerce", required: true, description: "Copie du registre de commerce" },
-  { type: "nif", label: "NIF", required: true, description: "Numéro d'Identification Fiscale" },
-  { type: "nis", label: "NIS", required: true, description: "Numéro d'Identification Statistique" },
-  { type: "c20", label: "Extrait C20", required: true, description: "Extrait du registre de commerce (modèle C20)" },
-  { type: "statuts", label: "Statuts", required: false, description: "Statuts de la société" },
-  { type: "cni", label: "CNI du gérant", required: true, description: "Copie de la carte d'identité du gérant" },
+  { type: "nif", label: "NIF", required: true, description: "Numero d'Identification Fiscale" },
+  { type: "nis", label: "NIS", required: true, description: "Numero d'Identification Statistique" },
+  { type: "c20", label: "Extrait C20", required: true, description: "Extrait du registre de commerce (modele C20)" },
+  { type: "statuts", label: "Statuts", required: false, description: "Statuts de la societe" },
+  { type: "cni", label: "CNI du gerant", required: true, description: "Copie de la carte d'identite du gerant" },
 ];
 
-const AUTO_ENTREPRENEUR_DOCS: DocumentSlot[] = [
-  { type: "carte_ae", label: "Carte Auto-Entrepreneur", required: true, description: "Carte d'auto-entrepreneur délivrée par l'ANADE" },
-  { type: "cni", label: "CNI", required: true, description: "Copie de la carte d'identité nationale" },
+export const AUTO_ENTREPRENEUR_DOCS: DocumentSlot[] = [
+  { type: "carte_ae", label: "Carte Auto-Entrepreneur", required: true, description: "Carte d'auto-entrepreneur delivree par l'ANADE" },
+  { type: "cni", label: "CNI", required: true, description: "Copie de la carte d'identite nationale" },
 ];
 
-const COMMON_DOCS: DocumentSlot[] = [
-  { type: "autre", label: "Autre document", required: false, description: "Document supplémentaire" },
+export const COMMON_DOCS: DocumentSlot[] = [
+  { type: "autre", label: "Autre document", required: false, description: "Document supplementaire" },
 ];
 
 const STATUS_MAP: Record<string, { label: string; variant: "warning" | "success" | "danger" }> = {
   en_attente: { label: "En attente", variant: "warning" },
-  valide: { label: "Validé", variant: "success" },
-  rejete: { label: "Rejeté", variant: "danger" },
+  valide: { label: "Valide", variant: "success" },
+  rejete: { label: "Rejete", variant: "danger" },
 };
+
+export function mapApiDocument(raw: Record<string, unknown>): DocumentRecord {
+  return {
+    id: String(raw.id || ""),
+    document_type: String(raw.type_document || raw.document_type || "autre"),
+    file_name: String(raw.nom_original || raw.nom_fichier || raw.file_name || ""),
+    file_size: raw.taille ? Number(raw.taille) : (raw.file_size ? Number(raw.file_size) : undefined),
+    created_at: String(raw.created_at || raw.uploaded_at || ""),
+    url: String(raw.download_url || raw.url || ""),
+    status: (raw.statut || raw.status || "en_attente") as DocumentRecord["status"],
+    commentaire_rejet: raw.commentaire_rejet ? String(raw.commentaire_rejet) : undefined,
+  };
+}
+
+export async function loadDocumentsFromApi(entityType: string, entityId: string): Promise<DocumentRecord[]> {
+  const response = await apiClient.getDocuments(entityType, entityId);
+  const data = response.data;
+  let raw: Record<string, unknown>[] = [];
+  if (Array.isArray(data)) raw = data as Record<string, unknown>[];
+  else if (data && typeof data === "object" && "documents" in data)
+    raw = ((data as Record<string, unknown>).documents || []) as Record<string, unknown>[];
+  return raw.map(mapApiDocument);
+}
+
+export async function triggerDocumentDownload(doc: DocumentRecord) {
+  const res = await apiClient.downloadDocument(doc.id);
+  if (res.success && res.blob) {
+    const url = URL.createObjectURL(res.blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = res.filename || doc.file_name;
+    a.click();
+    URL.revokeObjectURL(url);
+  } else {
+    throw new Error(res.error || "Impossible de telecharger");
+  }
+}
+
+export async function openDocumentPreview(doc: DocumentRecord): Promise<string | null> {
+  const ext = doc.file_name.split(".").pop()?.toLowerCase();
+  if (!["pdf", "jpg", "jpeg", "png", "gif", "webp"].includes(ext || "")) return null;
+  const res = await apiClient.downloadDocument(doc.id);
+  if (res.success && res.blob) {
+    return URL.createObjectURL(res.blob);
+  }
+  return null;
+}
 
 interface DocumentsEntrepriseProps {
   domiciliationId: string;
@@ -58,7 +106,7 @@ function ActionBtn({ onClick, icon: Icon, label, cls }: { onClick: () => void; i
   );
 }
 
-function formatFileSize(bytes?: number): string {
+export function formatFileSize(bytes?: number): string {
   if (!bytes) return "";
   if (bytes < 1024) return `${bytes} o`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`;
@@ -78,35 +126,31 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
   const allSlots = [...requiredSlots, ...COMMON_DOCS];
   const getDoc = (type: string) => documents.find((d) => d.document_type === type);
 
-  useEffect(() => { loadDocuments(); }, [domiciliationId]);
-
-  const loadDocuments = async () => {
+  const loadDocs = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiClient.getDocuments("domiciliation", domiciliationId);
-      const data = response.data;
-      if (Array.isArray(data)) setDocuments(data as DocumentRecord[]);
-      else if (data && typeof data === "object" && "documents" in data)
-        setDocuments((data as Record<string, unknown>).documents as DocumentRecord[] || []);
-      else setDocuments([]);
+      const docs = await loadDocumentsFromApi("domiciliation", domiciliationId);
+      setDocuments(docs);
     } catch { setDocuments([]); }
     finally { setLoading(false); }
-  };
+  }, [domiciliationId]);
+
+  useEffect(() => { loadDocs(); }, [loadDocs]);
 
   const handleUploadClick = (docType: string) => { setUploadTarget(docType); fileRef.current?.click(); };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !uploadTarget) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("Le fichier ne doit pas dépasser 5 Mo"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Le fichier ne doit pas depasser 5 Mo"); return; }
     if (!["application/pdf", "image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
-      toast.error("Format accepté : PDF, JPG, PNG"); return;
+      toast.error("Format accepte : PDF, JPG, PNG"); return;
     }
     try {
       setUploading(uploadTarget);
       const res = await apiClient.uploadDocument(file, "domiciliation", domiciliationId, uploadTarget);
-      if (res.success) { toast.success("Document téléchargé avec succès"); await loadDocuments(); }
-      else toast.error(res.error || "Erreur lors du téléchargement");
+      if (res.success) { toast.success("Document telecharge avec succes"); await loadDocs(); }
+      else toast.error(res.error || "Erreur lors du telechargement");
     } catch { toast.error("Erreur lors de l'envoi du document"); }
     finally { setUploading(null); setUploadTarget(""); if (fileRef.current) fileRef.current.value = ""; }
   };
@@ -115,29 +159,23 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
     if (!deleteTarget) return;
     try {
       const res = await apiClient.deleteDocument(deleteTarget.id);
-      if (res.success) { toast.success("Document supprimé"); setDeleteTarget(null); await loadDocuments(); }
+      if (res.success) { toast.success("Document supprime"); setDeleteTarget(null); await loadDocs(); }
       else toast.error(res.error || "Erreur lors de la suppression");
     } catch { toast.error("Erreur lors de la suppression"); }
   };
 
   const handleDownload = async (doc: DocumentRecord) => {
     try {
-      const res = await apiClient.downloadDocument(doc.id);
-      const dlData = res.data as Record<string, unknown> | undefined;
-      if (dlData && typeof dlData === "object" && "url" in dlData && dlData.url) { window.open(dlData.url as string, "_blank"); return; }
-      if (res.data instanceof Blob) {
-        const url = URL.createObjectURL(res.data);
-        const a = document.createElement("a");
-        a.href = url; a.download = doc.file_name; a.click(); URL.revokeObjectURL(url); return;
-      }
-      toast.error("Impossible de télécharger le document");
-    } catch { toast.error("Erreur lors du téléchargement"); }
+      await triggerDocumentDownload(doc);
+    } catch { toast.error("Erreur lors du telechargement"); }
   };
 
-  const handlePreview = (doc: DocumentRecord) => {
-    const ext = doc.file_name.split(".").pop()?.toLowerCase();
-    if (["pdf", "jpg", "jpeg", "png"].includes(ext || "") && doc.url) setPreviewUrl(doc.url);
-    else handleDownload(doc);
+  const handlePreview = async (doc: DocumentRecord) => {
+    try {
+      const url = await openDocumentPreview(doc);
+      if (url) setPreviewUrl(url);
+      else await handleDownload(doc);
+    } catch { await handleDownload(doc); }
   };
 
   const uploadedCount = requiredSlots.filter((s) => s.required && getDoc(s.type)).length;
@@ -163,7 +201,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
         </div>
         {pct === 100 && (
           <p className="text-sm text-emerald-600 mt-2 flex items-center gap-1">
-            <CheckCircle className="w-4 h-4" />Tous les documents requis ont été fournis
+            <CheckCircle className="w-4 h-4" />Tous les documents requis ont ete fournis
           </p>
         )}
       </Card>
@@ -176,7 +214,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
             </div>
             <h3 className="font-semibold text-gray-900 mb-1">Aucun document</h3>
             <p className="text-sm text-gray-500 max-w-sm">
-              {readOnly ? "Aucun document n'a encore été soumis pour ce dossier." : "Commencez par télécharger les documents requis ci-dessous pour compléter votre dossier."}
+              {readOnly ? "Aucun document n'a encore ete soumis pour ce dossier." : "Commencez par telecharger les documents requis ci-dessous pour completer votre dossier."}
             </p>
           </div>
         </Card>
@@ -207,11 +245,14 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
                       {doc.file_size && <span className="text-gray-400">{formatFileSize(doc.file_size)}</span>}
                     </div>
                   )}
+                  {doc?.status === "rejete" && doc.commentaire_rejet && (
+                    <p className="text-xs text-red-600 mt-1 bg-red-50 px-2 py-1 rounded">{doc.commentaire_rejet}</p>
+                  )}
                   <div className="flex gap-2 mt-3 flex-wrap">
                     {doc ? (
                       <>
-                        <ActionBtn onClick={() => handlePreview(doc)} icon={Eye} label="Aperçu" cls="text-teal-700 hover:text-teal-900 hover:bg-teal-50" />
-                        <ActionBtn onClick={() => handleDownload(doc)} icon={Download} label="Télécharger" cls="text-gray-600 hover:text-gray-900 hover:bg-gray-100" />
+                        <ActionBtn onClick={() => handlePreview(doc)} icon={Eye} label="Apercu" cls="text-teal-700 hover:text-teal-900 hover:bg-teal-50" />
+                        <ActionBtn onClick={() => handleDownload(doc)} icon={Download} label="Telecharger" cls="text-gray-600 hover:text-gray-900 hover:bg-gray-100" />
                         {!readOnly && (
                           <>
                             <ActionBtn onClick={() => handleUploadClick(slot.type)} icon={Upload} label="Remplacer" cls="text-gray-600 hover:text-gray-900 hover:bg-gray-100" />
@@ -222,7 +263,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
                     ) : !readOnly ? (
                       <button onClick={() => handleUploadClick(slot.type)} disabled={isUploading} className="text-xs text-white bg-gray-800 hover:bg-gray-900 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
                         {isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                        {isUploading ? "Envoi..." : "Télécharger"}
+                        {isUploading ? "Envoi..." : "Telecharger"}
                       </button>
                     ) : null}
                   </div>
@@ -238,7 +279,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-amber-800">
-              <p className="font-medium mb-1">Formats acceptés</p>
+              <p className="font-medium mb-1">Formats acceptes</p>
               <p>PDF, JPG, PNG -- Taille maximale : 5 Mo par fichier</p>
             </div>
           </div>
@@ -247,7 +288,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
 
       <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Supprimer le document">
         <div className="space-y-4">
-          <p className="text-gray-700">Êtes-vous sûr de vouloir supprimer le document <strong>{deleteTarget?.file_name}</strong> ?</p>
+          <p className="text-gray-700">Etes-vous sur de vouloir supprimer le document <strong>{deleteTarget?.file_name}</strong> ?</p>
           <div className="flex gap-3 justify-end">
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>Annuler</Button>
             <Button variant="danger" onClick={handleDelete}>Supprimer</Button>
@@ -255,8 +296,8 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
         </div>
       </Modal>
 
-      <Modal isOpen={!!previewUrl} onClose={() => setPreviewUrl(null)} title="Aperçu du document" size="lg">
-        {previewUrl && <iframe src={previewUrl} className="w-full h-[60vh] rounded-lg border border-gray-200" title="Aperçu" />}
+      <Modal isOpen={!!previewUrl} onClose={() => { if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }} title="Apercu du document" size="lg">
+        {previewUrl && <iframe src={previewUrl} className="w-full h-[60vh] rounded-lg border border-gray-200" title="Apercu" />}
       </Modal>
     </div>
   );

@@ -22,12 +22,14 @@ import {
   ArrowUp,
   ArrowDown,
   Loader2,
+  Plus,
 } from "lucide-react";
 import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
 import Badge from "../../../components/ui/Badge";
 import Input from "../../../components/ui/Input";
 import DomiciliationDetailModal from "../../../components/admin/DomiciliationDetailModal";
+import AdminCreateDomiciliationModal from "../../../components/admin/AdminCreateDomiciliationModal";
 import { useAppStore } from "../../../store/store";
 import { formatDate, formatCurrency } from "../../../utils/formatters";
 import toast from "react-hot-toast";
@@ -88,6 +90,7 @@ const AdminDomiciliations = () => {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selectedDemande, setSelectedDemande] = useState<DemandeDomiciliation | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -238,8 +241,11 @@ const AdminDomiciliations = () => {
           });
         }
 
-        setShowModal(false);
         await loadDemandesDomiciliation();
+        const freshData = useAppStore.getState().demandesDomiciliation;
+        const updated = freshData.find((d) => d.id === selectedDemande.id);
+        if (updated) setSelectedDemande(updated);
+        else setShowModal(false);
       } else {
         toast.error(response?.error || "Une erreur est survenue");
       }
@@ -337,6 +343,10 @@ const AdminDomiciliations = () => {
           <Button variant="outline" onClick={exportCSV}>
             <Download className="w-4 h-4 mr-2" />
             Export CSV
+          </Button>
+          <Button onClick={() => setShowCreateModal(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nouvelle domiciliation
           </Button>
         </div>
       </div>
@@ -452,6 +462,14 @@ const AdminDomiciliations = () => {
         onUpdate={handleUpdate}
         loading={actionLoading}
       />
+
+      <AdminCreateDomiciliationModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={async () => {
+          await loadDemandesDomiciliation();
+        }}
+      />
     </div>
   );
 };
@@ -472,13 +490,13 @@ function DomiciliationRow({ demande, onDetail }: { demande: DemandeDomiciliation
   const name = getDisplayName(demande);
   const ageJours = Math.floor((Date.now() - new Date(demande.dateCreation).getTime()) / (1000 * 60 * 60 * 24));
   const isStale = !["active", "refusee", "resiliee", "expiree"].includes(demande.statut) && ageJours > 7;
-  const isVerySale = isStale && ageJours > 30;
+  const isVeryStale = isStale && ageJours > 30;
 
   return (
     <motion.tr
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`hover:bg-gray-50 transition-colors cursor-pointer ${isVerySale ? "bg-red-50/40" : isStale ? "bg-amber-50/40" : ""}`}
+      className={`hover:bg-gray-50 transition-colors cursor-pointer ${isVeryStale ? "bg-red-50/40" : isStale ? "bg-amber-50/40" : ""}`}
       onClick={() => onDetail(demande)}
     >
       <td className="px-4 py-4">
@@ -531,8 +549,8 @@ function DomiciliationRow({ demande, onDetail }: { demande: DemandeDomiciliation
       <td className="px-4 py-4">
         <div className="text-sm text-gray-500">{formatDate(demande.dateCreation)}</div>
         {isStale && (
-          <span className={`text-xs font-medium ${isVerySale ? "text-red-600" : "text-amber-600"}`}>
-            {ageJours}j {isVerySale ? "(stagnant)" : "(en attente)"}
+          <span className={`text-xs font-medium ${isVeryStale ? "text-red-600" : "text-amber-600"}`}>
+            {ageJours}j {isVeryStale ? "(stagnant)" : "(en attente)"}
           </span>
         )}
       </td>

@@ -131,8 +131,9 @@ try {
     } elseif ($method === 'PUT') {
         $data = json_decode(file_get_contents('php://input'), true);
 
-        if (!isset($data['courrier_id'], $data['instruction_client'])) {
-            Response::error('Données manquantes: courrier_id, instruction_client requis', 400);
+        $courrierId = $data['courrier_id'] ?? $data['id'] ?? null;
+        if (!$courrierId) {
+            Response::error('courrier_id ou id requis', 400);
         }
 
         $checkStmt = $db->prepare("
@@ -141,7 +142,7 @@ try {
             LEFT JOIN domiciliations d ON c.domiciliation_id = d.id
             WHERE c.id = ?
         ");
-        $checkStmt->execute([$data['courrier_id']]);
+        $checkStmt->execute([$courrierId]);
         $courrier = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$courrier) {
@@ -152,17 +153,57 @@ try {
             Response::forbidden('Accès refusé');
         }
 
-        $updateStmt = $db->prepare("
-            UPDATE courriers
-            SET instruction_client = ?, statut = 'en_attente_instruction', date_instruction = NOW()
-            WHERE id = ?
-        ");
-        $updateStmt->execute([
-            $data['instruction_client'],
-            $data['courrier_id']
-        ]);
+        $action = $data['action'] ?? null;
 
-        Response::success(['message' => 'Instruction enregistrée']);
+        if ($action === 'marquer_retire') {
+            $retirePar = $data['retire_par'] ?? '';
+            $updateStmt = $db->prepare("
+                UPDATE courriers
+                SET statut = 'retire', date_retrait = NOW(), retire_par = ?
+                WHERE id = ?
+            ");
+            $updateStmt->execute([$retirePar, $courrierId]);
+            Response::success(['message' => 'Courrier marqué comme retiré']);
+
+        } elseif ($action === 'marquer_envoye') {
+            $adresseEnvoi = $data['adresse_envoi'] ?? '';
+            $numeroSuivi = $data['numero_suivi'] ?? '';
+            $updateStmt = $db->prepare("
+                UPDATE courriers
+                SET statut = 'envoye', date_envoi = NOW(), adresse_envoi = ?, numero_suivi = ?
+                WHERE id = ?
+            ");
+            $updateStmt->execute([$adresseEnvoi, $numeroSuivi, $courrierId]);
+            Response::success(['message' => 'Courrier marqué comme envoyé']);
+
+        } elseif ($action === 'archiver') {
+            $updateStmt = $db->prepare("
+                UPDATE courriers SET statut = 'archive' WHERE id = ?
+            ");
+            $updateStmt->execute([$courrierId]);
+            Response::success(['message' => 'Courrier archivé']);
+
+        } elseif (isset($data['instruction_client'])) {
+            $updateStmt = $db->prepare("
+                UPDATE courriers
+                SET instruction_client = ?, statut = 'en_attente_instruction', date_instruction = NOW()
+                WHERE id = ?
+            ");
+            $updateStmt->execute([$data['instruction_client'], $courrierId]);
+            Response::success(['message' => 'Instruction enregistrée']);
+
+        } elseif (isset($data['statut'])) {
+            $allowedStatuts = ['recu', 'notifie', 'retire', 'envoye', 'archive'];
+            if (!in_array($data['statut'], $allowedStatuts)) {
+                Response::error('Statut invalide', 400);
+            }
+            $updateStmt = $db->prepare("UPDATE courriers SET statut = ? WHERE id = ?");
+            $updateStmt->execute([$data['statut'], $courrierId]);
+            Response::success(['message' => 'Statut mis à jour']);
+
+        } else {
+            Response::error('Action ou instruction_client requis', 400);
+        }
 
     } else {
         Response::error('Méthode non autorisée', 405);

@@ -48,14 +48,34 @@ try {
         'article_imposition', 'numero_auto_entrepreneur', 'wilaya', 'commune',
         'adresse_actuelle', 'representant_nom', 'representant_prenom',
         'representant_telephone', 'representant_email', 'montant_mensuel',
-        'notes_admin', 'visible_sur_site', 'date_debut', 'date_fin'
+        'notes_admin', 'commentaire_admin', 'visible_sur_site', 'date_debut', 'date_fin',
+        'situation_administrative', 'type_structure',
+        'reference_contrat_notarie', 'date_debut_contrat', 'date_fin_contrat', 'numero_bureau',
+        'code_nae', 'activite_exercee', 'description_activite',
+        'representant_fonction', 'representant_adresse_residence', 'representant_ville',
+        'date_validation', 'date_debut_souhaitee', 'ville_immatriculation',
+        'domaine_activite', 'adresse_siege_social', 'date_creation_entreprise'
     ];
 
     foreach ($allowed_fields as $field) {
         if (isset($data->$field)) {
             $updates[] = "$field = :$field";
-            $params[":$field"] = $data->$field;
+            $value = $data->$field;
+            if ($field === 'options' && !is_string($value)) {
+                $value = json_encode($value);
+            }
+            $params[":$field"] = $value;
         }
+    }
+
+    if (isset($data->options) && !isset($params[':options'])) {
+        $updates[] = "options = :options";
+        $params[':options'] = is_string($data->options) ? $data->options : json_encode($data->options);
+    }
+
+    if (isset($data->cgu_acceptees)) {
+        $updates[] = "cgu_acceptees = :cgu_acceptees";
+        $params[':cgu_acceptees'] = $data->cgu_acceptees ? 1 : 0;
     }
 
     if (empty($updates)) {

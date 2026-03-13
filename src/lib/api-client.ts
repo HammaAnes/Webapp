@@ -687,7 +687,7 @@ class ApiClient {
     formData.append("file", file);
     formData.append("entity_type", entityType);
     formData.append("entity_id", entityId);
-    formData.append("document_type", documentType);
+    formData.append("type_document", documentType);
 
     const url = `${API_URL}/documents/upload.php`;
 
@@ -737,14 +737,63 @@ class ApiClient {
     return result;
   }
 
-  async downloadDocument(documentId: string) {
-    return this.request(`/documents/download.php?id=${documentId}`);
+  async downloadDocument(documentId: string): Promise<{ success: boolean; blob?: Blob; filename?: string; error?: string }> {
+    const token = this.getToken();
+    if (!token) {
+      return { success: false, error: ERROR_MESSAGES.UNAUTHORIZED };
+    }
+    try {
+      const response = await fetch(`${API_URL}/documents/download.php?id=${documentId}`, {
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        try {
+          const json = JSON.parse(text);
+          return { success: false, error: json.error || json.message || `Erreur ${response.status}` };
+        } catch {
+          return { success: false, error: `Erreur ${response.status}` };
+        }
+      }
+      const disposition = response.headers.get("Content-Disposition") || "";
+      const filenameMatch = disposition.match(/filename="?([^";\n]+)"?/);
+      const filename = filenameMatch ? filenameMatch[1] : "document";
+      const blob = await response.blob();
+      return { success: true, blob, filename };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : "Erreur de telechargement" };
+    }
+  }
+
+  getDocumentPreviewUrl(documentId: string): string {
+    return `${API_URL}/documents/download.php?id=${documentId}&token=${this.getToken() || ""}`;
+  }
+
+  async updateDocumentStatus(documentId: string, statut: string, commentaireRejet?: string) {
+    const body: Record<string, unknown> = { statut };
+    if (commentaireRejet) body.commentaire_rejet = commentaireRejet;
+    return this.request(`/documents/update.php?id=${documentId}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
   }
 
   async deleteDocument(documentId: string) {
-    return this.request(`/documents/delete.php?id=${documentId}`, {
+    return this.request(`/documents/delete.php`, {
       method: "DELETE",
+      body: JSON.stringify({ id: documentId }),
     });
+  }
+
+  async adminCreateUser(data: { email: string; nom: string; prenom: string; telephone?: string; password?: string }) {
+    return this.request("/admin/users-create.php", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async searchUsers(query: string) {
+    return this.request(`/users/index.php?search=${encodeURIComponent(query)}`);
   }
 
   // ============= ABONNEMENTS =============

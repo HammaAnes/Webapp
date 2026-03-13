@@ -1,28 +1,50 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Building, User, FileText, Mail, Package, CheckCircle, XCircle, Scale, Ban, PlayCircle, AlertCircle, Save, Plus, Loader2, StickyNote, Briefcase, Pencil, X, FileCheck } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Building, User, FileText, Mail, Package, CheckCircle, XCircle, Scale, Ban, PlayCircle, AlertCircle, Save, Plus, Loader2, StickyNote, Briefcase, Pencil, X, FileCheck, Eye, Download, Upload, Trash2, File, RefreshCw, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import toast from "react-hot-toast";
-import Modal from "../../components/ui/Modal";
-import Card from "../../components/ui/Card";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import Input from "../../components/ui/Input";
+import Modal from "../ui/Modal";
+import Card from "../ui/Card";
+import Badge from "../ui/Badge";
+import Button from "../ui/Button";
+import Input from "../ui/Input";
 import { apiClient } from "../../lib/api-client";
 import { formatDate, formatCurrency } from "../../utils/formatters";
+import type { DemandeDomiciliation } from "../../types";
+import {
+  type DocumentRecord,
+  SOCIETE_DOCS,
+  AUTO_ENTREPRENEUR_DOCS,
+  COMMON_DOCS,
+  loadDocumentsFromApi,
+  triggerDocumentDownload,
+  openDocumentPreview,
+  formatFileSize,
+} from "../domiciliation/DocumentsEntreprise";
 
 interface DomiciliationDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  demande: any;
+  demande: DemandeDomiciliation | null;
   onAction: (action: string, data?: Record<string, unknown>) => Promise<void>;
   onUpdate: (data: Record<string, unknown>) => Promise<void>;
   loading: boolean;
 }
 
 type TabId = "informations" | "contrat" | "courrier" | "documents" | "notes" | "actions";
-interface CourrierItem { id: string; type: string; expediteur: string; description: string; statut: string; dateReception: string; dateRetrait?: string; }
-interface DocumentItem { id: string; type: string; nom: string; url?: string; statut: "en_attente" | "valide" | "rejete"; dateUpload: string; }
+
+interface CourrierItem {
+  id: string;
+  type: string;
+  expediteur: string;
+  description: string;
+  statut: string;
+  date_reception?: string;
+  dateReception?: string;
+  date_retrait?: string;
+  dateRetrait?: string;
+  retire_par?: string;
+}
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "informations", label: "Informations", icon: Building },
@@ -60,7 +82,7 @@ const SectionHeader = ({ icon: Icon, title, color }: { icon: React.ElementType; 
   </div>
 );
 
-function InformationsTab({ demande, onUpdate, loading }: { demande: any; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
+function InformationsTab({ demande, onUpdate, loading }: { demande: DemandeDomiciliation; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
   const [editing, setEditing] = useState(false);
   const rep = demande.representantLegal || {};
   const initForm = useCallback(() => ({
@@ -70,7 +92,7 @@ function InformationsTab({ demande, onUpdate, loading }: { demande: any; onUpdat
     activiteExercee: demande.activiteExercee || "", numeroAutoEntrepreneur: demande.numeroAutoEntrepreneur || "",
     repNom: rep.nom || "", repPrenom: rep.prenom || "", repTel: rep.telephone || "",
     repEmail: rep.email || "", repVille: rep.ville || "", repAdresse: rep.adresseResidence || "",
-  }), [demande]);
+  }), [demande, rep]);
   const [form, setForm] = useState(initForm);
   useEffect(() => { setForm(initForm()); }, [initForm]);
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
@@ -123,8 +145,8 @@ function InformationsTab({ demande, onUpdate, loading }: { demande: any; onUpdat
           <div className="grid grid-cols-2 gap-3">
             <Field label="Raison sociale" value={demande.raisonSociale} />
             <Field label="Forme juridique" value={demande.formeJuridique} />
-            {isSociete && <><Field label="NIF" value={demande.nif} /><Field label="NIS" value={demande.nis} /><Field label="Registre Commerce" value={demande.registreCommerce} /><Field label="Article Imposition" value={demande.articleImposition} /><Field label="Code NAE" value={demande.codeNae} /></>}
-            {isAE && <><Field label="Activite exercee" value={demande.activiteExercee} /><Field label="N. Auto-entrepreneur" value={demande.numeroAutoEntrepreneur} /></>}
+            {isSociete && <><Field label="NIF" value={demande.nif} /><Field label="NIS" value={demande.nis} /><Field label="Registre Commerce" value={demande.registreCommerce} /><Field label="Article Imposition" value={demande.articleImposition} /><Field label="Code NAE" value={demande.codeNae || ""} /></>}
+            {isAE && <><Field label="Activite exercee" value={demande.activiteExercee || ""} /><Field label="N. Auto-entrepreneur" value={demande.numeroAutoEntrepreneur || ""} /></>}
           </div>
         )}
       </div>
@@ -142,9 +164,9 @@ function InformationsTab({ demande, onUpdate, loading }: { demande: any; onUpdat
         ) : (
           <div className="grid grid-cols-2 gap-3">
             <Field label="Nom complet" value={`${rep.prenom || ""} ${rep.nom || ""}`} />
-            <Field label="Telephone" value={rep.telephone} />
-            <Field label="Email" value={rep.email} />
-            <Field label="Ville" value={rep.ville} />
+            <Field label="Telephone" value={rep.telephone || ""} />
+            <Field label="Email" value={rep.email || ""} />
+            <Field label="Ville" value={rep.ville || ""} />
             {rep.adresseResidence && <div className="col-span-2"><Field label="Adresse" value={rep.adresseResidence} /></div>}
           </div>
         )}
@@ -166,27 +188,33 @@ function InformationsTab({ demande, onUpdate, loading }: { demande: any; onUpdat
   );
 }
 
-function ContratTab({ demande, onUpdate, loading }: { demande: any; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
-  const [bureau, setBureau] = useState(demande.numeroBureau || "");
+function ContratTab({ demande, onUpdate, loading }: { demande: DemandeDomiciliation; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
+  const [bureau, setBureau] = useState(demande.numeroBureau?.toString() || "");
   const [visible, setVisible] = useState(demande.visibleSurSite ?? false);
   const [editing, setEditing] = useState(false);
   const [contrat, setContrat] = useState({
     referenceContratNotarie: demande.referenceContratNotarie || "",
     dateDebutContrat: demande.dateDebutContrat ? String(demande.dateDebutContrat).split("T")[0] : "",
     dateFinContrat: demande.dateFinContrat ? String(demande.dateFinContrat).split("T")[0] : "",
-    montantMensuel: demande.montantMensuel || "",
+    montantMensuel: demande.montantMensuel?.toString() || "",
   });
   const [saving, setSaving] = useState(false);
   useEffect(() => {
-    setBureau(demande.numeroBureau || "");
+    setBureau(demande.numeroBureau?.toString() || "");
     setVisible(demande.visibleSurSite ?? false);
     setContrat({
       referenceContratNotarie: demande.referenceContratNotarie || "",
       dateDebutContrat: demande.dateDebutContrat ? String(demande.dateDebutContrat).split("T")[0] : "",
       dateFinContrat: demande.dateFinContrat ? String(demande.dateFinContrat).split("T")[0] : "",
-      montantMensuel: demande.montantMensuel || "",
+      montantMensuel: demande.montantMensuel?.toString() || "",
     });
   }, [demande]);
+
+  const mois = contrat.dateDebutContrat && contrat.dateFinContrat
+    ? Math.max(1, Math.round((new Date(contrat.dateFinContrat).getTime() - new Date(contrat.dateDebutContrat).getTime()) / (30.44 * 24 * 60 * 60 * 1000)))
+    : 6;
+  const montantTotal = contrat.montantMensuel ? Number(contrat.montantMensuel) * mois : 0;
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -229,7 +257,7 @@ function ContratTab({ demande, onUpdate, loading }: { demande: any; onUpdate: (d
           <>
             <Input label="Date debut" type="date" value={contrat.dateDebutContrat} onChange={(e) => setContrat({ ...contrat, dateDebutContrat: e.target.value })} />
             <Input label="Date fin" type="date" value={contrat.dateFinContrat} onChange={(e) => setContrat({ ...contrat, dateFinContrat: e.target.value })} />
-            <Input label="Montant mensuel (DA)" type="number" value={String(contrat.montantMensuel)} onChange={(e) => setContrat({ ...contrat, montantMensuel: e.target.value })} />
+            <Input label="Montant mensuel (DA)" type="number" value={contrat.montantMensuel} onChange={(e) => setContrat({ ...contrat, montantMensuel: e.target.value })} />
           </>
         ) : (
           <>
@@ -239,6 +267,17 @@ function ContratTab({ demande, onUpdate, loading }: { demande: any; onUpdate: (d
           </>
         )}
       </div>
+      {(contrat.montantMensuel && contrat.dateDebutContrat && contrat.dateFinContrat) && (
+        <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm text-emerald-700 font-medium">Montant total du contrat ({mois} mois)</p>
+              <p className="text-xs text-emerald-600 mt-0.5">Paiement unique lors de la signature notariale</p>
+            </div>
+            <p className="text-xl font-bold text-emerald-800">{formatCurrency(montantTotal)}</p>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4 border border-gray-200">
         <div>
           <p className="font-medium text-gray-900">Visible sur le site</p>
@@ -253,40 +292,92 @@ function ContratTab({ demande, onUpdate, loading }: { demande: any; onUpdate: (d
   );
 }
 
-function CourrierTab({ demande }: { demande: any }) {
+function CourrierTab({ demande }: { demande: DemandeDomiciliation }) {
   const [courriers, setCourriers] = useState<CourrierItem[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [nc, setNc] = useState({ type: "lettre", expediteur: "", description: "" });
+  const [retireModal, setRetireModal] = useState<string | null>(null);
+  const [retirePar, setRetirePar] = useState("");
+
   const load = useCallback(async () => {
     setLoadingList(true);
-    try { const r = await apiClient.getUserCourrier(demande.id); setCourriers(((r.data as any)?.courriers || []) as CourrierItem[]); }
-    catch { setCourriers([]); }
+    try {
+      const r = await apiClient.getUserCourrier(demande.id);
+      const data = r.data as Record<string, unknown> | undefined;
+      setCourriers(((data?.courriers || []) as CourrierItem[]));
+    } catch { setCourriers([]); }
     finally { setLoadingList(false); }
   }, [demande.id]);
+
   useEffect(() => { load(); }, [load]);
+
   const handleCreate = async () => {
     if (!nc.expediteur.trim()) { toast.error("Expediteur requis"); return; }
     setSubmitting(true);
-    try { await apiClient.createCourrier({ domiciliationId: demande.id, ...nc }); toast.success("Courrier ajoute"); setNc({ type: "lettre", expediteur: "", description: "" }); setShowForm(false); await load(); }
-    catch { toast.error("Erreur lors de la creation"); }
+    try {
+      await apiClient.createCourrier({ domiciliationId: demande.id, ...nc });
+      toast.success("Courrier ajoute");
+      setNc({ type: "lettre", expediteur: "", description: "" });
+      setShowForm(false);
+      await load();
+    } catch { toast.error("Erreur lors de la creation"); }
     finally { setSubmitting(false); }
   };
-  const markRetire = async (id: string) => {
-    try { await apiClient.updateCourrier(id, { action: "marquer_retire" }); toast.success("Statut mis a jour"); await load(); }
-    catch { toast.error("Erreur lors de la mise a jour"); }
+
+  const markRetire = async () => {
+    if (!retireModal) return;
+    try {
+      await apiClient.updateCourrier(retireModal, { action: "marquer_retire", retire_par: retirePar });
+      toast.success("Courrier marque comme retire");
+      setRetireModal(null);
+      setRetirePar("");
+      await load();
+    } catch { toast.error("Erreur lors de la mise a jour"); }
   };
+
+  const markEnvoye = async (id: string) => {
+    try {
+      await apiClient.updateCourrier(id, { action: "marquer_envoye" });
+      toast.success("Courrier marque comme envoye");
+      await load();
+    } catch { toast.error("Erreur"); }
+  };
+
+  const archiver = async (id: string) => {
+    try {
+      await apiClient.updateCourrier(id, { action: "archiver" });
+      toast.success("Courrier archive");
+      await load();
+    } catch { toast.error("Erreur"); }
+  };
+
   const tc: Record<string, { label: string; icon: React.ElementType; color: string }> = {
     lettre: { label: "Lettre", icon: Mail, color: "bg-blue-50 text-blue-600" },
     colis: { label: "Colis", icon: Package, color: "bg-teal-50 text-teal-600" },
     recommande: { label: "Recommande", icon: FileText, color: "bg-red-50 text-red-600" },
     autre: { label: "Autre", icon: Mail, color: "bg-gray-50 text-gray-600" },
   };
+
+  const sc: Record<string, { label: string; variant: "warning" | "success" | "info" | "danger" | "default" }> = {
+    recu: { label: "Recu", variant: "warning" },
+    notifie: { label: "Notifie", variant: "info" },
+    en_attente_instruction: { label: "Att. instruction", variant: "warning" },
+    retire: { label: "Retire", variant: "success" },
+    envoye: { label: "Envoye", variant: "info" },
+    archive: { label: "Archive", variant: "default" },
+  };
+
+  const nonTraites = courriers.filter((c) => !["retire", "envoye", "archive"].includes(c.statut)).length;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <SectionHeader icon={Mail} title={`Courrier (${courriers.length})`} color="from-sky-500 to-blue-500" />
+        <div className="flex items-center gap-3">
+          <SectionHeader icon={Mail} title="Courrier" color="from-sky-500 to-blue-500" />
+          {nonTraites > 0 && <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{nonTraites}</span>}
+        </div>
         <Button size="sm" onClick={() => setShowForm(!showForm)}>{showForm ? <><X className="w-4 h-4" /> Fermer</> : <><Plus className="w-4 h-4" /> Ajouter</>}</Button>
       </div>
       {showForm && (
@@ -306,62 +397,233 @@ function CourrierTab({ demande }: { demande: any }) {
       )}
       {loadingList ? <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div> : courriers.length === 0 ? <div className="text-center py-8 text-gray-500">Aucun courrier enregistre</div> : (
         <div className="space-y-2">
-          {courriers.map((c) => { const t = tc[c.type] || tc.autre; const TI = t.icon; return (
-            <div key={c.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${t.color}`}><TI className="w-5 h-5" /></div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2"><p className="font-medium text-gray-900 text-sm">{t.label}</p><Badge variant={c.statut === "retire" ? "success" : c.statut === "notifie" ? "info" : "warning"} size="sm">{c.statut}</Badge></div>
-                <p className="text-xs text-gray-500">{c.expediteur}{c.dateReception && ` - ${format(new Date(c.dateReception), "d MMM yyyy", { locale: fr })}`}</p>
+          {courriers.map((c) => {
+            const t = tc[c.type] || tc.autre;
+            const s = sc[c.statut] || sc.recu;
+            const TI = t.icon;
+            const dateStr = c.date_reception || c.dateReception;
+            return (
+              <div key={c.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${t.color}`}><TI className="w-5 h-5" /></div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900 text-sm">{t.label}</p>
+                    <Badge variant={s.variant} size="sm">{s.label}</Badge>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {c.expediteur}{dateStr && ` - ${format(new Date(dateStr), "d MMM yyyy", { locale: fr })}`}
+                  </p>
+                  {c.description && <p className="text-xs text-gray-400 mt-0.5">{c.description}</p>}
+                  {c.retire_par && <p className="text-xs text-emerald-600 mt-0.5">Retire par: {c.retire_par}</p>}
+                </div>
+                <div className="flex gap-1 flex-shrink-0">
+                  {!["retire", "envoye", "archive"].includes(c.statut) && (
+                    <>
+                      <Button size="sm" variant="ghost" onClick={() => { setRetireModal(c.id); setRetirePar(""); }} title="Marquer retire">
+                        <CheckCircle className="w-4 h-4 text-emerald-600" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => markEnvoye(c.id)} title="Marquer envoye">
+                        <Mail className="w-4 h-4 text-sky-600" />
+                      </Button>
+                    </>
+                  )}
+                  {c.statut !== "archive" && (
+                    <Button size="sm" variant="ghost" onClick={() => archiver(c.id)} title="Archiver">
+                      <Ban className="w-4 h-4 text-gray-400" />
+                    </Button>
+                  )}
+                </div>
               </div>
-              {c.statut !== "retire" && <Button size="sm" variant="ghost" onClick={() => markRetire(c.id)}><CheckCircle className="w-4 h-4" /></Button>}
-            </div>
-          ); })}
+            );
+          })}
         </div>
       )}
+      <Modal isOpen={!!retireModal} onClose={() => setRetireModal(null)} title="Marquer le courrier comme retire">
+        <div className="space-y-4">
+          <Input label="Retire par (nom de la personne)" value={retirePar} onChange={(e) => setRetirePar(e.target.value)} placeholder="Nom de la personne" />
+          <div className="flex gap-3 justify-end">
+            <Button variant="outline" onClick={() => setRetireModal(null)}>Annuler</Button>
+            <Button onClick={markRetire}>Confirmer le retrait</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
 
-function DocumentsTab({ demande }: { demande: any }) {
-  const [docs, setDocs] = useState<DocumentItem[]>([]);
+function DocumentsTab({ demande }: { demande: DemandeDomiciliation }) {
+  const [docs, setDocs] = useState<DocumentRecord[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
-  useEffect(() => { (async () => {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [uploadTarget, setUploadTarget] = useState("");
+  const [rejectModal, setRejectModal] = useState<DocumentRecord | null>(null);
+  const [rejectComment, setRejectComment] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const requiredSlots = demande.typeStructure === "auto_entrepreneur" ? AUTO_ENTREPRENEUR_DOCS : SOCIETE_DOCS;
+  const allSlots = [...requiredSlots, ...COMMON_DOCS];
+  const getDoc = (type: string) => docs.find((d) => d.document_type === type);
+
+  const loadDocs = useCallback(async () => {
     setLoadingDocs(true);
-    try { const r = await apiClient.getDocuments("domiciliation", demande.id); setDocs(((r.data as any)?.documents || []) as DocumentItem[]); }
-    catch { setDocs([]); }
+    try {
+      const documents = await loadDocumentsFromApi("domiciliation", demande.id);
+      setDocs(documents);
+    } catch { setDocs([]); }
     finally { setLoadingDocs(false); }
-  })(); }, [demande.id]);
-  const changeStatus = async (id: string, s: string) => {
-    try { await apiClient.put(`/documents/update.php?id=${id}`, { statut: s }); setDocs((p) => p.map((d) => d.id === id ? { ...d, statut: s as DocumentItem["statut"] } : d)); toast.success("Statut du document mis a jour"); }
-    catch { toast.error("Erreur lors de la mise a jour"); }
+  }, [demande.id]);
+
+  useEffect(() => { loadDocs(); }, [loadDocs]);
+
+  const handleUploadClick = (docType: string) => { setUploadTarget(docType); fileRef.current?.click(); };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadTarget) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("Fichier trop volumineux (max 5 Mo)"); return; }
+    try {
+      setUploading(uploadTarget);
+      const res = await apiClient.uploadDocument(file, "domiciliation", demande.id, uploadTarget);
+      if (res.success) { toast.success("Document uploade"); await loadDocs(); }
+      else toast.error(res.error || "Erreur d'upload");
+    } catch { toast.error("Erreur d'upload"); }
+    finally { setUploading(null); setUploadTarget(""); if (fileRef.current) fileRef.current.value = ""; }
   };
-  const sc: Record<string, { label: string; variant: "warning" | "success" | "danger" }> = { en_attente: { label: "En attente", variant: "warning" }, valide: { label: "Valide", variant: "success" }, rejete: { label: "Rejete", variant: "danger" } };
+
+  const handleDownload = async (doc: DocumentRecord) => {
+    try { await triggerDocumentDownload(doc); }
+    catch { toast.error("Erreur de telechargement"); }
+  };
+
+  const handlePreview = async (doc: DocumentRecord) => {
+    try {
+      const url = await openDocumentPreview(doc);
+      if (url) setPreviewUrl(url);
+      else await handleDownload(doc);
+    } catch { await handleDownload(doc); }
+  };
+
+  const handleValidate = async (doc: DocumentRecord) => {
+    try {
+      const res = await apiClient.updateDocumentStatus(doc.id, "valide");
+      if (res.success) { toast.success("Document valide"); await loadDocs(); }
+      else toast.error(res.error || "Erreur");
+    } catch { toast.error("Erreur"); }
+  };
+
+  const handleReject = async () => {
+    if (!rejectModal) return;
+    try {
+      const res = await apiClient.updateDocumentStatus(rejectModal.id, "rejete", rejectComment || undefined);
+      if (res.success) { toast.success("Document rejete"); setRejectModal(null); setRejectComment(""); await loadDocs(); }
+      else toast.error(res.error || "Erreur");
+    } catch { toast.error("Erreur"); }
+  };
+
+  const handleDelete = async (doc: DocumentRecord) => {
+    try {
+      const res = await apiClient.deleteDocument(doc.id);
+      if (res.success) { toast.success("Document supprime"); await loadDocs(); }
+      else toast.error(res.error || "Erreur");
+    } catch { toast.error("Erreur"); }
+  };
+
+  const uploadedCount = requiredSlots.filter((s) => s.required && getDoc(s.type)).length;
+  const totalRequired = requiredSlots.filter((s) => s.required).length;
+  const pct = totalRequired > 0 ? Math.round((uploadedCount / totalRequired) * 100) : 0;
+
+  const stMap: Record<string, { label: string; variant: "warning" | "success" | "danger" }> = {
+    en_attente: { label: "En attente", variant: "warning" },
+    valide: { label: "Valide", variant: "success" },
+    rejete: { label: "Rejete", variant: "danger" },
+  };
+
   if (loadingDocs) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;
+
   return (
     <div className="space-y-4">
-      <SectionHeader icon={FileText} title={`Documents (${docs.length})`} color="from-teal-500 to-emerald-500" />
-      {docs.length === 0 ? <div className="text-center py-8 text-gray-500">Aucun document televerse</div> : (
-        <div className="space-y-2">
-          {docs.map((d) => { const s = sc[d.statut] || sc.en_attente; return (
-            <div key={d.id} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-              <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0"><FileText className="w-5 h-5 text-teal-700" /></div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 text-sm truncate">{d.nom || d.type}</p>
-                <p className="text-xs text-gray-500">{d.dateUpload ? format(new Date(d.dateUpload), "d MMM yyyy", { locale: fr }) : ""}</p>
-              </div>
-              <Badge variant={s.variant} size="sm">{s.label}</Badge>
-              <select value={d.statut} onChange={(e) => changeStatus(d.id, e.target.value)} className="text-xs px-2 py-1 border border-gray-300 rounded-lg bg-white">
-                <option value="en_attente">En attente</option><option value="valide">Valide</option><option value="rejete">Rejete</option>
-              </select>
-            </div>
-          ); })}
+      <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleFileChange} />
+
+      <div className="flex items-center justify-between">
+        <SectionHeader icon={FileText} title={`Documents (${docs.length})`} color="from-teal-500 to-emerald-500" />
+        <div className="flex items-center gap-3">
+          <span className={`text-lg font-bold ${pct === 100 ? "text-emerald-600" : "text-amber-600"}`}>{pct}%</span>
+          <span className="text-xs text-gray-500">{uploadedCount}/{totalRequired} requis</span>
         </div>
-      )}
+      </div>
+
+      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-amber-500"}`} style={{ width: `${pct}%` }} />
+      </div>
+
+      <div className="space-y-2">
+        {allSlots.map((slot) => {
+          const doc = getDoc(slot.type);
+          const isUpl = uploading === slot.type;
+          const st = doc?.status ? stMap[doc.status] : null;
+          return (
+            <div key={slot.type} className={`flex items-center gap-3 p-3 rounded-xl border ${doc ? (doc.status === "rejete" ? "bg-red-50/50 border-red-200" : doc.status === "valide" ? "bg-emerald-50/50 border-emerald-200" : "bg-gray-50 border-gray-200") : slot.required ? "bg-amber-50/30 border-amber-200 border-dashed" : "bg-gray-50/50 border-gray-200 border-dashed"}`}>
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${doc ? (doc.status === "valide" ? "bg-emerald-100" : doc.status === "rejete" ? "bg-red-100" : "bg-teal-100") : "bg-gray-100"}`}>
+                {doc ? <File className={`w-4 h-4 ${doc.status === "valide" ? "text-emerald-600" : doc.status === "rejete" ? "text-red-600" : "text-teal-600"}`} /> : <FileText className="w-4 h-4 text-gray-400" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-900 text-sm">{slot.label}</p>
+                  {slot.required && !doc && <Badge variant="warning" size="sm">Requis</Badge>}
+                  {st && <Badge variant={st.variant} size="sm">{st.label}</Badge>}
+                </div>
+                {doc && (
+                  <p className="text-xs text-gray-500 truncate">{doc.file_name} {doc.file_size ? `(${formatFileSize(doc.file_size)})` : ""}</p>
+                )}
+                {doc?.status === "rejete" && doc.commentaire_rejet && (
+                  <p className="text-xs text-red-600 mt-0.5">{doc.commentaire_rejet}</p>
+                )}
+              </div>
+              <div className="flex gap-1 flex-shrink-0">
+                {doc ? (
+                  <>
+                    <button onClick={() => handlePreview(doc)} className="p-1.5 rounded-lg hover:bg-gray-100 text-teal-600" title="Apercu"><Eye className="w-4 h-4" /></button>
+                    <button onClick={() => handleDownload(doc)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600" title="Telecharger"><Download className="w-4 h-4" /></button>
+                    {doc.status !== "valide" && <button onClick={() => handleValidate(doc)} className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600" title="Valider"><CheckCircle className="w-4 h-4" /></button>}
+                    {doc.status !== "rejete" && <button onClick={() => { setRejectModal(doc); setRejectComment(""); }} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="Rejeter"><XCircle className="w-4 h-4" /></button>}
+                    <button onClick={() => handleUploadClick(slot.type)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500" title="Remplacer"><RefreshCw className="w-4 h-4" /></button>
+                    <button onClick={() => handleDelete(doc)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400" title="Supprimer"><Trash2 className="w-4 h-4" /></button>
+                  </>
+                ) : (
+                  <button onClick={() => handleUploadClick(slot.type)} disabled={isUpl} className="text-xs bg-gray-800 text-white hover:bg-gray-900 flex items-center gap-1.5 px-3 py-1.5 rounded-lg disabled:opacity-50">
+                    {isUpl ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                    {isUpl ? "Envoi..." : "Uploader"}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <Modal isOpen={!!rejectModal} onClose={() => setRejectModal(null)} title="Rejeter le document">
+        <div className="space-y-4">
+          <p className="text-gray-700 text-sm">Rejeter le document : <strong>{rejectModal?.file_name}</strong></p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Motif du rejet</label>
+            <textarea value={rejectComment} onChange={(e) => setRejectComment(e.target.value)} rows={3} placeholder="Ex: Document illisible, veuillez renvoyer une copie plus nette..." className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500" />
+          </div>
+          <div className="flex gap-3 justify-end">
+            <Button variant="outline" onClick={() => setRejectModal(null)}>Annuler</Button>
+            <Button variant="danger" onClick={handleReject}>Rejeter</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={!!previewUrl} onClose={() => { if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }} title="Apercu du document" size="lg">
+        {previewUrl && <iframe src={previewUrl} className="w-full h-[60vh] rounded-lg border border-gray-200" title="Apercu" />}
+      </Modal>
     </div>
   );
 }
 
-function NotesTab({ demande, onUpdate, loading }: { demande: any; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
+function NotesTab({ demande, onUpdate, loading }: { demande: DemandeDomiciliation; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
   const [notes, setNotes] = useState(demande.commentaireAdmin || "");
   const [saving, setSaving] = useState(false);
   useEffect(() => { setNotes(demande.commentaireAdmin || ""); }, [demande.commentaireAdmin]);
@@ -380,12 +642,13 @@ function NotesTab({ demande, onUpdate, loading }: { demande: any; onUpdate: (d: 
   );
 }
 
-function ActionsTab({ demande, onAction, loading }: { demande: any; onAction: (action: string, data?: Record<string, unknown>) => Promise<void>; loading: boolean }) {
+function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliation; onAction: (action: string, data?: Record<string, unknown>) => Promise<void>; loading: boolean }) {
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<string | null>(null);
   const [motif, setMotif] = useState("");
-  const [sd, setSd] = useState({ numeroBureau: 1, referenceContratNotarie: "", dateDebutContrat: new Date().toISOString().split("T")[0], dateFinContrat: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], montantMensuel: 12000 });
+  const [sd, setSd] = useState({ numeroBureau: 1, referenceContratNotarie: "", dateDebutContrat: new Date().toISOString().split("T")[0], dateFinContrat: new Date(Date.now() + 183 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], montantMensuel: 12000 });
   const [occupiedBureaux, setOccupiedBureaux] = useState<number[]>([]);
+
   useEffect(() => {
     apiClient.getDomiciliations().then(res => {
       if (res.success && res.data) {
@@ -397,35 +660,44 @@ function ActionsTab({ demande, onAction, loading }: { demande: any; onAction: (a
       }
     }).catch(() => {});
   }, [demande.id]);
+
+  const mois = Math.max(1, Math.round((new Date(sd.dateFinContrat).getTime() - new Date(sd.dateDebutContrat).getTime()) / (30.44 * 24 * 60 * 60 * 1000)));
+  const montantTotal = sd.montantMensuel * mois;
+
   const defs: { key: string; label: string; icon: React.ElementType; variant: string; statuts: string[]; destructive?: boolean }[] = [
     { key: "valider", label: "Valider le dossier", icon: CheckCircle, variant: "success", statuts: ["dossier_preparatoire"] },
     { key: "rejeter", label: "Refuser la demande", icon: XCircle, variant: "danger", statuts: ["dossier_preparatoire", "en_attente_signature"], destructive: true },
     { key: "signer", label: "Enregistrer signature notaire", icon: Scale, variant: "primary", statuts: ["en_attente_signature"] },
     { key: "completer", label: "Completer et activer", icon: FileCheck, variant: "success", statuts: ["domiciliation_creee", "en_attente_complements"] },
     { key: "activer", label: "Activer", icon: PlayCircle, variant: "success", statuts: ["domiciliation_creee", "en_attente_complements"] },
+    { key: "renouveler", label: "Renouveler le contrat", icon: RefreshCw, variant: "primary", statuts: ["expiree", "active"] },
     { key: "resilier", label: "Resilier la domiciliation", icon: Ban, variant: "danger", statuts: ["active"], destructive: true },
   ];
   const available = defs.filter((a) => a.statuts.includes(demande.statut));
+
   const handleSubmit = async (key: string) => {
     if (key === "rejeter" && !motif.trim()) { toast.error("Veuillez preciser le motif du refus"); return; }
     if (key === "resilier" && !motif.trim()) { toast.error("Veuillez preciser le motif de la resiliation"); return; }
     if (key === "signer" && !sd.referenceContratNotarie.trim()) { toast.error("Reference du contrat requise"); return; }
-    if (key === "signer" && occupiedBureaux.includes(sd.numeroBureau)) { toast.error(`Le bureau ${sd.numeroBureau} est deja attribue a une autre domiciliation active`); return; }
+    if (key === "signer" && occupiedBureaux.includes(sd.numeroBureau)) { toast.error(`Le bureau ${sd.numeroBureau} est deja attribue`); return; }
     const data: Record<string, unknown> = {};
     if (key === "rejeter" || key === "resilier") data.motif = motif;
     if (key === "signer") Object.assign(data, sd);
+    if (key === "renouveler") Object.assign(data, sd);
     await onAction(key, data);
     setActiveAction(null); setConfirmAction(null); setMotif("");
   };
+
   if (available.length === 0) return (
     <div className="text-center py-12">
       <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4"><AlertCircle className="w-8 h-8 text-gray-400" /></div>
       <p className="text-gray-500 font-medium">Aucune action disponible pour le statut actuel</p>
     </div>
   );
+
   return (
     <div className="space-y-4">
-      <SectionHeader icon={Scale} title="Actions disponibles" color="from-sky-500 to-indigo-500" />
+      <SectionHeader icon={Scale} title="Actions disponibles" color="from-sky-500 to-blue-500" />
       <div className="space-y-3">
         {available.map((a) => { const Icon = a.icon; const isAct = activeAction === a.key; return (
           <div key={a.key} className="border border-gray-200 rounded-xl overflow-hidden">
@@ -436,7 +708,7 @@ function ActionsTab({ demande, onAction, loading }: { demande: any; onAction: (a
             </button>
             {isAct && (
               <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
-                {a.key === "signer" && (
+                {(a.key === "signer" || a.key === "renouveler") && (
                   <div className="space-y-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Numero de bureau (1-36)</label>
@@ -447,7 +719,7 @@ function ActionsTab({ demande, onAction, loading }: { demande: any; onAction: (a
                         })}
                       </select>
                       {occupiedBureaux.includes(sd.numeroBureau) && (
-                        <p className="text-xs text-red-600 mt-1 font-medium">Ce bureau est deja attribue a une autre domiciliation active</p>
+                        <p className="text-xs text-red-600 mt-1 font-medium">Ce bureau est deja attribue</p>
                       )}
                     </div>
                     <Input label="Reference contrat notarie" value={sd.referenceContratNotarie} onChange={(e) => setSd({ ...sd, referenceContratNotarie: e.target.value })} required />
@@ -456,6 +728,9 @@ function ActionsTab({ demande, onAction, loading }: { demande: any; onAction: (a
                       <Input label="Date fin" type="date" value={sd.dateFinContrat} onChange={(e) => setSd({ ...sd, dateFinContrat: e.target.value })} />
                     </div>
                     <Input label="Montant mensuel (DA)" type="number" value={sd.montantMensuel.toString()} onChange={(e) => setSd({ ...sd, montantMensuel: parseInt(e.target.value) || 0 })} />
+                    <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+                      <p className="text-sm font-medium text-emerald-800">Total: {formatCurrency(montantTotal)} ({mois} mois)</p>
+                    </div>
                   </div>
                 )}
                 {(a.key === "rejeter" || a.key === "resilier") && (
@@ -482,29 +757,54 @@ function ActionsTab({ demande, onAction, loading }: { demande: any; onAction: (a
 
 export default function DomiciliationDetailModal({ isOpen, onClose, demande, onAction, onUpdate, loading }: DomiciliationDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>("informations");
+  const [courrierCount, setCourrierCount] = useState(0);
+
   useEffect(() => { if (isOpen) setActiveTab("informations"); }, [isOpen]);
+
+  useEffect(() => {
+    if (demande?.id && isOpen) {
+      apiClient.getUserCourrier(demande.id).then(r => {
+        const data = r.data as Record<string, unknown> | undefined;
+        const courriers = (data?.courriers || []) as CourrierItem[];
+        setCourrierCount(courriers.filter(c => !["retire", "envoye", "archive"].includes(c.statut)).length);
+      }).catch(() => setCourrierCount(0));
+    }
+  }, [demande?.id, isOpen]);
+
   if (!demande) return null;
   const badge = STATUS_BADGES[demande.statut] || STATUS_BADGES.dossier_preparatoire;
   const displayName = demande.raisonSociale || `${demande.representantLegal?.prenom || ""} ${demande.representantLegal?.nom || ""}`.trim() || "Non renseigne";
+  const rep = demande.representantLegal;
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl" noPadding>
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center"><Building className="w-5 h-5 text-amber-600" /></div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">{displayName}</h3>
-            <div className="flex items-center gap-2 mt-0.5">
-              <Badge variant={badge.variant} size="sm">{badge.label}</Badge>
-              {demande.numeroBureau && <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">N{demande.numeroBureau}</span>}
+      <div className="px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+              <Building className="w-5 h-5 text-amber-600" />
             </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">{displayName}</h3>
+              <div className="flex items-center gap-2 mt-0.5">
+                <Badge variant={badge.variant} size="sm">{badge.label}</Badge>
+                {demande.numeroBureau && <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">N{demande.numeroBureau}</span>}
+              </div>
+            </div>
+          </div>
+          <div className="text-right text-xs text-gray-500">
+            {rep?.email && <p>{rep.email}</p>}
+            {rep?.telephone && <p>{rep.telephone}</p>}
+            {demande.dateCreation && <p className="mt-1">Cree le {formatDate(demande.dateCreation)}</p>}
           </div>
         </div>
       </div>
       <div className="border-b border-gray-200 px-6">
-        <nav className="flex space-x-6" role="tablist">
+        <nav className="flex space-x-4 overflow-x-auto" role="tablist">
           {TABS.map((tab) => { const Icon = tab.icon; const isActive = activeTab === tab.id; return (
-            <button key={tab.id} role="tab" aria-selected={isActive} onClick={() => setActiveTab(tab.id)} className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-1.5 ${isActive ? "border-amber-500 text-amber-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}`}>
+            <button key={tab.id} role="tab" aria-selected={isActive} onClick={() => setActiveTab(tab.id)} className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-1.5 whitespace-nowrap ${isActive ? "border-amber-500 text-amber-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}`}>
               <Icon className="w-4 h-4" />{tab.label}
+              {tab.id === "courrier" && courrierCount > 0 && <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{courrierCount}</span>}
             </button>
           ); })}
         </nav>

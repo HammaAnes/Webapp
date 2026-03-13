@@ -20,8 +20,8 @@ try {
         Response::error("Données JSON invalides", 400);
     }
 
-    if (empty($data->raison_sociale) || empty($data->forme_juridique)) {
-        Response::error("Raison sociale et forme juridique requises", 400);
+    if (empty($data->raison_sociale) && empty($data->forme_juridique)) {
+        Response::error("Raison sociale ou forme juridique requise", 400);
     }
 
     if (!empty($data->nif) && strlen($data->nif) !== 20) {
@@ -53,7 +53,7 @@ try {
     if (!$is_admin_creation) {
         $query = "SELECT id FROM domiciliations
                   WHERE user_id = :user_id
-                  AND statut IN ('en_attente', 'en_cours', 'validee', 'active')";
+                  AND statut IN ('dossier_preparatoire', 'en_attente_signature', 'domiciliation_creee', 'en_attente_complements', 'active')";
 
         $stmt = $db->prepare($query);
         $stmt->bindParam(':user_id', $target_user_id);
@@ -66,31 +66,48 @@ try {
 
     $id = UuidHelper::generate();
 
-    $statut_initial = $is_admin_creation && !empty($data->statut) ? $data->statut : 'en_attente';
+    $statut_initial = $is_admin_creation && !empty($data->statut) ? $data->statut : 'dossier_preparatoire';
+
+    $options_json = null;
+    if (isset($data->options)) {
+        $options_json = is_string($data->options) ? $data->options : json_encode($data->options);
+    }
 
     $query = "INSERT INTO domiciliations
-              (id, user_id, raison_sociale, forme_juridique, capital,
+              (id, user_id, situation_administrative, type_structure,
+               raison_sociale, forme_juridique, capital,
                activite_principale, nif, nis, registre_commerce, article_imposition,
-               numero_auto_entrepreneur, wilaya, commune, adresse_actuelle,
+               numero_auto_entrepreneur, code_nae, activite_exercee, description_activite,
+               wilaya, commune, adresse_actuelle,
                representant_nom, representant_prenom, representant_fonction, representant_telephone,
-               representant_email, domaine_activite, adresse_siege_social,
-               coordonnees_fiscales, coordonnees_administratives, date_creation_entreprise,
-               statut, montant_mensuel, date_debut, date_fin, notes_admin)
+               representant_email, representant_adresse_residence, representant_ville,
+               domaine_activite, adresse_siege_social,
+               date_creation_entreprise, ville_immatriculation,
+               numero_bureau, reference_contrat_notarie, date_debut_contrat, date_fin_contrat,
+               options, cgu_acceptees, date_cgu_acceptation, date_debut_souhaitee,
+               statut, montant_mensuel, date_debut, date_fin, notes_admin, commentaire_admin)
               VALUES
-              (:id, :user_id, :raison_sociale, :forme_juridique, :capital,
+              (:id, :user_id, :situation_administrative, :type_structure,
+               :raison_sociale, :forme_juridique, :capital,
                :activite_principale, :nif, :nis, :registre_commerce, :article_imposition,
-               :numero_auto_entrepreneur, :wilaya, :commune, :adresse_actuelle,
+               :numero_auto_entrepreneur, :code_nae, :activite_exercee, :description_activite,
+               :wilaya, :commune, :adresse_actuelle,
                :representant_nom, :representant_prenom, :representant_fonction, :representant_telephone,
-               :representant_email, :domaine_activite, :adresse_siege_social,
-               :coordonnees_fiscales, :coordonnees_administratives, :date_creation_entreprise,
-               :statut, :montant_mensuel, :date_debut, :date_fin, :notes_admin)";
+               :representant_email, :representant_adresse_residence, :representant_ville,
+               :domaine_activite, :adresse_siege_social,
+               :date_creation_entreprise, :ville_immatriculation,
+               :numero_bureau, :reference_contrat_notarie, :date_debut_contrat, :date_fin_contrat,
+               :options, :cgu_acceptees, :date_cgu_acceptation, :date_debut_souhaitee,
+               :statut, :montant_mensuel, :date_debut, :date_fin, :notes_admin, :commentaire_admin)";
 
     $stmt = $db->prepare($query);
     $stmt->execute([
         ':id' => $id,
         ':user_id' => $target_user_id,
-        ':raison_sociale' => $data->raison_sociale,
-        ':forme_juridique' => $data->forme_juridique,
+        ':situation_administrative' => $data->situation_administrative ?? 'deja_creee',
+        ':type_structure' => $data->type_structure ?? 'societe',
+        ':raison_sociale' => $data->raison_sociale ?? null,
+        ':forme_juridique' => $data->forme_juridique ?? null,
         ':capital' => $data->capital ?? null,
         ':activite_principale' => $data->activite_principale ?? null,
         ':nif' => $data->nif ?? null,
@@ -98,6 +115,9 @@ try {
         ':registre_commerce' => $data->registre_commerce ?? null,
         ':article_imposition' => $data->article_imposition ?? null,
         ':numero_auto_entrepreneur' => $data->numero_auto_entrepreneur ?? null,
+        ':code_nae' => $data->code_nae ?? null,
+        ':activite_exercee' => $data->activite_exercee ?? null,
+        ':description_activite' => $data->description_activite ?? null,
         ':wilaya' => $data->wilaya ?? null,
         ':commune' => $data->commune ?? null,
         ':adresse_actuelle' => $data->adresse_actuelle ?? null,
@@ -106,19 +126,39 @@ try {
         ':representant_fonction' => $data->representant_fonction ?? null,
         ':representant_telephone' => $data->representant_telephone ?? null,
         ':representant_email' => $data->representant_email ?? null,
+        ':representant_adresse_residence' => $data->representant_adresse_residence ?? null,
+        ':representant_ville' => $data->representant_ville ?? null,
         ':domaine_activite' => $data->domaine_activite ?? null,
         ':adresse_siege_social' => $data->adresse_siege_social ?? null,
-        ':coordonnees_fiscales' => $data->coordonnees_fiscales ?? null,
-        ':coordonnees_administratives' => $data->coordonnees_administratives ?? null,
         ':date_creation_entreprise' => $data->date_creation_entreprise ?? null,
+        ':ville_immatriculation' => $data->ville_immatriculation ?? null,
+        ':numero_bureau' => $data->numero_bureau ?? null,
+        ':reference_contrat_notarie' => $data->reference_contrat_notarie ?? null,
+        ':date_debut_contrat' => $data->date_debut_contrat ?? null,
+        ':date_fin_contrat' => $data->date_fin_contrat ?? null,
+        ':options' => $options_json,
+        ':cgu_acceptees' => !empty($data->cgu_acceptees) ? 1 : 0,
+        ':date_cgu_acceptation' => !empty($data->cgu_acceptees) ? date('Y-m-d H:i:s') : null,
+        ':date_debut_souhaitee' => $data->date_debut_souhaitee ?? null,
         ':statut' => $statut_initial,
-        ':montant_mensuel' => $data->montant_mensuel ?? 15000,
+        ':montant_mensuel' => $data->montant_mensuel ?? 12000,
         ':date_debut' => $data->date_debut ?? null,
         ':date_fin' => $data->date_fin ?? null,
-        ':notes_admin' => $data->notes_admin ?? null
+        ':notes_admin' => $data->notes_admin ?? null,
+        ':commentaire_admin' => $data->commentaire_admin ?? null
     ]);
 
-    if ($is_admin_creation && $statut_initial === 'active' && !empty($data->montant_mensuel)) {
+    if ($is_admin_creation && in_array($statut_initial, ['active', 'domiciliation_creee']) && !empty($data->montant_mensuel)) {
+        $montant_mensuel = floatval($data->montant_mensuel);
+        $mois = 6;
+        if (!empty($data->date_debut_contrat) && !empty($data->date_fin_contrat)) {
+            $debut = new DateTime($data->date_debut_contrat);
+            $fin = new DateTime($data->date_fin_contrat);
+            $diff = $debut->diff($fin);
+            $mois = max(1, $diff->m + ($diff->y * 12));
+        }
+        $montant_total = $montant_mensuel * $mois;
+
         $transaction_id = UuidHelper::generate();
         $query = "INSERT INTO transactions
                   (id, user_id, type, montant, statut, mode_paiement, reference, description, date_paiement)
@@ -129,10 +169,10 @@ try {
         $stmt->execute([
             ':id' => $transaction_id,
             ':user_id' => $target_user_id,
-            ':montant' => $data->montant_mensuel,
+            ':montant' => $montant_total,
             ':mode_paiement' => $data->mode_paiement ?? 'cash',
             ':reference' => 'DOM-' . date('YmdHis'),
-            ':description' => 'Domiciliation - ' . $data->raison_sociale
+            ':description' => 'Domiciliation ' . $mois . ' mois - ' . ($data->raison_sociale ?? '')
         ]);
     }
 
