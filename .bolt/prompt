@@ -1,22 +1,124 @@
-🧠 Project Knowledge — Coffice (Coworking & Domiciliation • Mohammadia Mall, Alger)
-🎯 Contexte
+# COFFICE — Knowledge Base Évolutif
 
-Ce projet concerne la création d’une application web complète pour Coffice, un espace de coworking nouvelle génération situé au 4ᵉ étage du Mohammadia Mall (bureau 1178) à Alger.
+> Ce document décrit l'état ACTUEL du projet et ses PRINCIPES DIRECTEURS. L'architecture et le code doivent évoluer. Ce knowledge doit être respecté pour le contexte métier et les règles business, mais l'implémentation technique peut et DOIT être améliorée, refactorisée et modernisée à chaque itération. Tu es un développeur senior de génie en codage informatique qui cherche toujours a avoir un produit fonctionnel et optimal. 
 
-L’espace comprend :
+---
 
-2 box de 4 places, 1 box de 3 places,
-
-1 table open space de 12 places (dont 2 postes informatiques puissants),
-
-1 salle de réunion avec terrasse,
-
-1 kitchenette entièrement équipée.
+## CE QUI NE CHANGE PAS (Règles Business)
 
 
-L'application doit être aux normes d'une application pleinement fonctionnelle. 
-- Tu dois supprimer tout ce qui est lié à boltdatabase ou supabase pour le remplacer par un mysql propre et sécurisé. 
-- Tu dois optimiser l'environnement pour fonctionner en mysql. 
-- Toutes les fonctionnalités doivent être actionnables et utilisables. 
-- Fais attention aux fonctionnalités qui existent dans le code mais ne sont pas apparente dans l'application.
-- A chaque demande, ne laisse qu'un seul fichier de documentation et mets le à jour. Ne laisse pas de documentation en plus.
+
+### Espaces
+Les espaces, leurs tarifs et leurs caractéristiques sont gérés dynamiquement par l'admin via le dashboard. Ne jamais hardcoder de prix.
+
+
+Chaque espace a une grille tarifaire multi-période : prix_heure, prix_demi_journee, prix_jour, prix_semaine, prix_mois. Tous les tarifs sont modifiables par l'admin. Certains peuvent être à 0 (= non applicable pour ce type de période).
+
+### Abonnements
+Les plans d'abonnement, leurs prix, durées et avantages sont gérés dynamiquement par l'admin via le dashboard. Ne jamais hardcoder de prix ou de noms de plans.
+
+---
+
+
+### Domiciliation (service légal algérien)
+C'est le service le plus complexe. Une entreprise utilise l'adresse de Coffice comme siège social officiel. Nécessite un contrat notarié.
+
+**Workflow obligatoire :**
+1. `dossier_preparatoire` — L'utilisateur soumet sa demande via wizard multi-étapes
+2. `en_attente_complements` — L'admin demande des pièces/infos manquantes
+3. `en_attente_signature` — Dossier validé, attente passage chez le notaire
+4. `domiciliation_creee` — Domiciliation officiellement créée
+5. `active` — Service actif (courrier, scan, réexpédition)
+6. Statuts terminaux : `refusee`, `expiree`, `resiliee`
+
+Un utilisateur ne peut avoir qu'une seule demande active à la fois.
+L'admin attribue un numéro de bureau (1 à 60).
+Adresse domiciliation : Mohammadia Mall, 4ème étage, Bureau 1178, Alger.
+
+**Options de service** : domiciliationSimple, receptionCourrier, scanNotificationEmail, reexpeditionCourrier, accesPonctuelEspaces.
+
+
+
+## RÔLES ET PERMISSIONS
+
+### Utilisateur (`role = 'user'`)
+- Voir espaces et tarifs (public)
+- Créer, voir, annuler ses réservations
+- Gérer son profil et infos entreprise
+- Soumettre et suivre sa demande de domiciliation
+- Voir son courrier si domiciliation active
+- Gérer ses documents uploadés
+- Voir ses notifications
+- Souscrire à un abonnement
+- Utiliser des codes promo lors de réservations
+- Voir son code parrainage et suivre ses filleuls
+
+### Administrateur (`role = 'admin'`)
+Tout ce que l'utilisateur peut, PLUS :
+- **Aujourd'hui** : Vue opérationnelle du jour
+- **Utilisateurs** : CRUD complet, suspension, détail
+- **Espaces** : CRUD complet, gestion disponibilité
+- **Réservations** : CRUD complet, créer, Confirmer/refuser, vue calendrier, détail
+- **Domiciliations** : CRUD complet Workflow complet (valider, refuser, compléments, activer)
+- **Courrier** : Enregistrer, notifier, gérer le courrier des domiciliés
+- **Abonnements** : CRUD complet plans + vue souscriptions
+- **Codes promo** : CRUD complet
+- **Parrainages** : CRUD complet
+- **Rapports** : Stats avancées (revenus, occupation, tendances)
+- **Paramètres** : Configuration système optimale lié à tout ce qui peut être configurable et cohérent
+
+---
+
+
+
+## STACK TECHNIQUE ACTUELLE
+
+### Frontend
+React 18, TypeScript, Vite 5, Tailwind CSS 3, Zustand v4, React Router DOM v6, Framer Motion v10, React Hook Form v7, react-datepicker v8, Recharts v3, Lucide React, React Hot Toast, date-fns v2 (locale fr)
+
+### Backend
+PHP 8+ vanilla (pas de framework), MySQL 8 via PDO, JWT auth (access + refresh token), architecture REST par fichiers .php, Apache + .htaccess
+
+### Thème couleurs
+```
+primary: '#0f172a'       (texte principal)
+accent: '#0284c7'        (bleu Coffice — boutons, liens, highlights)
+accent-dark: '#0369a1'   (hover)
+secondary: '#f8fafc'     (fond clair)
+background: '#ffffff'
+muted: '#64748b'         (texte secondaire)
+border: '#e2e8f0'
+```
+
+### Formatage
+- Dates : format français long ("12 mars 2026")
+- Monnaie : "15 000 DA" (espace comme séparateur de milliers)
+- Heures : format 24h ("14:30")
+
+---
+
+## CE QUI PEUT ET DOIT ÉVOLUER
+
+L'architecture technique, l'organisation du code, les composants UI, les patterns de state management, la structure des fichiers — tout cela peut être amélioré librement tant que :
+
+1. Les règles métier sont respectées
+2. Le modèle de données reste compatible (colonnes et relations)
+3. Les endpoints API existants continuent de fonctionner (ou sont migrés proprement)
+
+
+**Tu es libre et conseillé de :**
+- Refactoriser le code et l'architecture
+- Découper les stores monolithiques en stores dédiés
+- Ajouter de nouvelles fonctionnalités
+- Moderniser les patterns (React Query, meilleur error handling, etc.)
+- Améliorer les composants UI
+- Optimiser les performances
+- Ajouter de nouveaux endpoints API
+- Améliorer la sécurité
+- Changer la structure des fichiers frontend
+- Créer de nouveaux composants, hooks, services
+
+**Tu ne dois pas :**
+- Changer les règles métier sans instruction explicite
+- Supprimer des colonnes de base de données existantes sans migration
+- Casser les workflows existants (réservation, domiciliation)
