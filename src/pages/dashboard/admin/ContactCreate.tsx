@@ -96,9 +96,9 @@ export default function ContactCreate() {
       toast.success('Contact créé avec succès');
 
       if (createAsUser) {
-        navigate(`/dashboard/admin/contacts/${contact.id}?convertToUser=true`);
+        navigate(`/app/admin/contacts/${contact.id}?convertToUser=true`);
       } else {
-        navigate(`/dashboard/admin/contacts/${contact.id}`);
+        navigate(`/app/admin/contacts/${contact.id}`);
       }
     } catch (error: any) {
       toast.error(error.message || 'Erreur lors de la création du contact');
@@ -119,7 +119,7 @@ export default function ContactCreate() {
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
-          onClick={() => navigate('/dashboard/admin/contacts')}
+          onClick={() => navigate('/app/admin/contacts')}
           disabled={loading}
         >
           <ArrowLeft className="w-4 h-4" />
@@ -314,7 +314,7 @@ export default function ContactCreate() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate('/dashboard/admin/contacts')}
+            onClick={() => navigate('/app/admin/contacts')}
             className="flex-1"
             disabled={loading}
           >

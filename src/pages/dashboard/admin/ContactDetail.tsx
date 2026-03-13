@@ -61,7 +61,7 @@ export default function ContactDetail() {
     try {
       await deleteContact(id);
       toast.success('Contact supprimé');
-      navigate('/dashboard/admin/contacts');
+      navigate('/app/admin/contacts');
     } catch (error: any) {
       toast.error(error.message || 'Erreur lors de la suppression');
     }
@@ -97,7 +97,7 @@ export default function ContactDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-muted">Contact non trouvé</p>
-        <Button onClick={() => navigate('/dashboard/admin/contacts')} className="mt-4">
+        <Button onClick={() => navigate('/app/admin/contacts')} className="mt-4">
           Retour à la liste
         </Button>
       </div>
@@ -113,7 +113,7 @@ export default function ContactDetail() {
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
-            onClick={() => navigate('/dashboard/admin/contacts')}
+            onClick={() => navigate('/app/admin/contacts')}
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>

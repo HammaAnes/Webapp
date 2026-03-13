@@ -26,7 +26,7 @@ export default function Contacts() {
   };
 
   const handleCreateContact = () => {
-    navigate('/dashboard/admin/contacts/nouveau');
+    navigate('/app/admin/contacts/nouveau');
   };
 
   return (
@@ -107,7 +107,7 @@ export default function Contacts() {
                     <ContactCard
                       key={contact.id}
                       contact={contact as any}
-                      onView={(id) => navigate(`/dashboard/admin/contacts/${id}`)}
+                      onView={(id) => navigate(`/app/admin/contacts/${id}`)}
                     />
                   ))}
                 </tbody>
