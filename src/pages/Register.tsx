@@ -1,11 +1,10 @@
 import React from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, User, Phone, ArrowRight, Gift } from "lucide-react";
+import { Mail, User, Phone, ArrowRight, Gift, Building, Briefcase } from "lucide-react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
+import { Input, PasswordInput, Button, Checkbox } from "../components/ui";
 import { useAuthStore } from "../store/authStore";
 import { UserForm } from "../types";
 import { apiClient } from "../lib/api-client";
@@ -96,16 +95,14 @@ const Register = () => {
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full"
+        className="max-w-2xl w-full"
       >
-        {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
             <Logo className="h-16 mx-auto" />
           </Link>
         </div>
 
-        {/* Form */}
         <div className="card p-8">
           <h2 className="text-2xl font-display font-bold text-primary mb-2 text-center">
             Inscription
@@ -114,9 +111,8 @@ const Register = () => {
             Créez votre compte Coffice
           </p>
 
-          {/* Info */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Prénom"
                 icon={<User className="w-5 h-5" />}
@@ -124,13 +120,16 @@ const Register = () => {
                 autoComplete="given-name"
                 {...register("prenom", validationRules.prenom)}
                 error={errors.prenom?.message}
+                required
               />
               <Input
                 label="Nom"
+                icon={<User className="w-5 h-5" />}
                 placeholder="Nom"
                 autoComplete="family-name"
                 {...register("nom", validationRules.nom)}
                 error={errors.nom?.message}
+                required
               />
             </div>
 
@@ -142,6 +141,7 @@ const Register = () => {
               autoComplete="email"
               {...register("email", validationRules.email)}
               error={errors.email?.message}
+              required
             />
 
             <Input
@@ -150,6 +150,7 @@ const Register = () => {
               icon={<Phone className="w-5 h-5" />}
               placeholder="+213 55 123 4567"
               autoComplete="tel"
+              helperText="Format: +213 ou 0 suivi de 9 chiffres"
               {...register("telephone", {
                 ...validationRules.phone,
                 validate: (value: string | undefined) =>
@@ -158,28 +159,42 @@ const Register = () => {
               error={errors.telephone?.message}
             />
 
-            <Input
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Entreprise"
+                icon={<Building className="w-5 h-5" />}
+                placeholder="Nom de votre entreprise"
+                autoComplete="organization"
+                {...register("entreprise")}
+                error={errors.entreprise?.message}
+              />
+              <Input
+                label="Profession"
+                icon={<Briefcase className="w-5 h-5" />}
+                placeholder="Votre profession"
+                autoComplete="organization-title"
+                {...register("profession")}
+                error={errors.profession?.message}
+              />
+            </div>
+
+            <PasswordInput
               label="Mot de passe"
-              type="password"
-              icon={<Lock className="w-5 h-5" />}
               placeholder="••••••••"
               autoComplete="new-password"
+              showStrength
               {...register("password", validationRules.password)}
               error={errors.password?.message}
+              required
             />
 
-            <Input
+            <PasswordInput
               label="Confirmer le mot de passe"
-              type="password"
-              icon={<Lock className="w-5 h-5" />}
               placeholder="••••••••"
               autoComplete="new-password"
-              {...register("passwordConfirm", {
-                ...validationRules.passwordConfirm(password),
-                validate: (value: string | undefined) =>
-                  value === password || "Les mots de passe ne correspondent pas",
-              })}
+              {...register("passwordConfirm", validationRules.passwordConfirm(password))}
               error={errors.passwordConfirm?.message}
+              required
             />
 
             <div className="relative">
@@ -188,6 +203,7 @@ const Register = () => {
                 type="text"
                 icon={<Gift className="w-5 h-5" />}
                 placeholder="COFFICE-AHM123"
+                helperText="Entrez le code de parrainage de votre ami pour bénéficier d'un bonus"
                 {...register("codeParrainage", {
                   onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
                     const value = e.target.value.toUpperCase();
@@ -199,53 +215,46 @@ const Register = () => {
                     if (value) validateReferralCode(value);
                   },
                 })}
+                rightElement={
+                  validatingReferral ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
+                  ) : referralValid === true ? (
+                    <span className="text-green-600 text-xs font-medium">✓ Valide</span>
+                  ) : referralValid === false ? (
+                    <span className="text-red-600 text-xs font-medium">✗ Invalide</span>
+                  ) : null
+                }
               />
-              {validatingReferral && (
-                <div className="absolute right-3 top-10">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
-                </div>
-              )}
               {referralValid === true && (
-                <p className="text-sm text-green-600 mt-1">
-                  Code valide - Bonus de 3000 DA
+                <p className="text-sm text-green-600 mt-2">
+                  Code valide - Bonus de 3000 DA à votre première réservation
                 </p>
               )}
-              {referralValid === false && (
-                <p className="text-sm text-red-600 mt-1">Code invalide</p>
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                Entrez le code de parrainage de votre ami (ex: COFFICE-AHM123)
-              </p>
             </div>
 
-            <div className="flex items-start">
-              <input
-                type="checkbox"
-                className="rounded border-gray-300 text-accent focus:ring-accent mt-1"
-                {...register("acceptTerms", validationRules.acceptTerms)}
-              />
-              <span className="ml-2 text-sm text-gray-600">
-                J'accepte les{" "}
-                <Link
-                  to="/mentions-legales"
-                  className="text-accent hover:text-accent/80"
-                >
-                  conditions d'utilisation
-                </Link>{" "}
-                et la{" "}
-                <Link
-                  to="/mentions-legales"
-                  className="text-accent hover:text-accent/80"
-                >
-                  politique de confidentialité
-                </Link>
-              </span>
-            </div>
-            {errors.acceptTerms && (
-              <p className="text-red-600 text-sm">
-                {errors.acceptTerms.message}
-              </p>
-            )}
+            <Checkbox
+              label={
+                <span className="text-sm text-gray-700">
+                  J'accepte les{" "}
+                  <Link
+                    to="/mentions-legales"
+                    className="text-accent hover:text-accent/80 font-medium"
+                  >
+                    conditions d'utilisation
+                  </Link>{" "}
+                  et la{" "}
+                  <Link
+                    to="/mentions-legales"
+                    className="text-accent hover:text-accent/80 font-medium"
+                  >
+                    politique de confidentialité
+                  </Link>
+                </span>
+              }
+              {...register("acceptTerms", validationRules.acceptTerms)}
+              error={errors.acceptTerms?.message}
+              required
+            />
 
             <Button type="submit" loading={isLoading} className="w-full">
               Créer mon compte
@@ -266,7 +275,6 @@ const Register = () => {
           </div>
         </div>
 
-        {/* Back to home */}
         <div className="text-center mt-6">
           <Link
             to="/"

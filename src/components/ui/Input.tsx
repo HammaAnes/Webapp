@@ -5,20 +5,23 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   icon?: React.ReactNode;
   className?: string;
+  helperText?: string;
+  rightElement?: React.ReactNode;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, icon, className = "", ...props }, ref) => {
+  ({ label, error, icon, helperText, rightElement, className = "", ...props }, ref) => {
     const generatedId = useId();
     const inputId = props.id || generatedId;
     const errorId = `${inputId}-error`;
+    const helperId = `${inputId}-helper`;
 
     return (
       <div className="w-full">
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 mb-2"
           >
             {label}
             {props.required && (
@@ -41,15 +44,25 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             aria-invalid={error ? "true" : "false"}
-            aria-describedby={error ? errorId : undefined}
-            className={`w-full ${icon ? "pl-10" : "pl-3"} pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors ${
-              error ? "border-red-500 focus:ring-red-500" : ""
+            aria-describedby={error ? errorId : helperText ? helperId : undefined}
+            className={`w-full ${icon ? "pl-10" : "pl-3"} ${rightElement ? 'pr-10' : 'pr-3'} py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all duration-200 ${
+              error ? "border-red-500 focus:ring-red-500 focus:border-red-500" : "border-gray-300 focus:ring-accent focus:border-accent"
             } disabled:bg-gray-100 disabled:cursor-not-allowed ${className}`}
             {...props}
           />
+          {rightElement && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              {rightElement}
+            </div>
+          )}
         </div>
+        {helperText && !error && (
+          <p id={helperId} className="mt-2 text-sm text-gray-600">
+            {helperText}
+          </p>
+        )}
         {error && (
-          <p id={errorId} className="mt-1 text-sm text-red-600" role="alert">
+          <p id={errorId} className="mt-2 text-sm text-red-600" role="alert">
             {error}
           </p>
         )}

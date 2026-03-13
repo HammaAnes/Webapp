@@ -1,11 +1,10 @@
 import React from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, ArrowRight } from "lucide-react";
+import { Mail, ArrowRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
+import { Input, PasswordInput, Button, Checkbox } from "../components/ui";
 import { useAuthStore } from "../store/authStore";
 import { validationRules } from "../utils/validation";
 import Logo from "../components/Logo";
@@ -92,10 +91,8 @@ const Login = () => {
               error={errors.email?.message}
             />
 
-            <Input
+            <PasswordInput
               label="Mot de passe"
-              type="password"
-              icon={<Lock className="w-5 h-5" />}
               placeholder="••••••••"
               autoComplete="current-password"
               {...register("password", validationRules.password)}
@@ -103,16 +100,10 @@ const Login = () => {
             />
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="rounded border-gray-300 text-accent focus:ring-accent"
-                  {...register("rememberMe")}
-                />
-                <span className="ml-2 text-sm text-gray-600">
-                  Se souvenir de moi
-                </span>
-              </label>
+              <Checkbox
+                label="Se souvenir de moi"
+                {...register("rememberMe")}
+              />
               <Link to="/mot-de-passe-oublie" className="text-sm text-accent hover:text-accent/80">
                 Mot de passe oublié ?
               </Link>

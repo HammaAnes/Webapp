@@ -154,5 +154,57 @@ export const validationRules = {
   acceptTerms: {
     required: "Vous devez accepter les conditions",
   },
+
+  number: (min?: number, max?: number) => ({
+    validate: (value: number) => {
+      if (isNaN(value)) return "Veuillez entrer un nombre valide";
+      if (min !== undefined && value < min) return `La valeur doit être au moins ${min}`;
+      if (max !== undefined && value > max) return `La valeur ne peut pas dépasser ${max}`;
+      return true;
+    },
+  }),
+
+  percentage: {
+    validate: (value: number) => {
+      if (isNaN(value) || value < 0 || value > 100) {
+        return "Le pourcentage doit être entre 0 et 100";
+      }
+      return true;
+    },
+  },
+
+  capacity: (max?: number) => ({
+    required: "Capacité requise",
+    validate: (value: number) => {
+      if (isNaN(value) || value < 1) return "La capacité doit être au moins 1";
+      if (max && value > max) return `La capacité ne peut pas dépasser ${max}`;
+      return true;
+    },
+  }),
 };
+
+export const asyncValidators = {
+  uniqueEmail: async (email: string, apiCheck: (email: string) => Promise<boolean>) => {
+    try {
+      const exists = await apiCheck(email);
+      return !exists || "Cet email est déjà utilisé";
+    } catch {
+      return true;
+    }
+  },
+
+  codePromo: async (code: string, apiCheck: (code: string) => Promise<{ valid: boolean; message?: string }>) => {
+    if (!code) return true;
+    try {
+      const result = await apiCheck(code);
+      return result.valid || result.message || "Code promo invalide";
+    } catch {
+      return "Erreur lors de la vérification du code";
+    }
+  },
+};
+
+export function combineValidations(...rules: any[]) {
+  return rules.reduce((acc, rule) => ({ ...acc, ...rule }), {});
+}
 
