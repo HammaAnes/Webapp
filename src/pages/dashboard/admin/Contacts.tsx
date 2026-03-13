@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useContactStore } from '../../../store/contactStore';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
-import Select from '../../../components/ui/Select';
+import SelectNative from '../../../components/ui/SelectNative';
 import Badge from '../../../components/ui/Badge';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -94,7 +94,7 @@ export default function Contacts() {
             </div>
           </div>
 
-          <Select
+          <SelectNative
             value={filters.statut}
             onChange={(e) => setFilters({ statut: e.target.value as ContactStatut | '' })}
           >
@@ -102,9 +102,9 @@ export default function Contacts() {
             <option value="prospect">Prospect</option>
             <option value="client">Client</option>
             <option value="perdu">Perdu</option>
-          </Select>
+          </SelectNative>
 
-          <Select
+          <SelectNative
             value={filters.source}
             onChange={(e) => setFilters({ source: e.target.value as ContactSource | '' })}
           >
@@ -117,7 +117,7 @@ export default function Contacts() {
             <option value="physique">En personne</option>
             <option value="email">Email</option>
             <option value="autre">Autre</option>
-          </Select>
+          </SelectNative>
         </div>
 
         {loading ? (

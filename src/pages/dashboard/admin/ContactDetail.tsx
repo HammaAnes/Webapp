@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useContactStore } from '../../../store/contactStore';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
-import Select from '../../../components/ui/Select';
+import SelectNative from '../../../components/ui/SelectNative';
 import Textarea from '../../../components/ui/Textarea';
 import Badge from '../../../components/ui/Badge';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
@@ -241,7 +241,7 @@ export default function ContactDetail() {
                   Source
                 </label>
                 {isEditing ? (
-                  <Select
+                  <SelectNative
                     value={formData.source || 'autre'}
                     onChange={(e) => setFormData({ ...formData, source: e.target.value as any })}
                   >
@@ -253,7 +253,7 @@ export default function ContactDetail() {
                     <option value="physique">En personne</option>
                     <option value="email">Email</option>
                     <option value="autre">Autre</option>
-                  </Select>
+                  </SelectNative>
                 ) : (
                   <p className="text-muted capitalize">{contact.source}</p>
                 )}
@@ -264,14 +264,14 @@ export default function ContactDetail() {
                   Statut
                 </label>
                 {isEditing ? (
-                  <Select
+                  <SelectNative
                     value={formData.statut || 'prospect'}
                     onChange={(e) => setFormData({ ...formData, statut: e.target.value as any })}
                   >
                     <option value="prospect">Prospect</option>
                     <option value="client">Client</option>
                     <option value="perdu">Perdu</option>
-                  </Select>
+                  </SelectNative>
                 ) : (
                   <Badge>{contact.statut}</Badge>
                 )}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import Select from '../ui/Select';
+import SelectNative from '../ui/SelectNative';
 import Textarea from '../ui/Textarea';
 import { useContactStore } from '../../store/contactStore';
 import toast from 'react-hot-toast';
@@ -181,7 +181,7 @@ export function CreateContactModal({ isOpen, onClose, onContactCreated }: Create
             <label className="block text-sm font-medium text-primary mb-2">
               Source <span className="text-red-500">*</span>
             </label>
-            <Select
+            <SelectNative
               value={formData.source}
               onChange={(e) => setFormData({ ...formData, source: e.target.value as ContactSource })}
             >
@@ -193,21 +193,21 @@ export function CreateContactModal({ isOpen, onClose, onContactCreated }: Create
               <option value="physique">En personne</option>
               <option value="email">Email</option>
               <option value="autre">Autre</option>
-            </Select>
+            </SelectNative>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-primary mb-2">
               Statut
             </label>
-            <Select
+            <SelectNative
               value={formData.statut}
               onChange={(e) => setFormData({ ...formData, statut: e.target.value as ContactStatut })}
             >
               <option value="prospect">Prospect</option>
               <option value="client">Client</option>
               <option value="perdu">Perdu</option>
-            </Select>
+            </SelectNative>
           </div>
         </div>
 
