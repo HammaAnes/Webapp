@@ -8,6 +8,7 @@ export const RESERVATION_STATUTS = {
   EN_COURS: "en_cours",
   ANNULEE: "annulee",
   TERMINEE: "terminee",
+  NO_SHOW: "no_show",
 } as const;
 
 export type ReservationStatut =
@@ -19,6 +20,7 @@ export const RESERVATION_STATUT_LABELS: Record<ReservationStatut, string> = {
   [RESERVATION_STATUTS.EN_COURS]: "En cours",
   [RESERVATION_STATUTS.ANNULEE]: "Annulée",
   [RESERVATION_STATUTS.TERMINEE]: "Terminée",
+  [RESERVATION_STATUTS.NO_SHOW]: "No-show",
 };
 
 export type BadgeVariant =
@@ -38,6 +40,7 @@ export const RESERVATION_STATUT_COLORS: Record<
   [RESERVATION_STATUTS.EN_COURS]: "info",
   [RESERVATION_STATUTS.ANNULEE]: "danger",
   [RESERVATION_STATUTS.TERMINEE]: "default",
+  [RESERVATION_STATUTS.NO_SHOW]: "error",
 };
 
 export function getReservationStatutLabel(statut: string): string {

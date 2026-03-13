@@ -263,6 +263,20 @@ class ApiClient {
           }
         }
       } else {
+        if (response.status === 401) {
+          if (retryWithRefresh && !isPublicEndpoint) {
+            try {
+              await this.refreshAccessToken();
+              return this.request<T>(endpoint, options, false, retryCount);
+            } catch {
+              this.handleAuthError();
+              return { success: false, error: ERROR_MESSAGES.SESSION_EXPIRED };
+            }
+          }
+          this.handleAuthError();
+          return { success: false, error: ERROR_MESSAGES.SESSION_EXPIRED };
+        }
+
         const text = await response.text();
         logger.error("[API] Non-JSON response:", {
           url,
@@ -783,7 +797,7 @@ class ApiClient {
   }
 
   getDocumentPreviewUrl(documentId: string): string {
-    return `${API_URL}/documents/download.php?id=${documentId}&token=${this.getToken() || ""}`;
+    return `${API_URL}/documents/download.php?id=${documentId}`;
   }
 
   async updateDocumentStatus(documentId: string, statut: string, commentaireRejet?: string) {
@@ -1036,6 +1050,33 @@ class ApiClient {
         courrier_id: courrierId,
         instruction_client: instruction,
       }),
+    });
+  }
+
+  async getBlocages() {
+    return this.request("/reservations/index.php?blocages=1");
+  }
+
+  async getRevenue(params?: { period?: string; dateDebut?: string; dateFin?: string }) {
+    const query = params ? "?" + new URLSearchParams(params as Record<string, string>).toString() : "";
+    return this.request(`/admin/revenue.php${query}`);
+  }
+
+  async forgotPassword(email: string) {
+    return this.request("/auth/forgot-password.php", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async verifyResetToken(token: string) {
+    return this.request(`/auth/verify-reset-token.php?token=${encodeURIComponent(token)}`);
+  }
+
+  async resetPassword(token: string, password: string) {
+    return this.request("/auth/reset-password.php", {
+      method: "POST",
+      body: JSON.stringify({ token, password }),
     });
   }
 }

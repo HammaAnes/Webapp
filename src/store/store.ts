@@ -232,7 +232,8 @@ export const useAppStore = create<AppState>()(
 
       addAbonnement: async (data) => {
         try {
-          const response = await apiClient.createAbonnement(data as Record<string, unknown>);
+          const apiData = abonnementAdapter.toAPI(data);
+          const response = await apiClient.createAbonnement(apiData);
           if (response.success) {
             await get().loadAbonnements();
             return { success: true };
@@ -245,7 +246,8 @@ export const useAppStore = create<AppState>()(
 
       updateAbonnement: async (id, data) => {
         try {
-          const response = await apiClient.updateAbonnement(id, data as Record<string, unknown>);
+          const apiData = abonnementAdapter.toAPI(data);
+          const response = await apiClient.updateAbonnement(id, apiData);
           if (response.success) {
             await get().loadAbonnements();
             return { success: true };
@@ -297,7 +299,8 @@ export const useAppStore = create<AppState>()(
 
       updateReservation: async (id, data) => {
         try {
-          const response = await apiClient.updateReservation(id, data as Record<string, unknown>);
+          const apiData = reservationAdapter.toAPI(data);
+          const response = await apiClient.updateReservation(id, apiData);
           if (response.success) {
             await get().loadReservations();
             return { success: true };
@@ -462,15 +465,8 @@ export const useAppStore = create<AppState>()(
 
       addUser: async (data) => {
         try {
-          const response = await apiClient.register({
-            email: data.email || "",
-            password: data.password || "",
-            nom: data.nom || "",
-            prenom: data.prenom || "",
-            telephone: data.telephone,
-            profession: data.profession,
-            entreprise: data.entreprise,
-          });
+          const apiData = userAdapter.toAPI(data);
+          const response = await apiClient.adminCreateUser(apiData as { email: string; nom: string; prenom: string; telephone?: string; password?: string });
 
           if (response.success) {
             await get().loadUsers();
@@ -486,7 +482,8 @@ export const useAppStore = create<AppState>()(
         try {
           const response = await apiClient.updateUser(userId, data);
           if (!response.success) {
-            throw new Error(response.error || "Erreur mise \u00e0 jour");
+            toast.error(response.error || "Erreur mise a jour");
+            return;
           }
 
           const { useAuthStore: authStoreRef } = await import("./authStore");
@@ -500,10 +497,9 @@ export const useAppStore = create<AppState>()(
             await get().loadUsers();
           }
 
-          toast.success("Informations mises \u00e0 jour");
+          toast.success("Informations mises a jour");
         } catch (error) {
           toast.error(error instanceof Error ? error.message : "Erreur");
-          throw error;
         }
       },
 
@@ -562,9 +558,7 @@ export const useAppStore = create<AppState>()(
           totalUsers: state.users.length,
           activeUsers: state.users.filter((u) => u.statut === "actif").length,
           occupancyRate: Math.min(tauxOccupation, 100),
-          tauxOccupation: Math.min(tauxOccupation, 100),
           monthlyRevenue: caMois,
-          caMois,
           reservationsCeMois: reservationsCeMois.length,
           popularSpaces: state.espaces.map((e) => ({
             name: e.nom,

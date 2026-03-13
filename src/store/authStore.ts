@@ -120,9 +120,6 @@ login: async (email: string, password: string) => {
       isLoading: false,
     });
 
-    // IMPORTANT: Also trigger the loading of domiciliation data 
-    // so the 'demande' prop isn't null on the first render
-    await get().loadUser();
     toast.success("Connexion réussie");
   } catch (error) {
     set({ isLoading: false });
@@ -180,7 +177,7 @@ login: async (email: string, password: string) => {
         localStorage.removeItem("coffice-auth");
       }
 
-      set({ user: null, isAdmin: false, isInitialized: true });
+      set({ user: null, isAdmin: false, isInitialized: true, isLoading: false });
       toast.success("Déconnexion réussie");
     } catch {
       apiClient.setToken(null, null);
@@ -189,7 +186,7 @@ login: async (email: string, password: string) => {
         localStorage.removeItem("coffice-auth");
       }
 
-      set({ user: null, isAdmin: false, isInitialized: true });
+      set({ user: null, isAdmin: false, isInitialized: true, isLoading: false });
     }
   },
 

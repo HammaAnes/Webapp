@@ -256,7 +256,7 @@ const MonEspace = () => {
   };
 
   const handleRenewalRequest = async () => {
-    if (!demande) return;
+    if (!demande || !user) return;
     setDomLoading(true);
     try {
       const response = await apiClient.updateDemandeDomiciliation(demande.id, {

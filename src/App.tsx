@@ -37,7 +37,12 @@ function App() {
 
     const initApp = async () => {
       await authStore.initialize();
-      await useAppStore.getState().initializeData();
+      const { user } = useAuthStore.getState();
+      if (user) {
+        await useAppStore.getState().initializeData();
+      } else {
+        await useAppStore.getState().loadEspaces();
+      }
     };
 
     initApp();

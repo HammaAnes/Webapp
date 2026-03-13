@@ -56,7 +56,7 @@ const Navbar = () => {
       animate={{ y: 0 }}
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
         isScrolled
-          ? "bg-white/98 backdrop-blur-md shadow-lg"
+          ? "bg-white backdrop-blur-md shadow-lg"
           : "bg-white/95 backdrop-blur-sm"
       }`}
     >

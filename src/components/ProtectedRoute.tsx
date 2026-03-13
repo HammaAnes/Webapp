@@ -1,6 +1,7 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
+import LoadingScreen from "./LoadingScreen";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,8 +12,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requireAdmin = false,
 }) => {
-  const { user, isAdmin } = useAuthStore();
+  const { user, isAdmin, isInitialized, isLoading } = useAuthStore();
   const location = useLocation();
+
+  if (!isInitialized || isLoading) {
+    return <LoadingScreen />;
+  }
 
   if (!user) {
     return <Navigate to="/connexion" state={{ from: location }} replace />;

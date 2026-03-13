@@ -15,7 +15,16 @@ export const RC_VALIDATION = {
   ERROR_MESSAGE: "Format de registre de commerce invalide",
 } as const;
 
-export const WORKING_HOURS = {
+export const WORKING_HOURS: {
+  START: string;
+  END: string;
+  LUNCH_START: string;
+  LUNCH_END: string;
+  OPENING_HOUR: number;
+  OPENING_MINUTE: number;
+  CLOSING_HOUR: number;
+  CLOSING_MINUTE: number;
+} = {
   START: "08:30",
   END: "18:30",
   LUNCH_START: "12:00",
@@ -24,7 +33,7 @@ export const WORKING_HOURS = {
   OPENING_MINUTE: 30,
   CLOSING_HOUR: 18,
   CLOSING_MINUTE: 30,
-} as const;
+};
 
 export function validateNIF(nif: string): boolean {
   if (!nif) return false;

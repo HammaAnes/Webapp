@@ -21,6 +21,7 @@ import EspaceDetail from "./dashboard/EspaceDetail";
 import AdminReservations from "./dashboard/admin/Reservations";
 import AdminReports from "./dashboard/admin/Reports";
 import AdminDomiciliations from "./dashboard/admin/Domiciliations";
+import DomiciliationDetail from "./dashboard/admin/DomiciliationDetail";
 import AdminCodesPromo from "./dashboard/admin/CodesPromo";
 import AdminParrainages from "./dashboard/admin/Parrainages";
 import AdminSettings from "./dashboard/admin/Settings";
@@ -69,6 +70,10 @@ const Dashboard = () => {
               <Route
                 path="admin/domiciliations"
                 element={<AdminDomiciliations />}
+              />
+              <Route
+                path="admin/domiciliations/:id"
+                element={<DomiciliationDetail />}
               />
               <Route path="admin/abonnements" element={<AdminAbonnements />} />
               <Route path="admin/codes-promo" element={<AdminCodesPromo />} />

@@ -120,6 +120,7 @@ export interface Reservation {
   codePromo?: string;
   notes?: string;
   participants?: number;
+  checkinId?: string;
   dateCreation?: Date;
   createdAt?: Date | string;
   updatedAt?: Date | string;
@@ -131,7 +132,7 @@ export interface Transaction {
   utilisateur: User;
   type: "reservation" | "domiciliation" | "remboursement";
   montant: number;
-  statut: "en_attente" | "validee" | "echouee";
+  statut: "en_attente" | "validee" | "echouee" | "rembourse";
   methode: string;
   dateCreation: Date;
   description?: string;
@@ -332,9 +333,7 @@ export interface AdminStats {
   totalUsers: number;
   activeUsers: number;
   occupancyRate: number;
-  tauxOccupation?: number;
   monthlyRevenue: number;
-  caMois?: number;
   reservationsCeMois?: number;
   popularSpaces: Array<{ name: string; count: number }>;
   recentActivity: Array<{ type: string; description: string; date: Date }>;
@@ -347,7 +346,6 @@ export interface Abonnement {
   prix: number;
   prixAvecDomiciliation?: number;
   creditsMensuels?: number;
-  creditMensuel?: number;
   dureeMois: number;
   dureeJours: number;
   description: string;

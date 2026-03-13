@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Building,
@@ -28,15 +29,12 @@ import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
 import Badge from "../../../components/ui/Badge";
 import Input from "../../../components/ui/Input";
-import DomiciliationDetailModal from "../../../components/admin/DomiciliationDetailModal";
 import AdminCreateDomiciliationModal from "../../../components/admin/AdminCreateDomiciliationModal";
 import { useAppStore } from "../../../store/store";
 import { formatDate, formatCurrency } from "../../../utils/formatters";
 import toast from "react-hot-toast";
 import type { DemandeDomiciliation } from "../../../types";
-import { apiClient } from "../../../lib/api-client";
 import { DOMICILIATION_STATUT_LABELS } from "../../../constants";
-import { emailService } from "../../../services/email-service";
 
 const PAGE_SIZE = 15;
 
@@ -82,16 +80,14 @@ function getTypeLabel(t: string) {
 }
 
 const AdminDomiciliations = () => {
+  const navigate = useNavigate();
   const { demandesDomiciliation, loadDemandesDomiciliation } = useAppStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("tous");
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const [selectedDemande, setSelectedDemande] = useState<DemandeDomiciliation | null>(null);
-  const [showModal, setShowModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => { loadDemandesDomiciliation(); }, []);
@@ -167,119 +163,7 @@ const AdminDomiciliations = () => {
   };
 
   const openDetail = (d: DemandeDomiciliation) => {
-    setSelectedDemande(d);
-    setShowModal(true);
-  };
-
-  const handleAction = async (action: string, data?: Record<string, unknown>) => {
-    if (!selectedDemande) return;
-    setActionLoading(true);
-    try {
-      let response;
-      const motif = (data?.motif as string) || "";
-
-      switch (action) {
-        case "valider":
-          response = await apiClient.validateDomiciliation(selectedDemande.id, motif || undefined);
-          break;
-        case "rejeter":
-          response = await apiClient.rejectDomiciliation(selectedDemande.id, motif);
-          break;
-        case "signer":
-          response = await apiClient.updateDemandeDomiciliation(selectedDemande.id, {
-            statut: "domiciliation_creee",
-            numeroBureau: data?.numeroBureau as number,
-            referenceContratNotarie: data?.referenceContratNotarie as string,
-            dateDebutContrat: data?.dateDebutContrat as string,
-            dateFinContrat: data?.dateFinContrat as string,
-            montantMensuel: data?.montantMensuel as number,
-          });
-          break;
-        case "completer":
-        case "activer":
-          response = await apiClient.activateDomiciliation(selectedDemande.id);
-          break;
-        case "resilier":
-          response = await apiClient.updateDemandeDomiciliation(selectedDemande.id, {
-            statut: "resiliee",
-            commentaireAdmin: motif,
-          });
-          break;
-        default:
-          return;
-      }
-
-      if (response?.success) {
-        const msgs: Record<string, string> = {
-          valider: "Dossier validé - en attente de signature notariale",
-          rejeter: "Demande refusée",
-          signer: "Domiciliation créée - contrat enregistré",
-          completer: "Domiciliation activée",
-          activer: "Domiciliation activée",
-          resilier: "Domiciliation résiliée",
-        };
-        toast.success(msgs[action] || "Action effectuée");
-
-        const email = selectedDemande.representantLegal?.email;
-        if (email) {
-          const statusMap: Record<string, string> = {
-            valider: "en_attente_signature", rejeter: "refusee",
-            signer: "domiciliation_creee", completer: "active",
-            activer: "active", resilier: "resiliee",
-          };
-          const newStatut = statusMap[action];
-          emailService.onDomiciliationStatusUpdate(email, {
-            prenom: selectedDemande.representantLegal?.prenom || "",
-            raisonSociale: selectedDemande.raisonSociale || "",
-            formeJuridique: selectedDemande.formeJuridique,
-            statut: newStatut,
-            statutLabel: (DOMICILIATION_STATUT_LABELS as Record<string, string>)[newStatut] || newStatut,
-            montantMensuel: action === "signer" ? (data?.montantMensuel as number) : selectedDemande.montantMensuel,
-            commentaire: motif || undefined,
-            dateDebut: action === "signer" ? (data?.dateDebutContrat as string) : undefined,
-            dateFin: action === "signer" ? (data?.dateFinContrat as string) : undefined,
-          });
-        }
-
-        await loadDemandesDomiciliation();
-        const freshData = useAppStore.getState().demandesDomiciliation;
-        const updated = freshData.find((d) => d.id === selectedDemande.id);
-        if (updated) setSelectedDemande(updated);
-        else setShowModal(false);
-      } else {
-        toast.error(response?.error || "Une erreur est survenue");
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erreur lors du traitement");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleUpdate = async (data: Record<string, unknown>) => {
-    if (!selectedDemande) return;
-    setActionLoading(true);
-    try {
-      const response = await apiClient.updateDemandeDomiciliation(selectedDemande.id, data);
-      if (response?.success) {
-        toast.success("Domiciliation mise a jour");
-        await loadDemandesDomiciliation();
-        const freshData = useAppStore.getState().demandesDomiciliation;
-        const updated = freshData.find((d) => d.id === selectedDemande.id);
-        if (updated) setSelectedDemande(updated);
-      } else {
-        const msg = response?.error || "Erreur lors de la mise a jour";
-        toast.error(msg);
-        throw new Error(msg);
-      }
-    } catch (err) {
-      if (!(err instanceof Error && err.message.includes("Erreur"))) {
-        toast.error(err instanceof Error ? err.message : "Erreur lors de la mise a jour");
-      }
-      throw err;
-    } finally {
-      setActionLoading(false);
-    }
+    navigate(`/app/admin/domiciliations/${d.id}`);
   };
 
   const exportCSV = () => {
@@ -453,15 +337,6 @@ const AdminDomiciliations = () => {
           </div>
         )}
       </Card>
-
-      <DomiciliationDetailModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        demande={selectedDemande}
-        onAction={handleAction}
-        onUpdate={handleUpdate}
-        loading={actionLoading}
-      />
 
       <AdminCreateDomiciliationModal
         isOpen={showCreateModal}

@@ -45,10 +45,17 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const smtpHost = Deno.env.get("SMTP_HOST") || "mail.coffice.dz";
+    const smtpHost = Deno.env.get("SMTP_HOST");
     const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "465");
-    const smtpUser = Deno.env.get("SMTP_USER") || "desk@coffice.dz";
-    const smtpPass = Deno.env.get("SMTP_PASS") || "Coffice2026!";
+    const smtpUser = Deno.env.get("SMTP_USER");
+    const smtpPass = Deno.env.get("SMTP_PASS");
+
+    if (!smtpHost || !smtpUser || !smtpPass) {
+      return new Response(
+        JSON.stringify({ success: false, error: "SMTP not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const transporter = nodemailer.createTransport({
       host: smtpHost,
