@@ -1,31 +1,16 @@
 <?php
 require_once __DIR__ . '/../bootstrap.php';
-require_once __DIR__ . '/../utils/Auth.php';
-require_once __DIR__ . '/../utils/Response.php';
-require_once __DIR__ . '/../utils/UuidHelper.php';
-require_once __DIR__ . '/../config/cors.php';
-
-use Utils\Auth;
-use Utils\Response;
-use Utils\UuidHelper;
 
 $method = $_SERVER['REQUEST_METHOD'];
 
 try {
-    $userId = Auth::getUserId();
-    if (!$userId) {
-        Response::unauthorized('Non authentifié');
-    }
-
-    $user = Auth::getUser();
-    if ($user['role'] !== 'admin') {
-        Response::forbidden('Accès réservé aux administrateurs');
-    }
+    $auth = Auth::requireAdmin();
+    $userId = $auth['id'];
 
     if ($method === 'GET') {
         $date = $_GET['date'] ?? date('Y-m-d');
 
-        $stmt = $pdo->prepare("
+        $stmt = $db->prepare("
             SELECT
                 t.*,
                 u.prenom as admin_prenom,
@@ -38,8 +23,7 @@ try {
         $stmt->execute([$date]);
         $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Calculer les totaux par mode de paiement
-        $totauxStmt = $pdo->prepare("
+        $totauxStmt = $db->prepare("
             SELECT
                 mode_paiement,
                 SUM(montant) as total,
@@ -63,12 +47,11 @@ try {
         $data = json_decode(file_get_contents('php://input'), true);
 
         if (!isset($data['type_transaction'], $data['montant'], $data['mode_paiement'])) {
-            Response::badRequest('Données manquantes: type_transaction, montant, mode_paiement requis');
+            Response::error('Données manquantes: type_transaction, montant, mode_paiement requis', 400);
         }
 
-        // Générer numéro de reçu auto (REC-AAAA-XXXX)
         $annee = date('Y');
-        $countStmt = $pdo->prepare("
+        $countStmt = $db->prepare("
             SELECT COUNT(*) as count
             FROM transactions_caisse
             WHERE YEAR(created_at) = ?
@@ -79,7 +62,7 @@ try {
         $numeroRecu = "REC-{$annee}-{$numero}";
 
         $id = UuidHelper::generate();
-        $insertStmt = $pdo->prepare("
+        $insertStmt = $db->prepare("
             INSERT INTO transactions_caisse
             (id, reservation_id, domiciliation_id, abonnement_utilisateur_id,
              type_transaction, montant, mode_paiement, reference_paiement,
@@ -108,7 +91,7 @@ try {
         ]);
 
     } else {
-        Response::methodNotAllowed();
+        Response::error('Méthode non autorisée', 405);
     }
 } catch (Exception $e) {
     Response::error($e->getMessage());

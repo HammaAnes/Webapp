@@ -1,32 +1,18 @@
 <?php
 require_once __DIR__ . '/../bootstrap.php';
-require_once __DIR__ . '/../utils/Auth.php';
-require_once __DIR__ . '/../utils/Response.php';
-require_once __DIR__ . '/../utils/UuidHelper.php';
-require_once __DIR__ . '/../utils/Mailer.php';
-require_once __DIR__ . '/../config/cors.php';
-
-use Utils\Auth;
-use Utils\Response;
-use Utils\UuidHelper;
-use Utils\Mailer;
 
 $method = $_SERVER['REQUEST_METHOD'];
 
 try {
-    $userId = Auth::getUserId();
-    if (!$userId) {
-        Response::unauthorized('Non authentifié');
-    }
-
-    $user = Auth::getUser();
+    $auth = Auth::verifyAuth();
+    $userId = $auth['id'];
+    $userRole = $auth['role'];
 
     if ($method === 'GET') {
         $domiciliationId = $_GET['domiciliation_id'] ?? null;
 
-        // Vérifier les droits : admin OU propriétaire de la domiciliation
-        if ($user['role'] !== 'admin' && $domiciliationId) {
-            $checkStmt = $pdo->prepare("SELECT user_id FROM domiciliations WHERE id = ?");
+        if ($userRole !== 'admin' && $domiciliationId) {
+            $checkStmt = $db->prepare("SELECT user_id FROM domiciliations WHERE id = ?");
             $checkStmt->execute([$domiciliationId]);
             $domiciliation = $checkStmt->fetch(PDO::FETCH_ASSOC);
             if (!$domiciliation || $domiciliation['user_id'] !== $userId) {
@@ -49,30 +35,32 @@ try {
         if ($domiciliationId) {
             $query .= " AND c.domiciliation_id = ?";
             $params[] = $domiciliationId;
+        } elseif ($userRole !== 'admin') {
+            $query .= " AND d.user_id = ?";
+            $params[] = $userId;
         }
 
         $query .= " ORDER BY c.date_reception DESC";
 
-        $stmt = $pdo->prepare($query);
+        $stmt = $db->prepare($query);
         $stmt->execute($params);
         $courriers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         Response::success(['courriers' => $courriers]);
 
     } elseif ($method === 'POST') {
-        // Admin seulement : enregistrer réception d'un courrier
-        if ($user['role'] !== 'admin') {
+        if ($userRole !== 'admin') {
             Response::forbidden('Accès réservé aux administrateurs');
         }
 
         $data = json_decode(file_get_contents('php://input'), true);
 
         if (!isset($data['domiciliation_id'], $data['type'])) {
-            Response::badRequest('Données manquantes: domiciliation_id, type requis');
+            Response::error('Données manquantes: domiciliation_id, type requis', 400);
         }
 
         $id = UuidHelper::generate();
-        $insertStmt = $pdo->prepare("
+        $insertStmt = $db->prepare("
             INSERT INTO courriers
             (id, domiciliation_id, type, expediteur, description, photo_url, statut, date_reception)
             VALUES (?, ?, ?, ?, ?, ?, 'recu', NOW())
@@ -86,8 +74,7 @@ try {
             $data['photo_url'] ?? null
         ]);
 
-        // Récupérer l'email du client
-        $userStmt = $pdo->prepare("
+        $userStmt = $db->prepare("
             SELECT u.email, u.prenom, u.nom, d.raison_sociale
             FROM domiciliations d
             LEFT JOIN users u ON d.user_id = u.id
@@ -96,29 +83,33 @@ try {
         $userStmt->execute([$data['domiciliation_id']]);
         $domiciliation = $userStmt->fetch(PDO::FETCH_ASSOC);
 
-        // Envoyer notification email
-        if ($domiciliation) {
-            $mailer = new Mailer();
-            $html = "
-                <h2>Nouveau courrier reçu</h2>
-                <p>Bonjour {$domiciliation['prenom']},</p>
-                <p>Un nouveau courrier a été reçu pour {$domiciliation['raison_sociale']}.</p>
-                <p><strong>Type:</strong> {$data['type']}</p>
-                <p><strong>Expéditeur:</strong> " . ($data['expediteur'] ?? 'Non spécifié') . "</p>
-                <p>Connectez-vous à votre espace pour donner vos instructions.</p>
-            ";
-            $mailer->send($domiciliation['email'], 'Nouveau courrier reçu - Coffice', $html);
+        if ($domiciliation && $domiciliation['email']) {
+            try {
+                Mailer::send(
+                    $domiciliation['email'],
+                    'Nouveau courrier reçu - Coffice',
+                    Mailer::wrapInLayout('Nouveau courrier reçu', "
+                        <h2 style='color:#111827;font-size:22px;margin:0 0 16px;'>Nouveau courrier reçu</h2>
+                        <p style='color:#4b5563;font-size:15px;line-height:1.6;'>Bonjour {$domiciliation['prenom']},</p>
+                        <p style='color:#4b5563;font-size:15px;line-height:1.6;'>Un nouveau courrier a été reçu pour <strong>{$domiciliation['raison_sociale']}</strong>.</p>
+                        <p style='color:#4b5563;font-size:15px;line-height:1.6;'><strong>Type :</strong> {$data['type']}</p>
+                        <p style='color:#4b5563;font-size:15px;line-height:1.6;'><strong>Expéditeur :</strong> " . ($data['expediteur'] ?? 'Non spécifié') . "</p>
+                        <p style='color:#4b5563;font-size:15px;line-height:1.6;'>Connectez-vous à votre espace pour donner vos instructions.</p>
+                    ")
+                );
+            } catch (Exception $e) {
+                Logger::warning('Courrier email notification failed', ['error' => $e->getMessage()]);
+            }
 
-            // Créer notification in-app
-            $notifId = UuidHelper::generate();
-            $notifStmt = $pdo->prepare("
-                INSERT INTO notifications (id, user_id, type, message, created_at)
-                VALUES (?, ?, 'courrier', ?, NOW())
-            ");
-            $userIdStmt = $pdo->prepare("SELECT user_id FROM domiciliations WHERE id = ?");
+            $userIdStmt = $db->prepare("SELECT user_id FROM domiciliations WHERE id = ?");
             $userIdStmt->execute([$data['domiciliation_id']]);
             $userIdRow = $userIdStmt->fetch(PDO::FETCH_ASSOC);
             if ($userIdRow) {
+                $notifId = UuidHelper::generate();
+                $notifStmt = $db->prepare("
+                    INSERT INTO notifications (id, user_id, type, message, created_at)
+                    VALUES (?, ?, 'courrier', ?, NOW())
+                ");
                 $notifStmt->execute([
                     $notifId,
                     $userIdRow['user_id'],
@@ -127,8 +118,7 @@ try {
             }
         }
 
-        // Mettre à jour le statut
-        $updateStmt = $pdo->prepare("
+        $updateStmt = $db->prepare("
             UPDATE courriers SET statut = 'notifie', date_notification = NOW() WHERE id = ?
         ");
         $updateStmt->execute([$id]);
@@ -139,15 +129,13 @@ try {
         ]);
 
     } elseif ($method === 'PUT') {
-        // Client donne son instruction
         $data = json_decode(file_get_contents('php://input'), true);
 
         if (!isset($data['courrier_id'], $data['instruction_client'])) {
-            Response::badRequest('Données manquantes: courrier_id, instruction_client requis');
+            Response::error('Données manquantes: courrier_id, instruction_client requis', 400);
         }
 
-        // Vérifier que le courrier appartient à l'utilisateur
-        $checkStmt = $pdo->prepare("
+        $checkStmt = $db->prepare("
             SELECT c.*, d.user_id
             FROM courriers c
             LEFT JOIN domiciliations d ON c.domiciliation_id = d.id
@@ -160,11 +148,11 @@ try {
             Response::notFound('Courrier non trouvé');
         }
 
-        if ($user['role'] !== 'admin' && $courrier['user_id'] !== $userId) {
+        if ($userRole !== 'admin' && $courrier['user_id'] !== $userId) {
             Response::forbidden('Accès refusé');
         }
 
-        $updateStmt = $pdo->prepare("
+        $updateStmt = $db->prepare("
             UPDATE courriers
             SET instruction_client = ?, statut = 'en_attente_instruction', date_instruction = NOW()
             WHERE id = ?
@@ -177,7 +165,7 @@ try {
         Response::success(['message' => 'Instruction enregistrée']);
 
     } else {
-        Response::methodNotAllowed();
+        Response::error('Méthode non autorisée', 405);
     }
 } catch (Exception $e) {
     Response::error($e->getMessage());

@@ -419,7 +419,7 @@ export const useAppStore = create<AppState>()(
           const found = userDemandes.find((d) => d.statut === statut);
           if (found) return found;
         }
-        return userDemandes[userDemandes.length - 1];
+        return null;
       },
 
       createDemandeDomiciliation: async (data) => {
@@ -529,7 +529,7 @@ export const useAppStore = create<AppState>()(
         });
 
         const reservationsCeMois = state.reservations.filter((r) => {
-          const date = new Date(r.dateCreation || r.createdAt || new Date());
+          const date = new Date(r.dateDebut || r.dateCreation || r.createdAt || new Date());
           return (
             date.getMonth() === thisMonth && date.getFullYear() === thisYear
           );

@@ -1,35 +1,31 @@
 <?php
 require_once __DIR__ . '/../bootstrap.php';
-require_once __DIR__ . '/../utils/Auth.php';
-require_once __DIR__ . '/../utils/Response.php';
-require_once __DIR__ . '/../utils/Mailer.php';
-require_once __DIR__ . '/../config/cors.php';
-
-use Utils\Auth;
-use Utils\Response;
-use Utils\Mailer;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        $userId = Auth::getUserId();
-        if (!$userId) {
-            Response::unauthorized('Non authentifié');
-        }
-
-        $user = Auth::getUser();
+        $auth = Auth::verifyAuth();
+        $userId = $auth['id'];
+        $userRole = $auth['role'];
+        $userEmail = $auth['email'];
 
         $data = json_decode(file_get_contents('php://input'), true);
 
         if (!isset($data['to'], $data['subject'], $data['html'])) {
-            Response::badRequest('Données manquantes: to, subject, html requis');
+            Response::error('Données manquantes: to, subject, html requis', 400);
         }
 
-        if ($user['role'] !== 'admin') {
-            Response::forbidden('Seuls les administrateurs peuvent envoyer des emails');
+        if ($userRole !== 'admin') {
+            $allowedRecipients = [
+                $userEmail,
+                'desk@coffice.dz',
+                env('MAIL_FROM_ADDRESS', 'noreply@coffice.dz')
+            ];
+            if (!in_array($data['to'], $allowedRecipients)) {
+                Response::forbidden('Envoi non autorisé vers cette adresse');
+            }
         }
 
-        $mailer = new Mailer();
-        $result = $mailer->send(
+        $result = Mailer::send(
             $data['to'],
             $data['subject'],
             $data['html']
@@ -44,5 +40,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         Response::error($e->getMessage());
     }
 } else {
-    Response::methodNotAllowed();
+    Response::error('Méthode non autorisée', 405);
 }

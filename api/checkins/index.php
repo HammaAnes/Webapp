@@ -1,28 +1,13 @@
 <?php
 require_once __DIR__ . '/../bootstrap.php';
-require_once __DIR__ . '/../utils/Auth.php';
-require_once __DIR__ . '/../utils/Response.php';
-require_once __DIR__ . '/../config/cors.php';
-
-use Utils\Auth;
-use Utils\Response;
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
-        $userId = Auth::getUserId();
-        if (!$userId) {
-            Response::unauthorized('Non authentifié');
-        }
-
-        $user = Auth::getUser();
-        if ($user['role'] !== 'admin') {
-            Response::forbidden('Accès réservé aux administrateurs');
-        }
+        $auth = Auth::requireAdmin();
 
         $date = $_GET['date'] ?? date('Y-m-d');
 
-        // Récupérer tous les check-ins du jour
-        $stmt = $pdo->prepare("
+        $stmt = $db->prepare("
             SELECT
                 c.*,
                 r.date_debut,
@@ -44,8 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt->execute([$date]);
         $checkins = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Compter les présences actuelles
-        $presencesStmt = $pdo->prepare("
+        $presencesStmt = $db->prepare("
             SELECT COALESCE(SUM(r.participants), 0) as total
             FROM checkins c
             LEFT JOIN reservations r ON c.reservation_id = r.id
@@ -62,5 +46,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         Response::error($e->getMessage());
     }
 } else {
-    Response::methodNotAllowed();
+    Response::error('Méthode non autorisée', 405);
 }

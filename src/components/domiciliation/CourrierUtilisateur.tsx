@@ -12,6 +12,19 @@ import Button from "../../components/ui/Button";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../lib/api-client";
 
+interface CourrierRaw {
+  id: string;
+  type: string;
+  expediteur: string;
+  description: string;
+  statut: string;
+  date_reception?: string;
+  dateReception?: string;
+  date_retrait?: string;
+  dateRetrait?: string;
+  instruction_client?: string;
+}
+
 interface CourrierItem {
   id: string;
   type: string;
@@ -20,6 +33,7 @@ interface CourrierItem {
   statut: string;
   dateReception: string;
   dateRetrait?: string;
+  instructionClient?: string;
 }
 
 interface CourrierUtilisateurProps {
@@ -40,15 +54,18 @@ const TYPE_CONFIG: Record<string, { label: string; icon: React.ComponentType<{ c
   autre: { label: "Autre", icon: Mail, color: "text-gray-600 bg-gray-50" },
 };
 
-const STATUT_CONFIG: Record<string, { label: string; variant: "info" | "warning" | "success" | "default" }> = {
-  en_attente: { label: "En attente", variant: "warning" },
-  notifie: { label: "Notifié", variant: "info" },
-  retire: { label: "Retiré", variant: "success" },
-  envoye: { label: "Envoyé", variant: "default" },
+const STATUT_CONFIG: Record<string, { label: string; variant: "info" | "warning" | "success" | "default" | "teal" }> = {
+  recu: { label: "Recu", variant: "default" },
+  notifie: { label: "Notifie", variant: "info" },
+  en_attente_instruction: { label: "Instruction donnee", variant: "warning" },
+  recupere: { label: "Recupere", variant: "success" },
+  scanne: { label: "Scanne", variant: "teal" },
+  reexpedier: { label: "Reexpedition", variant: "info" },
+  traite: { label: "Traite", variant: "success" },
 };
 
-const TYPE_FILTERS = [{ value: "all", label: "Tous" }, { value: "lettre", label: "Lettres" }, { value: "colis", label: "Colis" }, { value: "recommande", label: "Recommandés" }, { value: "autre", label: "Autres" }];
-const STATUT_FILTERS = [{ value: "all", label: "Tous" }, { value: "en_attente", label: "En attente" }, { value: "notifie", label: "Notifié" }, { value: "retire", label: "Retiré" }, { value: "envoye", label: "Envoyé" }];
+const TYPE_FILTERS = [{ value: "all", label: "Tous" }, { value: "lettre", label: "Lettres" }, { value: "colis", label: "Colis" }, { value: "recommande", label: "Recommandes" }, { value: "autre", label: "Autres" }];
+const STATUT_FILTERS = [{ value: "all", label: "Tous" }, { value: "recu", label: "Recu" }, { value: "notifie", label: "Notifie" }, { value: "en_attente_instruction", label: "Instruction" }, { value: "recupere", label: "Recupere" }, { value: "scanne", label: "Scanne" }, { value: "traite", label: "Traite" }];
 
 function FilterRow({ filters, value, onChange }: { filters: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) {
   return (
@@ -95,7 +112,17 @@ export default function CourrierUtilisateur({ domiciliationId, options }: Courri
       setLoading(true);
       const response = await apiClient.getUserCourrier(domiciliationId);
       const data = response.data as Record<string, unknown> | undefined;
-      setCourriers((data?.courriers || []) as CourrierItem[]);
+      const raw = ((data?.courriers || []) as CourrierRaw[]).map((c) => ({
+        id: c.id,
+        type: c.type,
+        expediteur: c.expediteur || "",
+        description: c.description || "",
+        statut: c.statut,
+        dateReception: c.date_reception || c.dateReception || "",
+        dateRetrait: c.date_retrait || c.dateRetrait,
+        instructionClient: c.instruction_client,
+      }));
+      setCourriers(raw);
     } catch {
       setCourriers([]);
     } finally {
@@ -116,11 +143,11 @@ export default function CourrierUtilisateur({ domiciliationId, options }: Courri
   const currentPage = Math.min(page, totalPages);
   const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-  const handleAction = async (courrierId: string, action: string, label: string) => {
-    setActionLoading(`${courrierId}-${action}`);
+  const handleAction = async (courrierId: string, instruction: string, label: string) => {
+    setActionLoading(`${courrierId}-${instruction}`);
     try {
-      await apiClient.updateCourrier(courrierId, { action });
-      toast.success(`${label} effectué avec succès`);
+      await apiClient.donnerInstructionCourrier(courrierId, instruction);
+      toast.success(`${label} effectue avec succes`);
       await loadCourrier();
     } catch {
       toast.error(`Erreur lors de l'action : ${label}`);
@@ -145,11 +172,11 @@ export default function CourrierUtilisateur({ domiciliationId, options }: Courri
         <div className="space-y-3">
           {paginated.map((courrier) => {
             const tc = TYPE_CONFIG[courrier.type] || TYPE_CONFIG.autre;
-            const sc = STATUT_CONFIG[courrier.statut] || STATUT_CONFIG.en_attente;
+            const sc = STATUT_CONFIG[courrier.statut] || STATUT_CONFIG.recu;
             const TypeIcon = tc.icon;
-            const canAccuse = courrier.statut === "en_attente" || courrier.statut === "notifie";
-            const canScan = options?.scanNotificationEmail && courrier.statut !== "retire";
-            const canReexpedition = options?.reexpeditionCourrier;
+            const canGiveInstruction = courrier.statut === "recu" || courrier.statut === "notifie";
+            const canScan = options?.scanNotificationEmail && canGiveInstruction;
+            const canReexpedition = options?.reexpeditionCourrier && canGiveInstruction;
             const isActLoading = (a: string) => actionLoading === `${courrier.id}-${a}`;
 
             return (
@@ -184,19 +211,19 @@ export default function CourrierUtilisateur({ domiciliationId, options }: Courri
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2 mt-3">
-                      {canAccuse && (
-                        <Button size="sm" variant="primary" loading={isActLoading("accuse_reception")} onClick={() => handleAction(courrier.id, "accuse_reception", "Accusé de réception")}>
-                          <CheckCircle className="w-3.5 h-3.5" /> Accuser réception
+                      {canGiveInstruction && (
+                        <Button size="sm" variant="primary" loading={isActLoading("recuperer")} onClick={() => handleAction(courrier.id, "recuperer", "Demande de recuperation")}>
+                          <CheckCircle className="w-3.5 h-3.5" /> Recuperer
                         </Button>
                       )}
                       {canScan && (
-                        <Button size="sm" variant="outline" loading={isActLoading("demande_scan")} onClick={() => handleAction(courrier.id, "demande_scan", "Demande de scan")}>
+                        <Button size="sm" variant="outline" loading={isActLoading("scanner")} onClick={() => handleAction(courrier.id, "scanner", "Demande de scan")}>
                           <ScanLine className="w-3.5 h-3.5" /> Demander un scan
                         </Button>
                       )}
                       {canReexpedition && (
-                        <Button size="sm" variant="outline" loading={isActLoading("demande_reexpedition")} onClick={() => handleAction(courrier.id, "demande_reexpedition", "Demande de réexpédition")}>
-                          <Send className="w-3.5 h-3.5" /> Demander la réexpédition
+                        <Button size="sm" variant="outline" loading={isActLoading("reexpedier")} onClick={() => handleAction(courrier.id, "reexpedier", "Demande de reexpedition")}>
+                          <Send className="w-3.5 h-3.5" /> Reexpedier
                         </Button>
                       )}
                     </div>

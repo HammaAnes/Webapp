@@ -1,40 +1,23 @@
 <?php
 require_once __DIR__ . '/../bootstrap.php';
-require_once __DIR__ . '/../utils/Auth.php';
-require_once __DIR__ . '/../utils/Response.php';
-require_once __DIR__ . '/../utils/UuidHelper.php';
-require_once __DIR__ . '/../config/cors.php';
-
-use Utils\Auth;
-use Utils\Response;
-use Utils\UuidHelper;
 
 $method = $_SERVER['REQUEST_METHOD'];
 
 try {
-    $userId = Auth::getUserId();
-    if (!$userId) {
-        Response::unauthorized('Non authentifié');
-    }
-
-    $user = Auth::getUser();
-    if ($user['role'] !== 'admin') {
-        Response::forbidden('Accès réservé aux administrateurs');
-    }
+    $auth = Auth::requireAdmin();
+    $userId = $auth['id'];
 
     if ($method === 'POST') {
         $data = json_decode(file_get_contents('php://input'), true);
         $dateCloture = $data['date_cloture'] ?? date('Y-m-d');
 
-        // Vérifier qu'il n'y a pas déjà une clôture pour cette date
-        $checkStmt = $pdo->prepare("SELECT id FROM clotures_caisse WHERE date_cloture = ?");
+        $checkStmt = $db->prepare("SELECT id FROM clotures_caisse WHERE date_cloture = ?");
         $checkStmt->execute([$dateCloture]);
         if ($checkStmt->fetch()) {
-            Response::badRequest('Une clôture existe déjà pour cette date');
+            Response::error('Une clôture existe déjà pour cette date', 400);
         }
 
-        // Calculer les totaux
-        $totauxStmt = $pdo->prepare("
+        $totauxStmt = $db->prepare("
             SELECT
                 SUM(CASE WHEN mode_paiement = 'cash' THEN montant ELSE 0 END) as total_cash,
                 SUM(CASE WHEN mode_paiement = 'virement' THEN montant ELSE 0 END) as total_virement,
@@ -48,11 +31,10 @@ try {
         $totauxStmt->execute([$dateCloture]);
         $totaux = $totauxStmt->fetch(PDO::FETCH_ASSOC);
 
-        $pdo->beginTransaction();
+        $db->beginTransaction();
 
-        // Créer la clôture
         $clotureId = UuidHelper::generate();
-        $insertStmt = $pdo->prepare("
+        $insertStmt = $db->prepare("
             INSERT INTO clotures_caisse
             (id, date_cloture, total_cash, total_virement, total_cheque, total_tpe,
              total_general, nombre_transactions, cloture_par, notes)
@@ -71,15 +53,7 @@ try {
             $data['notes'] ?? null
         ]);
 
-        // Lier les transactions à la clôture
-        $updateStmt = $pdo->prepare("
-            UPDATE transactions_caisse
-            SET cloture_id = ?
-            WHERE DATE(created_at) = ? AND statut = 'encaisse'
-        ");
-        $updateStmt->execute([$clotureId, $dateCloture]);
-
-        $pdo->commit();
+        $db->commit();
 
         Response::success([
             'id' => $clotureId,
@@ -88,8 +62,7 @@ try {
         ]);
 
     } elseif ($method === 'GET') {
-        // Liste des clôtures
-        $stmt = $pdo->prepare("
+        $stmt = $db->prepare("
             SELECT
                 c.*,
                 u.prenom as admin_prenom,
@@ -105,11 +78,11 @@ try {
         Response::success(['clotures' => $clotures]);
 
     } else {
-        Response::methodNotAllowed();
+        Response::error('Méthode non autorisée', 405);
     }
 } catch (Exception $e) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
+    if ($db->inTransaction()) {
+        $db->rollBack();
     }
     Response::error($e->getMessage());
 }

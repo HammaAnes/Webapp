@@ -1,30 +1,20 @@
 <?php
 require_once __DIR__ . '/../bootstrap.php';
-require_once __DIR__ . '/../utils/Auth.php';
-require_once __DIR__ . '/../utils/Response.php';
-require_once __DIR__ . '/../utils/UuidHelper.php';
-require_once __DIR__ . '/../config/cors.php';
-
-use Utils\Auth;
-use Utils\Response;
-use Utils\UuidHelper;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        $userId = Auth::getUserId();
-        if (!$userId) {
-            Response::unauthorized('Non authentifié');
-        }
+        $auth = Auth::verifyAuth();
+        $userId = $auth['id'];
 
         $data = json_decode(file_get_contents('php://input'), true);
 
         if (!isset($data['abonnement_id'])) {
-            Response::badRequest('ID d\'abonnement requis');
+            Response::error('ID d\'abonnement requis', 400);
         }
 
         $abonnementId = $data['abonnement_id'];
 
-        $stmt = $pdo->prepare("SELECT * FROM abonnements WHERE id = ? AND actif = 1");
+        $stmt = $db->prepare("SELECT * FROM abonnements WHERE id = ? AND actif = 1");
         $stmt->execute([$abonnementId]);
         $abonnement = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -32,14 +22,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Response::notFound('Abonnement non trouvé ou inactif');
         }
 
-        $checkStmt = $pdo->prepare("
+        $checkStmt = $db->prepare("
             SELECT id FROM abonnements_utilisateurs
             WHERE user_id = ? AND statut = 'actif'
             LIMIT 1
         ");
         $checkStmt->execute([$userId]);
         if ($checkStmt->fetch()) {
-            Response::badRequest('Vous avez déjà un abonnement actif');
+            Response::error('Vous avez déjà un abonnement actif', 400);
         }
 
         $dateDebut = date('Y-m-d');
@@ -47,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dateFin = date('Y-m-d', strtotime($interval, strtotime($dateDebut)));
 
         $id = UuidHelper::generate();
-        $insertStmt = $pdo->prepare("
+        $insertStmt = $db->prepare("
             INSERT INTO abonnements_utilisateurs
             (id, user_id, abonnement_id, date_debut, date_fin, montant_paye, statut, credits_restants)
             VALUES (?, ?, ?, ?, ?, ?, 'actif', ?)
@@ -73,5 +63,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         Response::error($e->getMessage());
     }
 } else {
-    Response::methodNotAllowed();
+    Response::error('Méthode non autorisée', 405);
 }

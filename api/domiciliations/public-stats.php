@@ -1,13 +1,9 @@
 <?php
 require_once __DIR__ . '/../bootstrap.php';
-require_once __DIR__ . '/../utils/Response.php';
-require_once __DIR__ . '/../config/cors.php';
-
-use Utils\Response;
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
-        $stmt = $pdo->prepare("
+        $stmt = $db->prepare("
             SELECT COUNT(*) as total
             FROM domiciliations
             WHERE statut = 'active'
@@ -23,5 +19,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         Response::error($e->getMessage());
     }
 } else {
-    Response::methodNotAllowed();
+    Response::error('Méthode non autorisée', 405);
 }

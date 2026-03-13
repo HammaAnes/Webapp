@@ -956,13 +956,6 @@ class ApiClient {
     return this.request(`/admin/courrier.php${params}`);
   }
 
-  async createCourrier(data: Record<string, unknown>) {
-    return this.request("/admin/courrier.php", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
   async donnerInstructionCourrier(courrierId: string, instruction: string) {
     return this.request("/admin/courrier.php", {
       method: "PUT",

@@ -1,35 +1,21 @@
 <?php
 require_once __DIR__ . '/../bootstrap.php';
-require_once __DIR__ . '/../utils/Auth.php';
-require_once __DIR__ . '/../utils/Response.php';
-require_once __DIR__ . '/../config/cors.php';
-
-use Utils\Auth;
-use Utils\Response;
 
 if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     try {
-        $userId = Auth::getUserId();
-        if (!$userId) {
-            Response::unauthorized('Non authentifié');
-        }
-
-        $user = Auth::getUser();
-        if ($user['role'] !== 'admin') {
-            Response::forbidden('Seuls les administrateurs peuvent enregistrer les check-outs');
-        }
+        $auth = Auth::requireAdmin();
+        $userId = $auth['id'];
 
         $data = json_decode(file_get_contents('php://input'), true);
 
         if (!isset($data['checkin_id'])) {
-            Response::badRequest('ID de check-in requis');
+            Response::error('ID de check-in requis', 400);
         }
 
         $checkinId = $data['checkin_id'];
         $heureDepart = $data['heure_depart_reel'] ?? date('Y-m-d H:i:s');
 
-        // Récupérer le check-in
-        $stmt = $pdo->prepare("
+        $stmt = $db->prepare("
             SELECT c.*, r.id as reservation_id
             FROM checkins c
             LEFT JOIN reservations r ON c.reservation_id = r.id
@@ -42,27 +28,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             Response::notFound('Check-in non trouvé ou déjà terminé');
         }
 
-        $pdo->beginTransaction();
+        $db->beginTransaction();
 
-        // Mettre à jour le check-in
-        $updateCheckinStmt = $pdo->prepare("
+        $updateCheckinStmt = $db->prepare("
             UPDATE checkins
             SET heure_depart_reel = ?, statut = 'parti'
             WHERE id = ?
         ");
         $updateCheckinStmt->execute([$heureDepart, $checkinId]);
 
-        // Mettre à jour la réservation
-        $updateReservationStmt = $pdo->prepare("
+        $updateReservationStmt = $db->prepare("
             UPDATE reservations
             SET statut = 'terminee'
             WHERE id = ?
         ");
         $updateReservationStmt->execute([$checkin['reservation_id']]);
 
-        $pdo->commit();
+        $db->commit();
 
-        // Calculer la durée de présence
         $arrivee = new DateTime($checkin['heure_arrivee_reelle']);
         $depart = new DateTime($heureDepart);
         $dureeMinutes = ($depart->getTimestamp() - $arrivee->getTimestamp()) / 60;
@@ -72,11 +55,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             'duree_minutes' => round($dureeMinutes)
         ]);
     } catch (Exception $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
+        if ($db->inTransaction()) {
+            $db->rollBack();
         }
         Response::error($e->getMessage());
     }
 } else {
-    Response::methodNotAllowed();
+    Response::error('Méthode non autorisée', 405);
 }

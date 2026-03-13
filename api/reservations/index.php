@@ -18,8 +18,14 @@ try {
 
     $db = Database::getInstance()->getConnection();
 
+    $espaceId = $_GET['espace_id'] ?? null;
+    $dateDebut = $_GET['date_debut'] ?? null;
+    $dateFin = $_GET['date_fin'] ?? null;
+
+    $params = [];
+
     if ($isAdmin) {
-        $stmt = $db->prepare("
+        $query = "
             SELECT r.*,
                    e.nom as espace_nom,
                    e.type as espace_type,
@@ -31,11 +37,10 @@ try {
             FROM reservations r
             JOIN espaces e ON r.espace_id = e.id
             JOIN users u ON r.user_id = u.id
-            ORDER BY r.created_at DESC
-        ");
-        $stmt->execute();
+            WHERE 1=1
+        ";
     } else {
-        $stmt = $db->prepare("
+        $query = "
             SELECT r.*,
                    e.nom as espace_nom,
                    e.type as espace_type,
@@ -44,10 +49,29 @@ try {
             FROM reservations r
             JOIN espaces e ON r.espace_id = e.id
             WHERE r.user_id = ?
-            ORDER BY r.created_at DESC
-        ");
-        $stmt->execute([$userId]);
+        ";
+        $params[] = $userId;
     }
+
+    if ($espaceId) {
+        $query .= " AND r.espace_id = ?";
+        $params[] = $espaceId;
+    }
+
+    if ($dateDebut) {
+        $query .= " AND r.date_fin >= ?";
+        $params[] = $dateDebut . ' 00:00:00';
+    }
+
+    if ($dateFin) {
+        $query .= " AND r.date_debut <= ?";
+        $params[] = $dateFin . ' 23:59:59';
+    }
+
+    $query .= " ORDER BY r.created_at DESC";
+
+    $stmt = $db->prepare($query);
+    $stmt->execute($params);
 
     $reservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

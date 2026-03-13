@@ -217,7 +217,7 @@ login: async (email: string, password: string) => {
 
       const updatedUser =
         response.data && typeof response.data === "object"
-          ? (response.data as User)
+          ? adaptUser(response.data as Record<string, unknown>)
           : { ...currentUser, ...data };
 
       set({
