@@ -99,22 +99,26 @@ try {
 
     $stmt = $db->prepare("SELECT * FROM contacts WHERE id = ?");
     $stmt->execute([$contactId]);
-    $contact = $stmt->fetch(PDO::FETCH_ASSOC);
+    $contactData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$contactData) {
+        Response::error('Erreur lors de la récupération du contact créé', 500);
+    }
 
     $contact = [
-        'id' => $contact['id'],
-        'nom' => $contact['nom'],
-        'prenom' => $contact['prenom'],
-        'email' => $contact['email'],
-        'telephone' => $contact['telephone'],
-        'entreprise' => $contact['entreprise'],
-        'source' => $contact['source'],
-        'statut' => $contact['statut'],
-        'notes' => $contact['notes'],
-        'userId' => $contact['user_id'],
-        'createdBy' => $contact['created_by'],
-        'createdAt' => $contact['created_at'],
-        'updatedAt' => $contact['updated_at']
+        'id' => $contactData['id'],
+        'nom' => $contactData['nom'],
+        'prenom' => $contactData['prenom'],
+        'email' => $contactData['email'],
+        'telephone' => $contactData['telephone'],
+        'entreprise' => $contactData['entreprise'],
+        'source' => $contactData['source'],
+        'statut' => $contactData['statut'],
+        'notes' => $contactData['notes'],
+        'userId' => $contactData['user_id'],
+        'createdBy' => $contactData['created_by'],
+        'createdAt' => $contactData['created_at'],
+        'updatedAt' => $contactData['updated_at']
     ];
 
     Response::success([

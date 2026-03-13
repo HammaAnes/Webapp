@@ -71,9 +71,13 @@ export function CreateContactModal({ isOpen, onClose, onContactCreated }: Create
         notes: formData.notes.trim() || undefined,
       });
 
-      toast.success('Contact créé avec succès');
-      onContactCreated?.(contact.id);
-      handleClose();
+      if (contact && contact.id) {
+        toast.success('Contact créé avec succès');
+        onContactCreated?.(contact.id);
+        handleClose();
+      } else {
+        toast.error('Erreur: Contact créé mais ID manquant');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Erreur lors de la création du contact');
     } finally {

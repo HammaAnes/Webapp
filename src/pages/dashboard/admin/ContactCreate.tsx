@@ -93,6 +93,10 @@ export default function ContactCreate() {
         notes: formData.notes.trim() || undefined,
       });
 
+      if (!contact || !contact.id) {
+        throw new Error('Contact créé mais ID manquant');
+      }
+
       toast.success('Contact créé avec succès');
 
       if (createAsUser) {

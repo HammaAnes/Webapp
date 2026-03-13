@@ -96,6 +96,10 @@ export const useContactStore = create<ContactState>((set, get) => ({
       const response = await apiClient.post('/contacts/create.php', data);
       const newContact = response.contact;
 
+      if (!newContact || !newContact.id) {
+        throw new Error('Réponse invalide du serveur');
+      }
+
       set((state) => ({
         contacts: [newContact, ...state.contacts],
         loading: false,

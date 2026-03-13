@@ -117,6 +117,10 @@ try {
     $stmt->execute([$contactId]);
     $updatedContact = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    if (!$updatedContact) {
+        Response::error('Contact non trouvé après mise à jour', 500);
+    }
+
     $contactData = [
         'id' => $updatedContact['id'],
         'nom' => $updatedContact['nom'],
