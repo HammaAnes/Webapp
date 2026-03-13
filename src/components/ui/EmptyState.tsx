@@ -1,9 +1,9 @@
 import React from "react";
-import { Video as LucideIcon, Inbox } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 import Button from "./Button";
 
 interface EmptyStateProps {
-  icon?: React.ReactNode;
+  icon?: LucideIcon | React.ReactNode;
   title?: string;
   message?: string;
   description?: string;
@@ -15,7 +15,7 @@ interface EmptyStateProps {
 }
 
 const EmptyState: React.FC<EmptyStateProps> = ({
-  icon,
+  icon: Icon,
   title,
   message,
   description,
@@ -29,12 +29,12 @@ const EmptyState: React.FC<EmptyStateProps> = ({
     <div
       className={`flex flex-col items-center justify-center p-12 text-center ${className}`}
     >
-      {icon && (
+      {Icon && (
         <div className="bg-gray-100 rounded-full p-6 mb-6">
-          {typeof icon === 'function' ? (
-            React.createElement(icon as LucideIcon, { className: "w-12 h-12 text-gray-400" })
+          {typeof Icon === 'function' ? (
+            <Icon className="w-12 h-12 text-gray-400" />
           ) : (
-            icon
+            Icon
           )}
         </div>
       )}
