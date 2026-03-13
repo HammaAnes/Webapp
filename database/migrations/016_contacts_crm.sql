@@ -19,13 +19,12 @@
   2. Modifications Tables Existantes
     - `reservations` : Ajouter `contact_id` (uuid, optionnel)
     - `domiciliations` : Ajouter `contact_id` (uuid, optionnel)
-    - `user_abonnements` : Ajouter `contact_id` (uuid, optionnel)
-    - Contraintes : Chaque ligne doit avoir user_id OU contact_id (un des deux)
+    - Note: MySQL ne supporte pas les contraintes CHECK sur les colonnes
+    - La validation user_id OU contact_id sera faite au niveau application
 
   3. Sécurité
     - Index sur email, telephone, statut, source pour performance
     - Logs d'audit pour traçabilité
-    - Contraintes de validation
 */
 
 -- Table contacts (CRM)
@@ -45,8 +44,7 @@ CREATE TABLE IF NOT EXISTS contacts (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
   CONSTRAINT fk_contact_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-  CONSTRAINT fk_contact_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT,
-  CONSTRAINT chk_contact_has_email_or_phone CHECK (email IS NOT NULL OR telephone IS NOT NULL)
+  CONSTRAINT fk_contact_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Index pour performance
@@ -60,54 +58,66 @@ CREATE INDEX IF NOT EXISTS idx_contacts_created_at ON contacts(created_at);
 
 -- Ajouter contact_id aux réservations
 ALTER TABLE reservations
-ADD COLUMN IF NOT EXISTS contact_id CHAR(36) DEFAULT NULL AFTER user_id,
-ADD CONSTRAINT fk_reservation_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE RESTRICT;
+ADD COLUMN IF NOT EXISTS contact_id CHAR(36) DEFAULT NULL AFTER user_id;
 
--- Index sur contact_id
+-- Index et foreign key pour contact_id
 CREATE INDEX IF NOT EXISTS idx_reservations_contact_id ON reservations(contact_id);
 
--- Contrainte : user_id OU contact_id obligatoire (un des deux)
-ALTER TABLE reservations
-ADD CONSTRAINT chk_reservation_user_or_contact
-CHECK ((user_id IS NOT NULL AND contact_id IS NULL) OR (user_id IS NULL AND contact_id IS NOT NULL));
+-- Vérifier si la contrainte existe avant de l'ajouter
+SET @dbname = DATABASE();
+SET @tablename = 'reservations';
+SET @constraintname = 'fk_reservation_contact';
+SET @check_constraint = (
+  SELECT COUNT(*)
+  FROM information_schema.TABLE_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA = @dbname
+  AND TABLE_NAME = @tablename
+  AND CONSTRAINT_NAME = @constraintname
+  AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+);
+
+SET @sql_fk_reservation = IF(
+  @check_constraint = 0,
+  'ALTER TABLE reservations ADD CONSTRAINT fk_reservation_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE RESTRICT',
+  'SELECT "Foreign key fk_reservation_contact already exists" AS msg'
+);
+
+PREPARE stmt FROM @sql_fk_reservation;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- Ajouter contact_id aux domiciliations
 ALTER TABLE domiciliations
-ADD COLUMN IF NOT EXISTS contact_id CHAR(36) DEFAULT NULL AFTER user_id,
-ADD CONSTRAINT fk_domiciliation_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE RESTRICT;
+ADD COLUMN IF NOT EXISTS contact_id CHAR(36) DEFAULT NULL AFTER user_id;
 
--- Index sur contact_id
+-- Index pour contact_id
 CREATE INDEX IF NOT EXISTS idx_domiciliations_contact_id ON domiciliations(contact_id);
 
--- Contrainte : user_id OU contact_id obligatoire
-ALTER TABLE domiciliations
-ADD CONSTRAINT chk_domiciliation_user_or_contact
-CHECK ((user_id IS NOT NULL AND contact_id IS NULL) OR (user_id IS NULL AND contact_id IS NOT NULL));
+-- Vérifier si la contrainte existe avant de l'ajouter
+SET @tablename = 'domiciliations';
+SET @constraintname = 'fk_domiciliation_contact';
+SET @check_constraint = (
+  SELECT COUNT(*)
+  FROM information_schema.TABLE_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA = @dbname
+  AND TABLE_NAME = @tablename
+  AND CONSTRAINT_NAME = @constraintname
+  AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+);
 
--- Ajouter contact_id aux abonnements (si table existe)
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'user_abonnements') THEN
-    ALTER TABLE user_abonnements
-    ADD COLUMN IF NOT EXISTS contact_id CHAR(36) DEFAULT NULL;
+SET @sql_fk_domiciliation = IF(
+  @check_constraint = 0,
+  'ALTER TABLE domiciliations ADD CONSTRAINT fk_domiciliation_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE RESTRICT',
+  'SELECT "Foreign key fk_domiciliation_contact already exists" AS msg'
+);
 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
-                   WHERE constraint_name = 'fk_abonnement_contact'
-                   AND table_name = 'user_abonnements') THEN
-      ALTER TABLE user_abonnements
-      ADD CONSTRAINT fk_abonnement_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE RESTRICT;
-    END IF;
+PREPARE stmt FROM @sql_fk_domiciliation;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.statistics
-                   WHERE index_name = 'idx_abonnements_contact_id'
-                   AND table_name = 'user_abonnements') THEN
-      CREATE INDEX idx_abonnements_contact_id ON user_abonnements(contact_id);
-    END IF;
-  END IF;
-END $$;
-
--- Vue pour historique complet d'un contact
-CREATE OR REPLACE VIEW contact_history AS
+-- Vue pour historique complet d'un contact (MySQL compatible)
+DROP VIEW IF EXISTS contact_history;
+CREATE VIEW contact_history AS
 SELECT
   c.id as contact_id,
   'reservation' as type,

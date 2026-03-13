@@ -28,6 +28,8 @@ const AdminSettings = lazy(() => import("./dashboard/admin/Settings"));
 const AdminAbonnements = lazy(() => import("./dashboard/admin/Abonnements"));
 const Aujourdhui = lazy(() => import("./dashboard/admin/Aujourdhui"));
 const Caisse = lazy(() => import("./dashboard/admin/Caisse"));
+const AdminContacts = lazy(() => import("./dashboard/admin/Contacts"));
+const ContactDetail = lazy(() => import("./dashboard/admin/ContactDetail"));
 
 const Dashboard = () => {
   useSEO({ noIndex: true });
@@ -58,6 +60,8 @@ const Dashboard = () => {
               <Route path="admin/aujourdhui" element={<Aujourdhui />} />
               <Route path="admin/users" element={<AdminUsers />} />
               <Route path="admin/users/:id" element={<UserDetail />} />
+              <Route path="admin/contacts" element={<AdminContacts />} />
+              <Route path="admin/contacts/:id" element={<ContactDetail />} />
               <Route path="admin/spaces" element={<AdminSpaces />} />
               <Route path="admin/spaces/:id" element={<EspaceDetail />} />
               <Route path="admin/reservations" element={<AdminReservations />} />

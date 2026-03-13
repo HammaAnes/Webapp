@@ -21,6 +21,7 @@ import {
   Clock,
   ChevronDown,
   Wallet,
+  UserCircle,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useAppStore } from "../../store/store";
@@ -138,6 +139,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       label: "Membres & Domiciliation",
       items: [
         { name: "Utilisateurs", href: "/app/admin/users", icon: Users },
+        { name: "Contacts CRM", href: "/app/admin/contacts", icon: UserCircle },
         { name: "Domiciliations", href: "/app/admin/domiciliations", icon: FileText },
       ],
     },
