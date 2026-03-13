@@ -495,127 +495,333 @@ function InformationsTab({ demande, onUpdate, loading }: { demande: DemandeDomic
 }
 
 function ContratTab({ demande, onUpdate, loading }: { demande: DemandeDomiciliation; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
-  const [bureau, setBureau] = useState(demande.numeroBureau?.toString() || "");
-  const [visible, setVisible] = useState(demande.visibleSurSite ?? false);
-  const [editing, setEditing] = useState(false);
-  const [contrat, setContrat] = useState({
-    referenceContratNotarie: demande.referenceContratNotarie || "",
-    dateDebutContrat: demande.dateDebutContrat ? String(demande.dateDebutContrat).split("T")[0] : "",
-    dateFinContrat: demande.dateFinContrat ? String(demande.dateFinContrat).split("T")[0] : "",
-    montantMensuel: demande.montantMensuel?.toString() || "",
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [occupiedBureaux, setOccupiedBureaux] = useState<number[]>([]);
+
+  const [formData, setFormData] = useState({
+    numeroBureau: "",
+    referenceContratNotarie: "",
+    dateDebutContrat: "",
+    dateFinContrat: "",
+    montantMensuel: "",
+    visibleSurSite: false,
   });
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setBureau(demande.numeroBureau?.toString() || "");
-    setVisible(demande.visibleSurSite ?? false);
-    setContrat({
+    apiClient.getDomiciliations().then((res) => {
+      if (res.success && res.data) {
+        const all = (Array.isArray(res.data) ? res.data : (res.data as Record<string, unknown>).data as unknown[] || []) as Record<string, unknown>[];
+        const occupied = all
+          .filter((d) =>
+            ["active", "domiciliation_creee", "en_attente_complements", "en_attente_signature"].includes(String(d.statut || "")) &&
+            d.numero_bureau &&
+            String(d.id) !== demande.id
+          )
+          .map((d) => Number(d.numero_bureau));
+        setOccupiedBureaux(occupied);
+      }
+    }).catch(() => {});
+  }, [demande.id]);
+
+  useEffect(() => {
+    setFormData({
+      numeroBureau: demande.numeroBureau?.toString() || "",
       referenceContratNotarie: demande.referenceContratNotarie || "",
       dateDebutContrat: demande.dateDebutContrat ? String(demande.dateDebutContrat).split("T")[0] : "",
       dateFinContrat: demande.dateFinContrat ? String(demande.dateFinContrat).split("T")[0] : "",
       montantMensuel: demande.montantMensuel?.toString() || "",
+      visibleSurSite: demande.visibleSurSite ?? false,
     });
-  }, [demande.numeroBureau, demande.visibleSurSite, demande.referenceContratNotarie, demande.dateDebutContrat, demande.dateFinContrat, demande.montantMensuel]);
+  }, [
+    demande.numeroBureau,
+    demande.referenceContratNotarie,
+    demande.dateDebutContrat,
+    demande.dateFinContrat,
+    demande.montantMensuel,
+    demande.visibleSurSite,
+  ]);
 
-  const mois = contrat.dateDebutContrat && contrat.dateFinContrat
-    ? Math.max(1, Math.round((new Date(contrat.dateFinContrat).getTime() - new Date(contrat.dateDebutContrat).getTime()) / (30.44 * 24 * 60 * 60 * 1000)))
-    : 6;
-  const montantTotal = contrat.montantMensuel ? Number(contrat.montantMensuel) * mois : 0;
+  const handleFieldChange = (field: string, value: string | boolean) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCancel = () => {
+    setFormData({
+      numeroBureau: demande.numeroBureau?.toString() || "",
+      referenceContratNotarie: demande.referenceContratNotarie || "",
+      dateDebutContrat: demande.dateDebutContrat ? String(demande.dateDebutContrat).split("T")[0] : "",
+      dateFinContrat: demande.dateFinContrat ? String(demande.dateFinContrat).split("T")[0] : "",
+      montantMensuel: demande.montantMensuel?.toString() || "",
+      visibleSurSite: demande.visibleSurSite ?? false,
+    });
+    setIsEditing(false);
+  };
+
+  const validateForm = (): boolean => {
+    if (formData.numeroBureau && occupiedBureaux.includes(Number(formData.numeroBureau))) {
+      toast.error(`Le bureau ${formData.numeroBureau} est deja attribue a une autre domiciliation`);
+      return false;
+    }
+
+    if (formData.dateDebutContrat && formData.dateFinContrat) {
+      const debut = new Date(formData.dateDebutContrat);
+      const fin = new Date(formData.dateFinContrat);
+      if (fin <= debut) {
+        toast.error("La date de fin doit etre posterieure a la date de debut");
+        return false;
+      }
+    }
+
+    if (formData.montantMensuel && Number(formData.montantMensuel) < 0) {
+      toast.error("Le montant mensuel ne peut pas etre negatif");
+      return false;
+    }
+
+    return true;
+  };
 
   const handleSave = async () => {
-    setSaving(true);
+    if (!validateForm()) return;
+
+    setIsSaving(true);
     try {
-      const data: Record<string, unknown> = {
-        numeroBureau: bureau ? Number(bureau) : undefined,
-        visibleSurSite: visible,
+      const updateData: Record<string, unknown> = {
+        numeroBureau: formData.numeroBureau ? Number(formData.numeroBureau) : null,
+        referenceContratNotarie: formData.referenceContratNotarie || null,
+        dateDebutContrat: formData.dateDebutContrat || null,
+        dateFinContrat: formData.dateFinContrat || null,
+        montantMensuel: formData.montantMensuel ? Number(formData.montantMensuel) : null,
+        visibleSurSite: formData.visibleSurSite,
       };
-      if (editing) {
-        if (contrat.referenceContratNotarie) data.referenceContratNotarie = contrat.referenceContratNotarie;
-        if (contrat.dateDebutContrat) data.dateDebutContrat = contrat.dateDebutContrat;
-        if (contrat.dateFinContrat) data.dateFinContrat = contrat.dateFinContrat;
-        if (contrat.montantMensuel) data.montantMensuel = Number(contrat.montantMensuel);
-      }
-      await onUpdate(data);
-      setEditing(false);
-    } catch { /* error already toasted */ }
-    finally { setSaving(false); }
+
+      await onUpdate(updateData);
+      setIsEditing(false);
+      toast.success("Contrat mis a jour avec succes");
+    } catch (error) {
+      console.error("Erreur mise a jour contrat:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  const calculateDuration = (): number => {
+    if (!formData.dateDebutContrat || !formData.dateFinContrat) return 0;
+    const debut = new Date(formData.dateDebutContrat);
+    const fin = new Date(formData.dateFinContrat);
+    const diffMs = fin.getTime() - debut.getTime();
+    const diffMonths = Math.round(diffMs / (30.44 * 24 * 60 * 60 * 1000));
+    return Math.max(0, diffMonths);
+  };
+
+  const calculateTotal = (): number => {
+    const months = calculateDuration();
+    const monthly = formData.montantMensuel ? Number(formData.montantMensuel) : 0;
+    return months * monthly;
+  };
+
+  const duration = calculateDuration();
+  const total = calculateTotal();
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <SectionHeader icon={FileCheck} title="Details du contrat" color="from-emerald-500 to-teal-500" />
-        <Button size="sm" variant={editing ? "danger" : "outline"} onClick={() => setEditing(!editing)}>
-          {editing ? <><X className="w-4 h-4" /> Annuler</> : <><Pencil className="w-4 h-4" /> Modifier</>}
-        </Button>
+        {!isEditing ? (
+          <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
+            <Pencil className="w-4 h-4" /> Modifier
+          </Button>
+        ) : (
+          <Button size="sm" variant="danger" onClick={handleCancel}>
+            <X className="w-4 h-4" /> Annuler
+          </Button>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Numero de bureau</label>
-          <select
-            value={bureau}
-            onChange={(e) => setBureau(e.target.value)}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white"
-          >
-            <option value="">Non attribue</option>
-            {Array.from({ length: 36 }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={n}>Bureau {n}</option>
-            ))}
-          </select>
+      <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-6 border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Numero de bureau
+            </label>
+            {isEditing ? (
+              <select
+                value={formData.numeroBureau}
+                onChange={(e) => handleFieldChange("numeroBureau", e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-all"
+              >
+                <option value="">Non attribue</option>
+                {Array.from({ length: 36 }, (_, i) => i + 1).map((n) => {
+                  const isOccupied = occupiedBureaux.includes(n);
+                  return (
+                    <option key={n} value={n} disabled={isOccupied} className={isOccupied ? "text-red-500" : ""}>
+                      Bureau {n}{isOccupied ? " (occupe)" : ""}
+                    </option>
+                  );
+                })}
+              </select>
+            ) : (
+              <div className="px-4 py-3 bg-white border border-gray-200 rounded-xl">
+                <p className="font-medium text-gray-900">
+                  {demande.numeroBureau ? `Bureau ${demande.numeroBureau}` : "Non attribue"}
+                </p>
+              </div>
+            )}
+            {isEditing && formData.numeroBureau && occupiedBureaux.includes(Number(formData.numeroBureau)) && (
+              <p className="text-xs text-red-600 mt-1 font-medium flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                Ce bureau est deja attribue
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Reference contrat notarie
+            </label>
+            {isEditing ? (
+              <input
+                type="text"
+                value={formData.referenceContratNotarie}
+                onChange={(e) => handleFieldChange("referenceContratNotarie", e.target.value)}
+                placeholder="Ex: CONT-2026-001"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+              />
+            ) : (
+              <div className="px-4 py-3 bg-white border border-gray-200 rounded-xl">
+                <p className="font-medium text-gray-900">
+                  {demande.referenceContratNotarie || "-"}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-        {editing ? (
-          <Input label="Reference contrat" value={contrat.referenceContratNotarie} onChange={(e) => setContrat({ ...contrat, referenceContratNotarie: e.target.value })} />
-        ) : (
-          <Field label="Reference contrat" value={demande.referenceContratNotarie || "-"} />
-        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Date debut
+            </label>
+            {isEditing ? (
+              <input
+                type="date"
+                value={formData.dateDebutContrat}
+                onChange={(e) => handleFieldChange("dateDebutContrat", e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+              />
+            ) : (
+              <div className="px-4 py-3 bg-white border border-gray-200 rounded-xl">
+                <p className="font-medium text-gray-900">
+                  {demande.dateDebutContrat ? formatDate(demande.dateDebutContrat) : "-"}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Date fin
+            </label>
+            {isEditing ? (
+              <input
+                type="date"
+                value={formData.dateFinContrat}
+                onChange={(e) => handleFieldChange("dateFinContrat", e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+              />
+            ) : (
+              <div className="px-4 py-3 bg-white border border-gray-200 rounded-xl">
+                <p className="font-medium text-gray-900">
+                  {demande.dateFinContrat ? formatDate(demande.dateFinContrat) : "-"}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Montant mensuel (DA)
+            </label>
+            {isEditing ? (
+              <input
+                type="number"
+                value={formData.montantMensuel}
+                onChange={(e) => handleFieldChange("montantMensuel", e.target.value)}
+                placeholder="15000"
+                min="0"
+                step="1000"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+              />
+            ) : (
+              <div className="px-4 py-3 bg-white border border-gray-200 rounded-xl">
+                <p className="font-medium text-gray-900">
+                  {demande.montantMensuel ? formatCurrency(demande.montantMensuel) : "-"}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {editing ? (
-          <>
-            <Input label="Date debut" type="date" value={contrat.dateDebutContrat} onChange={(e) => setContrat({ ...contrat, dateDebutContrat: e.target.value })} />
-            <Input label="Date fin" type="date" value={contrat.dateFinContrat} onChange={(e) => setContrat({ ...contrat, dateFinContrat: e.target.value })} />
-            <Input label="Montant mensuel (DA)" type="number" value={contrat.montantMensuel} onChange={(e) => setContrat({ ...contrat, montantMensuel: e.target.value })} />
-          </>
-        ) : (
-          <>
-            <Field label="Date debut" value={demande.dateDebutContrat ? formatDate(demande.dateDebutContrat) : "-"} />
-            <Field label="Date fin" value={demande.dateFinContrat ? formatDate(demande.dateFinContrat) : "-"} />
-            <Field label="Montant mensuel" value={demande.montantMensuel ? formatCurrency(demande.montantMensuel) : "-"} />
-          </>
-        )}
-      </div>
-
-      {contrat.montantMensuel && contrat.dateDebutContrat && contrat.dateFinContrat && (
-        <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm text-emerald-700 font-medium">Montant total du contrat ({mois} mois)</p>
-              <p className="text-xs text-emerald-600 mt-0.5">Paiement unique lors de la signature notariale</p>
+      {duration > 0 && total > 0 && (
+        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-5 border-2 border-emerald-200">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-emerald-900">Montant total du contrat</p>
+              <p className="text-xs text-emerald-700">
+                {duration} mois × {formatCurrency(Number(formData.montantMensuel) || 0)}
+              </p>
+              <p className="text-xs text-emerald-600 mt-1">Paiement unique lors de la signature notariale</p>
             </div>
-            <p className="text-xl font-bold text-emerald-800">{formatCurrency(montantTotal)}</p>
+            <div className="text-right">
+              <p className="text-3xl font-bold text-emerald-900">{formatCurrency(total)}</p>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4 border border-gray-200">
-        <div>
-          <p className="font-medium text-gray-900">Visible sur le site</p>
-          <p className="text-sm text-gray-500">Afficher cette domiciliation dans la liste publique</p>
+      <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-5 border border-gray-200">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-gray-900">Visible sur le site</p>
+              {formData.visibleSurSite && (
+                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
+                  Publique
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-gray-600 mt-1">
+              Afficher cette domiciliation dans la liste publique des entreprises domiciliees
+            </p>
+          </div>
+          <button
+            onClick={() => handleFieldChange("visibleSurSite", !formData.visibleSurSite)}
+            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors shadow-sm ${
+              formData.visibleSurSite ? "bg-emerald-500" : "bg-gray-300"
+            }`}
+            disabled={!isEditing}
+          >
+            <span
+              className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform ${
+                formData.visibleSurSite ? "translate-x-7" : "translate-x-1"
+              }`}
+            />
+          </button>
         </div>
-        <button
-          onClick={() => setVisible(!visible)}
-          className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${visible ? "bg-teal-500" : "bg-gray-300"}`}
-        >
-          <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${visible ? "translate-x-6" : "translate-x-1"}`} />
-        </button>
       </div>
 
-      <div className="flex justify-end">
-        <Button onClick={handleSave} loading={saving || loading}>
-          <Save className="w-4 h-4" /> Enregistrer
-        </Button>
+      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+        {isEditing && (
+          <>
+            <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
+              Annuler
+            </Button>
+            <Button onClick={handleSave} loading={isSaving || loading}>
+              <Save className="w-4 h-4" /> Enregistrer les modifications
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
