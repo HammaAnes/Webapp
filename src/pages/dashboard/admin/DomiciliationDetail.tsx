@@ -319,12 +319,12 @@ export default function DomiciliationDetail() {
       </div>
 
       <div className="min-h-[50vh]">
-        {activeTab === "informations" && <InformationsTab demande={demande} onUpdate={handleUpdate} loading={actionLoading} />}
-        {activeTab === "contrat" && <ContratTab demande={demande} onUpdate={handleUpdate} loading={actionLoading} />}
-        {activeTab === "courrier" && <CourrierTab demande={demande} />}
-        {activeTab === "documents" && <DocumentsTab demande={demande} />}
-        {activeTab === "notes" && <NotesTab demande={demande} onUpdate={handleUpdate} loading={actionLoading} />}
-        {activeTab === "actions" && <ActionsTab demande={demande} onAction={handleAction} loading={actionLoading} />}
+        {activeTab === "informations" && <InformationsTab key={`info-${demande.id}`} demande={demande} onUpdate={handleUpdate} loading={actionLoading} />}
+        {activeTab === "contrat" && <ContratTab key={`contrat-${demande.id}-${demande.numeroBureau}-${demande.montantMensuel}`} demande={demande} onUpdate={handleUpdate} loading={actionLoading} />}
+        {activeTab === "courrier" && <CourrierTab key={`courrier-${demande.id}`} demande={demande} />}
+        {activeTab === "documents" && <DocumentsTab key={`docs-${demande.id}`} demande={demande} />}
+        {activeTab === "notes" && <NotesTab key={`notes-${demande.id}`} demande={demande} onUpdate={handleUpdate} loading={actionLoading} />}
+        {activeTab === "actions" && <ActionsTab key={`actions-${demande.id}`} demande={demande} onAction={handleAction} loading={actionLoading} />}
       </div>
     </div>
   );
@@ -533,14 +533,8 @@ function ContratTab({ demande, onUpdate, loading }: { demande: DemandeDomiciliat
       montantMensuel: demande.montantMensuel?.toString() || "",
       visibleSurSite: demande.visibleSurSite ?? false,
     });
-  }, [
-    demande.numeroBureau,
-    demande.referenceContratNotarie,
-    demande.dateDebutContrat,
-    demande.dateFinContrat,
-    demande.montantMensuel,
-    demande.visibleSurSite,
-  ]);
+    setIsEditing(false);
+  }, [demande]);
 
   const handleFieldChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -597,7 +591,6 @@ function ContratTab({ demande, onUpdate, loading }: { demande: DemandeDomiciliat
 
       await onUpdate(updateData);
       setIsEditing(false);
-      toast.success("Contrat mis a jour avec succes");
     } catch (error) {
       console.error("Erreur mise a jour contrat:", error);
     } finally {
