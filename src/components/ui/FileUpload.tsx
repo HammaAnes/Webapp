@@ -1,5 +1,5 @@
 import React, { useCallback, useRef } from 'react';
-import { Upload, X, FileIcon, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, File as FileIcon, Image as ImageIcon } from 'lucide-react';
 import Button from './Button';
 
 interface UploadedFile {
