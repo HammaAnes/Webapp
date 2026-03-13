@@ -22,6 +22,8 @@ class ApiClient {
   private isRefreshing = false;
   private refreshPromise: Promise<string> | null = null;
   private lastAuthErrorTime = 0;
+  private lastNetworkErrorTime = 0;
+  private networkErrorShown = false;
 
   constructor() {
     if (typeof window !== "undefined") {
@@ -340,10 +342,17 @@ class ApiClient {
       }
 
       if (errorMessage === "Failed to fetch") {
+        const now = Date.now();
+        const suppressDuplicate = now - this.lastNetworkErrorTime < 3000;
+        this.lastNetworkErrorTime = now;
+
         return {
           success: false,
-          error: `Impossible de contacter l'API (${API_URL}). Vérifiez que le serveur est accessible.`,
-        };
+          error: suppressDuplicate
+            ? "Serveur inaccessible"
+            : `Impossible de contacter l'API (${API_URL}). Vérifiez que le serveur est accessible.`,
+          _networkError: true,
+        } as ApiResponse<T> & { _networkError: boolean };
       }
 
       return {
@@ -737,7 +746,7 @@ class ApiClient {
     return result;
   }
 
-  async downloadDocument(documentId: string): Promise<{ success: boolean; blob?: Blob; filename?: string; error?: string }> {
+  async downloadDocument(documentId: string, retryCount = 0): Promise<{ success: boolean; blob?: Blob; filename?: string; error?: string }> {
     const token = this.getToken();
     if (!token) {
       return { success: false, error: ERROR_MESSAGES.UNAUTHORIZED };
@@ -761,7 +770,15 @@ class ApiClient {
       const blob = await response.blob();
       return { success: true, blob, filename };
     } catch (err) {
-      return { success: false, error: err instanceof Error ? err.message : "Erreur de telechargement" };
+      const errorMsg = err instanceof Error ? err.message : "Erreur de telechargement";
+      if (errorMsg === "Failed to fetch" && retryCount < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (retryCount + 1)));
+        return this.downloadDocument(documentId, retryCount + 1);
+      }
+      if (errorMsg === "Failed to fetch") {
+        return { success: false, error: "Impossible de telecharger le document. Verifiez votre connexion." };
+      }
+      return { success: false, error: errorMsg };
     }
   }
 
@@ -949,6 +966,13 @@ class ApiClient {
     return this.request("/email/send.php", {
       method: "POST",
       body: JSON.stringify({ to, subject, html }),
+    });
+  }
+
+  async dispatchEmail(type: string, data: Record<string, unknown>) {
+    return this.request("/email/dispatch.php", {
+      method: "POST",
+      body: JSON.stringify({ type, data }),
     });
   }
 

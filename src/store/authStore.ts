@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { apiClient } from "../lib/api-client";
 import toast from "react-hot-toast";
 import type { User } from "../types";
-import { emailService } from "../services/email-service";
 import { logger } from "../utils/logger";
 
 interface AuthState {
@@ -154,12 +153,6 @@ login: async (email: string, password: string) => {
         user: adaptedUser,
         isAdmin: adaptedUser.role === "admin",
         isLoading: false,
-      });
-
-      emailService.onUserRegistered({
-        prenom: data.prenom,
-        nom: data.nom,
-        email: data.email,
       });
 
       if (data.codeParrainage) {

@@ -331,16 +331,17 @@ const Settings = () => {
     }
     setSendingTest(true);
     try {
-      await emailService.sendCustom(testEmailTo, {
-        subject: "Test Email - Coffice",
-        html: `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:40px;text-align:center">
+      await emailService.sendCustom(
+        testEmailTo,
+        "Test Email - Coffice",
+        `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:40px;text-align:center">
           <h2 style="color:#111827">Test Email Coffice</h2>
           <p style="color:#6b7280">Cet email a été envoyé depuis les paramètres d'administration de Coffice.</p>
           <p style="color:#059669;font-weight:bold;font-size:18px">Le service email fonctionne correctement !</p>
           <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
           <p style="color:#9ca3af;font-size:12px">Coffice - ${new Date().toLocaleString("fr-FR")}</p>
-        </body></html>`,
-      });
+        </body></html>`
+      );
       toast.success(`Email de test envoyé à ${testEmailTo}`);
     } catch {
       toast.error("Erreur lors de l'envoi du test");

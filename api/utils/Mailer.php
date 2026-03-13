@@ -41,7 +41,10 @@ class Mailer
             Logger::error('Email sending failed', [
                 'to' => $to,
                 'subject' => $subject,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'smtp_host' => self::$config['smtp_host'] ?? 'unknown',
+                'smtp_port' => self::$config['smtp_port'] ?? 'unknown',
+                'use_phpmailer' => self::$usePHPMailer ? 'yes' : 'no'
             ]);
             return false;
         }
@@ -90,10 +93,18 @@ class Mailer
 
         $result = $mail->send();
 
-        Logger::info('Email sent successfully', [
-            'to' => $to,
-            'subject' => $subject
-        ]);
+        if ($result) {
+            Logger::info('Email sent successfully', [
+                'to' => $to,
+                'subject' => $subject
+            ]);
+        } else {
+            Logger::error('PHPMailer send returned false', [
+                'to' => $to,
+                'subject' => $subject,
+                'errorInfo' => $mail->ErrorInfo
+            ]);
+        }
 
         return $result;
     }

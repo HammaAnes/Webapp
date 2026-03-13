@@ -145,8 +145,13 @@ export const useAppStore = create<AppState>()(
 
         set({ initialized: true });
       } catch (error) {
-        logger.error("Erreur initialisation:", error instanceof Error ? error.message : String(error));
-        toast.error("Erreur lors du chargement des données");
+        const msg = error instanceof Error ? error.message : String(error);
+        logger.error("Erreur initialisation:", msg);
+        if (msg.includes("Failed to fetch") || msg.includes("Impossible de contacter")) {
+          toast.error("Impossible de contacter le serveur. Verifiez votre connexion.");
+        } else {
+          toast.error("Erreur lors du chargement des donnees");
+        }
       } finally {
         set({ loading: false });
       }

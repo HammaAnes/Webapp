@@ -1,40 +1,15 @@
 import { logger } from "../utils/logger";
 import { apiClient } from "../lib/api-client";
 import toast from "react-hot-toast";
-import {
-  welcomeEmail,
-  reservationCreatedEmail,
-  reservationConfirmedEmail,
-  reservationCancelledEmail,
-  reservationReminderEmail,
-  domiciliationSubmittedEmail,
-  domiciliationStatusEmail,
-  domiciliationActivatedEmail,
-  domiciliationRejectedEmail,
-  passwordResetEmail,
-  adminNotificationEmail,
-} from "./email-templates";
-import type {
-  WelcomeData,
-  ReservationEmailData,
-  DomiciliationEmailData,
-  PasswordResetData,
-  AdminNotificationData,
-  EmailTemplate,
-} from "./email-templates";
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "desk@coffice.dz";
-
-async function sendEmail(to: string, template: EmailTemplate): Promise<boolean> {
+async function dispatch(type: string, data: Record<string, unknown>): Promise<boolean> {
   try {
-    const response = await apiClient.sendEmail(to, template.subject, template.html);
-
+    const response = await apiClient.dispatchEmail(type, data);
     if (!response.success) {
-      logger.error("[Email] Send failed:", response.error);
+      logger.error("[Email] Dispatch failed:", response.error);
       return false;
     }
-
-    logger.info(`[Email] Sent to ${to}: ${template.subject}`);
+    logger.info(`[Email] Dispatched: ${type}`);
     return true;
   } catch (error) {
     logger.error("[Email] Error:", error instanceof Error ? error.message : String(error));
@@ -42,141 +17,123 @@ async function sendEmail(to: string, template: EmailTemplate): Promise<boolean> 
   }
 }
 
-async function sendSafe(to: string, template: EmailTemplate, silent = false): Promise<void> {
+async function dispatchSafe(type: string, data: Record<string, unknown>, silent = false): Promise<void> {
   try {
-    const sent = await sendEmail(to, template);
+    const sent = await dispatch(type, data);
     if (!sent && !silent) {
-      logger.warn(`[Email] Echec envoi a ${to}`);
+      logger.warn(`[Email] Echec dispatch: ${type}`);
     }
   } catch (error) {
-    logger.error("[Email] sendSafe error:", error instanceof Error ? error.message : String(error));
+    logger.error("[Email] dispatchSafe error:", error instanceof Error ? error.message : String(error));
     if (!silent) {
       toast.error("L'envoi de l'email a echoue. Veuillez reessayer.");
     }
   }
 }
 
-export const emailService = {
-  async onUserRegistered(data: WelcomeData) {
-    await Promise.all([
-      sendSafe(data.email, welcomeEmail(data)),
-      sendSafe(ADMIN_EMAIL, adminNotificationEmail({
-        type: "new_user",
-        userName: `${data.prenom} ${data.nom}`,
-        userEmail: data.email,
-        details: [
-          { label: "Date", value: new Date().toLocaleDateString("fr-FR") },
-        ],
-      })),
-    ]);
-  },
+export interface ReservationEmailData {
+  prenom: string;
+  espaceName: string;
+  espaceType: string;
+  dateDebut: string;
+  dateFin: string;
+  heureDebut: string;
+  heureFin: string;
+  duree: string;
+  participants: number;
+  montant: number;
+  reservationId?: string;
+  notes?: string;
+}
 
+export interface DomiciliationEmailData {
+  prenom: string;
+  raisonSociale: string;
+  formeJuridique?: string;
+  statut: string;
+  statutLabel: string;
+  montantMensuel?: number;
+  commentaire?: string;
+  dateDebut?: string;
+  dateFin?: string;
+}
+
+export const emailService = {
   async onReservationCreated(userEmail: string, data: ReservationEmailData) {
-    await Promise.all([
-      sendSafe(userEmail, reservationCreatedEmail(data)),
-      sendSafe(ADMIN_EMAIL, adminNotificationEmail({
-        type: "new_reservation",
-        userName: data.prenom,
-        userEmail,
-        details: [
-          { label: "Espace", value: data.espaceName },
-          { label: "Date", value: data.dateDebut },
-          { label: "Horaire", value: `${data.heureDebut} - ${data.heureFin}` },
-          { label: "Montant", value: `${data.montant.toLocaleString("fr-DZ")} DA` },
-        ],
-      })),
-    ]);
+    await dispatchSafe("reservation_created", {
+      prenom: data.prenom,
+      espace_name: data.espaceName,
+      date_debut: data.dateDebut,
+      heure_debut: data.heureDebut,
+      heure_fin: data.heureFin,
+      duree: data.duree,
+      participants: data.participants,
+      montant: data.montant,
+      user_email: userEmail,
+      notes: data.notes,
+    });
   },
 
   async onReservationConfirmed(userEmail: string, data: ReservationEmailData) {
-    await Promise.all([
-      sendSafe(userEmail, reservationConfirmedEmail(data)),
-      sendSafe(ADMIN_EMAIL, adminNotificationEmail({
-        type: "reservation_confirmed",
-        userName: data.prenom,
-        userEmail,
-        details: [
-          { label: "Espace", value: data.espaceName },
-          { label: "Date", value: data.dateDebut },
-          { label: "Horaire", value: `${data.heureDebut} \u2013 ${data.heureFin}` },
-          { label: "Montant", value: `${data.montant.toLocaleString("fr-DZ")} DA` },
-        ],
-      })),
-    ]);
+    await dispatchSafe("reservation_confirmed", {
+      prenom: data.prenom,
+      espace_name: data.espaceName,
+      date_debut: data.dateDebut,
+      heure_debut: data.heureDebut,
+      heure_fin: data.heureFin,
+      participants: data.participants,
+      montant: data.montant,
+      user_email: userEmail,
+    });
   },
 
   async onReservationCancelled(userEmail: string, data: ReservationEmailData & { raison?: string }) {
-    await Promise.all([
-      sendSafe(userEmail, reservationCancelledEmail(data)),
-      sendSafe(ADMIN_EMAIL, adminNotificationEmail({
-        type: "reservation_cancelled",
-        userName: data.prenom,
-        userEmail,
-        details: [
-          { label: "Espace", value: data.espaceName },
-          { label: "Date", value: data.dateDebut },
-          { label: "Montant", value: `${data.montant.toLocaleString("fr-DZ")} DA` },
-        ],
-      })),
-    ]);
-  },
-
-  async onReservationReminder(userEmail: string, data: ReservationEmailData) {
-    await sendSafe(userEmail, reservationReminderEmail(data));
+    await dispatchSafe("reservation_cancelled", {
+      prenom: data.prenom,
+      espace_name: data.espaceName,
+      date_debut: data.dateDebut,
+      heure_debut: data.heureDebut,
+      heure_fin: data.heureFin,
+      montant: data.montant,
+      raison: data.raison,
+      user_email: userEmail,
+    });
   },
 
   async onDomiciliationSubmitted(userEmail: string, data: DomiciliationEmailData) {
-    await Promise.all([
-      sendSafe(userEmail, domiciliationSubmittedEmail(data)),
-      sendSafe(ADMIN_EMAIL, adminNotificationEmail({
-        type: "new_domiciliation",
-        userName: data.prenom,
-        userEmail,
-        details: [
-          { label: "Raison sociale", value: data.raisonSociale },
-          { label: "Forme juridique", value: data.formeJuridique || "-" },
-        ],
-      })),
-    ]);
+    await dispatchSafe("domiciliation_submitted", {
+      prenom: data.prenom,
+      raison_sociale: data.raisonSociale,
+      forme_juridique: data.formeJuridique,
+      user_email: userEmail,
+    });
   },
 
   async onDomiciliationStatusUpdate(userEmail: string, data: DomiciliationEmailData) {
-    const userTemplate =
-      data.statut === "active"
-        ? domiciliationActivatedEmail(data)
-        : data.statut === "refusee"
-        ? domiciliationRejectedEmail(data)
-        : domiciliationStatusEmail(data);
-
-    await Promise.all([
-      sendSafe(userEmail, userTemplate),
-      sendSafe(ADMIN_EMAIL, adminNotificationEmail({
-        type: "domiciliation_status_update",
-        userName: data.prenom,
-        userEmail,
-        details: [
-          { label: "Raison sociale", value: data.raisonSociale },
-          { label: "Nouveau statut", value: data.statutLabel },
-          ...(data.montantMensuel ? [{ label: "Montant mensuel", value: `${data.montantMensuel.toLocaleString("fr-DZ")} DA` }] : []),
-          ...(data.commentaire ? [{ label: "Commentaire", value: data.commentaire }] : []),
-        ],
-      })),
-    ]);
+    await dispatchSafe("domiciliation_status_update", {
+      prenom: data.prenom,
+      raison_sociale: data.raisonSociale,
+      statut: data.statut,
+      statut_label: data.statutLabel,
+      montant_mensuel: data.montantMensuel,
+      commentaire: data.commentaire,
+      date_debut: data.dateDebut,
+      date_fin: data.dateFin,
+      user_email: userEmail,
+    });
   },
 
-  async onPasswordReset(userEmail: string, data: PasswordResetData) {
-    await sendSafe(userEmail, passwordResetEmail(data));
+  async sendCustom(to: string, subject: string, html: string) {
+    try {
+      const response = await apiClient.sendEmail(to, subject, html);
+      if (!response.success) {
+        logger.error("[Email] Custom send failed:", response.error);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      logger.error("[Email] Custom send error:", error instanceof Error ? error.message : String(error));
+      return false;
+    }
   },
-
-  async sendCustom(to: string, template: EmailTemplate) {
-    await sendSafe(to, template);
-  },
-};
-
-export type {
-  WelcomeData,
-  ReservationEmailData,
-  DomiciliationEmailData,
-  PasswordResetData,
-  AdminNotificationData,
 };
