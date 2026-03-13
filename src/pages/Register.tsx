@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Mail, User, Phone, ArrowRight, Gift, Building, Briefcase } from "lucide-react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { Input, PasswordInput, Button, Checkbox } from "../components/ui";
+import { Input, PasswordInput, Button, Checkbox, GoogleLoginButton } from "../components/ui";
 import { useAuthStore } from "../store/authStore";
 import { UserForm } from "../types";
 import { apiClient } from "../lib/api-client";
@@ -17,9 +17,10 @@ interface RegisterForm extends UserForm {
 }
 
 const Register = () => {
-  const { register: registerUser, user } = useAuthStore();
+  const { register: registerUser, loginWithGoogle, user } = useAuthStore();
   const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
   const [validatingReferral, setValidatingReferral] = React.useState(false);
   const [referralValid, setReferralValid] = React.useState<boolean | null>(
     null,
@@ -90,6 +91,21 @@ const Register = () => {
     }
   };
 
+  const handleGoogleSuccess = async (idToken: string) => {
+    setIsGoogleLoading(true);
+    try {
+      await loginWithGoogle(idToken);
+    } catch {
+      // error is already handled by authStore toast
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleError = (error: string) => {
+    toast.error(error);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center p-4">
       <motion.div
@@ -110,6 +126,22 @@ const Register = () => {
           <p className="text-gray-600 text-center mb-8">
             Créez votre compte Coffice
           </p>
+
+          <GoogleLoginButton
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            text="S'inscrire avec Google"
+            loading={isGoogleLoading}
+          />
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Ou avec email</span>
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

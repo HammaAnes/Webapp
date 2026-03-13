@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Mail, ArrowRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { Input, PasswordInput, Button, Checkbox } from "../components/ui";
+import { Input, PasswordInput, Button, Checkbox, GoogleLoginButton } from "../components/ui";
 import { useAuthStore } from "../store/authStore";
 import { validationRules } from "../utils/validation";
 import Logo from "../components/Logo";
@@ -17,8 +17,9 @@ interface LoginForm {
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, user } = useAuthStore();
+  const { login, loginWithGoogle, user } = useAuthStore();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
 
   const {
     register,
@@ -55,6 +56,22 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (idToken: string) => {
+    setIsGoogleLoading(true);
+    try {
+      await loginWithGoogle(idToken);
+      navigate("/app");
+    } catch {
+      // error is already handled by authStore toast
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleError = (error: string) => {
+    toast.error(error);
   };
 
   return (
@@ -114,6 +131,21 @@ const Login = () => {
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Ou</span>
+            </div>
+          </div>
+
+          <GoogleLoginButton
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            loading={isGoogleLoading}
+          />
 
           <div className="mt-6 text-center">
             <p className="text-gray-600">

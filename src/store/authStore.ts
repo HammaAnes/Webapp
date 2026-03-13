@@ -12,6 +12,7 @@ interface AuthState {
 
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
@@ -109,7 +110,7 @@ login: async (email: string, password: string) => {
       refreshToken?: string;
       user: any; // Use any temporarily to handle the transformation
     };
-    
+
     apiClient.setToken(responseData.token, responseData.refreshToken);
 
     const adaptedUser = adaptUser(responseData.user);
@@ -124,6 +125,39 @@ login: async (email: string, password: string) => {
   } catch (error) {
     set({ isLoading: false });
     toast.error(error instanceof Error ? error.message : "Erreur de connexion");
+    throw error;
+  }
+},
+
+loginWithGoogle: async (idToken: string) => {
+  try {
+    set({ isLoading: true });
+    const response = await apiClient.loginWithGoogle(idToken);
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error || "Erreur de connexion Google");
+    }
+
+    const responseData = response.data as {
+      token: string;
+      refreshToken?: string;
+      user: any;
+    };
+
+    apiClient.setToken(responseData.token, responseData.refreshToken);
+
+    const adaptedUser = adaptUser(responseData.user);
+
+    set({
+      user: adaptedUser,
+      isAdmin: adaptedUser.role === "admin",
+      isLoading: false,
+    });
+
+    toast.success("Connexion Google réussie");
+  } catch (error) {
+    set({ isLoading: false });
+    toast.error(error instanceof Error ? error.message : "Erreur de connexion Google");
     throw error;
   }
 },

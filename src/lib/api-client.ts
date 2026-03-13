@@ -416,6 +416,20 @@ class ApiClient {
     });
   }
 
+  async loginWithGoogle(credential: string) {
+    return this.request("/auth/google.php", {
+      method: "POST",
+      body: JSON.stringify({ credential }),
+    });
+  }
+
+  async loginWithGoogle(idToken: string) {
+    return this.request("/auth/google-callback.php", {
+      method: "POST",
+      body: JSON.stringify({ idToken }),
+    });
+  }
+
   async register(data: {
     email: string;
     password: string;
