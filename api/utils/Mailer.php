@@ -18,11 +18,19 @@ class Mailer
             'use_smtp' => env('MAIL_MAILER', 'smtp') === 'smtp'
         ];
 
-        if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
-            require_once __DIR__ . '/../../vendor/autoload.php';
+        $autoloadPath = __DIR__ . '/../../vendor/autoload.php';
+        if (file_exists($autoloadPath)) {
+            require_once $autoloadPath;
         }
 
         self::$usePHPMailer = class_exists('PHPMailer\PHPMailer\PHPMailer');
+
+        if (!self::$usePHPMailer) {
+            Logger::warning('PHPMailer not available, falling back to mail()', [
+                'autoload_exists' => file_exists($autoloadPath),
+                'autoload_path' => realpath($autoloadPath) ?: $autoloadPath
+            ]);
+        }
     }
 
     public static function send(string $to, string $subject, string $body, ?string $plainText = null): bool
@@ -33,7 +41,10 @@ class Mailer
 
         try {
             if (self::$usePHPMailer && self::$config['use_smtp']) {
-                return self::sendWithPHPMailer($to, $subject, $body, $plainText);
+                $result = self::sendWithPHPMailer($to, $subject, $body, $plainText);
+                if ($result) return true;
+                Logger::warning('PHPMailer SMTP failed, trying mail() fallback', ['to' => $to]);
+                return self::sendWithMailFunction($to, $subject, $body);
             } else {
                 return self::sendWithMailFunction($to, $subject, $body);
             }
@@ -46,7 +57,12 @@ class Mailer
                 'smtp_port' => self::$config['smtp_port'] ?? 'unknown',
                 'use_phpmailer' => self::$usePHPMailer ? 'yes' : 'no'
             ]);
-            return false;
+            try {
+                return self::sendWithMailFunction($to, $subject, $body);
+            } catch (Exception $fallbackError) {
+                Logger::error('mail() fallback also failed', ['error' => $fallbackError->getMessage()]);
+                return false;
+            }
         }
     }
 
@@ -61,6 +77,8 @@ class Mailer
         $mail->Password = self::$config['smtp_password'];
         $mail->Port = self::$config['smtp_port'];
         $mail->CharSet = 'UTF-8';
+        $mail->Timeout = 15;
+        $mail->SMTPKeepAlive = false;
 
         $port = self::$config['smtp_port'];
         if ($port === 465) {
@@ -79,7 +97,11 @@ class Mailer
             ]
         ];
 
-        $mail->setFrom(self::$config['from_email'], self::$config['from_name']);
+        $fromName = self::$config['from_name'];
+        if ($fromName === self::$config['from_email']) {
+            $fromName = 'Coffice';
+        }
+        $mail->setFrom(self::$config['from_email'], $fromName);
         $mail->addAddress($to);
         $mail->isHTML(true);
         $mail->Subject = $subject;
@@ -94,7 +116,7 @@ class Mailer
         $result = $mail->send();
 
         if ($result) {
-            Logger::info('Email sent successfully', [
+            Logger::info('Email sent successfully via PHPMailer', [
                 'to' => $to,
                 'subject' => $subject
             ]);
