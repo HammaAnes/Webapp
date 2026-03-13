@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useForm } from "react-hook-form";
 import {
   Building,
   Plus,
@@ -21,10 +22,7 @@ import {
   Eye,
 } from "lucide-react";
 import { useAppStore } from "../../../store/store";
-import Button from "../../../components/ui/Button";
-import Card from "../../../components/ui/Card";
-import Modal from "../../../components/ui/Modal";
-import Input from "../../../components/ui/Input";
+import { Input, Select, Textarea, Checkbox, Button, Card, Modal } from "../../../components/ui";
 import toast from "react-hot-toast";
 import {
   ESPACE_TYPE_OPTIONS,
@@ -33,6 +31,7 @@ import {
   getEspaceTypeColor,
   type EspaceType,
 } from "../../../constants";
+import { validationRules } from "../../../utils/validation";
 import type { Espace } from "../../../types";
 
 const equipementsList = [
@@ -42,6 +41,19 @@ const equipementsList = [
   { id: "imprimante", label: "Imprimante", icon: Printer },
   { id: "visio", label: "Visioconférence", icon: Video },
 ];
+
+interface SpaceFormData {
+  nom: string;
+  type: EspaceType;
+  capacite: number;
+  prixHeure: number;
+  prixDemiJournee: number;
+  prixJour: number;
+  prixSemaine: number;
+  description: string;
+  equipements: string[];
+  disponible: boolean;
+}
 
 const Spaces = () => {
   const { espaces, addEspace, updateEspace, deleteEspace, loadEspaces } =
@@ -53,40 +65,41 @@ const Spaces = () => {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [loading, setLoading] = useState(false);
+  const [equipements, setEquipements] = useState<string[]>([]);
 
-  const [formData, setFormData] = useState({
-    nom: "",
-    type: DEFAULT_ESPACE_TYPE as EspaceType,
-    capacite: 1,
-    prixHeure: 0,
-    prixDemiJournee: 0,
-    prixJour: 0,
-    prixSemaine: 0,
-    description: "",
-    equipements: [] as string[],
-    disponible: true,
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<SpaceFormData>({
+    defaultValues: {
+      nom: "",
+      type: DEFAULT_ESPACE_TYPE as EspaceType,
+      capacite: 1,
+      prixHeure: 0,
+      prixDemiJournee: 0,
+      prixJour: 0,
+      prixSemaine: 0,
+      description: "",
+      equipements: [],
+      disponible: true,
+    },
   });
 
   useEffect(() => {
     loadEspaces();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: SpaceFormData) => {
     setLoading(true);
 
     try {
       const dataToSend = {
-        nom: formData.nom,
-        type: formData.type,
-        capacite: formData.capacite,
-        prixHeure: formData.prixHeure,
-        prixDemiJournee: formData.prixDemiJournee,
-        prixJour: formData.prixJour,
-        prixSemaine: formData.prixSemaine,
-        description: formData.description,
-        equipements: formData.equipements,
-        disponible: formData.disponible,
+        ...data,
+        equipements,
       };
 
       if (editingSpace) {
@@ -116,24 +129,14 @@ const Spaces = () => {
   };
 
   const resetForm = () => {
-    setFormData({
-      nom: "",
-      type: DEFAULT_ESPACE_TYPE as EspaceType,
-      capacite: 1,
-      prixHeure: 0,
-      prixDemiJournee: 0,
-      prixJour: 0,
-      prixSemaine: 0,
-      description: "",
-      equipements: [],
-      disponible: true,
-    });
+    reset();
+    setEquipements([]);
     setEditingSpace(null);
   };
 
   const handleEdit = (space: Espace) => {
     setEditingSpace(space);
-    setFormData({
+    reset({
       nom: space.nom,
       type: space.type,
       capacite: space.capacite,
@@ -142,9 +145,9 @@ const Spaces = () => {
       prixJour: space.prixJour || 0,
       prixSemaine: space.prixSemaine || 0,
       description: space.description || "",
-      equipements: space.equipements || [],
       disponible: space.disponible !== false,
     });
+    setEquipements(space.equipements || []);
     setShowModal(true);
   };
 
@@ -165,12 +168,11 @@ const Spaces = () => {
   };
 
   const toggleEquipement = (equipId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      equipements: prev.equipements.includes(equipId)
-        ? prev.equipements.filter((e) => e !== equipId)
-        : [...prev.equipements, equipId],
-    }));
+    setEquipements((prev) =>
+      prev.includes(equipId)
+        ? prev.filter((e) => e !== equipId)
+        : [...prev, equipId]
+    );
   };
 
   const filteredSpaces = espaces.filter((space) => {
@@ -273,28 +275,24 @@ const Spaces = () => {
           </div>
 
           <div className="flex gap-2">
-            <select
+            <Select
               value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
-            >
-              <option value="all">Tous les types</option>
-              {ESPACE_TYPE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setFilterType(value)}
+              options={[
+                { value: "all", label: "Tous les types" },
+                ...ESPACE_TYPE_OPTIONS,
+              ]}
+            />
 
-            <select
+            <Select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
-            >
-              <option value="all">Tous les statuts</option>
-              <option value="disponible">Disponible</option>
-              <option value="indisponible">Indisponible</option>
-            </select>
+              onChange={(value) => setFilterStatus(value)}
+              options={[
+                { value: "all", label: "Tous les statuts" },
+                { value: "disponible", label: "Disponible" },
+                { value: "indisponible", label: "Indisponible" },
+              ]}
+            />
 
             <button
               onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
@@ -347,56 +345,51 @@ const Spaces = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h3 className="font-bold text-lg text-gray-900">
+                      <h3 className="font-semibold text-lg text-gray-900">
                         {space.nom}
                       </h3>
-                      <span
-                        className={`inline-block px-2 py-1 rounded text-xs font-medium mt-1 ${getEspaceTypeColor(space.type)}`}
-                      >
+                      <p className="text-sm text-gray-500">
                         {getEspaceTypeLabel(space.type)}
-                      </span>
+                      </p>
                     </div>
-                    <div
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${space.disponible ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        space.disponible
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
                     >
                       {space.disponible ? "Disponible" : "Occupé"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <Users className="w-4 h-4" />
+                      <span>{space.capacite} pers.</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Banknote className="w-4 h-4" />
+                      <span>{space.prixHeure} DA/h</span>
                     </div>
                   </div>
 
                   {space.description && (
-                    <p className="text-sm text-gray-600">{space.description}</p>
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {space.description}
+                    </p>
                   )}
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Users className="w-4 h-4" />
-                      <span>
-                        {space.capacite} personne{space.capacite > 1 ? "s" : ""}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Banknote className="w-4 h-4" />
-                      <span className="text-sm">
-                        {space.prixHeure || 0} DA/h -{" "}
-                        {space.prixDemiJournee || 0} DA/dj -{" "}
-                        {space.prixJour || 0} DA/j
-                      </span>
-                    </div>
-                  </div>
 
                   {space.equipements && space.equipements.length > 0 && (
                     <div className="flex flex-wrap gap-2">
-                      {space.equipements.map((equipId: string) => {
-                        const equip = equipementsList.find(
-                          (e) => e.id === equipId,
-                        );
+                      {space.equipements.map((equipId) => {
+                        const equip = equipementsList.find((e) => e.id === equipId);
                         if (!equip) return null;
                         const Icon = equip.icon;
                         return (
                           <div
                             key={equipId}
-                            className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-xs text-gray-700"
-                            title={equip.label}
+                            className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-xs text-gray-600"
                           >
                             <Icon className="w-3 h-3" />
                             <span>{equip.label}</span>
@@ -448,157 +441,108 @@ const Spaces = () => {
           resetForm();
         }}
         title={editingSpace ? "Modifier l'Espace" : "Nouvel Espace"}
+        size="xl"
       >
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <Input
             label="Nom de l'espace"
             icon={<Building className="w-5 h-5" />}
-            value={formData.nom}
-            onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-            required
             placeholder="Ex: Box Premium 1"
+            {...register("nom", validationRules.required("Nom"))}
+            error={errors.nom?.message}
+            required
           />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Type d'espace
-            </label>
-            <select
-              value={formData.type}
-              onChange={(e) =>
-                setFormData({ ...formData, type: e.target.value as EspaceType })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
-              required
-            >
-              {ESPACE_TYPE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Select
+            label="Type d'espace"
+            options={ESPACE_TYPE_OPTIONS}
+            {...register("type", { required: "Type requis" })}
+            error={errors.type?.message}
+            required
+          />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Capacité"
               type="number"
               min="1"
               icon={<Users className="w-5 h-5" />}
-              value={formData.capacite}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  capacite: parseInt(e.target.value) || 1,
-                })
-              }
+              {...register("capacite", validationRules.capacity())}
+              error={errors.capacite?.message}
               required
             />
-            <div className="flex items-center gap-3 pt-6">
-              <input
-                type="checkbox"
-                id="disponible"
-                checked={formData.disponible}
-                onChange={(e) =>
-                  setFormData({ ...formData, disponible: e.target.checked })
-                }
-                className="w-4 h-4 text-accent rounded"
+            <div className="pt-8">
+              <Checkbox
+                label="Disponible à la réservation"
+                {...register("disponible")}
               />
-              <label
-                htmlFor="disponible"
-                className="text-sm font-medium text-gray-700"
-              >
-                Disponible à la réservation
-              </label>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Prix/Heure (DA)"
-              type="number"
-              min="0"
-              step="1"
-              icon={<Banknote className="w-5 h-5" />}
-              value={formData.prixHeure}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  prixHeure: parseFloat(e.target.value) || 0,
-                })
-              }
-              required
-            />
-            <Input
-              label="Prix/Demi-journée (DA)"
-              type="number"
-              min="0"
-              step="1"
-              icon={<Banknote className="w-5 h-5" />}
-              value={formData.prixDemiJournee}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  prixDemiJournee: parseFloat(e.target.value) || 0,
-                })
-              }
-              required
-            />
-            <Input
-              label="Prix/Jour (DA)"
-              type="number"
-              min="0"
-              step="1"
-              icon={<Banknote className="w-5 h-5" />}
-              value={formData.prixJour}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  prixJour: parseFloat(e.target.value) || 0,
-                })
-              }
-              required
-            />
-            <Input
-              label="Prix/Semaine (DA)"
-              type="number"
-              min="0"
-              step="1"
-              icon={<Banknote className="w-5 h-5" />}
-              value={formData.prixSemaine}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  prixSemaine: parseFloat(e.target.value) || 0,
-                })
-              }
-              required
-            />
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
+              Tarifs
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Prix/Heure (DA)"
+                type="number"
+                min="0"
+                step="100"
+                icon={<Banknote className="w-5 h-5" />}
+                {...register("prixHeure", validationRules.amount)}
+                error={errors.prixHeure?.message}
+                required
+              />
+              <Input
+                label="Prix/Demi-journée (DA)"
+                type="number"
+                min="0"
+                step="100"
+                icon={<Banknote className="w-5 h-5" />}
+                {...register("prixDemiJournee", validationRules.amount)}
+                error={errors.prixDemiJournee?.message}
+                required
+              />
+              <Input
+                label="Prix/Jour (DA)"
+                type="number"
+                min="0"
+                step="100"
+                icon={<Banknote className="w-5 h-5" />}
+                {...register("prixJour", validationRules.amount)}
+                error={errors.prixJour?.message}
+                required
+              />
+              <Input
+                label="Prix/Semaine (DA)"
+                type="number"
+                min="0"
+                step="100"
+                icon={<Banknote className="w-5 h-5" />}
+                {...register("prixSemaine", validationRules.amount)}
+                error={errors.prixSemaine?.message}
+                required
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <textarea
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              placeholder="Décrivez brièvement cet espace..."
-            />
-          </div>
+          <Textarea
+            label="Description"
+            rows={3}
+            placeholder="Décrivez brièvement cet espace..."
+            {...register("description")}
+            error={errors.description?.message}
+          />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Équipements
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {equipementsList.map((equip) => {
                 const Icon = equip.icon;
-                const isSelected = formData.equipements.includes(equip.id);
+                const isSelected = equipements.includes(equip.id);
                 return (
                   <button
                     key={equip.id}
@@ -619,12 +563,8 @@ const Spaces = () => {
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1" disabled={loading}>
-              {loading
-                ? "Enregistrement..."
-                : editingSpace
-                  ? "Modifier l'espace"
-                  : "Créer l'espace"}
+            <Button type="submit" className="flex-1" loading={loading}>
+              {editingSpace ? "Modifier l'espace" : "Créer l'espace"}
             </Button>
             <Button
               type="button"
