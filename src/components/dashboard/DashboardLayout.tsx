@@ -1,28 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Home,
-  Calendar,
-  CreditCard,
-  Users,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  User,
-  Building,
-  FileText,
-  BarChart3,
-  RefreshCw,
-  Tag,
-  Gift,
-  Bell,
-  Clock,
-  ChevronDown,
-  Wallet,
-  UserCircle,
-} from "lucide-react";
+import { Home, Calendar, CreditCard, Users, Settings, LogOut, Menu, X, User, Building, FileText, BarChart3, RefreshCw, Tag, Gift, Bell, Clock, ChevronDown, Wallet, CircleUser as UserCircle } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useAppStore } from "../../store/store";
 import NotificationCenter from "../ui/NotificationCenter";

@@ -8,19 +8,7 @@ import Textarea from '../../../components/ui/Textarea';
 import Badge from '../../../components/ui/Badge';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import Modal from '../../../components/ui/Modal';
-import {
-  ArrowLeft,
-  Edit,
-  Save,
-  X,
-  Trash2,
-  UserPlus,
-  Mail,
-  Phone,
-  Building2,
-  Calendar,
-  DollarSign,
-} from 'lucide-react';
+import { ArrowLeft, FileEdit as Edit, Save, X, Trash2, UserPlus, Mail, Phone, Building2, Calendar, DollarSign } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDate, formatCurrency } from '../../../utils/formatters';
 import type { Contact, ContactHistory } from '../../../types';
