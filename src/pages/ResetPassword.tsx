@@ -8,6 +8,7 @@ import { PasswordInput, Button, LoadingSpinner } from '../components/ui';
 import { apiClient } from '../lib/api-client';
 import { validationRules } from '../utils/validation';
 import Logo from '../components/Logo';
+import { useSEO } from '../hooks/useSEO';
 
 interface ResetPasswordForm {
   password: string;
@@ -15,6 +16,7 @@ interface ResetPasswordForm {
 }
 
 export default function ResetPassword() {
+  useSEO({ noIndex: true });
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');

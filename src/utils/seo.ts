@@ -75,8 +75,10 @@ export const structuredData = {
     description:
       "Espace de coworking moderne à Alger avec bureaux privés, salles de réunion, domiciliation d'entreprise et services professionnels.",
     url: "https://coffice.dz",
+    logo: "https://coffice.dz/logo-web-transparent-black.png",
     telephone: "+213-23-804-924",
     email: "desk@coffice.dz",
+    hasMap: "https://maps.app.goo.gl/cvuRLycBuDHYEEVv7",
     address: {
       "@type": "PostalAddress",
       streetAddress: "Mohammadia Mall, 4ème étage, Bureau 1178",
@@ -105,11 +107,18 @@ export const structuredData = {
       },
     ],
     priceRange: "DA",
+    currenciesAccepted: "DZD",
+    paymentAccepted: "Cash, Virement",
+    areaServed: {
+      "@type": "City",
+      name: "Alger",
+    },
     image: "https://coffice.dz/espace-coworking.jpeg",
     sameAs: [
+      "https://maps.app.goo.gl/cvuRLycBuDHYEEVv7",
+      "https://www.instagram.com/coffice_dz/",
+      "https://www.linkedin.com/showcase/cofficedz/",
       "https://www.facebook.com/coffice.dz",
-      "https://www.instagram.com/coffice.dz",
-      "https://www.linkedin.com/company/coffice-dz",
     ],
     hasOfferCatalog: {
       "@type": "OfferCatalog",
@@ -136,23 +145,15 @@ export const structuredData = {
           itemOffered: {
             "@type": "Service",
             name: "Salle de Réunion",
-            description: "Salle de réunion équipée avec terrasse",
+            description: "Salle de réunion équipée avec terrasse panoramique",
           },
         },
         {
           "@type": "Offer",
           itemOffered: {
             "@type": "Service",
-            name: "Domiciliation",
-            description: "Domiciliation d'entreprise avec adresse commerciale",
-          },
-          price: "12000",
-          priceCurrency: "DZD",
-          priceSpecification: {
-            "@type": "UnitPriceSpecification",
-            price: "12000",
-            priceCurrency: "DZD",
-            unitText: "mois",
+            name: "Domiciliation d'Entreprise",
+            description: "Domiciliation commerciale avec adresse au Mohammadia Mall, réception courrier, assistance administrative",
           },
         },
       ],

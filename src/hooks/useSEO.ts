@@ -39,9 +39,14 @@ export const useSEO = (pageData?: SEOData) => {
     const title = pageData?.title || defaultData.title;
     const description = pageData?.description || defaultData.description;
     const keywords = pageData?.keywords || defaultData.keywords;
-    const canonical =
+    let canonical =
       pageData?.canonical || `https://coffice.dz${location.pathname}`;
-    const image = pageData?.image || "https://coffice.dz/espace-coworking.jpeg";
+
+    if (location.pathname === "/tarifs") {
+      canonical = "https://coffice.dz/espaces";
+    }
+
+    const image = pageData?.image || "https://coffice.dz/og-coffice.jpg";
 
     updatePageTitle(title);
     updateMetaDescription(description);
@@ -74,6 +79,40 @@ export const useSEO = (pageData?: SEOData) => {
       if (robotsMeta) {
         robotsMeta.setAttribute("content", "index, follow");
       }
+    }
+
+    const breadcrumbMap: Record<string, { name: string; path: string }[]> = {
+      "/": [],
+      "/espaces": [{ name: "Nos Espaces", path: "/espaces" }],
+      "/tarifs": [{ name: "Nos Espaces", path: "/espaces" }],
+      "/domiciliation": [{ name: "Domiciliation", path: "/domiciliation" }],
+      "/a-propos": [{ name: "À Propos", path: "/a-propos" }],
+      "/blog": [{ name: "Blog", path: "/blog" }],
+      "/mentions-legales": [{ name: "Mentions Légales", path: "/mentions-legales" }],
+    };
+
+    const breadcrumbs = breadcrumbMap[location.pathname];
+    if (breadcrumbs && breadcrumbs.length > 0) {
+      const breadcrumbSchema = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Accueil", item: "https://coffice.dz/" },
+          ...breadcrumbs.map((b, i) => ({
+            "@type": "ListItem",
+            position: i + 2,
+            name: b.name,
+            item: `https://coffice.dz${b.path}`,
+          })),
+        ],
+      };
+      const existing = document.querySelector('script[data-breadcrumb="true"]');
+      if (existing) existing.remove();
+      const script = document.createElement("script");
+      script.type = "application/ld+json";
+      script.setAttribute("data-breadcrumb", "true");
+      script.textContent = JSON.stringify(breadcrumbSchema);
+      document.head.appendChild(script);
     }
 
     if (location.pathname === "/") {

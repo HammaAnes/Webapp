@@ -8,6 +8,7 @@ import { Input, PasswordInput, Button, Checkbox, GoogleButton } from "../compone
 import { useAuthStore } from "../store/authStore";
 import { validationRules } from "../utils/validation";
 import Logo from "../components/Logo";
+import { useSEO } from "../hooks/useSEO";
 
 interface LoginForm {
   email: string;
@@ -16,6 +17,7 @@ interface LoginForm {
 }
 
 const Login = () => {
+  useSEO({ noIndex: true });
   const navigate = useNavigate();
   const { login, loginWithGoogle, user } = useAuthStore();
   const [isLoading, setIsLoading] = React.useState(false);

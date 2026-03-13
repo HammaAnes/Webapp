@@ -8,12 +8,14 @@ import { Input, Button } from '../components/ui';
 import { apiClient } from '../lib/api-client';
 import { validationRules } from '../utils/validation';
 import Logo from '../components/Logo';
+import { useSEO } from '../hooks/useSEO';
 
 interface ForgotPasswordForm {
   email: string;
 }
 
 export default function ForgotPassword() {
+  useSEO({ noIndex: true });
   const [isSubmitted, setIsSubmitted] = React.useState(false);
   const [submittedEmail, setSubmittedEmail] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);

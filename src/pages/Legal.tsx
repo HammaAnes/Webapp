@@ -1,7 +1,9 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useSEO } from "../hooks/useSEO";
 
 const Legal = () => {
+  useSEO({ noIndex: true });
   return (
     <div className="min-h-screen pt-16">
       {/* Hero Section */}

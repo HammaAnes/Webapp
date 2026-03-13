@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import LoadingScreen from "../components/LoadingScreen";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
+import { useSEO } from "../hooks/useSEO";
 
 import DashboardHome from "../components/dashboard/DashboardHome";
 import Reservations from "./dashboard/Reservations";
@@ -29,6 +30,7 @@ const Aujourdhui = lazy(() => import("./dashboard/admin/Aujourdhui"));
 const Caisse = lazy(() => import("./dashboard/admin/Caisse"));
 
 const Dashboard = () => {
+  useSEO({ noIndex: true });
   const { user } = useAuthStore();
 
   if (!user) {

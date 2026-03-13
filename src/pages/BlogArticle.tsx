@@ -98,6 +98,36 @@ const BlogArticle = () => {
   );
 
   useEffect(() => {
+    if (!article) return;
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.setAttribute("data-blog-schema", "true");
+    script.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": article.title,
+      "datePublished": article.publishedAt,
+      "dateModified": article.updatedAt || article.publishedAt,
+      "author": { "@type": "Organization", "name": "Coffice", "url": "https://coffice.dz" },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Coffice",
+        "logo": { "@type": "ImageObject", "url": "https://coffice.dz/logo-web-transparent-black.png" }
+      },
+      "mainEntityOfPage": `https://coffice.dz/blog/${article.slug}`,
+      "description": article.excerpt,
+      "articleSection": article.category,
+      "wordCount": article.content.split(/\s+/).length,
+      "inLanguage": "fr-DZ"
+    });
+    document.head.appendChild(script);
+    return () => {
+      const existing = document.querySelector('script[data-blog-schema="true"]');
+      if (existing) existing.remove();
+    };
+  }, [article]);
+
+  useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 500);
     };

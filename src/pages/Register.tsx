@@ -10,6 +10,7 @@ import { UserForm } from "../types";
 import { apiClient } from "../lib/api-client";
 import { validationRules } from "../utils/validation";
 import Logo from "../components/Logo";
+import { useSEO } from "../hooks/useSEO";
 
 interface RegisterForm extends UserForm {
   passwordConfirm?: string;
@@ -17,6 +18,7 @@ interface RegisterForm extends UserForm {
 }
 
 const Register = () => {
+  useSEO({ noIndex: true });
   const { register: registerUser, loginWithGoogle, user } = useAuthStore();
   const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = React.useState(false);
