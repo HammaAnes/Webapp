@@ -40,15 +40,12 @@ export default defineConfig({
     },
     proxy: {
       "/api": {
-        target: "https://coffice.dz",
+        // Pour développement local avec PHP/MySQL local : "http://localhost"
+        // Pour tester contre production : "https://coffice.dz"
+        target: "http://localhost",
         changeOrigin: true,
-        secure: true,
+        secure: false,
         rewrite: (path) => path,
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            proxyReq.setHeader('Origin', 'https://coffice.dz');
-          });
-        },
       },
     },
   },
