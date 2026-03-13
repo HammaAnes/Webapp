@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useContactStore } from '../../../store/contactStore';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -8,14 +8,16 @@ import Textarea from '../../../components/ui/Textarea';
 import Badge from '../../../components/ui/Badge';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import Modal from '../../../components/ui/Modal';
-import { ArrowLeft, FileEdit as Edit, Save, X, Trash2, UserPlus, Mail, Phone, Building2, Calendar, DollarSign } from 'lucide-react';
+import { ArrowLeft, FileEdit as Edit, Save, X, Trash2, UserPlus, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDate, formatCurrency } from '../../../utils/formatters';
+import { SOURCE_OPTIONS, STATUT_OPTIONS } from '../../../constants/contacts';
 import type { Contact, ContactHistory } from '../../../types';
 
 export default function ContactDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { currentContact, loading, fetchContactById, updateContact, deleteContact, convertToUser } = useContactStore();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -32,8 +34,13 @@ export default function ContactDetail() {
   useEffect(() => {
     if (currentContact) {
       setFormData(currentContact);
+
+      const shouldConvert = searchParams.get('convertToUser');
+      if (shouldConvert === 'true' && !currentContact.userId) {
+        setShowConvertModal(true);
+      }
     }
-  }, [currentContact]);
+  }, [currentContact, searchParams]);
 
   const handleUpdate = async () => {
     if (!id) return;
@@ -245,14 +252,11 @@ export default function ContactDetail() {
                     value={formData.source || 'autre'}
                     onChange={(e) => setFormData({ ...formData, source: e.target.value as any })}
                   >
-                    <option value="whatsapp">WhatsApp</option>
-                    <option value="instagram">Instagram</option>
-                    <option value="tiktok">TikTok</option>
-                    <option value="fixe">Téléphone fixe</option>
-                    <option value="mobile">Mobile</option>
-                    <option value="physique">En personne</option>
-                    <option value="email">Email</option>
-                    <option value="autre">Autre</option>
+                    {SOURCE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </SelectNative>
                 ) : (
                   <p className="text-muted capitalize">{contact.source}</p>
@@ -268,9 +272,11 @@ export default function ContactDetail() {
                     value={formData.statut || 'prospect'}
                     onChange={(e) => setFormData({ ...formData, statut: e.target.value as any })}
                   >
-                    <option value="prospect">Prospect</option>
-                    <option value="client">Client</option>
-                    <option value="perdu">Perdu</option>
+                    {STATUT_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </SelectNative>
                 ) : (
                   <Badge>{contact.statut}</Badge>
