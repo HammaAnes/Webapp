@@ -5,10 +5,6 @@ class AdminNotifier
     public static function notify(string $title, array $infoRows, string $dashboardPath = '/erp'): void
     {
         try {
-            if (empty(Mailer::$config ?? [])) {
-                Mailer::init();
-            }
-
             $adminEmail = env('MAIL_ADMIN', 'desk@coffice.dz');
             $appUrl = env('APP_URL', 'https://coffice.dz');
 
