@@ -53,25 +53,30 @@ export const useContactStore = create<ContactState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const { filters, pagination } = get();
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
+      const response = await apiClient.getContacts({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: filters.search || undefined,
+        statut: filters.statut || undefined,
+        source: filters.source || undefined,
       });
 
-      if (filters.search) params.append('search', filters.search);
-      if (filters.statut) params.append('statut', filters.statut);
-      if (filters.source) params.append('source', filters.source);
-
-      const response = await apiClient.get(`/contacts/?${params.toString()}`);
-
+      if (response.success && response.data) {
+        const data = response.data as { contacts?: Contact[]; pagination?: typeof pagination };
+        set({
+          contacts: data.contacts || [],
+          pagination: data.pagination || pagination,
+          loading: false,
+        });
+      } else {
+        set({
+          error: response.error || 'Erreur lors du chargement des contacts',
+          loading: false,
+        });
+      }
+    } catch (error: unknown) {
       set({
-        contacts: response.contacts || [],
-        pagination: response.pagination || pagination,
-        loading: false,
-      });
-    } catch (error: any) {
-      set({
-        error: error.message || 'Erreur lors du chargement des contacts',
+        error: error instanceof Error ? error.message : 'Erreur lors du chargement des contacts',
         loading: false,
       });
     }
@@ -80,11 +85,18 @@ export const useContactStore = create<ContactState>((set, get) => ({
   fetchContactById: async (id: string) => {
     set({ loading: true, error: null });
     try {
-      const contact = await apiClient.get(`/contacts/show.php?id=${id}`);
-      set({ currentContact: contact, loading: false });
-    } catch (error: any) {
+      const response = await apiClient.getContact(id);
+      if (response.success && response.data) {
+        set({ currentContact: response.data as Contact, loading: false });
+      } else {
+        set({
+          error: response.error || 'Erreur lors du chargement du contact',
+          loading: false,
+        });
+      }
+    } catch (error: unknown) {
       set({
-        error: error.message || 'Erreur lors du chargement du contact',
+        error: error instanceof Error ? error.message : 'Erreur lors du chargement du contact',
         loading: false,
       });
     }
@@ -93,8 +105,14 @@ export const useContactStore = create<ContactState>((set, get) => ({
   createContact: async (data: Partial<Contact>) => {
     set({ loading: true, error: null });
     try {
-      const response = await apiClient.post('/contacts/create.php', data);
-      const newContact = response.contact;
+      const response = await apiClient.createContact(data as Record<string, unknown>);
+
+      if (!response.success) {
+        throw new Error(response.error || 'Erreur lors de la création du contact');
+      }
+
+      const responseData = response.data as { contact?: Contact } | Contact;
+      const newContact = (responseData as { contact?: Contact })?.contact || responseData as Contact;
 
       if (!newContact || !newContact.id) {
         throw new Error('Réponse invalide du serveur');
@@ -106,13 +124,10 @@ export const useContactStore = create<ContactState>((set, get) => ({
       }));
 
       get().fetchContacts();
-
       return newContact;
-    } catch (error: any) {
-      set({
-        error: error.message || 'Erreur lors de la création du contact',
-        loading: false,
-      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erreur lors de la création du contact';
+      set({ error: message, loading: false });
       throw error;
     }
   },
@@ -120,23 +135,25 @@ export const useContactStore = create<ContactState>((set, get) => ({
   updateContact: async (id: string, data: Partial<Contact>) => {
     set({ loading: true, error: null });
     try {
-      const response = await apiClient.put('/contacts/update.php', { ...data, id });
-      const updatedContact = response.contact;
+      const response = await apiClient.updateContact(id, data as Record<string, unknown>);
+
+      if (!response.success) {
+        throw new Error(response.error || 'Erreur lors de la mise à jour du contact');
+      }
+
+      const responseData = response.data as { contact?: Contact } | Contact;
+      const updatedContact = (responseData as { contact?: Contact })?.contact || responseData as Contact;
 
       set((state) => ({
-        contacts: state.contacts.map((c) =>
-          c.id === id ? updatedContact : c
-        ),
+        contacts: state.contacts.map((c) => c.id === id ? updatedContact : c),
         currentContact: state.currentContact?.id === id ? updatedContact : state.currentContact,
         loading: false,
       }));
 
       return updatedContact;
-    } catch (error: any) {
-      set({
-        error: error.message || 'Erreur lors de la mise à jour du contact',
-        loading: false,
-      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erreur lors de la mise à jour du contact';
+      set({ error: message, loading: false });
       throw error;
     }
   },
@@ -144,18 +161,20 @@ export const useContactStore = create<ContactState>((set, get) => ({
   deleteContact: async (id: string) => {
     set({ loading: true, error: null });
     try {
-      await apiClient.delete(`/contacts/delete.php?id=${id}`);
+      const response = await apiClient.deleteContact(id);
+
+      if (!response.success) {
+        throw new Error(response.error || 'Erreur lors de la suppression du contact');
+      }
 
       set((state) => ({
         contacts: state.contacts.filter((c) => c.id !== id),
         currentContact: state.currentContact?.id === id ? null : state.currentContact,
         loading: false,
       }));
-    } catch (error: any) {
-      set({
-        error: error.message || 'Erreur lors de la suppression du contact',
-        loading: false,
-      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erreur lors de la suppression du contact';
+      set({ error: message, loading: false });
       throw error;
     }
   },
@@ -163,10 +182,13 @@ export const useContactStore = create<ContactState>((set, get) => ({
   convertToUser: async (contactId: string, sendWelcomeEmail = true) => {
     set({ loading: true, error: null });
     try {
-      const response = await apiClient.post('/contacts/convert-to-user.php', {
-        contactId,
-        sendWelcomeEmail,
-      });
+      const response = await apiClient.convertContactToUser(contactId, sendWelcomeEmail);
+
+      if (!response.success) {
+        throw new Error(response.error || 'Erreur lors de la conversion en utilisateur');
+      }
+
+      const data = response.data as { userId?: string; user_id?: string; temporaryPassword?: string; temporary_password?: string };
 
       get().fetchContacts();
       if (get().currentContact?.id === contactId) {
@@ -176,14 +198,12 @@ export const useContactStore = create<ContactState>((set, get) => ({
       set({ loading: false });
 
       return {
-        userId: response.userId,
-        temporaryPassword: response.temporaryPassword,
+        userId: data.userId || data.user_id || '',
+        temporaryPassword: data.temporaryPassword || data.temporary_password || '',
       };
-    } catch (error: any) {
-      set({
-        error: error.message || 'Erreur lors de la conversion en utilisateur',
-        loading: false,
-      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erreur lors de la conversion en utilisateur';
+      set({ error: message, loading: false });
       throw error;
     }
   },

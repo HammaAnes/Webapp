@@ -125,7 +125,7 @@ class DomiciliationService {
     store.setLoading(true);
     store.setError(null);
     try {
-      const response = await apiClient.activateDomiciliation(id);
+      const response = await apiClient.activateDomiciliation(id, numeroBureau);
       if (response.success) {
         await this.loadDemandes();
       } else {
@@ -141,9 +141,27 @@ class DomiciliationService {
   }
 
   async requestComplements(id: string, commentaire: string): Promise<void> {
-    return this.updateDemande(id, {
-      statut: "en_attente_complements",
-    } as Partial<DemandeDomiciliation>).then(() => {});
+    const store = useDomiciliationStore.getState();
+    store.setLoading(true);
+    store.setError(null);
+    try {
+      const response = await apiClient.updateDemandeDomiciliation(id, {
+        statut: "en_attente_complements",
+        commentaire_admin: commentaire,
+      } as Record<string, unknown>);
+      if (response.success && response.data) {
+        const demande = domiciliationAdapter(response.data);
+        store.updateDemande(id, demande);
+      } else {
+        throw new Error(response.error || "Erreur lors de la demande de compléments");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erreur inconnue";
+      store.setError(message);
+      throw error;
+    } finally {
+      store.setLoading(false);
+    }
   }
 
   getDemandes(): DemandeDomiciliation[] {

@@ -570,6 +570,10 @@ class ApiClient {
     return this.request("/domiciliations/index.php");
   }
 
+  async getDemandesDomiciliation() {
+    return this.request("/domiciliations/index.php");
+  }
+
   async createDemandeDomiciliation(data: Record<string, unknown> & {
     representantLegal?: {
       nom: string;
@@ -651,13 +655,12 @@ class ApiClient {
     });
   }
 
-  async activateDomiciliation(id: string) {
+  async activateDomiciliation(id: string, numeroBureau?: number) {
+    const payload: Record<string, unknown> = { id, statut: "active" };
+    if (numeroBureau !== undefined) payload.numero_bureau = numeroBureau;
     return this.request("/domiciliations/update.php", {
       method: "PUT",
-      body: JSON.stringify({
-        id,
-        statut: "active",
-      }),
+      body: JSON.stringify(payload),
     });
   }
 
@@ -867,6 +870,47 @@ class ApiClient {
     return this.request("/abonnements/souscrire.php", {
       method: "POST",
       body: JSON.stringify(snakeCaseData),
+    });
+  }
+
+  async getAbonnementsUtilisateurs() {
+    return this.request("/abonnements/index.php?souscriptions=1");
+  }
+
+  // ============= CONTACTS CRM =============
+  async getContacts(params?: { page?: number; limit?: number; search?: string; statut?: string; source?: string }) {
+    const query = params ? "?" + new URLSearchParams(Object.entries(params).reduce((acc, [k, v]) => { if (v !== undefined && v !== "") acc[k] = String(v); return acc; }, {} as Record<string, string>)).toString() : "";
+    return this.request(`/contacts/index.php${query}`);
+  }
+
+  async getContact(id: string) {
+    return this.request(`/contacts/show.php?id=${encodeURIComponent(id)}`);
+  }
+
+  async createContact(data: Record<string, unknown>) {
+    return this.request("/contacts/create.php", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateContact(id: string, data: Record<string, unknown>) {
+    return this.request("/contacts/update.php", {
+      method: "PUT",
+      body: JSON.stringify({ ...data, id }),
+    });
+  }
+
+  async deleteContact(id: string) {
+    return this.request(`/contacts/delete.php?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+  }
+
+  async convertContactToUser(contactId: string, sendWelcomeEmail = true) {
+    return this.request("/contacts/convert-to-user.php", {
+      method: "POST",
+      body: JSON.stringify({ contact_id: contactId, send_welcome_email: sendWelcomeEmail }),
     });
   }
 

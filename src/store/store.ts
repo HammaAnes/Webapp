@@ -401,7 +401,13 @@ export const useAppStore = create<AppState>()(
                   monthlyFee: d.montantMensuel || 12000,
                   setupFee: 0,
                   documentsLegaux: [],
-                  representantLegal: d.representantLegal,
+                  representantLegal: {
+                    nom: d.representantLegal?.nom || "",
+                    prenom: d.representantLegal?.prenom || "",
+                    fonction: d.representantLegal?.fonction,
+                    telephone: d.representantLegal?.telephone || "",
+                    email: d.representantLegal?.email || "",
+                  },
                   activityDomain: d.domaineActivite,
                   dateSignatureContrat: d.dateValidation ? new Date(d.dateValidation as string) : undefined,
                   numeroContrat: `DOM-${d.id.substring(0, 8).toUpperCase()}`,
@@ -411,7 +417,7 @@ export const useAppStore = create<AppState>()(
                 };
               });
 
-            set({ demandesDomiciliation, domiciliationServices: domiciliationServices as unknown as DomiciliationService[] });
+            set({ demandesDomiciliation, domiciliationServices });
           } else {
             set({ demandesDomiciliation: [], domiciliationServices: [] });
           }

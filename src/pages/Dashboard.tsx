@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import LoadingScreen from "../components/LoadingScreen";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
@@ -32,6 +32,14 @@ const AdminContacts = lazy(() => import("./dashboard/admin/Contacts"));
 const ContactDetail = lazy(() => import("./dashboard/admin/ContactDetail"));
 const ContactCreate = lazy(() => import("./dashboard/admin/ContactCreate"));
 
+const AdminGuard = () => {
+  const { user } = useAuthStore();
+  if (user?.role !== "admin") {
+    return <Navigate to="/app" replace />;
+  }
+  return <Outlet />;
+};
+
 const Dashboard = () => {
   useSEO({ noIndex: true });
   const { user } = useAuthStore();
@@ -56,27 +64,25 @@ const Dashboard = () => {
           <Route path="parrainage" element={<Parrainage />} />
           <Route path="profil" element={<Profile />} />
 
-          {user?.role === "admin" && (
-            <>
-              <Route path="admin/aujourdhui" element={<Aujourdhui />} />
-              <Route path="admin/users" element={<AdminUsers />} />
-              <Route path="admin/users/:id" element={<UserDetail />} />
-              <Route path="admin/contacts" element={<AdminContacts />} />
-              <Route path="admin/contacts/nouveau" element={<ContactCreate />} />
-              <Route path="admin/contacts/:id" element={<ContactDetail />} />
-              <Route path="admin/spaces" element={<AdminSpaces />} />
-              <Route path="admin/spaces/:id" element={<EspaceDetail />} />
-              <Route path="admin/reservations" element={<AdminReservations />} />
-              <Route path="admin/domiciliations" element={<AdminDomiciliations />} />
-              <Route path="admin/domiciliations/:id" element={<DomiciliationDetail />} />
-              <Route path="admin/abonnements" element={<AdminAbonnements />} />
-              <Route path="admin/codes-promo" element={<AdminCodesPromo />} />
-              <Route path="admin/parrainages" element={<AdminParrainages />} />
-              <Route path="admin/caisse" element={<Caisse />} />
-              <Route path="admin/reports" element={<AdminReports />} />
-              <Route path="admin/settings" element={<AdminSettings />} />
-            </>
-          )}
+          <Route path="admin/*" element={<AdminGuard />}>
+            <Route path="aujourdhui" element={<Aujourdhui />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="users/:id" element={<UserDetail />} />
+            <Route path="contacts" element={<AdminContacts />} />
+            <Route path="contacts/nouveau" element={<ContactCreate />} />
+            <Route path="contacts/:id" element={<ContactDetail />} />
+            <Route path="spaces" element={<AdminSpaces />} />
+            <Route path="spaces/:id" element={<EspaceDetail />} />
+            <Route path="reservations" element={<AdminReservations />} />
+            <Route path="domiciliations" element={<AdminDomiciliations />} />
+            <Route path="domiciliations/:id" element={<DomiciliationDetail />} />
+            <Route path="abonnements" element={<AdminAbonnements />} />
+            <Route path="codes-promo" element={<AdminCodesPromo />} />
+            <Route path="parrainages" element={<AdminParrainages />} />
+            <Route path="caisse" element={<Caisse />} />
+            <Route path="reports" element={<AdminReports />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
 
           <Route path="*" element={<Navigate to="/app" replace />} />
         </Routes>
