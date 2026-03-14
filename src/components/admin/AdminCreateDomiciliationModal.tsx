@@ -128,11 +128,11 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
 
       const res = await apiClient.createDemandeDomiciliation(payload);
       if (res.success) {
-        toast.success("Domiciliation creee avec succes");
+        toast.success("Domiciliation créée avec succès");
         onCreated();
         onClose();
       } else {
-        toast.error(res.error || "Erreur lors de la creation");
+        toast.error(res.error || "Erreur lors de la création");
       }
     } catch (e) { toast.error(e instanceof Error ? e.message : "Erreur"); }
     finally { setSubmitting(false); }
@@ -156,7 +156,7 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Nouvelle domiciliation</h3>
-            <p className="text-sm text-gray-500">Creer une domiciliation pour un client</p>
+            <p className="text-sm text-gray-500">Créer une domiciliation pour un client</p>
           </div>
         </div>
       </div>
@@ -207,21 +207,21 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Situation administrative</label>
                 <select value={situationAdministrative} onChange={(e) => setSituationAdministrative(e.target.value as "en_cours_creation" | "deja_creee")} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
-                  <option value="en_cours_creation">En cours de creation</option>
-                  <option value="deja_creee">Deja creee</option>
+                  <option value="en_cours_creation">En cours de création</option>
+                  <option value="deja_creee">Déjà créée</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Type de structure</label>
                 <select value={typeStructure} onChange={(e) => setTypeStructure(e.target.value as "societe" | "auto_entrepreneur")} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
-                  <option value="societe">Societe</option>
+                  <option value="societe">Société</option>
                   <option value="auto_entrepreneur">Auto-entrepreneur</option>
                 </select>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <Input label="Raison sociale / Denomination" value={info.raisonSociale} onChange={(e) => setInfo({ ...info, raisonSociale: e.target.value })} required />
+              <Input label="Raison sociale / Dénomination" value={info.raisonSociale} onChange={(e) => setInfo({ ...info, raisonSociale: e.target.value })} required />
               {typeStructure === "societe" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Forme juridique</label>
@@ -234,30 +234,30 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
                 <>
                   <Input label="NIF" value={info.nif} onChange={(e) => setInfo({ ...info, nif: e.target.value })} maxLength={20} />
                   <Input label="NIS" value={info.nis} onChange={(e) => setInfo({ ...info, nis: e.target.value })} maxLength={15} />
-                  <Input label="Registre Commerce" value={info.registreCommerce} onChange={(e) => setInfo({ ...info, registreCommerce: e.target.value })} />
-                  <Input label="Article Imposition" value={info.articleImposition} onChange={(e) => setInfo({ ...info, articleImposition: e.target.value })} />
+                  <Input label="Registre de commerce" value={info.registreCommerce} onChange={(e) => setInfo({ ...info, registreCommerce: e.target.value })} />
+                  <Input label="Article d'imposition" value={info.articleImposition} onChange={(e) => setInfo({ ...info, articleImposition: e.target.value })} />
                   <Input label="Code NAE" value={info.codeNae} onChange={(e) => setInfo({ ...info, codeNae: e.target.value })} />
                 </>
               )}
               {typeStructure === "auto_entrepreneur" && (
                 <>
-                  <Input label="N. Auto-entrepreneur" value={info.numeroAutoEntrepreneur} onChange={(e) => setInfo({ ...info, numeroAutoEntrepreneur: e.target.value })} />
-                  <Input label="Activite exercee" value={info.activiteExercee} onChange={(e) => setInfo({ ...info, activiteExercee: e.target.value })} />
+                  <Input label="N° Auto-entrepreneur" value={info.numeroAutoEntrepreneur} onChange={(e) => setInfo({ ...info, numeroAutoEntrepreneur: e.target.value })} />
+                  <Input label="Activité exercée" value={info.activiteExercee} onChange={(e) => setInfo({ ...info, activiteExercee: e.target.value })} />
                 </>
               )}
             </div>
 
             <div className="border-t border-gray-200 pt-4">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2"><User className="w-4 h-4 text-sky-600" /> Representant legal</h4>
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2"><User className="w-4 h-4 text-sky-600" /> Représentant légal</h4>
               <div className="grid grid-cols-2 gap-3">
-                <Input label="Prenom" value={info.repPrenom} onChange={(e) => setInfo({ ...info, repPrenom: e.target.value })} required />
+                <Input label="Prénom" value={info.repPrenom} onChange={(e) => setInfo({ ...info, repPrenom: e.target.value })} required />
                 <Input label="Nom" value={info.repNom} onChange={(e) => setInfo({ ...info, repNom: e.target.value })} required />
-                <Input label="Telephone" value={info.repTel} onChange={(e) => setInfo({ ...info, repTel: e.target.value })} />
+                <Input label="Téléphone" value={info.repTel} onChange={(e) => setInfo({ ...info, repTel: e.target.value })} />
                 <Input label="Email" value={info.repEmail} onChange={(e) => setInfo({ ...info, repEmail: e.target.value })} />
-                <Input label="Fonction" value={info.repFonction} onChange={(e) => setInfo({ ...info, repFonction: e.target.value })} placeholder="Ex: Gerant" />
+                <Input label="Fonction" value={info.repFonction} onChange={(e) => setInfo({ ...info, repFonction: e.target.value })} placeholder="Ex: Gérant" />
                 <Input label="Ville" value={info.repVille} onChange={(e) => setInfo({ ...info, repVille: e.target.value })} />
                 <div className="col-span-2">
-                  <Input label="Adresse de residence" value={info.repAdresse} onChange={(e) => setInfo({ ...info, repAdresse: e.target.value })} />
+                  <Input label="Adresse de résidence" value={info.repAdresse} onChange={(e) => setInfo({ ...info, repAdresse: e.target.value })} />
                 </div>
               </div>
             </div>
@@ -267,10 +267,10 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
               <div className="grid grid-cols-2 gap-2">
                 {([
                   { key: "domiciliationSimple", label: "Domiciliation simple" },
-                  { key: "receptionCourrier", label: "Reception courrier" },
+                  { key: "receptionCourrier", label: "Réception courrier" },
                   { key: "scanNotificationEmail", label: "Scan + notification email" },
-                  { key: "reexpeditionCourrier", label: "Reexpedition courrier" },
-                  { key: "accesPonctuelEspaces", label: "Acces ponctuel espaces" },
+                  { key: "reexpeditionCourrier", label: "Réexpédition courrier" },
+                  { key: "accesPonctuelEspaces", label: "Accès ponctuel espaces" },
                 ] as { key: keyof typeof options; label: string }[]).map(opt => (
                   <label key={opt.key} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
                     <input type="checkbox" checked={options[opt.key]} onChange={(e) => setOptions({ ...options, [opt.key]: e.target.checked })} className="w-4 h-4 rounded border-gray-300 text-amber-500 focus:ring-amber-500" />
@@ -286,22 +286,22 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Numero de bureau</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Numéro de bureau</label>
                 <select value={contrat.numeroBureau} onChange={(e) => setContrat({ ...contrat, numeroBureau: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
-                  <option value="">Non attribue</option>
+                  <option value="">Non attribué</option>
                   {Array.from({ length: 36 }, (_, i) => i + 1).map(n => {
                     const isOccupied = occupiedBureaux.includes(n);
-                    return <option key={n} value={n} className={isOccupied ? "text-red-500" : ""}>Bureau {n}{isOccupied ? " (occupe)" : ""}</option>;
+                    return <option key={n} value={n} className={isOccupied ? "text-red-500" : ""}>Bureau {n}{isOccupied ? " (occupé)" : ""}</option>;
                   })}
                 </select>
                 {contrat.numeroBureau && occupiedBureaux.includes(Number(contrat.numeroBureau)) && (
-                  <p className="text-xs text-red-600 mt-1 font-medium">Ce bureau est deja attribue</p>
+                  <p className="text-xs text-red-600 mt-1 font-medium">Ce bureau est déjà attribué</p>
                 )}
               </div>
-              <Input label="Reference contrat notarie" value={contrat.referenceContratNotarie} onChange={(e) => setContrat({ ...contrat, referenceContratNotarie: e.target.value })} />
+              <Input label="Référence contrat notarié" value={contrat.referenceContratNotarie} onChange={(e) => setContrat({ ...contrat, referenceContratNotarie: e.target.value })} />
             </div>
             <div className="grid grid-cols-3 gap-4">
-              <Input label="Date debut" type="date" value={contrat.dateDebutContrat} onChange={(e) => setContrat({ ...contrat, dateDebutContrat: e.target.value })} />
+              <Input label="Date début" type="date" value={contrat.dateDebutContrat} onChange={(e) => setContrat({ ...contrat, dateDebutContrat: e.target.value })} />
               <Input label="Date fin" type="date" value={contrat.dateFinContrat} onChange={(e) => setContrat({ ...contrat, dateFinContrat: e.target.value })} />
               <Input label="Montant mensuel (DA)" type="number" value={contrat.montantMensuel} onChange={(e) => setContrat({ ...contrat, montantMensuel: e.target.value })} />
             </div>
@@ -322,7 +322,7 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
         {step === "confirm" && selectedUser && (
           <div className="space-y-4">
             <Card className="p-4 bg-gray-50">
-              <h4 className="font-semibold text-gray-900 mb-3">Recapitulatif</h4>
+              <h4 className="font-semibold text-gray-900 mb-3">Récapitulatif</h4>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <p className="text-gray-500">Client</p>
@@ -337,13 +337,13 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
                 <div>
                   <p className="text-gray-500">Situation</p>
                   <Badge variant={situationAdministrative === "en_cours_creation" ? "warning" : "info"}>
-                    {situationAdministrative === "en_cours_creation" ? "En cours de creation" : "Deja creee"}
+                    {situationAdministrative === "en_cours_creation" ? "En cours de création" : "Déjà créée"}
                   </Badge>
                 </div>
                 {contrat.numeroBureau && (
                   <div>
                     <p className="text-gray-500">Bureau</p>
-                    <p className="font-bold text-amber-700">N{contrat.numeroBureau}</p>
+                    <p className="font-bold text-amber-700">N°{contrat.numeroBureau}</p>
                   </div>
                 )}
                 {contrat.referenceContratNotarie && (
@@ -360,7 +360,7 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
                   </div>
                 )}
                 <div>
-                  <p className="text-gray-500">Representant</p>
+                  <p className="text-gray-500">Représentant</p>
                   <p className="font-medium">{info.repPrenom} {info.repNom}</p>
                   <p className="text-xs text-gray-400">{info.repEmail} {info.repTel && `/ ${info.repTel}`}</p>
                 </div>
@@ -370,7 +370,7 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
                     {options.domiciliationSimple && <Badge variant="success" size="sm">Domiciliation</Badge>}
                     {options.receptionCourrier && <Badge variant="info" size="sm">Courrier</Badge>}
                     {options.scanNotificationEmail && <Badge variant="info" size="sm">Scan email</Badge>}
-                    {options.reexpeditionCourrier && <Badge variant="info" size="sm">Reexpedition</Badge>}
+                    {options.reexpeditionCourrier && <Badge variant="info" size="sm">Réexpédition</Badge>}
                     {options.accesPonctuelEspaces && <Badge variant="teal" size="sm">Espaces</Badge>}
                   </div>
                 </div>
@@ -392,7 +392,7 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
           <Button variant="outline" onClick={onClose}>Annuler</Button>
           {step === "confirm" ? (
             <Button onClick={handleSubmit} loading={submitting} disabled={!canSubmit}>
-              <Save className="w-4 h-4" /> Creer la domiciliation
+              <Save className="w-4 h-4" /> Créer la domiciliation
             </Button>
           ) : (
             <Button
