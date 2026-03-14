@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { Calendar, Clock, Users, Check, AlertCircle, MapPin, ChevronRight, Loader2, CreditCard, Timer, ArrowLeft, Wifi, Coffee, Monitor, Zap, Sun, Star, Shield, Info, Tag, X, Upload, Image as ImageIcon } from "lucide-react";
+import { Calendar, Clock, Users, Check, AlertCircle, MapPin, ChevronRight, Loader2, CreditCard, Timer, ArrowLeft, Wifi, Coffee, Monitor, Zap, Sun, Star, Shield, Info, Tag, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Modal from "../ui/Modal";
 import Button from "../ui/Button";
@@ -239,11 +239,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
   initialData,
 }) => {
   const { reservations: storeReservations, loadReservations } = useAppStore();
-  const { user, loadUser } = useAuthStore();
-  const [idGatePassed, setIdGatePassed] = useState(false);
-  const [idUploading, setIdUploading] = useState(false);
-  const [idPreview, setIdPreview] = useState<string | null>(null);
-  const idFileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuthStore();
   const [step, setStep] = useState(1);
   const [espaces, setEspaces] = useState<EspaceAPI[]>([]);
   const [currentEspace, setCurrentEspace] = useState<EspaceAPI | null>(null);
@@ -600,51 +596,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     setLoadError(null);
     setPromoCode("");
     setPromoResult(null);
-    setIdGatePassed(false);
-    setIdPreview(null);
     onClose();
-  };
-
-  const hasIdCard = !!(user?.carteIdentiteUrl);
-  const isAdminUser = user?.role === "admin";
-  const showIdGate = isOpen && !isAdminUser && !hasIdCard && !idGatePassed;
-
-  const handleIdFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(file.type)) {
-      toast.error("Format non supporté. Utilisez JPG, PNG ou PDF.");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Fichier trop volumineux (max 5 Mo).");
-      return;
-    }
-    if (file.type.startsWith("image/")) {
-      setIdPreview(URL.createObjectURL(file));
-    } else {
-      setIdPreview(null);
-    }
-    setIdUploading(true);
-    try {
-      const res = await apiClient.uploadDocument(file, "user", user!.id, "carte_identite");
-      if (res.success && res.data?.chemin_fichier) {
-        await apiClient.put(`/users/update.php?id=${user!.id}`, {
-          carteIdentiteUrl: res.data.chemin_fichier,
-        });
-        await loadUser();
-        toast.success("Carte d'identité enregistrée avec succès !");
-        setIdGatePassed(true);
-      } else {
-        toast.error((res as { error?: string }).error || "Erreur lors de l'upload.");
-        setIdPreview(null);
-      }
-    } catch {
-      toast.error("Erreur lors de l'upload.");
-      setIdPreview(null);
-    } finally {
-      setIdUploading(false);
-    }
   };
 
   const selectEspace = (espace: EspaceAPI) => {
@@ -762,62 +714,6 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     });
     return conflict || null;
   }, [currentEspace, watchDateDebut, watchDateFin, storeReservations, editMode, reservationId]);
-
-  if (showIdGate) {
-    return (
-      <Modal isOpen={isOpen} onClose={handleClose} size="md" noPadding>
-        <div className="flex flex-col">
-          <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">Vérification d'identité</h2>
-            <button onClick={handleClose} className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <div className="p-6">
-            <div className="flex flex-col items-center text-center mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-sky-50 flex items-center justify-center mb-4">
-                <CreditCard className="w-8 h-8 text-sky-600" />
-              </div>
-              <h3 className="text-base font-semibold text-gray-900 mb-2">Carte d'identité requise</h3>
-              <p className="text-sm text-gray-500 max-w-xs">
-                Pour effectuer une réservation, Coffice doit archiver une copie de votre carte d'identité nationale. Cette opération est unique.
-              </p>
-            </div>
-            <input
-              ref={idFileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
-              onChange={handleIdFileChange}
-              className="hidden"
-            />
-            {idPreview && (
-              <div className="mb-4 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
-                <img src={idPreview} alt="Aperçu" className="w-full max-h-48 object-contain" />
-              </div>
-            )}
-            <button
-              onClick={() => idFileInputRef.current?.click()}
-              disabled={idUploading}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl border-2 border-dashed border-gray-300 hover:border-sky-400 hover:bg-sky-50 text-gray-600 hover:text-sky-700 transition-all font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {idUploading ? (
-                <><Loader2 className="w-5 h-5 animate-spin" />Enregistrement en cours…</>
-              ) : idPreview ? (
-                <><ImageIcon className="w-5 h-5" />Changer le fichier</>
-              ) : (
-                <><Upload className="w-5 h-5" />Choisir un fichier (JPG, PNG ou PDF — max 5 Mo)</>
-              )}
-            </button>
-            <p className="mt-3 text-xs text-gray-400 text-center">
-              Vos documents sont stockés de façon sécurisée et ne sont utilisés qu'à des fins de vérification.
-            </p>
-          </div>
-        </div>
-      </Modal>
-    );
-  }
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="lg" noPadding>

@@ -20,7 +20,7 @@ import {
   LayoutGrid,
   List,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiClient } from "../../lib/api-client";
 import Button from "../../components/ui/Button";
@@ -162,6 +162,8 @@ const Reservations = () => {
   const [cancelling, setCancelling] = useState(false);
   const [filter, setFilter] = useState<FilterType>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
 
   const loadReservations = useCallback(async (showRefresh = false) => {
     try {
@@ -332,6 +334,24 @@ const Reservations = () => {
 
   return (
     <div className="space-y-6">
+      {user && !user.carteIdentiteUrl && (
+        <div className="flex items-start gap-3 px-4 py-3.5 bg-amber-50 border border-amber-200 rounded-xl">
+          <CreditCard className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-800">Carte d'identité requise pour réserver</p>
+            <p className="text-sm text-amber-700 mt-0.5">
+              Ajoutez une copie de votre carte d'identité nationale dans votre profil avant d'effectuer une réservation.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/dashboard/profil")}
+            className="flex-shrink-0 text-sm font-medium text-amber-800 hover:text-amber-900 underline underline-offset-2 transition-colors"
+          >
+            Compléter mon profil
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Mes Réservations</h1>
