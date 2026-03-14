@@ -28,77 +28,77 @@ export const WIZARD_STEPS: WizardStep[] = [
 export const TOTAL_STEPS = WIZARD_STEPS.length;
 
 export const WORKFLOW_STEPS = [
-  { key: "dossier_preparatoire", label: "Dossier preparatoire", description: "Votre dossier est en cours d'examen" },
+  { key: "dossier_preparatoire", label: "Dossier préparatoire", description: "Votre dossier est en cours d'examen" },
+  { key: "en_attente_complements", label: "Compléments requis", description: "Complétez les informations" },
   { key: "en_attente_signature", label: "Attente signature", description: "Rendez-vous chez le notaire" },
-  { key: "domiciliation_creee", label: "Domiciliation creee", description: "Juridiquement creee" },
-  { key: "en_attente_complements", label: "Complements requis", description: "Completez les informations" },
-  { key: "active", label: "Active", description: "Pleinement operationnelle" },
+  { key: "domiciliation_creee", label: "Domiciliation créée", description: "Juridiquement créée" },
+  { key: "active", label: "Active", description: "Pleinement opérationnelle" },
 ];
 
-export const CGU_TEXT = `CONDITIONS GENERALES DE DOMICILIATION
+export const CGU_TEXT = `CONDITIONS GÉNÉRALES DE DOMICILIATION
 
 Article 1 - Objet
-Le present contrat a pour objet la mise a disposition d'une adresse professionnelle au sein de l'espace Coffice, situe au 4eme etage du Mohammadia Mall, Bureau 1178, Alger.
+Le présent contrat a pour objet la mise à disposition d'une adresse professionnelle au sein de l'espace Coffice, situé au 4ème étage du Mohammadia Mall, Bureau 1178, Alger.
 
-Article 2 - Duree
-Le contrat de domiciliation est conclu pour une duree minimale de six (6) mois, renouvelable par tacite reconduction.
+Article 2 - Durée
+Le contrat de domiciliation est conclu pour une durée minimale de six (6) mois, renouvelable par tacite reconduction.
 
 Article 3 - Services inclus
-- Attribution d'une adresse legale et commerciale
-- Reception et conservation du courrier
-- Notification de reception de courrier par email
-- Acces aux informations legales de l'entreprise domiciliee
+- Attribution d'une adresse légale et commerciale
+- Réception et conservation du courrier
+- Notification de réception de courrier par email
+- Accès aux informations légales de l'entreprise domiciliée
 
-Article 4 - Obligations du domicilie
-Le domicilie s'engage a:
-- Fournir des informations exactes et a jour
-- Respecter la reglementation en vigueur
-- Payer les redevances aux echeances convenues
+Article 4 - Obligations du domicilié
+Le domicilié s'engage à :
+- Fournir des informations exactes et à jour
+- Respecter la réglementation en vigueur
+- Payer les redevances aux échéances convenues
 - Informer le domiciliataire de tout changement de situation
 
 Article 5 - Obligations du domiciliataire
-Coffice s'engage a:
-- Mettre a disposition l'adresse de domiciliation
-- Conserver le courrier pendant une duree de 3 mois
-- Notifier la reception de courrier sous 24h ouvrees
-- Respecter la confidentialite des informations
+Coffice s'engage à :
+- Mettre à disposition l'adresse de domiciliation
+- Conserver le courrier pendant une durée de 3 mois
+- Notifier la réception de courrier sous 24h ouvrées
+- Respecter la confidentialité des informations
 
 Article 6 - Tarification
-Les tarifs sont definis selon la grille en vigueur au moment de la signature du contrat.
+Les tarifs sont définis selon la grille en vigueur au moment de la signature du contrat.
 
-Article 7 - Resiliation
-Chaque partie peut resilier le contrat avec un preavis de 30 jours. En cas de non-paiement, le contrat peut etre resilie sans preavis.
+Article 7 - Résiliation
+Chaque partie peut résilier le contrat avec un préavis de 30 jours. En cas de non-paiement, le contrat peut être résilié sans préavis.
 
-Article 8 - Responsabilite
-Coffice ne peut etre tenu responsable des pertes ou dommages lies au courrier apres un delai de conservation de 3 mois.
+Article 8 - Responsabilité
+Coffice ne peut être tenu responsable des pertes ou dommages liés au courrier après un délai de conservation de 3 mois.
 
 Article 9 - Loi applicable
-Le present contrat est soumis au droit algerien. Tout litige sera soumis aux tribunaux competents d'Alger.`;
+Le présent contrat est soumis au droit algérien. Tout litige sera soumis aux tribunaux compétents d'Alger.`;
 
 export const REQUIRED_DOCS_NEW_SOCIETE: RequiredDocument[] = [
-  { id: "cni", name: "Carte Nationale d'Identite (CNI)", description: "Du futur gerant", required: true },
-  { id: "extrait_naissance", name: "Extrait de naissance", description: "Du futur gerant", required: true },
-  { id: "reservation_denomination", name: "Document de reservation de la denomination (CNRC)", description: "A obtenir aupres du CNRC au 5eme etage du Mohammadia Mall", required: true },
+  { id: "cni", name: "Carte Nationale d'Identité (CNI)", description: "Du futur gérant", required: true },
+  { id: "extrait_naissance", name: "Extrait de naissance", description: "Du futur gérant", required: true },
+  { id: "reservation_denomination", name: "Document de réservation de la dénomination (CNRC)", description: "À obtenir auprès du CNRC au 5ème étage du Mohammadia Mall", required: true },
 ];
 
 export const REQUIRED_DOCS_NEW_AUTO_ENTREPRENEUR: RequiredDocument[] = [
-  { id: "cni", name: "Carte Nationale d'Identite (CNI)", description: "De l'auto-entrepreneur", required: true },
+  { id: "cni", name: "Carte Nationale d'Identité (CNI)", description: "De l'auto-entrepreneur", required: true },
 ];
 
 export const REQUIRED_DOCS_EXISTING_SOCIETE: RequiredDocument[] = [
   { id: "registre_commerce", name: "Registre de commerce", required: true },
-  { id: "statuts", name: "Statuts de la societe", required: true },
-  { id: "cni_gerant", name: "Carte Nationale d'Identite du gerant", required: true },
-  { id: "extrait_naissance_gerant", name: "Extrait de naissance du gerant", required: true },
+  { id: "statuts", name: "Statuts de la société", required: true },
+  { id: "cni_gerant", name: "Carte Nationale d'Identité du gérant", required: true },
+  { id: "extrait_naissance_gerant", name: "Extrait de naissance du gérant", required: true },
 ];
 
 export const REQUIRED_DOCS_EXISTING_AUTO_ENTREPRENEUR: RequiredDocument[] = [
   { id: "carte_auto_entrepreneur", name: "Carte d'auto-entrepreneur", required: true },
-  { id: "cni", name: "Carte Nationale d'Identite", required: true },
+  { id: "cni", name: "Carte Nationale d'Identité", required: true },
 ];
 
 export const LEGAL_FORM_OPTIONS = [
-  { value: "SARL", label: "SARL - Societe a Responsabilite Limitee" },
+  { value: "SARL", label: "SARL - Société à Responsabilité Limitée" },
   { value: "EURL", label: "EURL - Entreprise Unipersonnelle" },
   { value: "SPA", label: "SPA - Societe Par Actions" },
   { value: "SNC", label: "SNC - Societe en Nom Collectif" },
@@ -150,8 +150,8 @@ export const getStatusInfo = (statut: string): StatusInfo => {
         bg: "bg-gradient-to-br from-amber-50 to-orange-50",
         border: "border-amber-200",
         gradient: "from-amber-500 to-orange-500",
-        label: "Dossier preparatoire",
-        description: "Votre dossier est en preparation. Il sera transmis pour validation.",
+        label: "Dossier préparatoire",
+        description: "Votre dossier est en préparation. Il sera transmis pour validation.",
       };
     case "en_attente_signature":
       return {
@@ -170,8 +170,8 @@ export const getStatusInfo = (statut: string): StatusInfo => {
         bg: "bg-gradient-to-br from-teal-50 to-emerald-50",
         border: "border-teal-200",
         gradient: "from-teal-500 to-emerald-500",
-        label: "Domiciliation creee",
-        description: "Votre domiciliation est juridiquement creee. Completez les informations administratives.",
+        label: "Domiciliation créée",
+        description: "Votre domiciliation est juridiquement créée. Complétez les informations administratives.",
       };
     case "en_attente_complements":
       return {
@@ -180,8 +180,8 @@ export const getStatusInfo = (statut: string): StatusInfo => {
         bg: "bg-gradient-to-br from-amber-50 to-yellow-50",
         border: "border-amber-200",
         gradient: "from-amber-500 to-yellow-500",
-        label: "En attente de complements",
-        description: "Veuillez completer les informations administratives de votre dossier.",
+        label: "En attente de compléments",
+        description: "Veuillez compléter les informations administratives de votre dossier.",
       };
     case "active":
       return {
@@ -200,8 +200,8 @@ export const getStatusInfo = (statut: string): StatusInfo => {
         bg: "bg-gradient-to-br from-red-50 to-rose-50",
         border: "border-red-200",
         gradient: "from-red-500 to-rose-500",
-        label: "Demande refusee",
-        description: "Votre demande n'a pas ete acceptee. Consultez le commentaire pour plus de details.",
+        label: "Demande refusée",
+        description: "Votre demande n'a pas été acceptée. Consultez le commentaire pour plus de détails.",
       };
     case "expiree":
       return {
@@ -210,8 +210,8 @@ export const getStatusInfo = (statut: string): StatusInfo => {
         bg: "bg-gradient-to-br from-orange-50 to-amber-50",
         border: "border-orange-200",
         gradient: "from-orange-500 to-amber-500",
-        label: "Domiciliation expiree",
-        description: "Votre contrat de domiciliation a expire. Contactez-nous pour le renouveler.",
+        label: "Domiciliation expirée",
+        description: "Votre contrat de domiciliation a expiré. Contactez-nous pour le renouveler.",
       };
     case "resiliee":
       return {
@@ -220,8 +220,8 @@ export const getStatusInfo = (statut: string): StatusInfo => {
         bg: "bg-gradient-to-br from-gray-50 to-slate-50",
         border: "border-gray-300",
         gradient: "from-gray-500 to-slate-500",
-        label: "Domiciliation resiliee",
-        description: "Votre contrat de domiciliation a ete resilie.",
+        label: "Domiciliation résiliée",
+        description: "Votre contrat de domiciliation a été résilié.",
       };
     default:
       return {
@@ -238,9 +238,14 @@ export const getStatusInfo = (statut: string): StatusInfo => {
 
 export const getStepIndex = (statut: string): number => {
   if (statut === "refusee" || statut === "resiliee" || statut === "expiree") return -1;
-  if (statut === "en_attente_complements") return 3;
-  const idx = WORKFLOW_STEPS.findIndex(s => s.key === statut);
-  return idx >= 0 ? idx : 0;
+  const ORDER: Record<string, number> = {
+    dossier_preparatoire: 0,
+    en_attente_complements: 1,
+    en_attente_signature: 2,
+    domiciliation_creee: 3,
+    active: 4,
+  };
+  return ORDER[statut] ?? 0;
 };
 
 export const getCasLabel = (
@@ -256,7 +261,7 @@ export const getCasLabel = (
 export const BENEFITS = [
   {
     title: "Adresse prestigieuse",
-    description: "Mohammadia Mall, 4eme etage, Bureau 1178, Alger",
+    description: "Mohammadia Mall, 4ème étage, Bureau 1178, Alger",
     color: "text-amber-600",
     bg: "bg-amber-50",
   },
@@ -268,7 +273,7 @@ export const BENEFITS = [
   },
   {
     title: "Validation rapide",
-    description: "Traitement sous 48h ouvrees",
+    description: "Traitement sous 48h ouvrées",
     color: "text-emerald-600",
     bg: "bg-emerald-50",
   },
@@ -282,11 +287,11 @@ export const OFFER_ITEMS = [
 ];
 
 export const OPTIONS_PRICING: Record<string, { label: string; price: number; description: string; included?: boolean }> = {
-  domiciliationSimple: { label: "Domiciliation simple", price: 0, description: "Adresse legale et commerciale", included: true },
-  receptionCourrier: { label: "Reception courrier", price: 2000, description: "Reception et conservation de votre courrier" },
-  scanNotificationEmail: { label: "Scan & notification email", price: 3000, description: "Numerisation et notification par email a chaque reception" },
-  reexpeditionCourrier: { label: "Reexpedition courrier", price: 5000, description: "Reexpedition de votre courrier a une adresse de votre choix" },
-  accesPonctuelEspaces: { label: "Acces ponctuel espaces", price: 4000, description: "Acces aux espaces de coworking (2 demi-journees/mois)" },
+  domiciliationSimple: { label: "Domiciliation simple", price: 0, description: "Adresse légale et commerciale", included: true },
+  receptionCourrier: { label: "Réception courrier", price: 2000, description: "Réception et conservation de votre courrier" },
+  scanNotificationEmail: { label: "Scan & notification email", price: 3000, description: "Numérisation et notification par email à chaque réception" },
+  reexpeditionCourrier: { label: "Réexpédition courrier", price: 5000, description: "Réexpédition de votre courrier à une adresse de votre choix" },
+  accesPonctuelEspaces: { label: "Accès ponctuel espaces", price: 4000, description: "Accès aux espaces de coworking (2 demi-journées/mois)" },
 };
 
 export const BASE_MONTHLY_PRICE = 12000;

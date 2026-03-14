@@ -124,7 +124,7 @@ const WizardForm: React.FC<WizardFormProps> = ({ isOpen, onClose, user, onSubmit
         setTypeStructure(draft.typeStructure);
         setFormData(draft.formData);
         setCurrentStep(draft.step);
-        toast.success("Brouillon restaure");
+        toast.success("Brouillon restauré");
       }
     }
   }, [isOpen]);
@@ -171,7 +171,7 @@ const WizardForm: React.FC<WizardFormProps> = ({ isOpen, onClose, user, onSubmit
   const handleClose = () => {
     if (currentStep > 1) {
       saveDraft();
-      toast.success("Brouillon sauvegarde");
+      toast.success("Brouillon sauvegardé");
     }
     onClose();
   };
@@ -195,7 +195,7 @@ const WizardForm: React.FC<WizardFormProps> = ({ isOpen, onClose, user, onSubmit
   const validateStep3 = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!formData.dirigeant.adresseResidence.trim()) {
-      newErrors["dirigeant.adresseResidence"] = "L'adresse de residence est requise";
+      newErrors["dirigeant.adresseResidence"] = "L'adresse de résidence est requise";
     }
     if (!formData.dirigeant.ville.trim()) {
       newErrors["dirigeant.ville"] = "La ville est requise";
@@ -215,16 +215,16 @@ const WizardForm: React.FC<WizardFormProps> = ({ isOpen, onClose, user, onSubmit
 
     if (situation === "en_cours_creation") {
       if (typeStructure === "societe") {
-        if (!formData.denominationSociale.trim()) newErrors.denominationSociale = "La denomination sociale est requise";
+        if (!formData.denominationSociale.trim()) newErrors.denominationSociale = "La dénomination sociale est requise";
         if (!formData.formeJuridique) newErrors.formeJuridique = "La forme juridique est requise";
-        if (!formData.codeNae.trim()) newErrors.codeNae = "L'activite principale (CODE NAE) est requise";
+        if (!formData.codeNae.trim()) newErrors.codeNae = "L'activité principale (CODE NAE) est requise";
       } else {
-        if (!formData.activiteExercee.trim()) newErrors.activiteExercee = "L'activite exercee est requise";
-        if (!formData.descriptionActivite.trim()) newErrors.descriptionActivite = "La description de l'activite est requise";
+        if (!formData.activiteExercee.trim()) newErrors.activiteExercee = "L'activité exercée est requise";
+        if (!formData.descriptionActivite.trim()) newErrors.descriptionActivite = "La description de l'activité est requise";
       }
     } else {
       if (typeStructure === "societe") {
-        if (!formData.denominationSociale.trim()) newErrors.denominationSociale = "La denomination sociale est requise";
+        if (!formData.denominationSociale.trim()) newErrors.denominationSociale = "La dénomination sociale est requise";
         if (!formData.formeJuridique) newErrors.formeJuridique = "La forme juridique est requise";
         if (!formData.registreCommerce.trim()) newErrors.registreCommerce = "Le numero de Registre de Commerce est requis";
         if (!formData.nif.trim()) {
@@ -238,10 +238,10 @@ const WizardForm: React.FC<WizardFormProps> = ({ isOpen, onClose, user, onSubmit
           newErrors.nis = "Le NIS doit contenir entre 11 et 15 chiffres";
         }
         if (!formData.articleImposition.trim()) newErrors.articleImposition = "L'Article d'Imposition est requis";
-        if (!formData.codeNae.trim()) newErrors.codeNae = "L'activite principale (CODE NAE) est requise";
+        if (!formData.codeNae.trim()) newErrors.codeNae = "L'activité principale (CODE NAE) est requise";
       } else {
-        if (!formData.numeroAutoEntrepreneur.trim()) newErrors.numeroAutoEntrepreneur = "Le numero d'auto-entrepreneur est requis";
-        if (!formData.activiteExercee.trim()) newErrors.activiteExercee = "L'activite exercee est requise";
+        if (!formData.numeroAutoEntrepreneur.trim()) newErrors.numeroAutoEntrepreneur = "Le numéro d'auto-entrepreneur est requis";
+        if (!formData.activiteExercee.trim()) newErrors.activiteExercee = "L'activité exercée est requise";
       }
     }
 
@@ -308,7 +308,7 @@ const WizardForm: React.FC<WizardFormProps> = ({ isOpen, onClose, user, onSubmit
 
     const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Format non supporte. Utilisez PDF, JPEG ou PNG");
+      toast.error("Format non supporté. Utilisez PDF, JPEG ou PNG");
       return;
     }
 
@@ -458,7 +458,7 @@ const WizardForm: React.FC<WizardFormProps> = ({ isOpen, onClose, user, onSubmit
           {currentStep > 1 && (
             <Button type="button" variant="outline" onClick={prevStep} disabled={loading}>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Precedent
+              Précédent
             </Button>
           )}
           {currentStep < TOTAL_STEPS && (
@@ -548,9 +548,9 @@ const Step1Situation: React.FC<{
 }> = ({ situation, onSelect }) => (
   <motion.div key="step1" {...stepMotion} className="space-y-6">
     <div className="text-center mb-4">
-      <Badge className="bg-amber-100 text-amber-700 mb-3">Etape 1 - Point d'entree unique</Badge>
+      <Badge className="bg-amber-100 text-amber-700 mb-3">Étape 1 - Point d'entrée unique</Badge>
       <h3 className="font-bold text-xl text-gray-900">Situation administrative</h3>
-      <p className="text-gray-500 text-sm mt-1">Ce choix conditionne l'integralite du parcours</p>
+      <p className="text-gray-500 text-sm mt-1">Ce choix conditionne l'intégralité du parcours</p>
     </div>
     <p className="text-gray-600 text-center font-medium">La structure est-elle :</p>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -559,16 +559,16 @@ const Step1Situation: React.FC<{
         onClick={() => onSelect("en_cours_creation")}
         icon={<UserPlus className="w-6 h-6 text-emerald-600" />}
         iconBg="bg-emerald-100"
-        title="En cours de creation"
-        description="Future creation, a partir de zero"
+        title="En cours de création"
+        description="Future création, à partir de zéro"
       />
       <SelectionCard
         selected={situation === "deja_creee"}
         onClick={() => onSelect("deja_creee")}
         icon={<Building className="w-6 h-6 text-sky-600" />}
         iconBg="bg-sky-100"
-        title="Deja creee"
-        description="Entreprise immatriculee, transfert de siege"
+        title="Déjà créée"
+        description="Entreprise immatriculée, transfert de siège"
       />
     </div>
   </motion.div>
@@ -582,7 +582,7 @@ const Step2Structure: React.FC<{
 }> = ({ situation, typeStructure, onSelect, casLabel }) => (
   <motion.div key="step2" {...stepMotion} className="space-y-6">
     <div className="text-center mb-4">
-      <Badge className="bg-amber-100 text-amber-700 mb-3">Etape 2 - Type de structure</Badge>
+      <Badge className="bg-amber-100 text-amber-700 mb-3">Étape 2 - Type de structure</Badge>
       <h3 className="font-bold text-xl text-gray-900">Quel type de structure ?</h3>
     </div>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -591,7 +591,7 @@ const Step2Structure: React.FC<{
         onClick={() => onSelect("societe")}
         icon={<Building className="w-6 h-6 text-sky-600" />}
         iconBg="bg-sky-100"
-        title="Societe"
+        title="Société"
         description="SARL, EURL, SPA, SNC ou Startup"
       />
       <SelectionCard
@@ -600,7 +600,7 @@ const Step2Structure: React.FC<{
         icon={<User className="w-6 h-6 text-emerald-600" />}
         iconBg="bg-emerald-100"
         title="Auto-entrepreneur"
-        description="Statut simplifie pour activite individuelle"
+        description="Statut simplifié pour activité individuelle"
       />
     </div>
     {situation && typeStructure && (
@@ -618,9 +618,9 @@ const Step3Dirigeant: React.FC<{
 }> = ({ formData, errors, onUpdate, onUpdateDirigeant, onClearError }) => (
   <motion.div key="step3" {...stepMotion} className="space-y-4">
     <div className="text-center mb-4">
-      <Badge className="bg-amber-100 text-amber-700 mb-3">Etape 3 - Informations personnelles</Badge>
+      <Badge className="bg-amber-100 text-amber-700 mb-3">Étape 3 - Informations personnelles</Badge>
       <h3 className="font-bold text-xl text-gray-900">Dirigeant / Auto-entrepreneur</h3>
-      <p className="text-gray-500 text-sm mt-1">Informations preremplies depuis votre inscription</p>
+      <p className="text-gray-500 text-sm mt-1">Informations préremplies depuis votre inscription</p>
     </div>
 
     <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
@@ -647,7 +647,7 @@ const Step3Dirigeant: React.FC<{
 
     <div className="space-y-4">
       <Input
-        label="Adresse de residence"
+        label="Adresse de résidence"
         icon={<MapPin className="w-5 h-5" />}
         value={formData.dirigeant.adresseResidence}
         onChange={(e) => {
@@ -678,7 +678,7 @@ const Step3Dirigeant: React.FC<{
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Date souhaitee de debut de domiciliation (indicative) <span className="text-red-500">*</span>
+          Date souhaitée de début de domiciliation (indicative) <span className="text-red-500">*</span>
         </label>
         <DatePicker
           selected={formData.dateDebutSouhaitee as Date | null}
@@ -686,7 +686,7 @@ const Step3Dirigeant: React.FC<{
           minDate={new Date()}
           locale="fr"
           dateFormat="dd MMMM yyyy"
-          placeholderText="Selectionnez une date"
+          placeholderText="Sélectionnez une date"
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
         />
       </div>
@@ -734,7 +734,7 @@ const CasA1Fields: React.FC<{
 }> = ({ formData, errors, onUpdate, onClearError }) => (
   <>
     <Input
-      label="Denomination sociale (Document CNRC)"
+      label="Dénomination sociale (Document CNRC)"
       icon={<Building className="w-5 h-5" />}
       value={formData.denominationSociale}
       onChange={(e) => { onUpdate({ denominationSociale: e.target.value }); if (errors.denominationSociale) onClearError("denominationSociale"); }}
@@ -752,7 +752,7 @@ const CasA1Fields: React.FC<{
     />
 
     <Input
-      label="Activite principale (CODE NAE)"
+      label="Activité principale (CODE NAE)"
       icon={<Briefcase className="w-5 h-5" />}
       value={formData.codeNae}
       onChange={(e) => { onUpdate({ codeNae: e.target.value }); if (errors.codeNae) onClearError("codeNae"); }}
@@ -763,7 +763,7 @@ const CasA1Fields: React.FC<{
 
     <div className="p-4 bg-sky-50 border border-sky-200 rounded-xl">
       <p className="text-sm text-sky-700">
-        <strong>Finalite:</strong> Preparer le contrat de domiciliation chez le notaire pour constater la domiciliation et rediger les statuts.
+        <strong>Finalité :</strong> Préparer le contrat de domiciliation chez le notaire pour constater la domiciliation et rédiger les statuts.
       </p>
     </div>
   </>
@@ -777,7 +777,7 @@ const CasA2Fields: React.FC<{
 }> = ({ formData, errors, onUpdate, onClearError }) => (
   <>
     <Input
-      label="Activite exercee ou envisagee"
+      label="Activité exercée ou envisagée"
       icon={<Briefcase className="w-5 h-5" />}
       value={formData.activiteExercee}
       onChange={(e) => { onUpdate({ activiteExercee: e.target.value }); if (errors.activiteExercee) onClearError("activiteExercee"); }}
@@ -788,12 +788,12 @@ const CasA2Fields: React.FC<{
 
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
-        Description courte de l'activite <span className="text-red-500">*</span>
+        Description courte de l'activité <span className="text-red-500">*</span>
       </label>
       <textarea
         value={formData.descriptionActivite}
         onChange={(e) => { onUpdate({ descriptionActivite: e.target.value }); if (errors.descriptionActivite) onClearError("descriptionActivite"); }}
-        placeholder="Decrivez brievement votre activite..."
+        placeholder="Décrivez brièvement votre activité..."
         rows={3}
         className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all ${
           errors.descriptionActivite ? "border-red-500" : "border-gray-200"
@@ -804,7 +804,7 @@ const CasA2Fields: React.FC<{
 
     <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
       <p className="text-sm text-emerald-700">
-        <strong>Note:</strong> Aucune denomination sociale n'est requise pour l'auto-entrepreneur.
+        <strong>Note :</strong> Aucune dénomination sociale n'est requise pour l'auto-entrepreneur.
       </p>
     </div>
   </>
@@ -901,7 +901,7 @@ const CasB1Fields: React.FC<{
           maxDate={new Date()}
           locale="fr"
           dateFormat="dd MMMM yyyy"
-          placeholderText="Selectionnez"
+          placeholderText="Sélectionnez"
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
         />
       </div>
@@ -951,7 +951,7 @@ const CasB2Fields: React.FC<{
         maxDate={new Date()}
         locale="fr"
         dateFormat="dd MMMM yyyy"
-        placeholderText="Selectionnez"
+        placeholderText="Sélectionnez"
         className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
       />
     </div>
@@ -970,7 +970,7 @@ const Step5Documents: React.FC<{
 }> = ({ situation, typeStructure, requiredDocs, uploadedDocuments: _, casLabel, onUpload, onRemove, getUploadedDoc }) => (
   <motion.div key="step5" {...stepMotion} className="space-y-4">
     <div className="text-center mb-4">
-      <Badge className="bg-amber-100 text-amber-700 mb-3">Documents obligatoires</Badge>
+      <Badge className="bg-amber-100 text-amber-700 mb-3">Étape 5 - Documents obligatoires</Badge>
       <h3 className="font-bold text-xl text-gray-900">Pièces justificatives</h3>
     </div>
 
@@ -1102,15 +1102,15 @@ const Step7Options: React.FC<{
     <motion.div key="step7" {...stepMotion} className="space-y-4">
       <div className="text-center mb-4">
         <Badge className="bg-amber-100 text-amber-700 mb-3">Options de domiciliation</Badge>
-        <h3 className="font-bold text-xl text-gray-900">Services complementaires</h3>
-        <p className="text-gray-500 text-sm mt-1">Selectionnez les options souhaitees</p>
+        <h3 className="font-bold text-xl text-gray-900">Services complémentaires</h3>
+        <p className="text-gray-500 text-sm mt-1">Sélectionnez les options souhaitées</p>
       </div>
 
       <div className="space-y-3">
         <OptionRow
           icon={<MapPin className="w-5 h-5 text-emerald-600" />}
           label="Domiciliation simple"
-          description="Adresse legale au Mohammadia Mall"
+          description="Adresse légale au Mohammadia Mall"
           checked={options.domiciliationSimple}
           disabled
           badge={<Badge variant="success" className="text-xs">Inclus</Badge>}
@@ -1120,8 +1120,8 @@ const Step7Options: React.FC<{
         />
         <OptionRow
           icon={<Mail className="w-5 h-5 text-gray-600" />}
-          label="Reception du courrier"
-          description="Nous recevons votre courrier a votre place"
+          label="Réception du courrier"
+          description="Nous recevons votre courrier à votre place"
           checked={options.receptionCourrier}
           onChange={(c) => onUpdate({ receptionCourrier: c })}
           price={OPTIONS_PRICING.receptionCourrier.price}
@@ -1129,23 +1129,23 @@ const Step7Options: React.FC<{
         <OptionRow
           icon={<ScanLine className="w-5 h-5 text-gray-600" />}
           label="Scan et notification par e-mail"
-          description="Recevez une copie scannee de votre courrier par email"
+          description="Recevez une copie scannée de votre courrier par email"
           checked={options.scanNotificationEmail}
           onChange={(c) => onUpdate({ scanNotificationEmail: c })}
           price={OPTIONS_PRICING.scanNotificationEmail.price}
         />
         <OptionRow
           icon={<Forward className="w-5 h-5 text-gray-600" />}
-          label="Reexpedition du courrier"
-          description="Nous reexpedions votre courrier a l'adresse de votre choix"
+          label="Réexpédition du courrier"
+          description="Nous réexpédions votre courrier à l'adresse de votre choix"
           checked={options.reexpeditionCourrier}
           onChange={(c) => onUpdate({ reexpeditionCourrier: c })}
           price={OPTIONS_PRICING.reexpeditionCourrier.price}
         />
         <OptionRow
           icon={<DoorOpen className="w-5 h-5 text-gray-600" />}
-          label="Acces ponctuel aux espaces"
-          description="Acces aux salles de reunion et espaces de coworking"
+          label="Accès ponctuel aux espaces"
+          description="Accès aux salles de réunion et espaces de coworking"
           checked={options.accesPonctuelEspaces}
           onChange={(c) => onUpdate({ accesPonctuelEspaces: c })}
           price={OPTIONS_PRICING.accesPonctuelEspaces.price}
@@ -1156,7 +1156,7 @@ const Step7Options: React.FC<{
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-amber-700">Estimation mensuelle</p>
-            <p className="text-xs text-amber-600 mt-0.5">Base {BASE_MONTHLY_PRICE.toLocaleString()} DA + options selectionnees</p>
+            <p className="text-xs text-amber-600 mt-0.5">Base {BASE_MONTHLY_PRICE.toLocaleString()} DA + options sélectionnées</p>
           </div>
           <p className="text-2xl font-bold text-amber-800">{total.toLocaleString()} <span className="text-sm font-normal">DA/mois</span></p>
         </div>
@@ -1277,7 +1277,7 @@ const Step8Summary: React.FC<{
           <ul className="space-y-1 list-disc list-inside">
             <li>Validation de votre dossier sous 48h</li>
             <li>Rendez-vous chez le notaire pour la signature</li>
-            <li>Attribution du numéro de bureau (1-36)</li>
+            <li>Attribution du numéro de bureau (1-60)</li>
             <li>Remise de l'attestation de domiciliation</li>
           </ul>
         </div>
@@ -1332,8 +1332,8 @@ const CasInfoBox: React.FC<{
 
   const detail = situation === "en_cours_creation"
     ? isSociete
-      ? "Vous devrez obtenir une réservation de dénomination auprès du CNRC."
-      : "Aucune dénomination sociale n'est requise."
+      ? "Vous devrez obtenir une réservation de dénomination auprès du CNRC (5ème étage du Mohammadia Mall)."
+      : "Aucune dénomination sociale n'est requise pour ce statut."
     : isSociete
       ? "Vous devrez fournir les documents administratifs de votre société."
       : "Vous devrez fournir votre carte d'auto-entrepreneur.";

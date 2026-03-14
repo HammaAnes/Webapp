@@ -11,6 +11,13 @@ const STEPS = [
     icon: Clock,
   },
   {
+    key: "en_attente_complements",
+    label: "Compléments requis",
+    description: "Informations manquantes",
+    detail: "NIF, NIS, RC...",
+    icon: FileText,
+  },
+  {
     key: "en_attente_signature",
     label: "Signature notariale",
     description: "Rendez-vous chez le notaire",
@@ -25,13 +32,6 @@ const STEPS = [
     icon: FileCheck,
   },
   {
-    key: "en_attente_complements",
-    label: "Compléments requis",
-    description: "Renseigner les identifiants",
-    detail: "NIF, NIS, RC...",
-    icon: FileText,
-  },
-  {
     key: "active",
     label: "Active",
     description: "Pleinement opérationnelle",
@@ -42,9 +42,9 @@ const STEPS = [
 
 const STEP_ORDER: Record<string, number> = {
   dossier_preparatoire: 0,
-  en_attente_signature: 1,
-  domiciliation_creee: 2,
-  en_attente_complements: 3,
+  en_attente_complements: 1,
+  en_attente_signature: 2,
+  domiciliation_creee: 3,
   active: 4,
 };
 
@@ -100,6 +100,8 @@ const WorkflowTracker: React.FC<WorkflowTrackerProps> = ({ statut }) => {
                 ? "bg-red-400"
                 : statut === "active"
                 ? "bg-gradient-to-r from-emerald-500 to-teal-500"
+                : statut === "en_attente_complements"
+                ? "bg-gradient-to-r from-orange-400 to-amber-500"
                 : "bg-gradient-to-r from-amber-400 to-orange-500"
             }`}
             style={{ width: `${progressPct}%` }}
@@ -108,6 +110,11 @@ const WorkflowTracker: React.FC<WorkflowTrackerProps> = ({ statut }) => {
         {isTerminal && terminalInfo && (
           <p className={`text-sm mt-2 ${terminalInfo.isRed ? "text-red-600" : "text-amber-700"}`}>
             {terminalInfo.description}
+          </p>
+        )}
+        {statut === "en_attente_complements" && !isTerminal && (
+          <p className="text-sm mt-2 text-orange-600 font-medium">
+            Action requise : votre dossier nécessite des compléments d'information.
           </p>
         )}
       </div>
@@ -131,6 +138,7 @@ const WorkflowTracker: React.FC<WorkflowTrackerProps> = ({ statut }) => {
           }
 
           const StepIcon = step.icon;
+          const isActionRequired = isActive && step.key === "en_attente_complements";
 
           return (
             <React.Fragment key={step.key}>
@@ -141,11 +149,13 @@ const WorkflowTracker: React.FC<WorkflowTrackerProps> = ({ statut }) => {
                       ? "bg-red-500 border-red-500 text-white shadow-md shadow-red-200"
                       : isCompleted
                         ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-200"
-                        : isActive
-                          ? "bg-gradient-to-br from-amber-500 to-orange-500 border-amber-500 text-white shadow-lg shadow-amber-200"
-                          : isTerminal
-                            ? "bg-gray-100 border-gray-200 text-gray-300"
-                            : "bg-gray-100 border-gray-300 text-gray-400"
+                        : isActive && isActionRequired
+                          ? "bg-gradient-to-br from-orange-500 to-amber-500 border-orange-500 text-white shadow-lg shadow-orange-200"
+                          : isActive
+                            ? "bg-gradient-to-br from-amber-500 to-orange-500 border-amber-500 text-white shadow-lg shadow-amber-200"
+                            : isTerminal
+                              ? "bg-gray-100 border-gray-200 text-gray-300"
+                              : "bg-gray-100 border-gray-300 text-gray-400"
                   }`}
                 >
                   {isCancelled ? (
@@ -160,13 +170,15 @@ const WorkflowTracker: React.FC<WorkflowTrackerProps> = ({ statut }) => {
                   className={`text-xs mt-3 text-center font-semibold leading-tight px-1 ${
                     isCancelled
                       ? "text-red-700"
-                      : isActive
-                        ? "text-amber-700"
-                        : isCompleted
-                          ? "text-emerald-700"
-                          : isTerminal
-                            ? "text-gray-300"
-                            : "text-gray-400"
+                      : isActive && isActionRequired
+                        ? "text-orange-700"
+                        : isActive
+                          ? "text-amber-700"
+                          : isCompleted
+                            ? "text-emerald-700"
+                            : isTerminal
+                              ? "text-gray-300"
+                              : "text-gray-400"
                   }`}
                 >
                   {step.label}
@@ -175,13 +187,15 @@ const WorkflowTracker: React.FC<WorkflowTrackerProps> = ({ statut }) => {
                   className={`text-[10px] mt-0.5 text-center leading-tight px-1 ${
                     isCancelled
                       ? "text-red-500"
-                      : isActive
-                        ? "text-amber-500"
-                        : isCompleted
-                          ? "text-emerald-500"
-                          : isTerminal
-                            ? "text-gray-200"
-                            : "text-gray-300"
+                      : isActive && isActionRequired
+                        ? "text-orange-500"
+                        : isActive
+                          ? "text-amber-500"
+                          : isCompleted
+                            ? "text-emerald-500"
+                            : isTerminal
+                              ? "text-gray-200"
+                              : "text-gray-300"
                   }`}
                 >
                   {isActive ? (step as { detail?: string }).detail || step.description : isCompleted && !isTerminal ? "Complété" : step.description}
@@ -230,6 +244,7 @@ const WorkflowTracker: React.FC<WorkflowTrackerProps> = ({ statut }) => {
           }
 
           const StepIcon = step.icon;
+          const isActionRequired = isActive && step.key === "en_attente_complements";
 
           return (
             <div key={step.key} className="flex items-center gap-4">
@@ -240,9 +255,11 @@ const WorkflowTracker: React.FC<WorkflowTrackerProps> = ({ statut }) => {
                       ? "bg-red-500 border-red-500 text-white"
                       : isCompleted
                         ? "bg-emerald-500 border-emerald-500 text-white"
-                        : isActive
-                          ? "bg-gradient-to-br from-amber-500 to-orange-500 border-amber-500 text-white"
-                          : "bg-gray-100 border-gray-300 text-gray-400"
+                        : isActive && isActionRequired
+                          ? "bg-gradient-to-br from-orange-500 to-amber-500 border-orange-500 text-white"
+                          : isActive
+                            ? "bg-gradient-to-br from-amber-500 to-orange-500 border-amber-500 text-white"
+                            : "bg-gray-100 border-gray-300 text-gray-400"
                   }`}
                 >
                   {isCancelled ? (
@@ -266,11 +283,13 @@ const WorkflowTracker: React.FC<WorkflowTrackerProps> = ({ statut }) => {
                   className={`text-sm font-semibold ${
                     isCancelled
                       ? "text-red-700"
-                      : isActive
-                        ? "text-amber-700"
-                        : isCompleted
-                          ? "text-emerald-700"
-                          : "text-gray-500"
+                      : isActive && isActionRequired
+                        ? "text-orange-700"
+                        : isActive
+                          ? "text-amber-700"
+                          : isCompleted
+                            ? "text-emerald-700"
+                            : "text-gray-500"
                   }`}
                 >
                   {step.label}
@@ -279,19 +298,26 @@ const WorkflowTracker: React.FC<WorkflowTrackerProps> = ({ statut }) => {
                   className={`text-xs ${
                     isCancelled
                       ? "text-red-600"
-                      : isActive
-                        ? "text-amber-600"
-                        : isCompleted
-                          ? "text-emerald-600"
-                          : "text-gray-400"
+                      : isActive && isActionRequired
+                        ? "text-orange-600"
+                        : isActive
+                          ? "text-amber-600"
+                          : isCompleted
+                            ? "text-emerald-600"
+                            : "text-gray-400"
                   }`}
                 >
                   {step.description}
                 </p>
               </div>
-              {isActive && (
+              {isActive && !isActionRequired && (
                 <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full border border-amber-300">
                   En cours
+                </span>
+              )}
+              {isActive && isActionRequired && (
+                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-bold rounded-full border border-orange-300">
+                  Action requise
                 </span>
               )}
               {isCompleted && !isCancelled && (
