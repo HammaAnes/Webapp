@@ -56,18 +56,8 @@ try {
     $profession = $data->profession ?? null;
     $entreprise = $data->entreprise ?? null;
 
-    // Générer le code de parrainage unique - format COFFICE-XXX000
-    $prenomClean = preg_replace('/[^A-Za-z]/', '', $data->prenom);
-    $prefix = strtoupper(substr(str_pad($prenomClean, 3, 'X'), 0, 3));
-    $suffix = str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT);
-    $code_parrain = 'COFFICE-' . $prefix . $suffix;
-    // Ensure uniqueness
-    $checkStmt = $db->prepare("SELECT id FROM parrainages WHERE code_parrain = :code LIMIT 1");
-    $checkStmt->execute([':code' => $code_parrain]);
-    if ($checkStmt->rowCount() > 0) {
-        $suffix = str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT);
-        $code_parrain = 'COFFICE-' . $prefix . $suffix;
-    }
+    // Générer le code de parrainage unique
+    $code_parrain = 'CPF' . strtoupper(substr(str_replace('-', '', $user_id), 0, 6));
 
     $query = "INSERT INTO users (id, email, password_hash, nom, prenom, telephone, profession, entreprise, code_parrainage, role, statut)
               VALUES (:id, :email, :password_hash, :nom, :prenom, :telephone, :profession, :entreprise, :code_parrainage, 'user', 'actif')";
@@ -121,9 +111,13 @@ try {
 
         if ($parrainage && $parrainage['parrain_id'] !== $user_id) {
             // Créditer le nouveau filleul avec 3000 DA
-            $query = "UPDATE users SET credit = credit + 3000 WHERE id = :user_id";
+            $query = "UPDATE users
+                      SET credit = credit + 3000
+                      WHERE id = :user_id";
             $stmt = $db->prepare($query);
             $stmt->execute([':user_id' => $user_id]);
+
+            error_log("Referral bonus of 3000 DA credited to new user: " . $user_id);
 
             // Incrémenter les compteurs du parrain
             $query = "UPDATE parrainages
@@ -131,42 +125,44 @@ try {
                           recompenses_totales = recompenses_totales + 3000,
                           updated_at = NOW()
                       WHERE id = :id";
+
             $stmt = $db->prepare($query);
             $stmt->execute([':id' => $parrainage['id']]);
 
             // Créditer aussi le parrain avec 3000 DA
-            $query = "UPDATE users SET credit = credit + 3000 WHERE id = :parrain_id";
+            $query = "UPDATE users
+                      SET credit = credit + 3000
+                      WHERE id = :parrain_id";
             $stmt = $db->prepare($query);
             $stmt->execute([':parrain_id' => $parrainage['parrain_id']]);
 
-            // Créer une entrée dans parrainages_details
-            $detail_id = UuidHelper::generate();
-            $query = "INSERT INTO parrainages_details (id, parrainage_id, filleul_id, recompense_parrain, recompense_filleul, statut, date_inscription)
-                      VALUES (:id, :parrainage_id, :filleul_id, 3000, 3000, 'en_attente', NOW())";
-            $stmt = $db->prepare($query);
-            $stmt->execute([
-                ':id' => $detail_id,
-                ':parrainage_id' => $parrainage['id'],
-                ':filleul_id' => $user_id
-            ]);
+            error_log("Referral bonus of 3000 DA credited to parrain: " . $parrainage['parrain_id']);
 
             // Créer une notification pour le parrain
             $notif_id = UuidHelper::generate();
             $query = "INSERT INTO notifications (id, user_id, type, titre, message, lue)
-                      VALUES (:id, :user_id, 'parrainage', 'Nouveau filleul !',
-                              'Vous avez gagné 3 000 DA grâce à votre code de parrainage', 0)";
+                      VALUES (:id, :user_id, 'parrainage', 'Nouveau filleul!',
+                              'Vous avez gagné 3000 DA grâce à votre code de parrainage', 0)";
+
             $stmt = $db->prepare($query);
-            $stmt->execute([':id' => $notif_id, ':user_id' => $parrainage['parrain_id']]);
+            $stmt->execute([
+                ':id' => $notif_id,
+                ':user_id' => $parrainage['parrain_id']
+            ]);
 
             // Créer une notification pour le nouveau filleul
             $notif_filleul_id = UuidHelper::generate();
             $query = "INSERT INTO notifications (id, user_id, type, titre, message, lue)
-                      VALUES (:id, :user_id, 'parrainage', 'Bonus de bienvenue !',
-                              'Vous avez reçu 3 000 DA pour votre inscription via un code de parrainage', 0)";
-            $stmt = $db->prepare($query);
-            $stmt->execute([':id' => $notif_filleul_id, ':user_id' => $user_id]);
+                      VALUES (:id, :user_id, 'parrainage', 'Bonus de bienvenue!',
+                              'Vous avez reçu 3000 DA pour votre inscription via un code de parrainage', 0)";
 
-            error_log("Referral processed: parrain=" . $parrainage['parrain_id'] . " filleul=" . $user_id);
+            $stmt = $db->prepare($query);
+            $stmt->execute([
+                ':id' => $notif_filleul_id,
+                ':user_id' => $user_id
+            ]);
+
+            error_log("Referral bonuses credited to both parrain and filleul");
         }
     }
 
