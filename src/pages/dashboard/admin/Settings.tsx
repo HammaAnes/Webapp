@@ -91,8 +91,8 @@ const defaultSettings: AllSettings = {
   },
   mailing: {
     smtp_from_name: "Coffice",
-    smtp_from_email: "contact@coffice.dz",
-    email_admin: "contact@coffice.dz",
+    smtp_from_email: "desk@coffice.dz",
+    email_admin: "desk@coffice.dz",
     signature_text: "L'équipe Coffice - Coworking & Domiciliation",
   },
 };
