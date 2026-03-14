@@ -34,12 +34,12 @@ const PostCreationForm: React.FC<PostCreationFormProps> = ({ demande, onSubmit, 
         toast.error("Veuillez remplir tous les champs obligatoires");
         return;
       }
-      if (!/^[0-9]{15,20}$/.test(formState.nif.trim())) {
-        toast.error("Le NIF doit contenir entre 15 et 20 chiffres");
+      if (!/^[0-9]{20}$/.test(formState.nif.trim())) {
+        toast.error("Le NIF doit contenir exactement 20 chiffres");
         return;
       }
-      if (!/^[0-9]{11,15}$/.test(formState.nis.trim())) {
-        toast.error("Le NIS doit contenir entre 11 et 15 chiffres");
+      if (!/^[0-9]{15}$/.test(formState.nis.trim())) {
+        toast.error("Le NIS doit contenir exactement 15 chiffres");
         return;
       }
     } else {
@@ -75,14 +75,14 @@ const PostCreationForm: React.FC<PostCreationFormProps> = ({ demande, onSubmit, 
             />
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="NIF (20 caractères)"
+                label="NIF (exactement 20 chiffres)"
                 icon={<Hash className="w-5 h-5" />}
                 value={formState.nif}
                 onChange={(e) => setFormState({ ...formState, nif: e.target.value })}
                 maxLength={20}
               />
               <Input
-                label="NIS (15 caractères)"
+                label="NIS (exactement 15 chiffres)"
                 icon={<Hash className="w-5 h-5" />}
                 value={formState.nis}
                 onChange={(e) => setFormState({ ...formState, nis: e.target.value })}

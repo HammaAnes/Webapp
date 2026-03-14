@@ -229,13 +229,13 @@ const WizardForm: React.FC<WizardFormProps> = ({ isOpen, onClose, user, onSubmit
         if (!formData.registreCommerce.trim()) newErrors.registreCommerce = "Le numero de Registre de Commerce est requis";
         if (!formData.nif.trim()) {
           newErrors.nif = "Le NIF est requis";
-        } else if (!/^[0-9]{15,20}$/.test(formData.nif.trim())) {
-          newErrors.nif = "Le NIF doit contenir entre 15 et 20 chiffres";
+        } else if (!/^[0-9]{20}$/.test(formData.nif.trim())) {
+          newErrors.nif = "Le NIF doit contenir exactement 20 chiffres";
         }
         if (!formData.nis.trim()) {
           newErrors.nis = "Le NIS est requis";
-        } else if (!/^[0-9]{11,15}$/.test(formData.nis.trim())) {
-          newErrors.nis = "Le NIS doit contenir entre 11 et 15 chiffres";
+        } else if (!/^[0-9]{15}$/.test(formData.nis.trim())) {
+          newErrors.nis = "Le NIS doit contenir exactement 15 chiffres";
         }
         if (!formData.articleImposition.trim()) newErrors.articleImposition = "L'Article d'Imposition est requis";
         if (!formData.codeNae.trim()) newErrors.codeNae = "L'activité principale (CODE NAE) est requise";
@@ -848,7 +848,7 @@ const CasB1Fields: React.FC<{
     <div className="grid grid-cols-2 gap-4">
       <div>
         <Input
-          label="NIF (20 caractères)"
+          label="NIF (exactement 20 chiffres)"
           icon={<Hash className="w-5 h-5" />}
           value={formData.nif}
           onChange={(e) => { onUpdate({ nif: e.target.value }); if (errors.nif) onClearError("nif"); }}
@@ -860,7 +860,7 @@ const CasB1Fields: React.FC<{
       </div>
       <div>
         <Input
-          label="NIS (15 caractères)"
+          label="NIS (exactement 15 chiffres)"
           icon={<Hash className="w-5 h-5" />}
           value={formData.nis}
           onChange={(e) => { onUpdate({ nis: e.target.value }); if (errors.nis) onClearError("nis"); }}

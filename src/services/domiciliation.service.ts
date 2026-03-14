@@ -77,19 +77,73 @@ class DomiciliationService {
     }
   }
 
-  async validateDemande(id: string): Promise<void> {
-    return this.updateDemande(id, { statut: "en_attente_signature" }).then(() => {});
+  async validateDemande(id: string, commentaire?: string): Promise<void> {
+    const store = useDomiciliationStore.getState();
+    store.setLoading(true);
+    store.setError(null);
+    try {
+      const response = await apiClient.validateDomiciliation(id, commentaire);
+      if (response.success) {
+        await this.loadDemandes();
+      } else {
+        throw new Error(response.error || "Erreur lors de la validation");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erreur inconnue";
+      store.setError(message);
+      throw error;
+    } finally {
+      store.setLoading(false);
+    }
   }
 
-  async rejectDemande(id: string, motif?: string): Promise<void> {
-    return this.updateDemande(id, { statut: "refusee" }).then(() => {});
+  async rejectDemande(id: string, motif: string): Promise<void> {
+    const store = useDomiciliationStore.getState();
+    store.setLoading(true);
+    store.setError(null);
+    try {
+      const response = await apiClient.rejectDomiciliation(id, motif);
+      if (response.success) {
+        await this.loadDemandes();
+      } else {
+        throw new Error(response.error || "Erreur lors du refus");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erreur inconnue";
+      store.setError(message);
+      throw error;
+    } finally {
+      store.setLoading(false);
+    }
   }
 
   async activateDemande(id: string, numeroBureau: number): Promise<void> {
+    if (numeroBureau < 1 || numeroBureau > 60) {
+      throw new Error("Le numéro de bureau doit être compris entre 1 et 60");
+    }
+    const store = useDomiciliationStore.getState();
+    store.setLoading(true);
+    store.setError(null);
+    try {
+      const response = await apiClient.activateDomiciliation(id);
+      if (response.success) {
+        await this.loadDemandes();
+      } else {
+        throw new Error(response.error || "Erreur lors de l'activation");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erreur inconnue";
+      store.setError(message);
+      throw error;
+    } finally {
+      store.setLoading(false);
+    }
+  }
+
+  async requestComplements(id: string, commentaire: string): Promise<void> {
     return this.updateDemande(id, {
-      statut: "active",
-      numeroBureau,
-    }).then(() => {});
+      statut: "en_attente_complements",
+    } as Partial<DemandeDomiciliation>).then(() => {});
   }
 
   getDemandes(): DemandeDomiciliation[] {

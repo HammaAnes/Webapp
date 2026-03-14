@@ -31,10 +31,10 @@ const Profile = () => {
     try {
       await updateUser(user.id, formData);
       await loadUser();
-      toast.success("Profil mis a jour");
+      toast.success("Profil mis à jour");
       setIsEditing(false);
     } catch (error) {
-      toast.error("Erreur lors de la mise a jour");
+      toast.error("Erreur lors de la mise à jour");
     }
   };
 

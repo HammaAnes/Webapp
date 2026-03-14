@@ -42,9 +42,9 @@ const DomiciliationPublic = () => {
   const [loading, setLoading] = React.useState(true);
 
   useSEO({
-    title: "Domiciliation d'Entreprise a Alger | Coffice Coworking",
+    title: "Domiciliation d'Entreprise à Alger | Coffice Coworking",
     description:
-      "Domiciliez votre entreprise au Centre Commercial Mohammadia Mall. Adresse prestigieuse, conformite legale, contrat notarie. 12.000 DA HT/mois avec acces coworking et partenariat Novihost inclus.",
+      "Domiciliez votre entreprise au Centre Commercial Mohammadia Mall. Adresse prestigieuse, conformité légale, contrat notarié. 12.000 DA HT/mois avec accès coworking et partenariat Novihost inclus.",
     keywords: [
       "domiciliation entreprise Alger",
       "adresse commerciale Alger",
@@ -81,18 +81,18 @@ const DomiciliationPublic = () => {
   }, []);
 
   const visibleCompanies = stats.visibleCompanies;
-  const MAX_DOMICILIATIONS = 36;
+  const MAX_DOMICILIATIONS = 60;
   const activeCount = stats.activeCount > 0 ? stats.activeCount : 10;
   const placesRestantes = MAX_DOMICILIATIONS - activeCount;
 
   const pricingFeatures = [
     "Adresse commerciale prestigieuse",
-    "Gestion et reception du courrier",
+    "Gestion et réception du courrier",
     "Attestation de domiciliation",
-    "Contrat notarie 100% conforme",
-    "Acces coworking 8H/semaine",
-    "Salles de reunion prioritaire",
-    "Reductions de 20% sur tous les services",
+    "Contrat notarié 100% conforme",
+    "Accès coworking 8H/semaine",
+    "Salles de réunion prioritaire",
+    "Réductions de 20% sur tous les services",
     "Visibilite sur notre site",
     "Support prioritaire 24/7",
   ];
@@ -100,33 +100,33 @@ const DomiciliationPublic = () => {
   const businessServices = [
     {
       icon: Building2,
-      name: "Creation d'Entreprise",
-      tagline: "Accompagnement complet de A a Z",
+      name: "Création d'Entreprise",
+      tagline: "Accompagnement complet de A à Z",
       description:
-        "Nous vous accompagnons dans toutes les demarches de creation de votre entreprise",
+        "Nous vous accompagnons dans toutes les démarches de création de votre entreprise",
       color: "text-accent",
       bgColor: "bg-accent/10",
       features: [
         "Choix de la forme juridique (SARL, EURL, SPA...)",
-        "Redaction des statuts et documents legaux",
+        "Rédaction des statuts et documents légaux",
         "Constitution du dossier CNRC",
         "Obtention du registre de commerce",
         "Immatriculation fiscale (NIF, NIS, AI)",
-        "Accompagnement jusqu'a l'ouverture",
+        "Accompagnement jusqu'à l'ouverture",
       ],
     },
     {
       icon: Target,
-      name: "Conseil & Strategie",
-      tagline: "Expertise business pour votre reussite",
+      name: "Conseil & Stratégie",
+      tagline: "Expertise business pour votre réussite",
       description:
-        "Conseils personnalises pour developper et optimiser votre activite",
+        "Conseils personnalisés pour développer et optimiser votre activité",
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
       features: [
-        "Analyse economique et etude de marche",
-        "Business plan et previsionnel financier",
-        "Strategie de developpement commercial",
+        "Analyse économique et étude de marché",
+        "Business plan et prévisionnel financier",
+        "Stratégie de développement commercial",
         "Optimisation fiscale et sociale",
         "Audit et diagnostic d'entreprise",
         "Conseil en gestion et organisation",
@@ -134,50 +134,50 @@ const DomiciliationPublic = () => {
     },
     {
       icon: Receipt,
-      name: "Comptabilite & Fiscalite",
-      tagline: "Gestion administrative complete",
+      name: "Comptabilité & Fiscalité",
+      tagline: "Gestion administrative complète",
       description:
         "Prenez soin de votre business, on s'occupe de votre compta",
       color: "text-teal",
       bgColor: "bg-teal/10",
       features: [
-        "Tenue de comptabilite complete",
-        "Declarations fiscales et sociales",
+        "Tenue de comptabilité complète",
+        "Déclarations fiscales et sociales",
         "Bulletins de paie et gestion RH",
         "Liasse fiscale et bilan annuel",
-        "Suivi de tresorerie",
-        "Conseils comptables personnalises",
+        "Suivi de trésorerie",
+        "Conseils comptables personnalisés",
       ],
     },
     {
       icon: Scale,
       name: "Assistance Juridique",
-      tagline: "Support legal pour votre activite",
+      tagline: "Support légal pour votre activité",
       description:
-        "Accompagnement juridique pour toutes vos problematiques",
+        "Accompagnement juridique pour toutes vos problématiques",
       color: "text-rose",
       bgColor: "bg-rose/10",
       features: [
-        "Redaction de contrats commerciaux",
+        "Rédaction de contrats commerciaux",
         "Cession de parts et augmentation capital",
-        "Propriete intellectuelle et marques",
+        "Propriété intellectuelle et marques",
         "Conseil en droit des affaires",
       ],
     },
     {
       icon: BookOpen,
       name: "Formation Professionnelle",
-      tagline: "Developpez vos competences",
+      tagline: "Développez vos compétences",
       description:
-        "Formations adaptees aux entrepreneurs et professionnels",
+        "Formations adaptées aux entrepreneurs et professionnels",
       color: "text-cyan-600",
       bgColor: "bg-cyan-50",
       features: [
         "Gestion d'entreprise et management",
-        "Marketing digital et reseaux sociaux",
-        "Comptabilite pour non-comptables",
-        "Pitch et levee de fonds",
-        "Techniques de vente et negociation",
+        "Marketing digital et réseaux sociaux",
+        "Comptabilité pour non-comptables",
+        "Pitch et levée de fonds",
+        "Techniques de vente et négociation",
         "Certification et attestation",
       ],
     },
@@ -188,7 +188,7 @@ const DomiciliationPublic = () => {
       icon: Building,
       title: "Adresse Prestigieuse",
       description:
-        "Centre Commercial Mohammadia Mall, 4eme etage, Bureau 1178. Une adresse qui inspire confiance.",
+        "Centre Commercial Mohammadia Mall, 4ème étage, Bureau 1178. Une adresse qui inspire confiance.",
       color: "bg-accent/10",
       iconColor: "text-accent",
     },
@@ -196,7 +196,7 @@ const DomiciliationPublic = () => {
       icon: Shield,
       title: "100% Conforme",
       description:
-        "Contrat de location notarie conforme a la reglementation algerienne. Respect total des obligations.",
+        "Contrat de location notarié conforme à la réglementation algérienne. Respect total des obligations.",
       color: "bg-teal/10",
       iconColor: "text-teal",
     },
@@ -204,23 +204,23 @@ const DomiciliationPublic = () => {
       icon: FileText,
       title: "Service Complet",
       description:
-        "Attestations et certificats de domiciliation pour toutes vos demarches administratives.",
+        "Attestations et certificats de domiciliation pour toutes vos démarches administratives.",
       color: "bg-warm/10",
       iconColor: "text-warm",
     },
     {
       icon: Clock,
-      title: "Rapidite",
+      title: "Rapidité",
       description:
-        "Mise en place rapide. Obtenez votre attestation sous 48h apres validation et signature.",
+        "Mise en place rapide. Obtenez votre attestation sous 48h après validation et signature.",
       color: "bg-accent/10",
       iconColor: "text-accent",
     },
     {
       icon: MapPin,
-      title: "Proximite CNRC & CASNOS",
+      title: "Proximité CNRC & CASNOS",
       description:
-        "Le CNRC est un etage au-dessus, la CASNOS dans le meme batiment. Toutes vos demarches facilitees!",
+        "Le CNRC est un étage au-dessus, la CASNOS dans le même bâtiment. Toutes vos démarches facilitées !",
       color: "bg-teal/10",
       iconColor: "text-teal",
     },
@@ -228,7 +228,7 @@ const DomiciliationPublic = () => {
       icon: Users,
       title: "Accompagnement",
       description:
-        "Notre equipe vous accompagne dans toutes vos demarches administratives et juridiques.",
+        "Notre équipe vous accompagne dans toutes vos démarches administratives et juridiques.",
       color: "bg-warm/10",
       iconColor: "text-warm",
     },
@@ -245,7 +245,7 @@ const DomiciliationPublic = () => {
       number: "02",
       title: "Validation",
       description:
-        "Notre equipe valide votre demande sous 24-48h et vous contacte",
+        "Notre équipe valide votre demande sous 24-48h et vous contacte",
     },
     {
       number: "03",
@@ -257,28 +257,28 @@ const DomiciliationPublic = () => {
       number: "04",
       title: "Activation",
       description:
-        "Recevez votre attestation de domiciliation et demarrez vos activites",
+        "Recevez votre attestation de domiciliation et démarrez vos activités",
     },
   ];
 
   const documentsNewCreation = [
     {
-      text: "Denomination de la societe",
-      note: "Peut etre faite au niveau du CNRC juste au-dessus de nous",
+      text: "Dénomination de la société",
+      note: "Peut être faite au niveau du CNRC juste au-dessus de nous",
     },
-    { text: "Piece d'identite" },
+    { text: "Pièce d'identité" },
     { text: "Extrait de naissance" },
-    { text: "Justificatif de domicile (Residence)" },
+    { text: "Justificatif de domicile (Résidence)" },
   ];
 
   const documentsTransfer = [
     { text: "Extrait de registre du commerce" },
-    { text: "Statuts de la societe" },
-    { text: "PV de nomination du gerant" },
+    { text: "Statuts de la société" },
+    { text: "PV de nomination du gérant" },
     { text: "Copie NIF et NIS", optional: true },
     { text: "Article d'imposition" },
-    { text: "Piece d'identite du gerant" },
-    { text: "Justificatif de domicile du gerant" },
+    { text: "Pièce d'identité du gérant" },
+    { text: "Justificatif de domicile du gérant" },
   ];
 
   return (
@@ -311,12 +311,12 @@ const DomiciliationPublic = () => {
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
               Domiciliez votre entreprise
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-200 to-cyan-200">
-                au coeur d'Alger
+                au cœur d'Alger
               </span>
             </h1>
             <p className="text-xl text-white/85 mb-8 leading-relaxed max-w-2xl">
-              Une adresse prestigieuse au Mohammadia Mall, un contrat notarie
-              100% conforme, et un ecosysteme complet pour lancer et developper
+              Une adresse prestigieuse au Mohammadia Mall, un contrat notarié
+              100% conforme, et un écosystème complet pour lancer et développer
               votre entreprise.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -347,7 +347,7 @@ const DomiciliationPublic = () => {
                 {activeCount}
               </div>
               <div className="text-white/70 text-sm">
-                Entreprises domiciliees
+                Entreprises domiciliées
               </div>
             </div>
             <div className="text-center bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/10">
@@ -360,7 +360,7 @@ const DomiciliationPublic = () => {
               <div className="text-3xl md:text-4xl font-bold text-white mb-1">
                 48h
               </div>
-              <div className="text-white/70 text-sm">Delai d'activation</div>
+              <div className="text-white/70 text-sm">Délai d'activation</div>
             </div>
           </motion.div>
         </div>
@@ -448,7 +448,7 @@ const DomiciliationPublic = () => {
                     <span className="text-xl text-gray-500">DA HT/mois</span>
                   </div>
                   <p className="text-gray-600">
-                    Formule complete pour votre domiciliation professionnelle
+                    Formule complète pour votre domiciliation professionnelle
                   </p>
                 </div>
 
@@ -508,7 +508,7 @@ const DomiciliationPublic = () => {
                   {[
                     {
                       icon: Server,
-                      title: "Hebergement Premium",
+                      title: "Hébergement Premium",
                       desc: "Infrastructure haute performance",
                     },
                     {
@@ -547,7 +547,7 @@ const DomiciliationPublic = () => {
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
                 >
-                  Decouvrir Novihost
+                  Découvrir Novihost
                   <ArrowRight className="w-4 h-4" />
                 </a>
               </div>
@@ -576,10 +576,10 @@ const DomiciliationPublic = () => {
               Processus
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">
-              Comment ca marche ?
+              Comment ça marche ?
             </h2>
             <p className="text-lg text-gray-600">
-              Un processus simple et rapide en 4 etapes
+              Un processus simple et rapide en 4 étapes
             </p>
           </div>
 
@@ -620,13 +620,13 @@ const DomiciliationPublic = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <span className="inline-block text-accent font-semibold text-sm uppercase tracking-wider mb-3">
-              Au-dela de la domiciliation
+              Au-delà de la domiciliation
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">
               Services d'accompagnement
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Nous vous accompagnons dans toutes les etapes de vie de votre
+              Nous vous accompagnons dans toutes les étapes de vie de votre
               entreprise
             </p>
           </div>
@@ -674,8 +674,8 @@ const DomiciliationPublic = () => {
 
           <div className="mt-12 text-center">
             <p className="text-gray-600 mb-4">
-              Besoin d'accompagnement personnalise ? Notre equipe est a votre
-              ecoute
+              Besoin d'accompagnement personnalisé ? Notre équipe est à votre
+              écoute
             </p>
             <a
               href="tel:+21323804924"
@@ -696,10 +696,10 @@ const DomiciliationPublic = () => {
               Preparation
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">
-              Documents necessaires
+              Documents nécessaires
             </h2>
             <p className="text-lg text-gray-600">
-              Preparez ces documents pour accelerer votre demande
+              Préparez ces documents pour accélérer votre demande
             </p>
           </div>
 
@@ -711,10 +711,10 @@ const DomiciliationPublic = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-primary">
-                    Nouvelle creation
+                    Nouvelle création
                   </h3>
                   <p className="text-sm text-gray-500">
-                    Pour les nouvelles societes
+                    Pour les nouvelles sociétés
                   </p>
                 </div>
               </div>
@@ -747,7 +747,7 @@ const DomiciliationPublic = () => {
                     Transfert de siege social
                   </h3>
                   <p className="text-sm text-gray-500">
-                    Pour les societes existantes
+                    Pour les sociétés existantes
                   </p>
                 </div>
               </div>
@@ -837,18 +837,18 @@ const DomiciliationPublic = () => {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
-              Pret a domicilier votre entreprise ?
+              Prêt à domicilier votre entreprise ?
             </h2>
             <p className="text-xl text-white/85 mb-10 max-w-2xl mx-auto">
               Rejoignez les entreprises qui nous font confiance et donnez une
-              adresse prestigieuse a votre societe
+              adresse prestigieuse à votre société
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 to="/inscription"
                 className="inline-flex items-center justify-center px-8 py-4 bg-white text-primary rounded-lg font-semibold text-lg hover:bg-gray-100 transition-all shadow-xl"
               >
-                Creer un compte
+                Créer un compte
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
               <a
@@ -875,7 +875,7 @@ const DomiciliationPublic = () => {
               <p className="text-gray-600 text-sm">
                 Centre Commercial Mohammadia Mall
                 <br />
-                4eme etage, Bureau 1178
+                4ème étage, Bureau 1178
                 <br />
                 Mohammadia, Alger
               </p>
@@ -884,7 +884,7 @@ const DomiciliationPublic = () => {
               <div className="w-12 h-12 bg-teal/10 rounded-xl flex items-center justify-center mb-3">
                 <Phone className="w-6 h-6 text-teal" />
               </div>
-              <h3 className="font-semibold text-primary mb-2">Telephone</h3>
+              <h3 className="font-semibold text-primary mb-2">Téléphone</h3>
               <p className="text-gray-600 text-sm">
                 +213 23 804 924
                 <br />

@@ -159,14 +159,14 @@ export default function DomiciliationDetail() {
       }
       if (response?.success) {
         const msgs: Record<string, string> = {
-          valider: "Dossier valide - en attente de signature notariale",
-          rejeter: "Demande refusee",
-          signer: "Domiciliation creee - contrat enregistre",
-          completer: "Domiciliation activee",
-          activer: "Domiciliation activee",
-          resilier: "Domiciliation resiliee",
+          valider: "Dossier validé — en attente de signature notariale",
+          rejeter: "Demande refusée",
+          signer: "Domiciliation créée — contrat enregistré",
+          completer: "Domiciliation activée",
+          activer: "Domiciliation activée",
+          resilier: "Domiciliation résiliée",
         };
-        toast.success(msgs[action] || "Action effectuee");
+        toast.success(msgs[action] || "Action effectuée");
         const email = demande.representantLegal?.email;
         if (email) {
           const statusMap: Record<string, string> = {
