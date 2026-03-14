@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, Calendar, CreditCard, Users, Settings, LogOut, Menu, X, User, Building, FileText, BarChart3, RefreshCw, Tag, Gift, Bell, Clock, ChevronDown, Wallet, CircleUser as UserCircle } from "lucide-react";
+import { Home, Calendar, CreditCard, Users, Settings, LogOut, Menu, X, User, Building, FileText, BarChart3, RefreshCw, Tag, Gift, Bell, Clock, ChevronDown, Wallet, CircleUser as UserCircle, Search, Plus } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useAppStore } from "../../store/store";
 import NotificationCenter from "../ui/NotificationCenter";
+import CommandPalette from "../admin/CommandPalette";
 import toast from "react-hot-toast";
 import Logo from "../Logo";
 
@@ -27,6 +28,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, loadUser } = useAuthStore();
@@ -35,6 +37,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     loadReservations,
     loadAbonnements,
     loadDemandesDomiciliation,
+    reservations,
   } = useAppStore();
 
   useEffect(() => {
@@ -49,6 +52,21 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       setExpandedGroups((prev) => ({ ...prev, ...groups }));
     }
   }, [location.pathname, user?.role]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        if (user?.role === "admin") {
+          setCommandPaletteOpen(prev => !prev);
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [user?.role]);
+
+  const pendingReservationsCount = reservations.filter(r => r.statut === "en_attente").length;
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -284,6 +302,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </nav>
 
           <div className="px-3 py-4 border-t border-gray-100">
+            {user.role === "admin" && (
+              <button
+                onClick={() => setCommandPaletteOpen(true)}
+                className="w-full flex items-center justify-between px-3 py-2 mb-3 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Search className="w-3.5 h-3.5" />
+                  <span>Recherche rapide</span>
+                </div>
+                <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-xs font-mono">⌘K</kbd>
+              </button>
+            )}
             <div className="flex items-center space-x-3 mb-3 px-2">
               <div className="w-9 h-9 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-sm font-semibold">
@@ -333,6 +363,38 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </div>
 
             <div className="flex items-center gap-2">
+              {user.role === "admin" && (
+                <>
+                  <button
+                    onClick={() => setCommandPaletteOpen(true)}
+                    className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
+                    title="Recherche rapide (⌘K)"
+                  >
+                    <Search className="w-4 h-4" />
+                    <span className="hidden lg:inline text-xs">Recherche rapide</span>
+                    <kbd className="hidden lg:inline px-1.5 py-0.5 text-xs bg-white border border-gray-200 rounded font-mono text-gray-400">⌘K</kbd>
+                  </button>
+                  <Link
+                    to="/app/admin/reservations"
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm text-white bg-accent hover:bg-accent-dark rounded-lg transition-colors font-medium"
+                    title="Nouvelle réservation"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden lg:inline">Réservation</span>
+                  </Link>
+                  {pendingReservationsCount > 0 && (
+                    <Link
+                      to="/app/admin/reservations"
+                      className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors font-medium"
+                      title={`${pendingReservationsCount} réservation(s) en attente`}
+                    >
+                      <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                      <span className="hidden lg:inline">{pendingReservationsCount} en attente</span>
+                      <span className="lg:hidden">{pendingReservationsCount}</span>
+                    </Link>
+                  )}
+                </>
+              )}
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
@@ -350,6 +412,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
         <main className="flex-1 p-4 sm:p-6 overflow-auto">{children}</main>
       </div>
+
+      {user.role === "admin" && (
+        <CommandPalette
+          isOpen={commandPaletteOpen}
+          onClose={() => setCommandPaletteOpen(false)}
+          onNewReservation={() => navigate("/app/admin/reservations")}
+        />
+      )}
     </div>
   );
 };
