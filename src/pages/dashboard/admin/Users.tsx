@@ -16,7 +16,6 @@ import {
   TrendingUp,
   RefreshCw,
   Eye,
-  Plus,
   UserPlus,
 } from "lucide-react";
 import { useAppStore } from "../../../store/store";
@@ -24,23 +23,11 @@ import Card from "../../../components/ui/Card";
 import Badge from "../../../components/ui/Badge";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
-import Modal from "../../../components/ui/Modal";
+import { CreateUserModal } from "../../../components/admin/CreateUserModal";
 import { formatDate, buildCsvContent } from "../../../utils/formatters";
 import toast from "react-hot-toast";
 import { logger } from "../../../utils/logger";
-import { apiClient } from "../../../lib/api-client";
 import type { User } from "../../../types";
-
-interface CreateUserForm {
-  nom: string;
-  prenom: string;
-  email: string;
-  password: string;
-  telephone: string;
-  entreprise: string;
-  profession: string;
-  role: "user" | "admin";
-}
 
 const Users = () => {
   const {
@@ -53,71 +40,7 @@ const Users = () => {
   } = useAppStore();
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createLoading, setCreateLoading] = useState(false);
-  const [formData, setFormData] = useState<CreateUserForm>({
-    nom: "",
-    prenom: "",
-    email: "",
-    password: "",
-    telephone: "",
-    entreprise: "",
-    profession: "",
-    role: "user",
-  });
 
-  const resetForm = () => {
-    setFormData({
-      nom: "",
-      prenom: "",
-      email: "",
-      password: "",
-      telephone: "",
-      entreprise: "",
-      profession: "",
-      role: "user",
-    });
-  };
-
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.nom || !formData.prenom || !formData.email || !formData.password) {
-      toast.error("Veuillez remplir tous les champs obligatoires");
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      toast.error("Le mot de passe doit contenir au moins 6 caractères");
-      return;
-    }
-
-    setCreateLoading(true);
-    try {
-      const response = await apiClient.adminCreateUser({
-        nom: formData.nom,
-        prenom: formData.prenom,
-        email: formData.email,
-        password: formData.password,
-        telephone: formData.telephone || undefined,
-        entreprise: formData.entreprise || undefined,
-        profession: formData.profession || undefined,
-      });
-
-      if (response.success) {
-        toast.success("Utilisateur créé avec succès");
-        setShowCreateModal(false);
-        resetForm();
-        await loadUsers();
-      } else {
-        toast.error(response.error || response.message || "Erreur lors de la création");
-      }
-    } catch (error) {
-      logger.error("Erreur creation utilisateur:", error as Error);
-      toast.error("Erreur lors de la création de l'utilisateur");
-    } finally {
-      setCreateLoading(false);
-    }
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -592,108 +515,13 @@ const Users = () => {
         )}
       </div>
 
-      <Modal
+      <CreateUserModal
         isOpen={showCreateModal}
-        onClose={() => {
-          setShowCreateModal(false);
-          resetForm();
+        onClose={() => setShowCreateModal(false)}
+        onUserCreated={async () => {
+          await loadUsers();
         }}
-        title="Nouvel Utilisateur"
-      >
-        <form onSubmit={handleCreateUser} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Prénom"
-              value={formData.prenom}
-              onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
-              required
-              placeholder="Jean"
-            />
-            <Input
-              label="Nom"
-              value={formData.nom}
-              onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-              required
-              placeholder="Dupont"
-            />
-          </div>
-
-          <Input
-            label="Email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            required
-            placeholder="jean.dupont@email.com"
-            icon={<Mail className="w-5 h-5" />}
-          />
-
-          <Input
-            label="Mot de passe"
-            type="password"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            required
-            placeholder="Minimum 6 caractères"
-          />
-
-          <Input
-            label="Téléphone"
-            value={formData.telephone}
-            onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
-            placeholder="0555 12 34 56"
-            icon={<Phone className="w-5 h-5" />}
-          />
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Entreprise"
-              value={formData.entreprise}
-              onChange={(e) => setFormData({ ...formData, entreprise: e.target.value })}
-              placeholder="Nom de l'entreprise"
-              icon={<Building className="w-5 h-5" />}
-            />
-            <Input
-              label="Profession"
-              value={formData.profession}
-              onChange={(e) => setFormData({ ...formData, profession: e.target.value })}
-              placeholder="Fonction"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Rôle
-            </label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as "user" | "admin" })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
-            >
-              <option value="user">Utilisateur</option>
-              <option value="admin">Administrateur</option>
-            </select>
-          </div>
-
-          <div className="flex gap-3 pt-4 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowCreateModal(false);
-                resetForm();
-              }}
-              className="flex-1"
-              disabled={createLoading}
-            >
-              Annuler
-            </Button>
-            <Button type="submit" disabled={createLoading} className="flex-1">
-              {createLoading ? "Création..." : "Créer l'utilisateur"}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+      />
     </div>
   );
 };

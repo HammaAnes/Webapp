@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Building, Search, UserPlus, Loader2, Save, X, User, ChevronRight, ChevronLeft, Check } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Building, Save, User, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import Modal from "../ui/Modal";
 import Card from "../ui/Card";
@@ -7,19 +7,12 @@ import Button from "../ui/Button";
 import Input from "../ui/Input";
 import Badge from "../ui/Badge";
 import { apiClient } from "../../lib/api-client";
+import { UserSelector, type SelectedUser } from "./UserSelector";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onCreated: () => void;
-}
-
-interface UserResult {
-  id: string;
-  email: string;
-  nom: string;
-  prenom: string;
-  telephone?: string;
 }
 
 type Step = "user" | "info" | "contrat" | "confirm";
@@ -37,13 +30,7 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
   const [step, setStep] = useState<Step>("user");
   const [submitting, setSubmitting] = useState(false);
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<UserResult[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<UserResult | null>(null);
-  const [createMode, setCreateMode] = useState(false);
-  const [newUser, setNewUser] = useState({ email: "", nom: "", prenom: "", telephone: "", password: "" });
-  const [createdTempPassword, setCreatedTempPassword] = useState("");
+  const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
 
   const [situationAdministrative, setSituationAdministrative] = useState<"en_cours_creation" | "deja_creee">("en_cours_creation");
   const [typeStructure, setTypeStructure] = useState<"societe" | "auto_entrepreneur">("societe");
@@ -72,11 +59,6 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
     if (isOpen) {
       setStep("user");
       setSelectedUser(null);
-      setCreateMode(false);
-      setSearchQuery("");
-      setSearchResults([]);
-      setCreatedTempPassword("");
-      setNewUser({ email: "", nom: "", prenom: "", telephone: "", password: "" });
       setSituationAdministrative("en_cours_creation");
       setTypeStructure("societe");
       setInfo({ raisonSociale: "", formeJuridique: "SARL", nif: "", nis: "", registreCommerce: "", articleImposition: "", codeNae: "", activiteExercee: "", numeroAutoEntrepreneur: "", repNom: "", repPrenom: "", repTel: "", repEmail: "", repVille: "", repAdresse: "", repFonction: "" });
@@ -95,56 +77,11 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
     }
   }, [isOpen]);
 
-  const handleSearch = useCallback(async () => {
-    if (searchQuery.trim().length < 2) return;
-    setSearching(true);
-    try {
-      const res = await apiClient.searchUsers(searchQuery.trim());
-      if (res.success && res.data) {
-        const raw = Array.isArray(res.data) ? res.data : (res.data as Record<string, unknown>).users as unknown[] || [];
-        setSearchResults(raw.map((u: unknown) => {
-          const r = u as Record<string, unknown>;
-          return { id: String(r.id), email: String(r.email || ""), nom: String(r.nom || ""), prenom: String(r.prenom || ""), telephone: r.telephone as string | undefined };
-        }));
-      }
-    } catch { setSearchResults([]); }
-    finally { setSearching(false); }
-  }, [searchQuery]);
-
-  useEffect(() => {
-    const t = setTimeout(() => { if (searchQuery.trim().length >= 2) handleSearch(); }, 400);
-    return () => clearTimeout(t);
-  }, [searchQuery, handleSearch]);
-
-  const handleCreateUser = async () => {
-    if (!newUser.email || !newUser.nom || !newUser.prenom) {
-      toast.error("Email, nom et prenom sont requis");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const res = await apiClient.adminCreateUser({
-        email: newUser.email, nom: newUser.nom, prenom: newUser.prenom,
-        telephone: newUser.telephone || undefined, password: newUser.password || undefined,
-      });
-      if (res.success && res.data) {
-        const data = res.data as Record<string, unknown>;
-        const user: UserResult = { id: String(data.id), email: String(data.email), nom: String(data.nom), prenom: String(data.prenom), telephone: data.telephone as string | undefined };
-        setSelectedUser(user);
-        setCreatedTempPassword(String(data.temp_password || ""));
-        setCreateMode(false);
-        setInfo(prev => ({ ...prev, repNom: user.nom, repPrenom: user.prenom, repTel: user.telephone || "", repEmail: user.email }));
-        toast.success("Compte utilisateur cree");
-      } else {
-        toast.error(res.error || "Erreur lors de la creation");
-      }
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Erreur"); }
-    finally { setSubmitting(false); }
-  };
-
-  const selectUser = (u: UserResult) => {
+  const handleUserSelected = (u: SelectedUser | null) => {
     setSelectedUser(u);
-    setInfo(prev => ({ ...prev, repNom: u.nom, repPrenom: u.prenom, repTel: u.telephone || "", repEmail: u.email }));
+    if (u) {
+      setInfo(prev => ({ ...prev, repNom: u.nom, repPrenom: u.prenom, repTel: u.telephone || "", repEmail: u.email }));
+    }
   };
 
   const mois = contrat.dateDebutContrat && contrat.dateFinContrat
@@ -252,89 +189,15 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
       <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
         {step === "user" && (
           <div className="space-y-4">
-            {selectedUser ? (
-              <Card className="p-4 border-2 border-emerald-200 bg-emerald-50/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                      <User className="w-5 h-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">{selectedUser.prenom} {selectedUser.nom}</p>
-                      <p className="text-sm text-gray-500">{selectedUser.email}</p>
-                      {selectedUser.telephone && <p className="text-xs text-gray-400">{selectedUser.telephone}</p>}
-                    </div>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => { setSelectedUser(null); setCreatedTempPassword(""); }}>
-                    <X className="w-4 h-4" /> Changer
-                  </Button>
-                </div>
-                {createdTempPassword && (
-                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <p className="text-xs font-medium text-amber-800">Mot de passe temporaire: <span className="font-mono bg-amber-100 px-2 py-0.5 rounded">{createdTempPassword}</span></p>
-                    <p className="text-xs text-amber-600 mt-1">Communiquez ce mot de passe au client</p>
-                  </div>
-                )}
-              </Card>
-            ) : createMode ? (
-              <Card className="p-4 border-2 border-sky-200 bg-sky-50/30">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-gray-900 flex items-center gap-2"><UserPlus className="w-4 h-4 text-sky-600" /> Nouveau compte</h4>
-                  <Button size="sm" variant="ghost" onClick={() => setCreateMode(false)}><X className="w-4 h-4" /></Button>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Input label="Prenom" value={newUser.prenom} onChange={(e) => setNewUser({ ...newUser, prenom: e.target.value })} required />
-                  <Input label="Nom" value={newUser.nom} onChange={(e) => setNewUser({ ...newUser, nom: e.target.value })} required />
-                  <Input label="Email" type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} required />
-                  <Input label="Telephone" value={newUser.telephone} onChange={(e) => setNewUser({ ...newUser, telephone: e.target.value })} />
-                  <div className="col-span-2">
-                    <Input label="Mot de passe (auto-genere si vide)" type="text" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} />
-                  </div>
-                </div>
-                <div className="flex justify-end mt-4">
-                  <Button onClick={handleCreateUser} loading={submitting}><UserPlus className="w-4 h-4" /> Creer le compte</Button>
-                </div>
-              </Card>
-            ) : (
-              <>
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Rechercher par nom, email..."
-                      icon={<Search className="w-5 h-5" />}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  <Button variant="outline" onClick={() => setCreateMode(true)}>
-                    <UserPlus className="w-4 h-4" /> Nouveau
-                  </Button>
-                </div>
-                {searching && <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>}
-                {!searching && searchResults.length > 0 && (
-                  <div className="space-y-1 max-h-48 overflow-y-auto">
-                    {searchResults.map(u => (
-                      <button key={u.id} onClick={() => selectUser(u)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 border border-gray-200 text-left transition-colors">
-                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center"><User className="w-4 h-4 text-gray-500" /></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 text-sm">{u.prenom} {u.nom}</p>
-                          <p className="text-xs text-gray-500">{u.email}</p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {!searching && searchQuery.length >= 2 && searchResults.length === 0 && (
-                  <div className="text-center py-6">
-                    <p className="text-gray-500 text-sm mb-3">Aucun utilisateur trouve</p>
-                    <Button size="sm" variant="outline" onClick={() => { setCreateMode(true); setNewUser(prev => ({ ...prev, email: searchQuery.includes("@") ? searchQuery : "" })); }}>
-                      <UserPlus className="w-4 h-4" /> Creer un nouveau compte
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
+            <p className="text-sm text-gray-500">
+              Recherchez un client existant ou créez-en un nouveau via "Nouveau".
+            </p>
+            <UserSelector
+              value={selectedUser}
+              onChange={handleUserSelected}
+              label="Client"
+              required
+            />
           </div>
         )}
 

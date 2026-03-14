@@ -823,7 +823,7 @@ class ApiClient {
     });
   }
 
-  async adminCreateUser(data: { email: string; nom: string; prenom: string; telephone?: string; password?: string }) {
+  async adminCreateUser(data: { email: string; nom: string; prenom: string; telephone?: string; password?: string; entreprise?: string; profession?: string; role?: string }) {
     return this.request("/admin/users-create.php", {
       method: "POST",
       body: JSON.stringify(data),

@@ -44,11 +44,11 @@ import { logger } from "../../../utils/logger";
 import { emailService } from "../../../services/email-service";
 import HotelCalendar from "../../../components/admin/HotelCalendar";
 import ReservationDrawer from "../../../components/admin/ReservationDrawer";
+import { UserSelector, type SelectedUser } from "../../../components/admin/UserSelector";
 import type { Reservation } from "../../../types";
 import { WORKING_HOURS } from "../../../constants/algeria";
 
 interface CreateReservationForm {
-  user_id: string;
   espace_id: string;
   date_debut: string;
   heure_debut: string;
@@ -56,13 +56,6 @@ interface CreateReservationForm {
   heure_fin: string;
   participants: number;
   notes: string;
-}
-
-interface User {
-  id: string;
-  nom: string;
-  prenom: string;
-  email: string;
 }
 
 type SortField = "date" | "user" | "space" | "amount" | "status";
@@ -91,7 +84,7 @@ const Reservations = () => {
   const [selectedReservation, setSelectedReservation] = useState<string | null>(null);
   const [createLoading, setCreateLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,7 +95,6 @@ const Reservations = () => {
   const [drawerReservation, setDrawerReservation] = useState<Reservation | null>(null);
 
   const [formData, setFormData] = useState<CreateReservationForm>({
-    user_id: "",
     espace_id: "",
     date_debut: "",
     heure_debut: WORKING_HOURS.START,
@@ -113,29 +105,10 @@ const Reservations = () => {
   });
 
   useEffect(() => {
-    loadUsers();
-  }, []);
-
-  useEffect(() => {
     const handleClickOutside = () => setActionMenu(null);
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
-
-  const loadUsers = async () => {
-    try {
-      const response = await apiClient.getUsers();
-      if (response.success && response.data) {
-        const responseData = response.data as { data?: User[] } | User[];
-        const userData = Array.isArray(responseData)
-          ? responseData
-          : responseData.data || [];
-        setUsers(userData);
-      }
-    } catch (error) {
-      logger.error("Erreur chargement utilisateurs:", error as Error);
-    }
-  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -146,7 +119,6 @@ const Reservations = () => {
 
   const resetForm = () => {
     setFormData({
-      user_id: "",
       espace_id: "",
       date_debut: "",
       heure_debut: WORKING_HOURS.START,
@@ -155,11 +127,12 @@ const Reservations = () => {
       participants: 1,
       notes: "",
     });
+    setSelectedUser(null);
   };
 
   const handleCreateReservation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.user_id || !formData.espace_id || !formData.date_debut || !formData.date_fin) {
+    if (!selectedUser || !formData.espace_id || !formData.date_debut || !formData.date_fin) {
       toast.error("Veuillez remplir tous les champs obligatoires");
       return;
     }
@@ -203,7 +176,7 @@ const Reservations = () => {
       const dateDebut = `${formData.date_debut}T${formData.heure_debut}:00`;
       const dateFin = `${formData.date_fin}T${formData.heure_fin}:00`;
       const response = await apiClient.post("/reservations/create.php", {
-        user_id: formData.user_id,
+        user_id: selectedUser.id,
         espace_id: formData.espace_id,
         date_debut: dateDebut,
         date_fin: dateFin,
@@ -981,25 +954,12 @@ const Reservations = () => {
         <form onSubmit={handleCreateReservation} className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Client <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <select
-                  value={formData.user_id}
-                  onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm bg-white appearance-none cursor-pointer"
-                  required
-                >
-                  <option value="">Sélectionner un client</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.prenom} {user.nom} - {user.email}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <UserSelector
+                value={selectedUser}
+                onChange={setSelectedUser}
+                label="Client"
+                required
+              />
             </div>
 
             <div>

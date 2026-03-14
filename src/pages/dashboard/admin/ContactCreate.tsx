@@ -5,9 +5,8 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import SelectNative from '../../../components/ui/SelectNative';
 import Textarea from '../../../components/ui/Textarea';
-import Checkbox from '../../../components/ui/Checkbox';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
-import { ArrowLeft, Save, UserPlus } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { ContactSource, ContactStatut } from '../../../types';
 
@@ -32,7 +31,6 @@ export default function ContactCreate() {
   const navigate = useNavigate();
   const { createContact } = useContactStore();
   const [loading, setLoading] = useState(false);
-  const [createAsUser, setCreateAsUser] = useState(false);
 
   const [formData, setFormData] = useState({
     nom: '',
@@ -67,10 +65,6 @@ export default function ContactCreate() {
       newErrors.email = 'Format d\'email invalide';
     }
 
-    if (createAsUser && !formData.email.trim()) {
-      newErrors.email = 'Un email est requis pour créer un compte utilisateur';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -98,12 +92,7 @@ export default function ContactCreate() {
       }
 
       toast.success('Contact créé avec succès');
-
-      if (createAsUser) {
-        navigate(`/app/admin/contacts/${contact.id}?convertToUser=true`);
-      } else {
-        navigate(`/app/admin/contacts/${contact.id}`);
-      }
+      navigate(`/app/admin/contacts/${contact.id}`);
     } catch (error: any) {
       toast.error(error.message || 'Erreur lors de la création du contact');
     } finally {
@@ -177,7 +166,7 @@ export default function ContactCreate() {
 
             <div>
               <label className="block text-sm font-medium text-primary mb-2">
-                Email {createAsUser && <span className="text-red-500">*</span>}
+                Email
               </label>
               <Input
                 type="email"
@@ -285,30 +274,6 @@ export default function ContactCreate() {
               />
               <p className="text-xs text-muted mt-1">
                 Ces notes sont uniquement visibles par l'équipe
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <div className="flex items-start gap-3">
-            <Checkbox
-              id="createAsUser"
-              checked={createAsUser}
-              onChange={(e) => setCreateAsUser(e.target.checked)}
-              disabled={loading}
-            />
-            <div className="flex-1">
-              <label
-                htmlFor="createAsUser"
-                className="text-sm font-medium text-primary cursor-pointer flex items-center gap-2"
-              >
-                <UserPlus className="w-4 h-4" />
-                Créer également un compte utilisateur
-              </label>
-              <p className="text-xs text-muted mt-1">
-                Un compte utilisateur sera créé après la création du contact. Un email avec un
-                mot de passe temporaire sera envoyé.
               </p>
             </div>
           </div>

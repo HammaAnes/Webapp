@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useContactStore } from '../../../store/contactStore';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -8,6 +8,7 @@ import Textarea from '../../../components/ui/Textarea';
 import Badge from '../../../components/ui/Badge';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import Modal from '../../../components/ui/Modal';
+import { CreateUserModal } from '../../../components/admin/CreateUserModal';
 import { ArrowLeft, FileEdit as Edit, Save, X, Trash2, UserPlus, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDate, formatCurrency } from '../../../utils/formatters';
@@ -17,12 +18,11 @@ import type { Contact, ContactHistory } from '../../../types';
 export default function ContactDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { currentContact, loading, fetchContactById, updateContact, deleteContact, convertToUser } = useContactStore();
+  const { currentContact, loading, fetchContactById, updateContact, deleteContact } = useContactStore();
 
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [formData, setFormData] = useState<Partial<Contact>>({});
 
   useEffect(() => {
@@ -34,13 +34,8 @@ export default function ContactDetail() {
   useEffect(() => {
     if (currentContact) {
       setFormData(currentContact);
-
-      const shouldConvert = searchParams.get('convertToUser');
-      if (shouldConvert === 'true' && !currentContact.userId) {
-        setShowConvertModal(true);
-      }
     }
-  }, [currentContact, searchParams]);
+  }, [currentContact]);
 
   const handleUpdate = async () => {
     if (!id) return;
@@ -67,23 +62,6 @@ export default function ContactDetail() {
     }
   };
 
-  const handleConvert = async () => {
-    if (!id) return;
-
-    try {
-      const result = await convertToUser(id, true);
-      toast.success(
-        <div>
-          <p>Contact converti en utilisateur</p>
-          <p className="text-xs mt-1">Mot de passe: {result.temporaryPassword}</p>
-        </div>
-      );
-      setShowConvertModal(false);
-      fetchContactById(id);
-    } catch (error: any) {
-      toast.error(error.message || 'Erreur lors de la conversion');
-    }
-  };
 
   if (loading && !currentContact) {
     return (
@@ -131,11 +109,11 @@ export default function ContactDetail() {
           {!contact.userId && (
             <Button
               variant="outline"
-              onClick={() => setShowConvertModal(true)}
+              onClick={() => setShowCreateUserModal(true)}
               className="flex items-center gap-2"
             >
               <UserPlus className="w-4 h-4" />
-              Convertir en utilisateur
+              Créer un compte
             </Button>
           )}
           {isEditing ? (
@@ -412,24 +390,25 @@ export default function ContactDetail() {
         </div>
       </Modal>
 
-      <Modal
-        isOpen={showConvertModal}
-        onClose={() => setShowConvertModal(false)}
-        title="Convertir en utilisateur"
-      >
-        <p className="text-muted mb-6">
-          Cette action va créer un compte utilisateur pour ce contact et transférer toutes ses
-          réservations et domiciliations. Un email avec un mot de passe temporaire sera envoyé.
-        </p>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setShowConvertModal(false)} className="flex-1">
-            Annuler
-          </Button>
-          <Button onClick={handleConvert} className="flex-1">
-            Convertir
-          </Button>
-        </div>
-      </Modal>
+      <CreateUserModal
+        isOpen={showCreateUserModal}
+        onClose={() => setShowCreateUserModal(false)}
+        onUserCreated={() => {
+          setShowCreateUserModal(false);
+          if (id) fetchContactById(id);
+        }}
+        initialData={
+          currentContact
+            ? {
+                prenom: currentContact.prenom,
+                nom: currentContact.nom,
+                email: currentContact.email || undefined,
+                telephone: currentContact.telephone || undefined,
+                contactId: id,
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }
