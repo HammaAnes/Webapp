@@ -38,7 +38,7 @@ try {
 
     Response::success([
         'code' => $parrainage['code_parrain'],
-        'parrain_nom' => trim(($parrainage['prenom'] ?? '') . ' ' . ($parrainage['nom'] ?? '')),
+        'parrain_nom' => $parrainage['nom'] . ' ' . $parrainage['prenom'],
         'valid' => true
     ], "Code parrainage valide");
 
