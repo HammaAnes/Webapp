@@ -18,6 +18,11 @@ import {
   AlertTriangle,
   ArrowRight,
   RefreshCw,
+  CheckCircle2,
+  Circle,
+  ExternalLink,
+  Hash,
+  Star,
 } from "lucide-react";
 import Card from "../ui/Card";
 import Badge from "../ui/Badge";
@@ -52,33 +57,87 @@ const parseDocuments = (documents: unknown): Array<{ type: string; name: string 
   return [];
 };
 
-const NEXT_STEPS: Record<string, { title: string; description: string; icon: React.ComponentType<{ className?: string }> }> = {
-  dossier_preparatoire: {
-    title: "En attente de validation",
-    description: "Notre équipe examine votre dossier. Vous recevrez une notification dès que le dossier sera validé. Délai moyen : 24-48h.",
-    icon: Clock,
-  },
-  en_attente_signature: {
-    title: "Signature chez le notaire requise",
-    description: "Votre dossier a été validé. Veuillez vous rendre chez le notaire pour la signature du contrat de domiciliation. Contactez-nous pour convenir d'un rendez-vous.",
-    icon: FileCheck,
-  },
-  domiciliation_creee: {
-    title: "Complétez vos démarches administratives",
-    description: "Votre domiciliation est juridiquement créée. Effectuez vos démarches d'immatriculation (RC, NIF, NIS) puis complétez les informations ci-dessous.",
-    icon: FileText,
-  },
-  en_attente_complements: {
-    title: "Complétez vos informations",
-    description: "Renseignez vos identifiants administratifs obtenus après la création de votre entreprise pour activer pleinement votre domiciliation.",
-    icon: ArrowRight,
-  },
-  active: {
-    title: "Domiciliation active",
-    description: "Votre domiciliation est pleinement opérationnelle. Consultez votre courrier et vos documents dans les onglets dédiés.",
-    icon: Building,
-  },
-};
+interface ChecklistItem {
+  label: string;
+  done: boolean;
+  note?: string;
+  urgent?: boolean;
+}
+
+function getChecklist(demande: DemandeDomiciliationWithDetails): ChecklistItem[] {
+  const items: ChecklistItem[] = [];
+  const isAE = demande.typeStructure === "auto_entrepreneur";
+
+  switch (demande.statut) {
+    case "dossier_preparatoire":
+      items.push({ label: "Dossier soumis", done: true });
+      items.push({ label: "Examen du dossier par Coffice", done: false, note: "24–48h ouvrées" });
+      items.push({ label: "Validation et passage en signature", done: false });
+      break;
+    case "en_attente_signature":
+      items.push({ label: "Dossier validé par Coffice", done: true });
+      items.push({
+        label: "Prise de rendez-vous chez le notaire",
+        done: false,
+        urgent: true,
+        note: "Contactez-nous pour convenir d'une date",
+      });
+      items.push({ label: "Signature du contrat de domiciliation", done: false });
+      break;
+    case "domiciliation_creee":
+      items.push({ label: "Contrat signé chez le notaire", done: true });
+      items.push({
+        label: isAE ? "Obtenir votre numéro d'auto-entrepreneur" : "Immatriculation au CNRC (Registre de Commerce)",
+        done: false,
+        urgent: true,
+      });
+      if (!isAE) {
+        items.push({
+          label: "Obtenir le NIF et NIS auprès des impôts",
+          done: false,
+        });
+      }
+      items.push({
+        label: "Renseigner vos identifiants dans l'espace pro",
+        done: false,
+        note: "Formulaire ci-dessous",
+      });
+      break;
+    case "en_attente_complements":
+      items.push({ label: "Contrat signé chez le notaire", done: true });
+      items.push({
+        label: isAE ? "Numéro d'auto-entrepreneur renseigné" : "NIF et NIS renseignés",
+        done: !!(isAE ? demande.numeroAutoEntrepreneur : demande.nif && demande.nis),
+        urgent: !(isAE ? demande.numeroAutoEntrepreneur : demande.nif && demande.nis),
+      });
+      if (!isAE) {
+        items.push({
+          label: "Registre de Commerce renseigné",
+          done: !!demande.registreCommerce,
+          urgent: !demande.registreCommerce,
+        });
+      }
+      items.push({ label: "Validation finale par Coffice", done: false });
+      break;
+    case "active":
+      items.push({ label: "Domiciliation active", done: true });
+      items.push({ label: "Adresse enregistrée au siège social", done: true });
+      if (demande.options?.receptionCourrier) {
+        items.push({ label: "Service courrier activé", done: true });
+      }
+      if (demande.dateFinContrat) {
+        const days = differenceInDays(new Date(demande.dateFinContrat), new Date());
+        items.push({
+          label: `Contrat valide jusqu'au ${format(new Date(demande.dateFinContrat), "dd MMM yyyy", { locale: fr })}`,
+          done: days > 30,
+          urgent: days <= 30 && days > 0,
+          note: days <= 0 ? "Expiré" : days <= 30 ? `Expire dans ${days}j` : undefined,
+        });
+      }
+      break;
+  }
+  return items;
+}
 
 const DemandeSummary: React.FC<DemandeSummaryProps> = ({
   demande,
@@ -125,12 +184,12 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
     ? differenceInDays(new Date(demande.dateFinContrat), new Date())
     : null;
 
-  const nextStep = NEXT_STEPS[demande.statut];
+  const checklist = getChecklist(demande);
 
   const copyAddress = () => {
-    const addr = `Coffice - Bureau ${demande.numeroBureau}, 4\u00e8me \u00e9tage, Mohammadia Mall, Alger`;
+    const addr = `Coffice - Bureau ${demande.numeroBureau}, 4ème étage, Mohammadia Mall, Alger`;
     navigator.clipboard.writeText(addr);
-    toast.success("Adresse copiée");
+    toast.success("Adresse copiée !");
   };
 
   return (
@@ -146,9 +205,9 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
               <StatusIcon className="w-8 h-8 text-white" />
             </div>
             <div className="flex-1">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-3">
                 <h3 className="text-2xl font-bold text-gray-900">{status.label}</h3>
-                <Badge variant={getBadgeVariant()} className="text-sm px-4 py-2">
+                <Badge variant={getBadgeVariant()} className="text-sm px-4 py-2 self-start md:self-center">
                   {status.label}
                 </Badge>
               </div>
@@ -162,9 +221,9 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
                   </span>
                 </div>
                 {demande.numeroBureau && (
-                  <div className="flex items-center gap-2 font-semibold text-amber-700">
+                  <div className="flex items-center gap-2 font-semibold text-amber-700 bg-amber-100 px-3 py-1 rounded-lg">
                     <Building className="w-4 h-4" />
-                    <span>Bureau n&#176;{demande.numeroBureau}</span>
+                    <span>Bureau n°{demande.numeroBureau}</span>
                   </div>
                 )}
               </div>
@@ -173,42 +232,37 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
         </div>
       </Card>
 
-      <WorkflowTracker statut={demande.statut} />
-
       {demande.statut === "active" && demande.numeroBureau && (
-        <Card className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-300">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-              <MapPin className="w-7 h-7 text-emerald-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-bold text-emerald-900 text-lg mb-1">Votre adresse de domiciliation</h3>
-              <p className="text-emerald-800 font-medium text-base">
-                Coffice - Bureau {demande.numeroBureau}
-              </p>
-              <p className="text-emerald-700 text-sm">4ème étage, Mohammadia Mall</p>
-              <p className="text-emerald-700 text-sm">Alger, Algérie</p>
-              <button
-                onClick={copyAddress}
-                className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                Copier l'adresse
-              </button>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {nextStep && !isTerminal && (
-        <Card className="p-5 border border-sky-200 bg-sky-50/50">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 bg-sky-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <nextStep.icon className="w-5 h-5 text-sky-600" />
-            </div>
-            <div>
-              <h4 className="font-bold text-sky-900 mb-1">{nextStep.title}</h4>
-              <p className="text-sm text-sky-700">{nextStep.description}</p>
+        <Card className="p-0 overflow-hidden border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-teal-50">
+          <div className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                <MapPin className="w-7 h-7 text-emerald-600" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-bold text-emerald-900 text-lg">Votre adresse de domiciliation</h3>
+                  <Star className="w-4 h-4 text-emerald-500 fill-emerald-500" />
+                </div>
+                <p className="text-emerald-800 font-semibold text-base">
+                  Coffice — Bureau {demande.numeroBureau}
+                </p>
+                <p className="text-emerald-700 text-sm">4ème étage, Mohammadia Mall</p>
+                <p className="text-emerald-700 text-sm">16000 Alger, Algérie</p>
+                <div className="flex gap-2 mt-3 flex-wrap">
+                  <button
+                    onClick={copyAddress}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg transition-colors border border-emerald-200"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    Copier l'adresse
+                  </button>
+                  <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Adresse officielle de votre siège
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </Card>
@@ -231,11 +285,12 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
               </div>
               <div className="flex-1">
                 <h4 className={`font-bold ${c.title} mb-1`}>
-                  {urgency === "critical" ? "Expiration imminente" : urgency === "high" ? "Expiration tres proche" : "Contrat bientot a echeance"}
+                  {urgency === "critical" ? "Expiration imminente !" : urgency === "high" ? "Expiration très proche" : "Contrat bientôt à échéance"}
                 </h4>
                 <p className={`text-sm ${c.text}`}>
                   Votre contrat expire dans <strong>{daysUntilExpiry} jour{daysUntilExpiry > 1 ? "s" : ""}</strong> (le{" "}
                   {format(new Date(demande.dateFinContrat!), "dd MMMM yyyy", { locale: fr })}).
+                  Renouvelez dès maintenant pour assurer la continuité de votre domiciliation.
                 </p>
                 {onRenewalRequest && (
                   <Button
@@ -253,14 +308,73 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
         );
       })()}
 
+      <WorkflowTracker statut={demande.statut} />
+
+      {checklist.length > 0 && !isTerminal && (
+        <Card className="p-6">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-xl flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 text-base">Prochaines étapes</h3>
+              <p className="text-xs text-gray-500">
+                {checklist.filter(i => i.done).length}/{checklist.length} accompli{checklist.filter(i => i.done).length > 1 ? "s" : ""}
+              </p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {checklist.map((item, idx) => (
+              <div
+                key={idx}
+                className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
+                  item.done
+                    ? "bg-emerald-50 border border-emerald-200"
+                    : item.urgent
+                    ? "bg-amber-50 border border-amber-200"
+                    : "bg-gray-50 border border-gray-200"
+                }`}
+              >
+                <div className="mt-0.5 flex-shrink-0">
+                  {item.done ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  ) : item.urgent ? (
+                    <AlertCircle className="w-5 h-5 text-amber-500" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-gray-300" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${item.done ? "text-emerald-800 line-through opacity-70" : item.urgent ? "text-amber-900" : "text-gray-700"}`}>
+                    {item.label}
+                  </p>
+                  {item.note && (
+                    <p className={`text-xs mt-0.5 ${item.done ? "text-emerald-600" : item.urgent ? "text-amber-600" : "text-gray-500"}`}>
+                      {item.note}
+                    </p>
+                  )}
+                </div>
+                {item.urgent && !item.done && (
+                  <span className="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full flex-shrink-0">
+                    À faire
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CompanyInfoCard demande={demande} />
         {demande.representantLegal && <ContactCard demande={demande} />}
       </div>
 
-      {docs.length > 0 && <DocumentsCard docs={docs} />}
-
       {selectedOptions.length > 0 && <OptionsCard options={selectedOptions} estimatedTotal={estimatedTotal} />}
+
+      {showContract && <ContractCard demande={demande} daysUntilExpiry={daysUntilExpiry} />}
+
+      {docs.length > 0 && <DocumentsCard docs={docs} />}
 
       {(demande.statut === "refusee" || demande.statut === "resiliee") && demande.commentaireAdmin && (
         <Card className="p-6 bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-200">
@@ -278,8 +392,6 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
         </Card>
       )}
 
-      {showContract && <ContractCard demande={demande} daysUntilExpiry={daysUntilExpiry} />}
-
       {showPostCreation && (
         <PostCreationForm demande={demande} loading={loading} onSubmit={onPostCreationSubmit} />
       )}
@@ -289,7 +401,9 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
           <FileCheck className="w-12 h-12 text-amber-500 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-900 mb-2">Soumettre une nouvelle demande</h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Vous pouvez corriger les informations et soumettre une nouvelle demande.
+            {demande.statut === "refusee"
+              ? "Corrigez les points signalés et soumettez une nouvelle demande."
+              : "Votre contrat est terminé. Vous pouvez initier une nouvelle domiciliation."}
           </p>
           <Button
             onClick={onNewDemande}
@@ -300,66 +414,97 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
           </Button>
         </Card>
       )}
+
+      {demande.statut === "expiree" && onRenewalRequest && (
+        <Card className="p-6 text-center bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300">
+          <Clock className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Votre contrat a expiré</h3>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            Renouvelez votre domiciliation pour continuer à bénéficier de nos services et maintenir la conformité de votre entreprise.
+          </p>
+          <Button
+            onClick={onRenewalRequest}
+            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+          >
+            <RefreshCw className="w-5 h-5 mr-2" />
+            Demander le renouvellement
+          </Button>
+        </Card>
+      )}
     </motion.div>
   );
 };
 
-const ContractCard: React.FC<{ demande: DemandeDomiciliationWithDetails; daysUntilExpiry: number | null }> = ({ demande }) => (
-  <Card className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200">
-    <div className="flex items-start gap-4">
-      <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
-        <CreditCard className="w-6 h-6 text-emerald-600" />
-      </div>
-      <div className="flex-1">
-        <h3 className="font-bold text-emerald-900 mb-2 text-lg">Contrat de domiciliation</h3>
-        <p className="text-3xl font-bold text-emerald-700">
-          {Number(demande.montantMensuel).toLocaleString()} DA
-          <span className="text-base font-normal text-emerald-600"> / mois</span>
-        </p>
-        {demande.referenceContratNotarie && (
-          <p className="text-sm text-emerald-600 mt-2">
-            Référence contrat : <span className="font-semibold text-emerald-800">{demande.referenceContratNotarie}</span>
-          </p>
-        )}
-        {demande.dateDebutContrat && demande.dateFinContrat && (
-          <div className="mt-4 pt-4 border-t border-emerald-200">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-emerald-600">Date de début :</span>
-                <p className="font-semibold text-emerald-900">
-                  {format(new Date(demande.dateDebutContrat), "dd MMMM yyyy", { locale: fr })}
-                </p>
-              </div>
-              <div>
-                <span className="text-emerald-600">Date de fin :</span>
-                <p className="font-semibold text-emerald-900">
-                  {format(new Date(demande.dateFinContrat), "dd MMMM yyyy", { locale: fr })}
-                </p>
-              </div>
+const ContractCard: React.FC<{ demande: DemandeDomiciliationWithDetails; daysUntilExpiry: number | null }> = ({ demande, daysUntilExpiry }) => {
+  const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+
+  return (
+    <Card className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200">
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+          <CreditCard className="w-6 h-6 text-emerald-600" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-bold text-emerald-900 mb-3 text-lg">Contrat de domiciliation</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white/60 rounded-xl p-3 border border-emerald-200">
+              <p className="text-xs text-emerald-600 font-medium mb-1">Montant mensuel</p>
+              <p className="text-xl font-bold text-emerald-800">
+                {Number(demande.montantMensuel).toLocaleString()} DA
+              </p>
             </div>
+            {demande.dateDebutContrat && (
+              <div className="bg-white/60 rounded-xl p-3 border border-emerald-200">
+                <p className="text-xs text-emerald-600 font-medium mb-1">Début du contrat</p>
+                <p className="font-semibold text-emerald-900 text-sm">
+                  {format(new Date(demande.dateDebutContrat), "dd MMM yyyy", { locale: fr })}
+                </p>
+              </div>
+            )}
+            {demande.dateFinContrat && (
+              <div className={`bg-white/60 rounded-xl p-3 border ${isExpiringSoon ? "border-amber-300" : "border-emerald-200"}`}>
+                <p className={`text-xs font-medium mb-1 ${isExpiringSoon ? "text-amber-600" : "text-emerald-600"}`}>
+                  Fin du contrat {isExpiringSoon && "⚠️"}
+                </p>
+                <p className={`font-semibold text-sm ${isExpiringSoon ? "text-amber-900" : "text-emerald-900"}`}>
+                  {format(new Date(demande.dateFinContrat), "dd MMM yyyy", { locale: fr })}
+                </p>
+                {isExpiringSoon && daysUntilExpiry !== null && (
+                  <p className="text-xs text-amber-600 mt-0.5 font-medium">
+                    Dans {daysUntilExpiry}j
+                  </p>
+                )}
+              </div>
+            )}
           </div>
-        )}
+          {demande.referenceContratNotarie && (
+            <div className="mt-3 flex items-center gap-2 text-sm text-emerald-700">
+              <Hash className="w-3.5 h-3.5" />
+              <span>Référence : <span className="font-semibold">{demande.referenceContratNotarie}</span></span>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  </Card>
-);
+    </Card>
+  );
+};
 
 const DocumentsCard: React.FC<{ docs: Array<{ type: string; name: string }> }> = ({ docs }) => (
   <Card className="p-6">
-    <div className="flex items-center gap-4 mb-6">
-      <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/25">
-        <FileText className="w-6 h-6 text-white" />
+    <div className="flex items-center gap-4 mb-5">
+      <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl flex items-center justify-center">
+        <FileText className="w-5 h-5 text-white" />
       </div>
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Documents fournis</h2>
-        <p className="text-sm text-gray-500">{docs.length} document(s) soumis</p>
+        <h2 className="text-base font-bold text-gray-900">Documents fournis</h2>
+        <p className="text-xs text-gray-500">{docs.length} document(s) soumis lors de la demande</p>
       </div>
     </div>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {docs.map((doc, idx) => (
-        <div key={idx} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-          <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
-            <FileText className="w-5 h-5 text-teal-600" />
+        <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+          <div className="w-9 h-9 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <FileText className="w-4 h-4 text-teal-600" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-900 truncate">{doc.name}</p>
@@ -373,20 +518,20 @@ const DocumentsCard: React.FC<{ docs: Array<{ type: string; name: string }> }> =
 
 const OptionsCard: React.FC<{ options: Array<{ key: string; label: string; price: number; included: boolean }>; estimatedTotal: number }> = ({ options, estimatedTotal }) => (
   <Card className="p-6">
-    <div className="flex items-center gap-4 mb-6">
-      <div className="w-12 h-12 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-sky-500/25">
-        <Package className="w-6 h-6 text-white" />
+    <div className="flex items-center gap-4 mb-5">
+      <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-xl flex items-center justify-center">
+        <Package className="w-5 h-5 text-white" />
       </div>
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Options selectionnees</h2>
-        <p className="text-sm text-gray-500">Services inclus dans votre contrat</p>
+        <h2 className="text-base font-bold text-gray-900">Services souscrits</h2>
+        <p className="text-xs text-gray-500">{options.length} service(s) inclus dans votre contrat</p>
       </div>
     </div>
     <div className="space-y-2">
       {options.map((opt) => (
-        <div key={opt.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div key={opt.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
           <div className="flex items-center gap-2">
-            <Package className="w-4 h-4 text-sky-500" />
+            <CheckCircle2 className={`w-4 h-4 ${opt.included ? "text-emerald-500" : "text-sky-500"}`} />
             <span className="text-sm font-medium text-gray-900">{opt.label}</span>
           </div>
           <span className={`text-sm font-semibold ${opt.included ? "text-emerald-600" : "text-gray-700"}`}>
@@ -395,8 +540,8 @@ const OptionsCard: React.FC<{ options: Array<{ key: string; label: string; price
         </div>
       ))}
     </div>
-    <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
-      <span className="text-sm font-medium text-gray-600">Total estime mensuel</span>
+    <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+      <span className="text-sm font-semibold text-gray-700">Total estimé mensuel</span>
       <span className="text-lg font-bold text-gray-900">{estimatedTotal.toLocaleString()} DA/mois</span>
     </div>
   </Card>
@@ -404,53 +549,82 @@ const OptionsCard: React.FC<{ options: Array<{ key: string; label: string; price
 
 const CompanyInfoCard: React.FC<{ demande: DemandeDomiciliationWithDetails }> = ({ demande }) => (
   <Card className="p-6">
-    <div className="flex items-center gap-4 mb-6">
-      <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/25">
-        <Building className="w-6 h-6 text-white" />
+    <div className="flex items-center gap-3 mb-5">
+      <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center">
+        <Building className="w-5 h-5 text-white" />
       </div>
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Informations Entreprise</h2>
-        <p className="text-sm text-gray-500">Détails de votre demande</p>
+        <h2 className="text-base font-bold text-gray-900">Informations entreprise</h2>
+        <p className="text-xs text-gray-500">Données de votre dossier</p>
       </div>
     </div>
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
         <InfoField label="Raison Sociale" value={demande.raisonSociale || "Non renseigné"} />
         <InfoField label="Forme Juridique" value={demande.formeJuridique || "Non renseigné"} />
       </div>
       {demande.numeroBureau && (
         <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-          <p className="text-xs text-amber-700 mb-1 uppercase tracking-wide font-medium">Numéro de Bureau</p>
-          <p className="text-2xl font-bold text-amber-800">Bureau {demande.numeroBureau}</p>
-          <p className="text-xs text-amber-600 mt-1">
-            <MapPin className="w-3 h-3 inline mr-1" />
-            Mohammadia Mall, 4e étage
-          </p>
+          <p className="text-xs text-amber-700 mb-1 uppercase tracking-wide font-semibold">Numéro de Bureau attribué</p>
+          <div className="flex items-center justify-between">
+            <p className="text-2xl font-bold text-amber-800">Bureau {demande.numeroBureau}</p>
+            <div className="text-right">
+              <p className="text-xs text-amber-600 flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                Mohammadia Mall, 4ème étage
+              </p>
+              <p className="text-xs text-amber-600">16000 Alger</p>
+            </div>
+          </div>
         </div>
       )}
       {demande.typeStructure === "auto_entrepreneur" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <InfoField label="Activité" value={demande.activiteExercee || demande.domaineActivite || "Non renseigné"} />
           {demande.numeroAutoEntrepreneur && (
-            <InfoField label="N. Auto-Entrepreneur" value={demande.numeroAutoEntrepreneur} />
+            <InfoField label="N° Auto-Entrepreneur" value={demande.numeroAutoEntrepreneur} />
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
-          <InfoField label="NIF" value={demande.nif || "Non renseigné"} />
-          <InfoField label="NIS" value={demande.nis || "Non renseigné"} />
+        <div className="grid grid-cols-2 gap-3">
+          <InfoField
+            label="NIF"
+            value={demande.nif || "Non renseigné"}
+            missing={!demande.nif}
+          />
+          <InfoField
+            label="NIS"
+            value={demande.nis || "Non renseigné"}
+            missing={!demande.nis}
+          />
           {demande.registreCommerce && <InfoField label="Registre Commerce" value={demande.registreCommerce} />}
-          {demande.articleImposition && <InfoField label="Article Imposition" value={demande.articleImposition} />}
+          {demande.articleImposition && <InfoField label="Article d'Imposition" value={demande.articleImposition} />}
         </div>
       )}
+      <div className="flex items-center gap-2 pt-2">
+        <span className={`text-xs px-2 py-1 rounded-lg font-medium ${
+          demande.situationAdministrative === "en_cours_creation"
+            ? "bg-amber-100 text-amber-700"
+            : "bg-sky-100 text-sky-700"
+        }`}>
+          {demande.situationAdministrative === "en_cours_creation" ? "En cours de création" : "Déjà créée"}
+        </span>
+        <span className={`text-xs px-2 py-1 rounded-lg font-medium ${
+          demande.typeStructure === "auto_entrepreneur"
+            ? "bg-teal-100 text-teal-700"
+            : "bg-gray-100 text-gray-600"
+        }`}>
+          {demande.typeStructure === "auto_entrepreneur" ? "Auto-entrepreneur" : "Société"}
+        </span>
+      </div>
     </div>
   </Card>
 );
 
-const InfoField: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-    <p className="text-xs text-gray-500 mb-1 uppercase tracking-wide font-medium">{label}</p>
-    <p className="font-semibold text-gray-900">{value}</p>
+const InfoField: React.FC<{ label: string; value: string; missing?: boolean }> = ({ label, value, missing }) => (
+  <div className={`rounded-xl p-3.5 border ${missing ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-200"}`}>
+    <p className={`text-xs mb-1 uppercase tracking-wide font-medium ${missing ? "text-amber-600" : "text-gray-500"}`}>{label}</p>
+    <p className={`font-semibold text-sm ${missing ? "text-amber-700 italic" : "text-gray-900"}`}>{value}</p>
   </div>
 );
 
@@ -460,41 +634,43 @@ const ContactCard: React.FC<{ demande: DemandeDomiciliationWithDetails }> = ({ d
 
   return (
     <Card className="p-6">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-12 h-12 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-sky-500/25">
-          <User className="w-6 h-6 text-white" />
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-xl flex items-center justify-center">
+          <User className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Représentant Légal</h2>
-          <p className="text-sm text-gray-500">Contact principal</p>
+          <h2 className="text-base font-bold text-gray-900">Représentant légal</h2>
+          <p className="text-xs text-gray-500">Contact principal du dossier</p>
         </div>
       </div>
-      <div className="bg-sky-50 rounded-xl p-5 border border-sky-200">
+      <div className="bg-sky-50 rounded-xl p-4 border border-sky-200">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 bg-sky-200 rounded-full flex items-center justify-center">
             <User className="w-5 h-5 text-sky-700" />
           </div>
           <div>
             <p className="font-semibold text-gray-900">{rep.prenom} {rep.nom}</p>
-            {rep.fonction && <p className="text-sm text-gray-600">{rep.fonction}</p>}
+            {rep.fonction && <p className="text-sm text-gray-500">{rep.fonction}</p>}
           </div>
         </div>
-        <div className="space-y-3 pt-3 border-t border-sky-200">
+        <div className="space-y-2.5 pt-3 border-t border-sky-200">
           {rep.email && (
-            <a href={`mailto:${rep.email}`} className="flex items-center gap-2 text-sky-700 hover:text-sky-800 transition-colors">
-              <Mail className="w-4 h-4" />
-              <span className="text-sm font-medium">{rep.email}</span>
+            <a href={`mailto:${rep.email}`} className="flex items-center gap-2 text-sky-700 hover:text-sky-900 transition-colors group">
+              <Mail className="w-4 h-4 flex-shrink-0" />
+              <span className="text-sm font-medium truncate group-hover:underline">{rep.email}</span>
+              <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
             </a>
           )}
           {rep.telephone && (
-            <a href={`tel:${rep.telephone}`} className="flex items-center gap-2 text-sky-700 hover:text-sky-800 transition-colors">
-              <Phone className="w-4 h-4" />
-              <span className="text-sm font-medium">{rep.telephone}</span>
+            <a href={`tel:${rep.telephone}`} className="flex items-center gap-2 text-sky-700 hover:text-sky-900 transition-colors group">
+              <Phone className="w-4 h-4 flex-shrink-0" />
+              <span className="text-sm font-medium group-hover:underline">{rep.telephone}</span>
+              <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
             </a>
           )}
           {rep.ville && (
             <div className="flex items-center gap-2 text-sky-700">
-              <MapPin className="w-4 h-4" />
+              <MapPin className="w-4 h-4 flex-shrink-0" />
               <span className="text-sm font-medium">{rep.ville}</span>
             </div>
           )}

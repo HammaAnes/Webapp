@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { differenceInDays } from "date-fns";
 import {
   Building,
   Search,
@@ -24,6 +25,7 @@ import {
   ArrowDown,
   Loader2,
   Plus,
+  AlertTriangle,
 } from "lucide-react";
 import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
@@ -147,6 +149,20 @@ const AdminDomiciliations = () => {
       .reduce((sum, d) => sum + (d.montantMensuel || 0), 0),
   }), [demandesDomiciliation]);
 
+  const urgences = useMemo(() => {
+    const expiringIn30 = demandesDomiciliation.filter((d) => {
+      if (d.statut !== "active" || !d.dateFinContrat) return false;
+      const days = differenceInDays(new Date(d.dateFinContrat), new Date());
+      return days >= 0 && days <= 30;
+    });
+    const stagnant = demandesDomiciliation.filter((d) => {
+      if (["active", "refusee", "resiliee", "expiree"].includes(d.statut)) return false;
+      const age = Math.floor((Date.now() - new Date(d.dateCreation).getTime()) / (1000 * 60 * 60 * 24));
+      return age > 30;
+    });
+    return { expiringIn30, stagnant };
+  }, [demandesDomiciliation]);
+
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -236,6 +252,75 @@ const AdminDomiciliations = () => {
       </div>
 
       <StatsCards stats={stats} onFilter={setStatusFilter} />
+
+      {(urgences.expiringIn30.length > 0 || urgences.stagnant.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {urgences.expiringIn30.length > 0 && (
+            <Card className="p-4 bg-amber-50 border-2 border-amber-300">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-amber-900 mb-2">
+                    {urgences.expiringIn30.length} contrat{urgences.expiringIn30.length > 1 ? "s" : ""} expirant dans 30 jours
+                  </p>
+                  <div className="space-y-1.5">
+                    {urgences.expiringIn30.slice(0, 3).map((d) => {
+                      const days = differenceInDays(new Date(d.dateFinContrat!), new Date());
+                      return (
+                        <button
+                          key={d.id}
+                          onClick={() => navigate(`/app/admin/domiciliations/${d.id}`)}
+                          className="w-full flex items-center justify-between text-left hover:bg-amber-100 p-2 rounded-lg transition-colors"
+                        >
+                          <span className="text-sm font-medium text-amber-900">{getDisplayName(d)}</span>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${days <= 7 ? "bg-red-100 text-red-700" : "bg-amber-200 text-amber-800"}`}>
+                            {days}j restants
+                          </span>
+                        </button>
+                      );
+                    })}
+                    {urgences.expiringIn30.length > 3 && (
+                      <p className="text-xs text-amber-600 pl-2">+{urgences.expiringIn30.length - 3} autre(s)...</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+          {urgences.stagnant.length > 0 && (
+            <Card className="p-4 bg-red-50 border-2 border-red-200">
+              <div className="flex items-start gap-3">
+                <Clock className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-red-900 mb-2">
+                    {urgences.stagnant.length} dossier{urgences.stagnant.length > 1 ? "s" : ""} en attente depuis +30j
+                  </p>
+                  <div className="space-y-1.5">
+                    {urgences.stagnant.slice(0, 3).map((d) => {
+                      const age = Math.floor((Date.now() - new Date(d.dateCreation).getTime()) / (1000 * 60 * 60 * 24));
+                      return (
+                        <button
+                          key={d.id}
+                          onClick={() => navigate(`/app/admin/domiciliations/${d.id}`)}
+                          className="w-full flex items-center justify-between text-left hover:bg-red-100 p-2 rounded-lg transition-colors"
+                        >
+                          <span className="text-sm font-medium text-red-900">{getDisplayName(d)}</span>
+                          <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                            {age}j
+                          </span>
+                        </button>
+                      );
+                    })}
+                    {urgences.stagnant.length > 3 && (
+                      <p className="text-xs text-red-600 pl-2">+{urgences.stagnant.length - 3} autre(s)...</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
 
       <Card className="p-4">
         <div className="flex flex-col lg:flex-row gap-4">
@@ -367,12 +452,16 @@ function DomiciliationRow({ demande, onDetail }: { demande: DemandeDomiciliation
   const ageJours = Math.floor((Date.now() - createdTs) / (1000 * 60 * 60 * 24));
   const isStale = !["active", "refusee", "resiliee", "expiree"].includes(demande.statut) && ageJours > 7;
   const isVeryStale = isStale && ageJours > 30;
+  const daysUntilExpiry = demande.statut === "active" && demande.dateFinContrat
+    ? differenceInDays(new Date(demande.dateFinContrat), new Date())
+    : null;
+  const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
 
   return (
     <motion.tr
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`hover:bg-gray-50 transition-colors cursor-pointer ${isVeryStale ? "bg-red-50/40" : isStale ? "bg-amber-50/40" : ""}`}
+      className={`hover:bg-gray-50 transition-colors cursor-pointer ${isVeryStale ? "bg-red-50/40" : isStale ? "bg-amber-50/40" : isExpiringSoon ? "bg-amber-50/30" : ""}`}
       onClick={() => onDetail(demande)}
     >
       <td className="px-4 py-4">
@@ -427,6 +516,11 @@ function DomiciliationRow({ demande, onDetail }: { demande: DemandeDomiciliation
         {isStale && (
           <span className={`text-xs font-medium ${isVeryStale ? "text-red-600" : "text-amber-600"}`}>
             {ageJours}j {isVeryStale ? "(stagnant)" : "(en attente)"}
+          </span>
+        )}
+        {isExpiringSoon && daysUntilExpiry !== null && (
+          <span className={`text-xs font-bold ${daysUntilExpiry <= 7 ? "text-red-600" : "text-amber-600"}`}>
+            Expire dans {daysUntilExpiry}j
           </span>
         )}
       </td>

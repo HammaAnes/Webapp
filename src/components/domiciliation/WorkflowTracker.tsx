@@ -6,37 +6,37 @@ const STEPS = [
   {
     key: "dossier_preparatoire",
     label: "Dossier préparatoire",
-    description: "Dossier en cours d'examen",
+    description: "En cours d'examen",
+    detail: "24–48h ouvrées",
     icon: Clock,
-    color: "amber",
   },
   {
     key: "en_attente_signature",
     label: "Signature notariale",
     description: "Rendez-vous chez le notaire",
+    detail: "À planifier avec Coffice",
     icon: Scale,
-    color: "sky",
   },
   {
     key: "domiciliation_creee",
     label: "Domiciliation créée",
-    description: "Juridiquement créée",
+    description: "Juridiquement constituée",
+    detail: "Compléter les identifiants",
     icon: FileCheck,
-    color: "teal",
   },
   {
     key: "en_attente_complements",
-    label: "Complétion documents",
-    description: "Compléter les informations",
+    label: "Compléments requis",
+    description: "Renseigner les identifiants",
+    detail: "NIF, NIS, RC...",
     icon: FileText,
-    color: "orange",
   },
   {
     key: "active",
     label: "Active",
     description: "Pleinement opérationnelle",
+    detail: "Adresse utilisable",
     icon: PlayCircle,
-    color: "emerald",
   },
 ];
 
@@ -48,15 +48,14 @@ const STEP_ORDER: Record<string, number> = {
   active: 4,
 };
 
-const TERMINAL_STATES: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; color: string; description: string }> = {
-  refusee: { label: "Demande refusée", icon: XCircle, color: "red", description: "Votre demande a été refusée" },
-  resiliee: { label: "Domiciliation résiliée", icon: Ban, color: "red", description: "Votre domiciliation a été résiliée" },
-  expiree: { label: "Contrat expiré", icon: AlertTriangle, color: "amber", description: "Votre contrat a expiré" },
+const TERMINAL_STATES: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; isRed: boolean; description: string }> = {
+  refusee: { label: "Demande refusée", icon: XCircle, isRed: true, description: "Votre demande a été refusée. Consultez le motif et soumettez une nouvelle demande." },
+  resiliee: { label: "Domiciliation résiliée", icon: Ban, isRed: true, description: "Votre domiciliation a été résiliée." },
+  expiree: { label: "Contrat expiré", icon: AlertTriangle, isRed: false, description: "Votre contrat a expiré. Renouvelez votre domiciliation pour continuer." },
 };
 
 interface WorkflowTrackerProps {
   statut: string;
-  lastActiveStep?: string;
 }
 
 const WorkflowTracker: React.FC<WorkflowTrackerProps> = ({ statut }) => {
@@ -64,22 +63,52 @@ const WorkflowTracker: React.FC<WorkflowTrackerProps> = ({ statut }) => {
   const terminalInfo = TERMINAL_STATES[statut];
 
   const currentIdx = isTerminal
-    ? (statut === "refusee" ? 0 : statut === "expiree" ? 4 : 4)
-    : STEP_ORDER[statut];
+    ? (statut === "refusee" ? 0 : 4)
+    : (STEP_ORDER[statut] ?? 0);
+
+  const progressPct = isTerminal
+    ? (statut === "refusee" ? 5 : 100)
+    : Math.round(((currentIdx + 1) / STEPS.length) * 100);
 
   if (currentIdx === undefined && !isTerminal) return null;
 
   return (
     <Card className="p-6 md:p-8">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="font-bold text-gray-900 text-lg">Progression du dossier</h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-bold text-gray-900 text-base">Progression du dossier</h3>
+        <div className="flex items-center gap-2">
+          {isTerminal && terminalInfo ? (
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
+              terminalInfo.isRed ? "bg-red-100 text-red-700 border border-red-200" : "bg-amber-100 text-amber-700 border border-amber-200"
+            }`}>
+              <terminalInfo.icon className="w-3.5 h-3.5" />
+              {terminalInfo.label}
+            </span>
+          ) : (
+            <span className={`text-sm font-bold ${statut === "active" ? "text-emerald-600" : "text-amber-600"}`}>
+              {progressPct}%
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-700 ${
+              isTerminal && terminalInfo?.isRed
+                ? "bg-red-400"
+                : statut === "active"
+                ? "bg-gradient-to-r from-emerald-500 to-teal-500"
+                : "bg-gradient-to-r from-amber-400 to-orange-500"
+            }`}
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
         {isTerminal && terminalInfo && (
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
-            terminalInfo.color === "red" ? "bg-red-100 text-red-700 border border-red-200" : "bg-amber-100 text-amber-700 border border-amber-200"
-          }`}>
-            <terminalInfo.icon className="w-3.5 h-3.5" />
-            {terminalInfo.label}
-          </span>
+          <p className={`text-sm mt-2 ${terminalInfo.isRed ? "text-red-600" : "text-amber-700"}`}>
+            {terminalInfo.description}
+          </p>
         )}
       </div>
 
@@ -143,19 +172,19 @@ const WorkflowTracker: React.FC<WorkflowTrackerProps> = ({ statut }) => {
                   {step.label}
                 </span>
                 <span
-                  className={`text-[10px] mt-1 text-center leading-tight px-1 ${
+                  className={`text-[10px] mt-0.5 text-center leading-tight px-1 ${
                     isCancelled
-                      ? "text-red-600"
+                      ? "text-red-500"
                       : isActive
-                        ? "text-amber-600"
+                        ? "text-amber-500"
                         : isCompleted
-                          ? "text-emerald-600"
+                          ? "text-emerald-500"
                           : isTerminal
                             ? "text-gray-200"
                             : "text-gray-300"
                   }`}
                 >
-                  {step.description}
+                  {isActive ? (step as { detail?: string }).detail || step.description : isCompleted && !isTerminal ? "Complété" : step.description}
                 </span>
               </div>
               {index < STEPS.length - 1 && (
