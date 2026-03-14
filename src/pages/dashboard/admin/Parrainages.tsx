@@ -31,6 +31,9 @@ import { buildCsvContent } from "../../../utils/formatters";
 interface ParrainageDetail {
   id: string;
   parrainageId: string;
+  parrainId: string;
+  parrainNom: string;
+  parrainEmail: string;
   filleulId: string;
   filleulNom: string;
   filleulEmail: string;
@@ -121,16 +124,16 @@ const Parrainages = () => {
     const parrainMap = new Map<string, TopParrain>();
 
     data.forEach((p) => {
-      const parrainId = p.parrainageId;
+      const parrainId = p.parrainId;
       if (!parrainId) return;
 
       if (!parrainMap.has(parrainId)) {
-        const parrainUser = users.find((u) => u.id === parrainId);
+        const nameParts = (p.parrainNom || "").split(" ");
         parrainMap.set(parrainId, {
           id: parrainId,
-          prenom: parrainUser?.prenom || "Parrain",
-          nom: parrainUser?.nom || `#${parrainId.slice(0, 6)}`,
-          email: parrainUser?.email || "",
+          prenom: nameParts[0] || "Parrain",
+          nom: nameParts.slice(1).join(" ") || `#${parrainId.slice(0, 6)}`,
+          email: p.parrainEmail || "",
           count: 0,
           credits: 0,
         });
@@ -369,6 +372,9 @@ const Parrainages = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Parrain
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Filleul
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -388,6 +394,22 @@ const Parrainages = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredParrainages.map((parrainage) => (
                     <tr key={parrainage.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <User className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {parrainage.parrainNom || "—"}
+                            </p>
+                            <p className="text-xs text-gray-500 flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {parrainage.parrainEmail || "—"}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">

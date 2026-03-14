@@ -136,6 +136,19 @@ try {
             $stmt = $db->prepare($query);
             $stmt->execute([':parrain_id' => $parrainage['parrain_id']]);
 
+            // Créer une entrée dans parrainages_details
+            $detail_id = UuidHelper::generate();
+            $query = "INSERT INTO parrainages_details (id, parrainage_id, filleul_id, recompense_parrain, recompense_filleul, statut, date_inscription)
+                      VALUES (:id, :parrainage_id, :filleul_id, 3000, 3000, 'en_attente', NOW())";
+            $stmt = $db->prepare($query);
+            $stmt->execute([
+                ':id' => $detail_id,
+                ':parrainage_id' => $parrainage['id'],
+                ':filleul_id' => $user_id
+            ]);
+
+            error_log("parrainages_details entry created: " . $detail_id);
+
             error_log("Referral bonus of 3000 DA credited to parrain: " . $parrainage['parrain_id']);
 
             // Créer une notification pour le parrain

@@ -46,18 +46,10 @@ interface ParrainageStats {
   codeParrainage: string;
 }
 
-const generateReferralCode = (_userId: string, prenom: string, _nom: string): string => {
-  const prenomClean = prenom.replace(/[^A-Za-z]/g, "");
-  const prefix = prenomClean.substring(0, 3).toUpperCase().padEnd(3, "X");
-  const random = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
-  return `COFFICE-${prefix}${random}`;
-};
-
 const Parrainage = () => {
-  const { user, loadUser } = useAuthStore();
+  const { user } = useAuthStore();
   const [copied, setCopied] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
-  const [generatingCode, setGeneratingCode] = useState(false);
   const [stats, setStats] = useState<ParrainageStats>({
     parraines: 0,
     recompensesTotales: 0,
@@ -72,28 +64,11 @@ const Parrainage = () => {
     loadParrainageData();
   }, [user]);
 
-  const handleGenerateCode = async () => {
-    if (!user || user.codeParrainage) return;
-    setGeneratingCode(true);
-    try {
-      const code = generateReferralCode(user.id, user.prenom, user.nom);
-      await apiClient.updateUser(user.id, { code_parrainage: code });
-      await loadUser();
-      setStats(prev => ({ ...prev, codeParrainage: code }));
-      toast.success("Code de parrainage généré avec succès !");
-    } catch {
-      toast.error("Erreur lors de la génération du code");
-    } finally {
-      setGeneratingCode(false);
-    }
-  };
-
   const loadParrainageData = async () => {
-    if (!user?.codeParrainage) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
-
     try {
       setLoading(true);
       const response = await apiClient.getParrainages(user.id);
@@ -241,29 +216,11 @@ const Parrainage = () => {
                 <Gift className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-2xl font-bold mb-3">
-                Activez votre code de parrainage
+                Code de parrainage non disponible
               </h2>
-              <p className="text-white/80 mb-6 max-w-md mx-auto">
-                Générez votre code unique pour commencer à parrainer vos amis et gagner des récompenses.
+              <p className="text-white/80 max-w-md mx-auto">
+                Votre code de parrainage n'est pas encore disponible. Contactez notre équipe pour plus d'informations.
               </p>
-              <Button
-                onClick={handleGenerateCode}
-                disabled={generatingCode}
-                className="bg-white text-gray-800 hover:bg-white/90 px-8"
-                size="lg"
-              >
-                {generatingCode ? (
-                  <span className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 animate-spin" />
-                    Génération...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <Gift className="w-5 h-5" />
-                    Générer mon code
-                  </span>
-                )}
-              </Button>
             </div>
           </Card>
         </motion.div>
