@@ -354,7 +354,7 @@ Avant de considérer le déploiement terminé :
 
 ## 📞 Support
 
-**Email** : contact@coffice.dz
+**Email** : desk@coffice.dz
 **Site** : https://coffice.dz
 **Documentation** : README.md
 
