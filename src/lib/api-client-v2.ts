@@ -224,7 +224,12 @@ class ApiClientV2 {
 
       let token = this.getToken();
 
-      if (!isPublic && token) {
+      if (!isPublic) {
+        if (!token) {
+          this.clearAuth();
+          window.location.href = "/connexion?session_expired=1";
+          throw new AppError("Session expirée", ErrorCode.UNAUTHORIZED);
+        }
         if (this.isTokenExpired(token)) {
           token = await this.refreshAccessToken();
         } else if (this.isTokenExpiringSoon(token)) {
@@ -259,7 +264,7 @@ class ApiClientV2 {
           return this.handleResponse<T>(retryResponse);
         } catch (error) {
           this.clearAuth();
-          window.location.href = "/login";
+          window.location.href = "/connexion?session_expired=1";
           throw new AppError("Session expirée", ErrorCode.UNAUTHORIZED);
         }
       }

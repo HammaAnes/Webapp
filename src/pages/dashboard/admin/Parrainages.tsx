@@ -77,7 +77,7 @@ const Parrainages = () => {
 
   useEffect(() => {
     loadData();
-  }, [users]);
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -157,18 +157,21 @@ const Parrainages = () => {
 
   const handleUpdateStatut = async (id: string, newStatut: string) => {
     setUpdatingId(id);
+    const previousParrainages = parrainages;
+    setParrainages((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, statut: newStatut as ParrainageDetail["statut"] } : p))
+    );
     try {
       const response = await apiClient.updateParrainageStatut(id, newStatut);
       if (response.success) {
-        setParrainages((prev) =>
-          prev.map((p) => (p.id === id ? { ...p, statut: newStatut as ParrainageDetail["statut"] } : p))
-        );
         toast.success("Statut mis à jour");
         await loadData();
       } else {
+        setParrainages(previousParrainages);
         toast.error("Erreur lors de la mise à jour");
       }
     } catch {
+      setParrainages(previousParrainages);
       toast.error("Erreur lors de la mise à jour");
     } finally {
       setUpdatingId(null);

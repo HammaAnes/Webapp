@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useContactStore } from '../../../store/contactStore';
 import Button from '../../../components/ui/Button';
@@ -12,6 +12,7 @@ export default function Contacts() {
   const navigate = useNavigate();
   const { contacts, loading, filters, pagination, fetchContacts, setFilters, setPage } = useContactStore();
   const [searchInput, setSearchInput] = useState(filters.search);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetchContacts();
@@ -19,10 +20,10 @@ export default function Contacts() {
 
   const handleSearch = (value: string) => {
     setSearchInput(value);
-    const debounce = setTimeout(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
       setFilters({ search: value });
     }, 300);
-    return () => clearTimeout(debounce);
   };
 
   const handleCreateContact = () => {

@@ -79,7 +79,18 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    loadStats().finally(() => setLoading(false));
+    let mounted = true;
+    apiClient.getAdminStats().then((response) => {
+      if (!mounted) return;
+      if (response.success && response.data) {
+        setStats(response.data as AdminStats);
+      }
+    }).catch((error) => {
+      logger.error("Erreur chargement stats admin:", error instanceof Error ? error : new Error(String(error)));
+    }).finally(() => {
+      if (mounted) setLoading(false);
+    });
+    return () => { mounted = false; };
   }, []);
 
   const todayReservations = useMemo(() => {

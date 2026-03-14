@@ -1,25 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Tag,
-  Plus,
-  Edit2,
-  Trash2,
-  Search,
-  Percent,
-  Banknote,
-  ToggleLeft,
-  ToggleRight,
-  Copy,
-  RefreshCw,
-  Zap,
-  Clock,
-  AlertTriangle,
-  CheckCircle2,
-  Filter,
-  Shuffle,
-  X,
-} from "lucide-react";
+import { Tag, Plus, FileEdit as Edit2, Trash2, Search, Percent, Banknote, ToggleLeft, ToggleRight, Copy, RefreshCw, Zap, Clock, AlertTriangle, CheckCircle2, Filter, Shuffle, X } from "lucide-react";
 import { apiClient } from "../../../lib/api-client";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
@@ -61,6 +42,12 @@ const initialFormData = {
   description: "",
 };
 
+function isValidDateString(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return false;
+  const d = parseISO(dateStr);
+  return !isNaN(d.getTime());
+}
+
 function getCodeStatus(code: CodePromo): {
   label: string;
   variant: "success" | "danger" | "warning" | "default";
@@ -68,8 +55,7 @@ function getCodeStatus(code: CodePromo): {
 } {
   if (!code.actif)
     return { label: "D\u00e9sactiv\u00e9", variant: "default", key: "disabled" };
-  const endDate = parseISO(code.date_fin);
-  if (isPast(endDate))
+  if (isValidDateString(code.date_fin) && isPast(parseISO(code.date_fin)))
     return { label: "Expir\u00e9", variant: "danger", key: "expired" };
   if (
     code.utilisations_max > 0 &&
@@ -80,6 +66,7 @@ function getCodeStatus(code: CodePromo): {
 }
 
 function getDaysRemaining(dateFin: string): number {
+  if (!isValidDateString(dateFin)) return 0;
   return differenceInDays(parseISO(dateFin), new Date());
 }
 
@@ -232,15 +219,17 @@ const CodesPromo = () => {
       };
 
       if (editingCode) {
-        await apiClient.updateCodePromo(editingCode.id, payload);
+        const res = await apiClient.updateCodePromo(editingCode.id, payload);
+        if (!res.success) throw new Error(res.error || "Erreur mise à jour");
         toast.success("Code promo mis \u00e0 jour");
       } else {
-        await apiClient.createCodePromo(payload);
+        const res = await apiClient.createCodePromo(payload);
+        if (!res.success) throw new Error(res.error || "Erreur création");
         toast.success("Code promo cr\u00e9\u00e9");
       }
       setShowModal(false);
       resetForm();
-      loadCodes();
+      await loadCodes();
     } catch {
       toast.error(
         editingCode
@@ -254,9 +243,10 @@ const CodesPromo = () => {
 
   const handleToggleActive = async (id: string, actif: boolean) => {
     try {
-      await apiClient.updateCodePromo(id, { actif: !actif });
+      const res = await apiClient.updateCodePromo(id, { actif: !actif });
+      if (!res.success) throw new Error(res.error || "Erreur");
       toast.success(actif ? "Code d\u00e9sactiv\u00e9" : "Code activ\u00e9");
-      loadCodes();
+      await loadCodes();
     } catch {
       toast.error("Erreur lors de la mise \u00e0 jour");
     }
@@ -266,10 +256,11 @@ const CodesPromo = () => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await apiClient.deleteCodePromo(deleteTarget.id);
+      const res = await apiClient.deleteCodePromo(deleteTarget.id);
+      if (!res.success) throw new Error(res.error || "Erreur suppression");
       toast.success("Code supprim\u00e9");
       setDeleteTarget(null);
-      loadCodes();
+      await loadCodes();
     } catch {
       toast.error("Erreur lors de la suppression");
     } finally {

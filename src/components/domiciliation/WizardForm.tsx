@@ -1323,8 +1323,10 @@ const CasInfoBox: React.FC<{
   casLabel: string;
 }> = ({ situation, typeStructure, casLabel }) => {
   const isSociete = typeStructure === "societe";
-  const colorClass = isSociete ? "bg-sky-50 border-sky-200 text-sky-700 text-sky-600" : "bg-emerald-50 border-emerald-200 text-emerald-700 text-emerald-600";
-  const [bgClass, borderClass, textClass, iconClass] = colorClass.split(" ");
+  const bgClass = isSociete ? "bg-sky-50" : "bg-emerald-50";
+  const borderClass = isSociete ? "border-sky-200" : "border-emerald-200";
+  const textClass = isSociete ? "text-sky-700" : "text-emerald-700";
+  const iconClass = isSociete ? "text-sky-600" : "text-emerald-600";
 
   const title = situation === "en_cours_creation"
     ? isSociete ? "Société en cours de création" : "Auto-entrepreneur en cours de création"

@@ -1,24 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  CreditCard,
-  Plus,
-  Edit2,
-  Trash2,
-  Search,
-  Download,
-  Eye,
-  CheckCircle,
-  XCircle,
-  TrendingUp,
-  Users,
-  Banknote,
-  Package,
-  ToggleLeft,
-  ToggleRight,
-  Calendar,
-  AlertCircle,
-} from "lucide-react";
+import { CreditCard, Plus, FileEdit as Edit2, Trash2, Search, Download, CheckCircle, XCircle, TrendingUp, Users, Banknote, Package, ToggleLeft, ToggleRight, Calendar, AlertCircle } from "lucide-react";
 import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
 import Badge from "../../../components/ui/Badge";
@@ -156,7 +138,7 @@ const AdminAbonnements = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.nom || !formData.type || !formData.prix) {
+    if (!formData.nom || !formData.type || formData.prix === undefined || formData.prix === null) {
       toast.error("Veuillez remplir tous les champs obligatoires");
       return;
     }

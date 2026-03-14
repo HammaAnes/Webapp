@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { User, Mail, Phone, Building, FileEdit as Edit2, Save, X, CreditCard, CheckCircle2, AlertCircle, Loader2, FileText, ExternalLink, Trash2 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useAppStore } from "../../store/store";
@@ -32,10 +32,16 @@ const IdCardUpload: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
         return;
       }
       if (file.type.startsWith("image/")) {
-        setPreview(URL.createObjectURL(file));
+        setPreview((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return URL.createObjectURL(file);
+        });
         setPreviewType("image");
       } else {
-        setPreview(null);
+        setPreview((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return null;
+        });
         setPreviewType("pdf");
       }
       setUploading(true);
@@ -80,6 +86,12 @@ const IdCardUpload: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
     },
     [user, loadUser, onComplete]
   );
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -299,7 +311,7 @@ const IdCardSection: React.FC = () => {
       {!isPdf && (
         <div className="border-b border-gray-200 bg-white">
           <img
-            src={`/api/${user.carteIdentiteUrl}`}
+            src={user.carteIdentiteUrl?.startsWith('/api/') || user.carteIdentiteUrl?.startsWith('api/') ? `/${user.carteIdentiteUrl?.replace(/^\//, '')}` : `/api/${user.carteIdentiteUrl}`}
             alt="Carte d'identité"
             className="w-full max-h-52 object-contain"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -319,7 +331,7 @@ const IdCardSection: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <a
-            href={`/api/${user.carteIdentiteUrl}`}
+            href={user.carteIdentiteUrl?.startsWith('/api/') || user.carteIdentiteUrl?.startsWith('api/') ? `/${user.carteIdentiteUrl?.replace(/^\//, '')}` : `/api/${user.carteIdentiteUrl}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 text-xs text-sky-600 hover:text-sky-700 font-medium transition-colors"
@@ -355,6 +367,21 @@ const Profile = () => {
     adresse: user?.adresse || "",
     bio: user?.bio || "",
   });
+
+  useEffect(() => {
+    if (user && !isEditing) {
+      setFormData({
+        nom: user.nom || "",
+        prenom: user.prenom || "",
+        email: user.email || "",
+        telephone: user.telephone || "",
+        entreprise: user.entreprise || "",
+        profession: user.profession || "",
+        adresse: user.adresse || "",
+        bio: user.bio || "",
+      });
+    }
+  }, [user, isEditing]);
 
   const performUpdate = async () => {
     if (!user) return;

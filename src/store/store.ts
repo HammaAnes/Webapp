@@ -83,7 +83,7 @@ interface AppState {
   addUser: (
     data: Partial<User>,
   ) => Promise<{ success: boolean; error?: string }>;
-  updateUser: (userId: string, data: Record<string, unknown>) => Promise<void>;
+  updateUser: (userId: string, data: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>;
   deleteUser: (userId: string) => Promise<{ success: boolean; error?: string }>;
 
   getAdminStats: () => AdminStats;
@@ -125,7 +125,7 @@ export const useAppStore = create<AppState>()(
 
       initializeData: async () => {
       const state = get();
-      if (state.loading) return;
+      if (state.loading || state.initialized) return;
       set({ loading: true });
 
       try {
@@ -219,8 +219,9 @@ export const useAppStore = create<AppState>()(
       loadAbonnements: async () => {
         try {
           const response = await apiClient.getAbonnements();
-          if (response.success && response.data && Array.isArray(response.data)) {
-            const abonnements = response.data.map((a: Record<string, unknown>) =>
+          if (response.success && response.data) {
+            const rawData = extractArray(response.data);
+            const abonnements = rawData.map((a: Record<string, unknown>) =>
               abonnementAdapter.fromAPI(a),
             );
             set({ abonnements });
@@ -261,8 +262,9 @@ export const useAppStore = create<AppState>()(
       loadReservations: async () => {
         try {
           const response = await apiClient.getReservations();
-          if (response.success && response.data && Array.isArray(response.data)) {
-            const reservations = response.data.map((r: Record<string, unknown>) =>
+          if (response.success && response.data) {
+            const rawData = extractArray(response.data);
+            const reservations = rawData.map((r: Record<string, unknown>) =>
               reservationAdapter.fromAPI(r),
             );
             set({ reservations });
@@ -420,6 +422,7 @@ export const useAppStore = create<AppState>()(
       },
 
       getUserDemandeDomiciliation: (userId) => {
+        if (!userId) return null;
         const userDemandes = get().demandesDomiciliation.filter((d) => d.userId === userId);
         if (userDemandes.length === 0) return null;
         const activePriority = ["active", "domiciliation_creee", "en_attente_complements", "en_attente_signature", "dossier_preparatoire"];
@@ -427,7 +430,12 @@ export const useAppStore = create<AppState>()(
           const found = userDemandes.find((d) => d.statut === statut);
           if (found) return found;
         }
-        return null;
+        const sorted = [...userDemandes].sort((a, b) => {
+          const da = new Date(a.dateCreation || 0).getTime();
+          const db = new Date(b.dateCreation || 0).getTime();
+          return db - da;
+        });
+        return sorted[0] || null;
       },
 
       createDemandeDomiciliation: async (data) => {
@@ -439,7 +447,7 @@ export const useAppStore = create<AppState>()(
             await get().loadDemandesDomiciliation();
             if (!createdId) {
               const userDemandes = get().demandesDomiciliation.filter(d => d.userId === (data as unknown as Record<string, unknown>).userId);
-              const latest = userDemandes.sort((a, b) => new Date(b.dateCreation as string).getTime() - new Date(a.dateCreation as string).getTime())[0];
+              const latest = [...userDemandes].sort((a, b) => new Date(b.dateCreation || 0).getTime() - new Date(a.dateCreation || 0).getTime())[0];
               return { success: true, id: latest?.id || "" };
             }
             return { success: true, id: createdId };
@@ -481,8 +489,9 @@ export const useAppStore = create<AppState>()(
         try {
           const response = await apiClient.updateUser(userId, data);
           if (!response.success) {
-            toast.error(response.error || "Erreur mise a jour");
-            return;
+            const errorMsg = response.error || "Erreur mise a jour";
+            toast.error(errorMsg);
+            return { success: false, error: errorMsg };
           }
 
           const { useAuthStore: authStoreRef } = await import("./authStore");
@@ -497,8 +506,11 @@ export const useAppStore = create<AppState>()(
           }
 
           toast.success("Informations mises a jour");
+          return { success: true };
         } catch (error) {
-          toast.error(error instanceof Error ? error.message : "Erreur");
+          const errorMsg = error instanceof Error ? error.message : "Erreur";
+          toast.error(errorMsg);
+          return { success: false, error: errorMsg };
         }
       },
 

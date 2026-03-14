@@ -149,7 +149,7 @@ const Settings = () => {
   const handleSaveGeneral = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.post('/admin/settings.php', settings.general as unknown as Record<string, unknown>);
+      const response = await apiClient.post('/admin/settings.php', { section: 'general', data: settings.general } as unknown as Record<string, unknown>);
       if (response.success) {
         toast.success("Parametres generaux enregistres");
       } else {

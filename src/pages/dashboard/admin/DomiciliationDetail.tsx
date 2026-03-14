@@ -154,6 +154,13 @@ export default function DomiciliationDetail() {
             commentaireAdmin: motif,
           });
           break;
+        case "renouveler":
+          response = await apiClient.updateDemandeDomiciliation(demande.id, {
+            statut: "active",
+            commentaireAdmin: motif || "Renouvellement effectué",
+            dateFinContrat: data?.dateFinContrat as string,
+          });
+          break;
         default:
           return;
       }
@@ -165,6 +172,7 @@ export default function DomiciliationDetail() {
           completer: "Domiciliation activée",
           activer: "Domiciliation activée",
           resilier: "Domiciliation résiliée",
+          renouveler: "Domiciliation renouvelée",
         };
         toast.success(msgs[action] || "Action effectuée");
         const email = demande.representantLegal?.email;

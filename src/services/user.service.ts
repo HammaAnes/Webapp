@@ -52,10 +52,18 @@ class UserService {
     store.setError(null);
 
     try {
-      const response = await apiClient.addUser(data);
+      const apiData = userAdapter.toAPI(data);
+      const response = await apiClient.adminCreateUser(apiData as {
+        email: string;
+        nom: string;
+        prenom: string;
+        telephone?: string;
+        password?: string;
+      });
 
       if (response.success && response.data) {
-        const user = userAdapter.fromAPI(response.data);
+        const userData = response.data as Record<string, unknown>;
+        const user = userAdapter.fromAPI(userData);
         store.addUser(user);
         return user;
       } else {

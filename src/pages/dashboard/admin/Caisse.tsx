@@ -16,6 +16,7 @@ import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner";
 import Badge from "../../../components/ui/Badge";
+import { logger } from "../../../utils/logger";
 
 interface Transaction {
   id: string;
@@ -111,7 +112,7 @@ export default function Caisse() {
         toast.error(response.error || "Erreur lors du chargement");
       }
     } catch (error) {
-      console.error("Erreur chargement transactions:", error);
+      logger.error("Erreur chargement transactions:", error as Error);
       toast.error("Erreur lors du chargement des transactions");
     } finally {
       setLoading(false);
@@ -119,7 +120,7 @@ export default function Caisse() {
   };
 
   const handleCloture = async () => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir clôturer la caisse pour le ${new Date(selectedDate).toLocaleDateString("fr-FR")} ?`)) {
+    if (!window.confirm(`Êtes-vous sûr de vouloir clôturer la caisse pour le ${new Date(selectedDate + "T00:00:00").toLocaleDateString("fr-FR")} ?`)) {
       return;
     }
 
@@ -134,7 +135,7 @@ export default function Caisse() {
         toast.error(response.error || "Erreur lors de la cloture");
       }
     } catch (error) {
-      console.error("Erreur clôture caisse:", error);
+      logger.error("Erreur clôture caisse:", error as Error);
       toast.error("Erreur lors de la cloture");
     }
   };
@@ -260,7 +261,7 @@ export default function Caisse() {
 
       <Card className="p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">
-          Journal du {new Date(selectedDate).toLocaleDateString("fr-FR")}
+          Journal du {new Date(selectedDate + "T00:00:00").toLocaleDateString("fr-FR")}
         </h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">

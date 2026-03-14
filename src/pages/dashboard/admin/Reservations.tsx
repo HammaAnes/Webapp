@@ -204,18 +204,18 @@ const Reservations = () => {
     if (!selectedReservation) return;
     setDeleteLoading(true);
     try {
-      const response = await apiClient.delete(`/reservations/cancel.php?id=${selectedReservation}`);
+      const response = await apiClient.cancelReservation(selectedReservation);
       if (response.success) {
-        toast.success("Réservation supprimée");
+        toast.success("Réservation annulée");
         setShowDeleteModal(false);
         setSelectedReservation(null);
         await loadReservations();
       } else {
-        toast.error(response.message || "Erreur lors de la suppression");
+        toast.error(response.error || "Erreur lors de l'annulation");
       }
     } catch (error) {
-      logger.error("Erreur suppression réservation :", error as Error);
-      toast.error("Erreur lors de la suppression");
+      logger.error("Erreur annulation réservation :", error as Error);
+      toast.error("Erreur lors de l'annulation");
     } finally {
       setDeleteLoading(false);
     }
@@ -304,7 +304,7 @@ const Reservations = () => {
         res.utilisateur?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         res.espace?.nom?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchStatut = statusTab === "tous" || res.statut === statusTab;
-      const matchEspace = espaceFilter === "tous" || res.espace?.id === espaceFilter;
+      const matchEspace = espaceFilter === "tous" || res.espace?.id === espaceFilter || res.espaceId === espaceFilter;
       return matchSearch && matchStatut && matchEspace;
     });
 

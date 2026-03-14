@@ -297,7 +297,7 @@ const UserDetail: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Statut email</p>
-                <Badge variant={user.emailVerified ? "success" : "error"}>
+                <Badge variant={user.emailVerified ? "success" : "danger"}>
                   {user.emailVerified ? "Vérifié" : "Non vérifié"}
                 </Badge>
               </div>
@@ -346,7 +346,7 @@ const UserDetail: React.FC = () => {
                   Document archivé
                 </div>
                 <a
-                  href={`/api/${user.carte_identite_url}`}
+                  href={user.carte_identite_url?.startsWith('/api/') || user.carte_identite_url?.startsWith('api/') ? `/${user.carte_identite_url?.replace(/^\//, '')}` : `/api/${user.carte_identite_url}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-sky-600 hover:text-sky-700 font-medium transition-colors"

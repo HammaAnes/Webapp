@@ -344,7 +344,7 @@ const Reservations = () => {
             </p>
           </div>
           <button
-            onClick={() => navigate("/dashboard/profil")}
+            onClick={() => navigate("/app/profil")}
             className="flex-shrink-0 text-sm font-medium text-amber-800 hover:text-amber-900 underline underline-offset-2 transition-colors"
           >
             Compléter mon profil

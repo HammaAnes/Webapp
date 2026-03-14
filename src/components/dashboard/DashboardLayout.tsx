@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Home, Calendar, CreditCard, Users, Settings, LogOut, Menu, X, User, Building, FileText, BarChart3, RefreshCw, Tag, Gift, Bell, Clock, ChevronDown, Wallet, CircleUser as UserCircle, Search, Plus } from "lucide-react";
@@ -95,19 +95,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     }
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Link to="/connexion" className="btn-primary">
-            Se connecter
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const userNavigation: NavItem[] = [
+  const userNavigation = useMemo<NavItem[]>(() => [
     { name: "Tableau de bord", href: "/app", icon: Home },
     { name: "Réservations", href: "/app/reservations", icon: Calendar },
     { name: "Notifications", href: "/app/notifications", icon: Bell },
@@ -115,9 +103,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { name: "Abonnements", href: "/app/abonnements", icon: CreditCard },
     { name: "Parrainage", href: "/app/parrainage", icon: Gift },
     { name: "Profil", href: "/app/profil", icon: User },
-  ];
+  ], []);
 
-  const adminGroups: NavGroup[] = [
+  const adminGroups = useMemo<NavGroup[]>(() => [
     {
       label: "Opérations",
       items: [
@@ -155,7 +143,19 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         { name: "Paramètres", href: "/app/admin/settings", icon: Settings },
       ],
     },
-  ];
+  ], []);
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Link to="/connexion" className="btn-primary">
+            Se connecter
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const isActive = (path: string) => {
     if (path === "/app") {

@@ -199,6 +199,7 @@ const Users = () => {
     a.href = url;
     a.download = `utilisateurs-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
+    URL.revokeObjectURL(url);
     toast.success("Export réussi");
   };
 

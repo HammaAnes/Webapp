@@ -159,7 +159,7 @@ export default function Reports() {
     });
 
     if (topClients.length > 0) {
-      const prevY = (doc as unknown as Record<string, { finalY?: number }>).lastAutoTable?.finalY || 120;
+      const prevY = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY || 120;
       doc.setFontSize(14);
       doc.text("Top Clients", 14, prevY + 10);
       autoTable(doc, {

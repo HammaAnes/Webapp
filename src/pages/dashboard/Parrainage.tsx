@@ -125,20 +125,26 @@ const Parrainage = () => {
   const handleCopyCode = () => {
     const code = getCode();
     if (!code) return;
-    navigator.clipboard.writeText(code).catch(() => {});
-    setCopied(true);
-    toast.success("Code copié dans le presse-papiers !");
-    setTimeout(() => setCopied(false), 2000);
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      toast.success("Code copié dans le presse-papiers !");
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      toast.error("Impossible de copier le code. Copiez-le manuellement.");
+    });
   };
 
   const handleCopyUrl = () => {
     const code = getCode();
     if (!code) return;
     const url = `${window.location.origin}/inscription?parrain=${code}`;
-    navigator.clipboard.writeText(url).catch(() => {});
-    setCopiedUrl(true);
-    toast.success("Lien de parrainage copié !");
-    setTimeout(() => setCopiedUrl(false), 2000);
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedUrl(true);
+      toast.success("Lien de parrainage copié !");
+      setTimeout(() => setCopiedUrl(false), 2000);
+    }).catch(() => {
+      toast.error("Impossible de copier le lien. Copiez-le manuellement.");
+    });
   };
 
   const handleShare = () => {
@@ -388,6 +394,25 @@ const Parrainage = () => {
       </motion.div>
 
       {/* Liste des filleuls */}
+      {filleuls.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <Card className="p-10 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                <Users className="w-8 h-8 text-gray-400" />
+              </div>
+              <div>
+                <p className="text-lg font-semibold text-gray-800">Aucun filleul pour l'instant</p>
+                <p className="text-sm text-gray-500 mt-1">Partagez votre code de parrainage pour inviter vos proches.</p>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      )}
       {filleuls.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}

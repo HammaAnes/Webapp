@@ -32,7 +32,7 @@ interface Notification {
   created_at: string;
 }
 
-type FilterType = "all" | "unread" | "reservation" | "parrainage" | "domiciliation";
+type FilterType = "all" | "unread" | "reservation" | "parrainage" | "domiciliation" | "abonnement" | "promo";
 
 const Notifications: React.FC = () => {
   const { user } = useAuthStore();
@@ -52,7 +52,14 @@ const Notifications: React.FC = () => {
     try {
       setLoading(true);
       const response = await apiClient.getNotifications();
-      const data = (response.data as Notification[]) || [];
+      const raw = response.data;
+      const data: Notification[] = Array.isArray(raw)
+        ? (raw as Notification[])
+        : Array.isArray((raw as Record<string, unknown>)?.notifications)
+        ? ((raw as Record<string, unknown>).notifications as Notification[])
+        : Array.isArray((raw as Record<string, unknown>)?.data)
+        ? ((raw as Record<string, unknown>).data as Notification[])
+        : [];
       setNotifications(data);
     } catch (error) {
       logger.error("Erreur chargement notifications:", error instanceof Error ? error.message : String(error));
@@ -63,13 +70,18 @@ const Notifications: React.FC = () => {
   };
 
   const markAsRead = async (id: string) => {
+    const previous = notifications;
+    setNotifications(prev =>
+      prev.map(n => n.id === id ? { ...n, lue: true } : n)
+    );
     try {
-      await apiClient.markNotificationRead(id);
-      setNotifications(prev =>
-        prev.map(n => n.id === id ? { ...n, lue: true } : n)
-      );
-      toast.success("Notification marquée comme lue");
+      const res = await apiClient.markNotificationRead(id);
+      if (!res.success) {
+        setNotifications(previous);
+        toast.error("Erreur lors du marquage");
+      }
     } catch (error) {
+      setNotifications(previous);
       logger.error("Erreur marquage lu:", error instanceof Error ? error.message : String(error));
       toast.error("Erreur lors du marquage");
     }
@@ -201,6 +213,8 @@ const Notifications: React.FC = () => {
               { value: "reservation", label: "Réservations", count: notifications.filter(n => n.type === "reservation").length },
               { value: "parrainage", label: "Parrainages", count: notifications.filter(n => n.type === "parrainage").length },
               { value: "domiciliation", label: "Domiciliations", count: notifications.filter(n => n.type === "domiciliation").length },
+              { value: "abonnement", label: "Abonnements", count: notifications.filter(n => n.type === "abonnement").length },
+              { value: "promo", label: "Promotions", count: notifications.filter(n => n.type === "promo").length },
             ].map(({ value, label, count }) => (
               <button
                 key={value}
