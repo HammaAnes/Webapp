@@ -4,10 +4,12 @@ import { Instagram, Linkedin, MapPin, Phone, Mail } from "lucide-react";
 import Logo from "./Logo";
 
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
+
   return (
     <footer className="bg-primary text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
             <div className="mb-6">
@@ -18,12 +20,13 @@ const Footer = () => {
               Alger, conçu pour répondre aux besoins des entrepreneurs et
               freelances modernes.
             </p>
-            <div className="flex space-x-4">
+            <div className="flex space-x-3">
               <a
                 href="https://www.instagram.com/coffice_dz/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-white transition-colors"
+                className="p-2 rounded-lg bg-white/10 text-white hover:bg-white hover:text-primary transition-all duration-200 active:scale-95"
+                aria-label="Suivez-nous sur Instagram"
               >
                 <Instagram className="w-5 h-5" />
               </a>
@@ -31,7 +34,8 @@ const Footer = () => {
                 href="https://www.linkedin.com/showcase/cofficedz/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-white transition-colors"
+                className="p-2 rounded-lg bg-white/10 text-white hover:bg-white hover:text-primary transition-all duration-200 active:scale-95"
+                aria-label="Suivez-nous sur LinkedIn"
               >
                 <Linkedin className="w-5 h-5" />
               </a>
@@ -40,14 +44,14 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-display font-semibold mb-4">
+            <h3 className="text-lg font-semibold mb-5 text-white">
               Liens rapides
             </h3>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               <li>
                 <Link
                   to="/"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white transition-colors text-sm hover:translate-x-1 inline-block duration-200"
                 >
                   Accueil
                 </Link>
@@ -55,7 +59,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/espaces"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white transition-colors text-sm hover:translate-x-1 inline-block duration-200"
                 >
                   Espaces & Tarifs
                 </Link>
@@ -63,7 +67,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/domiciliation"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white transition-colors text-sm hover:translate-x-1 inline-block duration-200"
                 >
                   Domiciliation
                 </Link>
@@ -71,7 +75,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/a-propos"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white transition-colors text-sm hover:translate-x-1 inline-block duration-200"
                 >
                   À propos
                 </Link>
@@ -79,7 +83,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/blog"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white transition-colors text-sm hover:translate-x-1 inline-block duration-200"
                 >
                   Blog
                 </Link>
@@ -87,7 +91,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/mentions-legales"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white transition-colors text-sm hover:translate-x-1 inline-block duration-200"
                 >
                   Mentions légales
                 </Link>
@@ -97,8 +101,8 @@ const Footer = () => {
 
           {/* Contact Info */}
           <div>
-            <h3 className="text-lg font-display font-semibold mb-4">Contact</h3>
-            <div className="space-y-3">
+            <h3 className="text-lg font-semibold mb-5 text-white">Contact</h3>
+            <div className="space-y-4">
               <div className="flex items-start space-x-2">
                 <MapPin className="w-4 h-4 text-gray-400 mt-1 flex-shrink-0" />
                 <span className="text-gray-300 text-sm">

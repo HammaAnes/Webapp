@@ -1,89 +1,67 @@
 import React from "react";
+import { Loader2 } from "lucide-react";
+import { buttonVariants, cn } from "../../design/variants";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?:
-    | "primary"
-    | "secondary"
-    | "danger"
-    | "success"
-    | "outline"
-    | "ghost"
-    | "default";
-  size?: "sm" | "md" | "lg";
+  variant?: keyof typeof buttonVariants.variants;
+  size?: keyof typeof buttonVariants.sizes;
   children: React.ReactNode;
   className?: string;
   loading?: boolean;
+  fullWidth?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
-const Button: React.FC<ButtonProps> = ({
-  variant = "primary",
-  size = "md",
-  children,
-  className = "",
-  loading = false,
-  disabled,
-  ...props
-}) => {
-  const baseStyles =
-    "rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 active:translate-y-px";
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      variant = "primary",
+      size = "md",
+      children,
+      className,
+      loading = false,
+      disabled,
+      fullWidth = false,
+      leftIcon,
+      rightIcon,
+      ...props
+    },
+    ref
+  ) => {
+    return (
+      <button
+        ref={ref}
+        className={cn(
+          buttonVariants.base,
+          buttonVariants.variants[variant],
+          buttonVariants.sizes[size],
+          fullWidth && "w-full",
+          className
+        )}
+        disabled={disabled || loading}
+        aria-busy={loading}
+        {...props}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+            <span className="sr-only">Chargement...</span>
+            <span>{children}</span>
+          </>
+        ) : (
+          <>
+            {leftIcon && <span aria-hidden="true">{leftIcon}</span>}
+            <span>{children}</span>
+            {rightIcon && <span aria-hidden="true">{rightIcon}</span>}
+          </>
+        )}
+      </button>
+    );
+  }
+);
 
-  const sizeStyles = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-5 py-2.5 text-sm",
-    lg: "px-7 py-3.5 text-base",
-  };
-
-  const variantStyles = {
-    primary: "bg-primary text-white hover:bg-primary/90 shadow-sm",
-    secondary: "bg-teal-600 text-white hover:bg-teal-700 shadow-sm",
-    danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
-    success: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm",
-    outline: "border border-gray-300 text-gray-700 hover:bg-gray-50",
-    ghost: "bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900",
-    default: "bg-gray-100 text-gray-700 hover:bg-gray-200",
-  };
-
-  const resolvedVariant = variantStyles[variant] ? variant : "primary";
-
-  return (
-    <button
-      className={`${baseStyles} ${sizeStyles[size]} ${variantStyles[resolvedVariant]} ${className}`}
-      disabled={disabled || loading}
-      aria-busy={loading}
-      {...props}
-    >
-      {loading ? (
-        <span className="flex items-center gap-2">
-          <svg
-            className="animate-spin h-4 w-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          <span className="sr-only">Chargement...</span>
-          {children}
-        </span>
-      ) : (
-        children
-      )}
-    </button>
-  );
-};
+Button.displayName = "Button";
 
 export { Button };
-export default React.memo(Button);
+export default Button;

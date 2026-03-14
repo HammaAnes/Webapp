@@ -1,45 +1,65 @@
 import React from "react";
+import { badgeVariants, cn } from "../../design/variants";
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: "default" | "primary" | "success" | "warning" | "danger" | "info" | "error" | "teal";
-  size?: "sm" | "md" | "lg";
+  variant?: keyof typeof badgeVariants.variants;
+  size?: keyof typeof badgeVariants.sizes;
   className?: string;
+  icon?: React.ReactNode;
+  removable?: boolean;
+  onRemove?: () => void;
   style?: React.CSSProperties;
 }
 
-const Badge: React.FC<BadgeProps> = ({
-  children,
-  variant = "default",
-  size = "md",
-  className = "",
-  style,
-}) => {
-  const variantStyles = {
-    default: "bg-gray-100 text-gray-700 border border-gray-200",
-    primary: "bg-sky-50 text-sky-700 border border-sky-200",
-    success: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    warning: "bg-amber-50 text-amber-700 border border-amber-200",
-    danger: "bg-red-50 text-red-700 border border-red-200",
-    error: "bg-red-50 text-red-700 border border-red-200",
-    info: "bg-sky-50 text-sky-700 border border-sky-200",
-    teal: "bg-teal-50 text-teal-700 border border-teal-200",
-  };
+const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
+  (
+    {
+      children,
+      variant = "neutral",
+      size = "sm",
+      className,
+      icon,
+      removable = false,
+      onRemove,
+      style,
+    },
+    ref
+  ) => {
+    return (
+      <span
+        ref={ref}
+        className={cn(
+          badgeVariants.base,
+          badgeVariants.variants[variant],
+          badgeVariants.sizes[size],
+          className
+        )}
+        style={style}
+      >
+        {icon && <span className="mr-1" aria-hidden="true">{icon}</span>}
+        <span>{children}</span>
+        {removable && onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="ml-1 -mr-0.5 inline-flex items-center justify-center hover:opacity-70 focus:outline-none focus:ring-2 focus:ring-offset-1 rounded-full"
+            aria-label="Retirer"
+          >
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        )}
+      </span>
+    );
+  }
+);
 
-  const sizeStyles = {
-    sm: "px-2 py-0.5 text-xs",
-    md: "px-2.5 py-1 text-xs",
-    lg: "px-3 py-1.5 text-sm",
-  };
+Badge.displayName = "Badge";
 
-  return (
-    <span
-      className={`inline-flex items-center rounded-full font-medium ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
-      style={style}
-    >
-      {children}
-    </span>
-  );
-};
-
-export default React.memo(Badge);
+export default Badge;

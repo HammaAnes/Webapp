@@ -1,4 +1,6 @@
 import React, { forwardRef, useId } from "react";
+import { AlertCircle } from "lucide-react";
+import { inputVariants, cn } from "../../design/variants";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -7,21 +9,38 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   className?: string;
   helperText?: string;
   rightElement?: React.ReactNode;
+  inputSize?: keyof typeof inputVariants.sizes;
+  variant?: keyof typeof inputVariants.variants;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, icon, helperText, rightElement, className = "", ...props }, ref) => {
+  (
+    {
+      label,
+      error,
+      icon,
+      helperText,
+      rightElement,
+      className,
+      inputSize = "md",
+      variant,
+      ...props
+    },
+    ref
+  ) => {
     const generatedId = useId();
     const inputId = props.id || generatedId;
     const errorId = `${inputId}-error`;
     const helperId = `${inputId}-helper`;
+
+    const resolvedVariant = error ? "error" : variant || "default";
 
     return (
       <div className="w-full">
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-gray-700 mb-2"
+            className="block text-sm font-semibold text-gray-700 mb-1.5"
           >
             {label}
             {props.required && (
@@ -34,7 +53,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         <div className="relative">
           {icon && (
             <div
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none z-10"
               aria-hidden="true"
             >
               {icon}
@@ -44,31 +63,42 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             aria-invalid={error ? "true" : "false"}
-            aria-describedby={error ? errorId : helperText ? helperId : undefined}
-            className={`w-full ${icon ? "pl-10" : "pl-3"} ${rightElement ? 'pr-10' : 'pr-3'} py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all duration-200 ${
-              error ? "border-red-500 focus:ring-red-500 focus:border-red-500" : "border-gray-300 focus:ring-accent focus:border-accent"
-            } disabled:bg-gray-100 disabled:cursor-not-allowed ${className}`}
+            aria-describedby={
+              error ? errorId : helperText ? helperId : undefined
+            }
+            className={cn(
+              inputVariants.base,
+              inputVariants.variants[resolvedVariant],
+              inputVariants.sizes[inputSize],
+              icon && "pl-10",
+              (rightElement || error) && "pr-10",
+              className
+            )}
             {...props}
           />
-          {rightElement && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              {rightElement}
+          {(rightElement || error) && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10">
+              {error ? (
+                <AlertCircle className="w-5 h-5 text-red-500" aria-hidden="true" />
+              ) : (
+                rightElement
+              )}
             </div>
           )}
         </div>
         {helperText && !error && (
-          <p id={helperId} className="mt-2 text-sm text-gray-600">
+          <p id={helperId} className="mt-1.5 text-xs text-gray-500">
             {helperText}
           </p>
         )}
         {error && (
-          <p id={errorId} className="mt-2 text-sm text-red-600" role="alert">
-            {error}
+          <p id={errorId} className="mt-1.5 text-xs text-red-600 font-medium flex items-start gap-1" role="alert">
+            <span>{error}</span>
           </p>
         )}
       </div>
     );
-  },
+  }
 );
 
 Input.displayName = "Input";

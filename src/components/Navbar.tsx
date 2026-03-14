@@ -56,14 +56,14 @@ const Navbar = () => {
       animate={{ y: 0 }}
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
         isScrolled
-          ? "bg-white backdrop-blur-md shadow-lg"
-          : "bg-white/95 backdrop-blur-sm"
+          ? "bg-white/95 backdrop-blur-md shadow-md border-b border-gray-100"
+          : "bg-white/90 backdrop-blur-sm shadow-sm"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-          <Link to="/" className="flex items-center group">
-            <Logo className="h-16 w-auto transition-transform group-hover:scale-105" />
+        <div className="flex justify-between items-center h-18">
+          <Link to="/" className="flex items-center group" aria-label="Retour à l'accueil">
+            <Logo className="h-14 w-auto transition-transform duration-200 group-hover:scale-105" />
           </Link>
 
           <div className="hidden lg:flex items-center space-x-1">
@@ -71,17 +71,17 @@ const Navbar = () => {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`relative px-4 py-2 font-medium transition-all ${
+                className={`relative px-4 py-2.5 text-sm font-semibold transition-all duration-200 rounded-lg ${
                   isActive(link.path)
-                    ? "text-primary"
-                    : "text-gray-600 hover:text-primary"
+                    ? "text-primary bg-primary/5"
+                    : "text-gray-600 hover:text-primary hover:bg-gray-50"
                 }`}
               >
                 {link.name}
                 {isActive(link.path) && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                    className="absolute bottom-1 left-2 right-2 h-0.5 bg-primary rounded-full"
                     initial={false}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   />
@@ -92,15 +92,15 @@ const Navbar = () => {
               href="https://wa.me/213795380124"
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-2 px-4 py-2.5 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-all shadow-sm hover:shadow-md flex items-center gap-2"
+              className="ml-2 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 active:scale-95"
               title="Nous contacter sur WhatsApp"
             >
-              <MessageCircle className="w-4 h-4" />
+              <MessageCircle className="w-4 h-4" aria-hidden="true" />
               <span className="hidden xl:inline">WhatsApp</span>
             </a>
             <Link
               to="/app"
-              className="ml-2 px-6 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-all shadow-sm hover:shadow-md"
+              className="ml-2 px-6 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
             >
               Espace Client
             </Link>
@@ -109,12 +109,14 @@ const Navbar = () => {
           <div className="lg:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors active:bg-gray-200"
+              aria-label={isOpen ? "Fermer le menu" : "Ouvrir le menu"}
+              aria-expanded={isOpen}
             >
               {isOpen ? (
-                <X className="w-6 h-6" />
+                <X className="w-6 h-6" aria-hidden="true" />
               ) : (
-                <Menu className="w-6 h-6" />
+                <Menu className="w-6 h-6" aria-hidden="true" />
               )}
             </button>
           </div>
@@ -127,27 +129,38 @@ const Navbar = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
             className="lg:hidden bg-white border-t border-gray-100"
           >
-            <div className="px-4 py-4 space-y-2">
+            <div className="px-4 py-4 space-y-2 max-h-[calc(100vh-5rem)] overflow-y-auto">
               {navLinks.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
                   onClick={() => setIsOpen(false)}
-                  className={`block px-4 py-3 rounded-lg font-medium transition-colors ${
+                  className={`block px-4 py-3 rounded-lg font-semibold text-sm transition-all duration-200 active:scale-95 ${
                     isActive(link.path)
-                      ? "bg-primary text-white"
+                      ? "bg-primary text-white shadow-sm"
                       : "text-gray-700 hover:bg-gray-50"
                   }`}
                 >
                   {link.name}
                 </Link>
               ))}
+              <a
+                href="https://wa.me/213795380124"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsOpen(false)}
+                className="block px-4 py-3 bg-green-600 text-white rounded-lg text-center font-semibold text-sm hover:bg-green-700 transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="w-4 h-4" aria-hidden="true" />
+                WhatsApp
+              </a>
               <Link
                 to="/app"
                 onClick={() => setIsOpen(false)}
-                className="block px-4 py-3 bg-primary text-white rounded-lg text-center font-medium"
+                className="block px-4 py-3 bg-primary text-white rounded-lg text-center font-semibold text-sm hover:bg-primary/90 transition-all duration-200 active:scale-95"
               >
                 Espace Client
               </Link>
