@@ -53,7 +53,17 @@ export function useOnboarding(): {
     return abonnements.some((a) => a.statut === "actif");
   }, [abonnements]);
 
+  const hasIdCard = useMemo(() => !!(user?.carteIdentiteUrl), [user?.carteIdentiteUrl]);
+
   const steps: OnboardingStep[] = useMemo(() => [
+    {
+      id: "identite",
+      label: "Télécharger votre carte d'identité",
+      description: "Document requis pour effectuer vos réservations.",
+      completed: hasIdCard,
+      link: "/app/profil",
+      linkLabel: "Aller à mon profil",
+    },
     {
       id: "profile",
       label: "Compléter votre profil",
@@ -86,7 +96,7 @@ export function useOnboarding(): {
       link: "/app/mon-espace",
       linkLabel: "En savoir plus",
     },
-  ], [profileComplete, hasReservation, hasDomiciliation, hasAbonnement]);
+  ], [hasIdCard, profileComplete, hasReservation, hasDomiciliation, hasAbonnement]);
 
   const completedCount = steps.filter((s) => s.completed).length;
   const totalCount = steps.length;

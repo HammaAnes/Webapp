@@ -23,7 +23,8 @@ try {
                      article_imposition, numero_auto_entrepreneur, raison_sociale,
                      date_creation_entreprise, capital, siege_social,
                      activite_principale, forme_juridique, code_parrainage, credit,
-                     absences, banned_until, derniere_connexion, created_at, updated_at
+                     absences, banned_until, derniere_connexion, created_at, updated_at,
+                     carte_identite_url
               FROM users
               WHERE id = :id
               LIMIT 1";
@@ -72,7 +73,8 @@ try {
         'bannedUntil' => $user['banned_until'],
         'derniereConnexion' => $user['derniere_connexion'],
         'createdAt' => $user['created_at'],
-        'updatedAt' => $user['updated_at']
+        'updatedAt' => $user['updated_at'],
+        'carteIdentiteUrl' => $user['carte_identite_url']
     ];
 
     Response::success($userResponse);

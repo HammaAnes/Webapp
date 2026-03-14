@@ -119,6 +119,7 @@ export interface User {
   nombreParrainages?: number;
   companyName?: string;
   billingAddress?: string;
+  carteIdentiteUrl?: string | null;
 }
 
 export interface Espace {

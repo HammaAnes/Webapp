@@ -46,6 +46,7 @@ function adaptUser(rawUser: Record<string, unknown>): User {
     siegeSocial: rawUser.siege_social || rawUser.siegeSocial,
     capital: rawUser.capital,
     dateCreationEntreprise: rawUser.date_creation_entreprise || rawUser.dateCreationEntreprise,
+    carteIdentiteUrl: rawUser.carte_identite_url || rawUser.carteIdentiteUrl || null,
   } as User;
 }
 

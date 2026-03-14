@@ -26,7 +26,7 @@ try {
                 id, email, nom, prenom, telephone, role, statut,
                 profession, entreprise, wilaya, commune,
                 type_entreprise, nif, nis, registre_commerce,
-                derniere_connexion, created_at
+                derniere_connexion, created_at, carte_identite_url
               FROM users
               ORDER BY created_at DESC
               " . $pagination->getSqlLimit();

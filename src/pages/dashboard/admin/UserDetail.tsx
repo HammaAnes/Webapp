@@ -1,19 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  User,
-  Mail,
-  Phone,
-  Briefcase,
-  Building,
-  Calendar,
-  ArrowLeft,
-  Edit,
-  Trash2,
-  Shield,
-  CheckCircle,
-  XCircle,
-} from "lucide-react";
+import { User, Mail, Phone, Briefcase, Building, Calendar, ArrowLeft, FileEdit as Edit, Trash2, Shield, CheckCircle, XCircle, CreditCard, CheckCircle2, AlertCircle, ExternalLink } from "lucide-react";
 import { apiClient } from "../../../lib/api-client";
 import { useAppStore } from "../../../store/store";
 import Button from "../../../components/ui/Button";
@@ -38,6 +25,7 @@ interface UserDetailData {
   emailVerified: boolean;
   createdAt?: string;
   created_at?: string;
+  carte_identite_url?: string | null;
 }
 
 const UserDetail: React.FC = () => {
@@ -344,6 +332,35 @@ const UserDetail: React.FC = () => {
                 <p className="font-mono text-xs break-all">{user.id}</p>
               </div>
             </div>
+          </Card>
+
+          <Card className="p-6">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-accent" />
+              Carte d'identité
+            </h2>
+            {user.carte_identite_url ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-emerald-700 text-sm font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Document archivé
+                </div>
+                <a
+                  href={`/api/${user.carte_identite_url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-sky-600 hover:text-sky-700 font-medium transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Consulter le document
+                </a>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-amber-700 text-sm">
+                <AlertCircle className="w-4 h-4" />
+                Carte d'identité non fournie
+              </div>
+            )}
           </Card>
         </div>
       </div>

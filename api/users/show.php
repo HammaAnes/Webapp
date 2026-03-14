@@ -34,7 +34,8 @@ try {
                 article_imposition, numero_auto_entrepreneur,
                 raison_sociale, date_creation_entreprise, capital,
                 siege_social, activite_principale, forme_juridique,
-                derniere_connexion, created_at, updated_at
+                derniere_connexion, created_at, updated_at,
+                carte_identite_url
               FROM users
               WHERE id = :id";
 

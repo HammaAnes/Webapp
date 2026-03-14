@@ -48,6 +48,10 @@ try {
     } else {
         $userId = $authUserId;
         $contactId = null;
+
+        if (empty($authUser['carte_identite_url'])) {
+            Response::error("Vous devez télécharger votre carte d'identité avant d'effectuer une réservation.", 403);
+        }
     }
 
     if (empty($espaceId)) {

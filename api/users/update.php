@@ -100,7 +100,9 @@ try {
         'activitePrincipale' => 'activite_principale',
         'activite_principale' => 'activite_principale',
         'formeJuridique' => 'forme_juridique',
-        'forme_juridique' => 'forme_juridique'
+        'forme_juridique' => 'forme_juridique',
+        'carteIdentiteUrl' => 'carte_identite_url',
+        'carte_identite_url' => 'carte_identite_url'
     ];
 
     // L'admin peut aussi changer le rôle et le statut

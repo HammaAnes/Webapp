@@ -1,16 +1,19 @@
-import React, { useState } from "react";
-import { User, Mail, Phone, Building, Edit2, Save, X } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { User, Mail, Phone, Building, FileEdit as Edit2, Save, X, CreditCard, Upload, CheckCircle2, AlertCircle, Loader2, FileText } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useAppStore } from "../../store/store";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Input from "../../components/ui/Input";
+import { apiClient } from "../../lib/api-client";
 import toast from "react-hot-toast";
 
 const Profile = () => {
   const { user, loadUser } = useAuthStore();
   const { updateUser } = useAppStore();
   const [isEditing, setIsEditing] = useState(false);
+  const [idUploading, setIdUploading] = useState(false);
+  const idFileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     nom: user?.nom || "",
     prenom: user?.prenom || "",
@@ -38,6 +41,37 @@ const Profile = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await performUpdate();
+  };
+
+  const handleIdUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(file.type)) {
+      toast.error("Format non supporté. Utilisez JPG, PNG ou PDF.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Fichier trop volumineux (max 5 Mo).");
+      return;
+    }
+    setIdUploading(true);
+    try {
+      const res = await apiClient.uploadDocument(file, "user", user.id, "carte_identite");
+      if (res.success && res.data?.chemin_fichier) {
+        await apiClient.put(`/users/update.php?id=${user.id}`, {
+          carteIdentiteUrl: res.data.chemin_fichier,
+        });
+        await loadUser();
+        toast.success("Carte d'identité enregistrée !");
+      } else {
+        toast.error((res as { error?: string }).error || "Erreur lors de l'upload.");
+      }
+    } catch {
+      toast.error("Erreur lors de l'upload.");
+    } finally {
+      setIdUploading(false);
+      if (idFileInputRef.current) idFileInputRef.current.value = "";
+    }
   };
 
   if (!user) return null;
@@ -164,6 +198,78 @@ const Profile = () => {
             </Button>
           )}
         </form>
+      </Card>
+
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center">
+              <CreditCard className="w-5 h-5 text-sky-600" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">Carte d'identité nationale</h2>
+              <p className="text-sm text-gray-500">Requise pour effectuer des réservations</p>
+            </div>
+          </div>
+          {user.carteIdentiteUrl ? (
+            <span className="flex items-center gap-1.5 text-emerald-700 text-sm font-medium bg-emerald-50 px-3 py-1.5 rounded-lg">
+              <CheckCircle2 className="w-4 h-4" />
+              Enregistrée
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-amber-700 text-sm font-medium bg-amber-50 px-3 py-1.5 rounded-lg">
+              <AlertCircle className="w-4 h-4" />
+              Non fournie
+            </span>
+          )}
+        </div>
+
+        <input
+          ref={idFileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,application/pdf"
+          onChange={handleIdUpload}
+          className="hidden"
+        />
+
+        {user.carteIdentiteUrl ? (
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <FileText className="w-4 h-4 text-gray-400" />
+              Document archivé
+            </div>
+            <button
+              onClick={() => idFileInputRef.current?.click()}
+              disabled={idUploading}
+              className="text-sm text-sky-600 hover:text-sky-700 font-medium transition-colors disabled:opacity-50"
+            >
+              {idUploading ? (
+                <span className="flex items-center gap-1"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Mise à jour…</span>
+              ) : "Remplacer"}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => idFileInputRef.current?.click()}
+            disabled={idUploading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl border-2 border-dashed border-gray-300 hover:border-sky-400 hover:bg-sky-50 text-gray-600 hover:text-sky-700 transition-all font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {idUploading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Enregistrement en cours…
+              </>
+            ) : (
+              <>
+                <Upload className="w-5 h-5" />
+                Télécharger ma carte d'identité (JPG, PNG ou PDF — max 5 Mo)
+              </>
+            )}
+          </button>
+        )}
+        <p className="mt-3 text-xs text-gray-400">
+          Vos documents sont stockés de façon sécurisée et ne sont utilisés qu'à des fins de vérification d'identité.
+        </p>
       </Card>
     </div>
   );
