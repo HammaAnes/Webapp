@@ -936,6 +936,13 @@ class ApiClient {
     });
   }
 
+  async updateParrainageStatut(id: string, statut: string) {
+    return this.request("/parrainages/update.php", {
+      method: "PATCH",
+      body: JSON.stringify({ id, statut }),
+    });
+  }
+
   // ============= STATISTIQUES =============
   async getAdminStats() {
     return this.request("/admin/stats.php");

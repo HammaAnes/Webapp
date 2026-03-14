@@ -14,6 +14,7 @@ import {
   User,
   Mail,
   CreditCard,
+  ChevronRight,
 } from "lucide-react";
 import { apiClient } from "../../../lib/api-client";
 import { useAppStore } from "../../../store/store";
@@ -72,6 +73,7 @@ const Parrainages = () => {
   const [topParrains, setTopParrains] = useState<TopParrain[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -151,6 +153,32 @@ const Parrainages = () => {
       .slice(0, 5);
 
     setTopParrains(top);
+  };
+
+  const handleUpdateStatut = async (id: string, newStatut: string) => {
+    setUpdatingId(id);
+    try {
+      const response = await apiClient.updateParrainageStatut(id, newStatut);
+      if (response.success) {
+        setParrainages((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, statut: newStatut as ParrainageDetail["statut"] } : p))
+        );
+        toast.success("Statut mis à jour");
+        await loadData();
+      } else {
+        toast.error("Erreur lors de la mise à jour");
+      }
+    } catch {
+      toast.error("Erreur lors de la mise à jour");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const getNextStatut = (statut: string): { label: string; value: string } | null => {
+    if (statut === "en_attente") return { label: "Valider", value: "valide" };
+    if (statut === "valide") return { label: "Marquer payé", value: "paye" };
+    return null;
   };
 
   const filteredParrainages = parrainages.filter(
@@ -389,6 +417,9 @@ const Parrainages = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Statut
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Action
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -462,6 +493,28 @@ const Parrainages = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatutBadge(parrainage.statut)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {(() => {
+                          const next = getNextStatut(parrainage.statut);
+                          if (!next) return <span className="text-xs text-gray-400">—</span>;
+                          return (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={updatingId === parrainage.id}
+                              onClick={() => handleUpdateStatut(parrainage.id, next.value)}
+                              className="flex items-center gap-1"
+                            >
+                              {updatingId === parrainage.id ? (
+                                <Clock className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <ChevronRight className="w-3 h-3" />
+                              )}
+                              {next.label}
+                            </Button>
+                          );
+                        })()}
                       </td>
                     </tr>
                   ))}
