@@ -75,7 +75,7 @@ interface UserResult {
 const defaultSettings: AllSettings = {
   general: {
     nom_entreprise: "COFFICE",
-    email: "contact@coffice.dz",
+    email: "desk@coffice.dz",
     telephone: "+213 795 38 01 24",
     adresse: "4ème étage, Mohammadia Mall, Alger",
     horaires_ouverture: "08:30",
