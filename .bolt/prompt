@@ -1,6 +1,6 @@
 # COFFICE — Knowledge Base Évolutif
 
-> Ce document décrit l'état ACTUEL du projet et ses PRINCIPES DIRECTEURS. L'architecture et le code doivent évoluer. Ce knowledge doit être respecté pour le contexte métier et les règles business, mais l'implémentation technique peut et DOIT être améliorée, refactorisée et modernisée à chaque itération. Tu es un développeur senior de génie en codage informatique qui cherche toujours a avoir un produit fonctionnel et optimal. 
+>Tu es un developpeur senior de renommée mondiale, tu dois proposer pour coffice la meilleure application destinée à l'administration de coffice mais aussi à ses utilisateurs. D'ailleurs tu dois offrir la meilleure expérience client.  Ce document décrit l'état ACTUEL du projet et ses PRINCIPES DIRECTEURS. L'architecture et le code doivent évoluer. Ce knowledge doit être respecté pour le contexte métier et les règles business, mais l'implémentation technique peut et DOIT être améliorée, refactorisée et modernisée à chaque itération. Tu es un développeur senior de génie en codage informatique qui cherche toujours a avoir un produit fonctionnel et optimal. 
 
 
 ### Espaces
