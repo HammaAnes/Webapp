@@ -15,6 +15,8 @@ import {
   CreditCard,
   FileText,
   Target,
+  BarChart3,
+  Zap,
 } from "lucide-react";
 import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
@@ -41,6 +43,8 @@ import {
   calcDomiciliationStats,
   calcSubscriptionStats,
   calcPaymentMethods,
+  calcRevPAR,
+  calcRevenuePerHour,
 } from "../../../services/statistics";
 import type { Period } from "../../../services/statistics";
 import jsPDF from "jspdf";
@@ -123,6 +127,8 @@ export default function Reports() {
   const domiciliationStats = useMemo(() => calcDomiciliationStats(demandesDomiciliation), [demandesDomiciliation]);
   const subscriptionStats = useMemo(() => calcSubscriptionStats(abonnementsUtilisateurs), [abonnementsUtilisateurs]);
   const paymentMethods = useMemo(() => calcPaymentMethods(reservations, range), [reservations, range]);
+  const revpar = useMemo(() => calcRevPAR(reservations, espaces, range), [reservations, espaces, range]);
+  const revenuePerHour = useMemo(() => calcRevenuePerHour(reservations, range), [reservations, range]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -155,6 +161,8 @@ export default function Reports() {
         ["Taux de confirmation", `${confirmationRate}%`, ""],
         ["Heures reservees", `${hoursBooked}h`, ""],
         ["Annulations", `${cancellationStats.total} (${cancellationStats.rate}%)`, `${formatNumber(cancellationStats.revenueLost)} DA perdus`],
+        ["RevPAR", `${formatNumber(revpar)} DA`, ""],
+        ["Rev. par heure", `${formatNumber(revenuePerHour)} DA`, ""],
       ],
     });
 
@@ -174,7 +182,7 @@ export default function Reports() {
     }
 
     doc.save(`coffice-rapport-${period}-${new Date().toISOString().slice(0, 10)}.pdf`);
-  }, [period, currentRevenue, revenueVariation, currentReservationCount, reservationVariation, currentNewUsers, userVariation, occupancyRate, averageTicket, confirmationRate, hoursBooked, cancellationStats, topClients]);
+  }, [period, currentRevenue, revenueVariation, currentReservationCount, reservationVariation, currentNewUsers, userVariation, occupancyRate, averageTicket, confirmationRate, hoursBooked, cancellationStats, topClients, revpar, revenuePerHour]);
 
   const exportExcel = useCallback(() => {
     const wb = XLSX.utils.book_new();
@@ -191,6 +199,8 @@ export default function Reports() {
       { Indicateur: "Taux confirmation", Valeur: `${confirmationRate}%`, Variation: "" },
       { Indicateur: "Heures reservees", Valeur: hoursBooked, Variation: "" },
       { Indicateur: "Annulations", Valeur: cancellationStats.total, Variation: `${cancellationStats.rate}%` },
+      { Indicateur: "RevPAR", Valeur: revpar, Variation: "" },
+      { Indicateur: "Rev. par heure", Valeur: revenuePerHour, Variation: "" },
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(kpiData), "KPI");
 
@@ -215,7 +225,7 @@ export default function Reports() {
     }
 
     XLSX.writeFile(wb, `coffice-rapport-${period}-${new Date().toISOString().slice(0, 10)}.xlsx`);
-  }, [period, currentRevenue, revenueVariation, currentReservationCount, reservationVariation, currentNewUsers, userVariation, occupancyRate, averageTicket, confirmationRate, hoursBooked, cancellationStats, topClients, spacePerformance]);
+  }, [period, currentRevenue, revenueVariation, currentReservationCount, reservationVariation, currentNewUsers, userVariation, occupancyRate, averageTicket, confirmationRate, hoursBooked, cancellationStats, topClients, spacePerformance, revpar, revenuePerHour]);
 
   const VariationBadge = ({ value }: { value: number }) => {
     if (value === 0) return null;
@@ -313,36 +323,46 @@ export default function Reports() {
         </motion.div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         <Card className="p-4 text-center">
           <Target className="w-5 h-5 text-amber-500 mx-auto mb-2" />
-          <p className="text-lg font-bold text-gray-900">{formatCurrency(averageTicket)}</p>
+          <p className="text-base font-bold text-gray-900">{formatCurrency(averageTicket)}</p>
           <p className="text-xs text-gray-500">Ticket moyen</p>
         </Card>
         <Card className="p-4 text-center">
           <Clock className="w-5 h-5 text-blue-500 mx-auto mb-2" />
-          <p className="text-lg font-bold text-gray-900">{hoursBooked}h</p>
+          <p className="text-base font-bold text-gray-900">{hoursBooked}h</p>
           <p className="text-xs text-gray-500">Heures reservees</p>
         </Card>
         <Card className="p-4 text-center">
           <TrendingUp className="w-5 h-5 text-emerald-500 mx-auto mb-2" />
-          <p className="text-lg font-bold text-gray-900">{confirmationRate}%</p>
+          <p className="text-base font-bold text-gray-900">{confirmationRate}%</p>
           <p className="text-xs text-gray-500">Taux confirmation</p>
         </Card>
         <Card className="p-4 text-center">
           <XCircle className="w-5 h-5 text-red-500 mx-auto mb-2" />
-          <p className="text-lg font-bold text-gray-900">{cancellationStats.total}</p>
+          <p className="text-base font-bold text-gray-900">{cancellationStats.total}</p>
           <p className="text-xs text-gray-500">Annulations ({cancellationStats.rate}%)</p>
         </Card>
         <Card className="p-4 text-center">
           <CreditCard className="w-5 h-5 text-teal-500 mx-auto mb-2" />
-          <p className="text-lg font-bold text-gray-900">{subscriptionStats.activeCount}</p>
+          <p className="text-base font-bold text-gray-900">{subscriptionStats.activeCount}</p>
           <p className="text-xs text-gray-500">Abonnes actifs</p>
         </Card>
         <Card className="p-4 text-center">
           <FileText className="w-5 h-5 text-blue-500 mx-auto mb-2" />
-          <p className="text-lg font-bold text-gray-900">{domiciliationStats.active}</p>
-          <p className="text-xs text-gray-500">Domiciliations actives</p>
+          <p className="text-base font-bold text-gray-900">{domiciliationStats.active}</p>
+          <p className="text-xs text-gray-500">Domiciliations</p>
+        </Card>
+        <Card className="p-4 text-center col-span-1">
+          <BarChart3 className="w-5 h-5 text-orange-500 mx-auto mb-2" />
+          <p className="text-base font-bold text-gray-900">{formatCurrency(revpar)}</p>
+          <p className="text-xs text-gray-500">RevPAR</p>
+        </Card>
+        <Card className="p-4 text-center col-span-1">
+          <Zap className="w-5 h-5 text-rose-500 mx-auto mb-2" />
+          <p className="text-base font-bold text-gray-900">{formatCurrency(revenuePerHour)}</p>
+          <p className="text-xs text-gray-500">Rev./heure</p>
         </Card>
       </div>
 

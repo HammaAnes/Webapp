@@ -100,7 +100,7 @@ export function calcRevenueBySource(
 
   const domRevenue = domiciliations
     .filter((d) => d.statut === "active")
-    .reduce((sum, d) => sum + (d.montantMensuel || 15000), 0);
+    .reduce((sum, d) => sum + (d.montantMensuel || 0), 0);
 
   return {
     reservations: resRevenue,
@@ -403,11 +403,14 @@ export function calcDomiciliationStats(domiciliations: DemandeDomiciliation[]): 
     d.statut === "en_attente_complements"
   ).length;
 
+  const activeDomiciliations = domiciliations.filter((d) => d.statut === "active");
+  const revenue = activeDomiciliations.reduce((sum, d) => sum + (d.montantMensuel || 0), 0);
+
   return {
     active,
     pending,
     total: domiciliations.length,
-    revenue: active * 15000,
+    revenue,
   };
 }
 
@@ -418,4 +421,36 @@ export function calcSubscriptionStats(abonnementsUtilisateurs: AbonnementUtilisa
     monthlyRevenue: active.reduce((sum, a) => sum + (a.abonnement?.prix ?? 0), 0),
     total: abonnementsUtilisateurs.length,
   };
+}
+
+export function calcRevPAR(
+  reservations: Reservation[],
+  espaces: Espace[],
+  range: PeriodRange,
+): number {
+  if (espaces.length === 0) return 0;
+
+  const periodRes = filterReservationsInRange(reservations, range)
+    .filter((r) => r.statut !== "annulee");
+
+  const totalRevenue = periodRes.reduce((sum, r) => sum + (r.montantTotal || 0), 0);
+
+  const msInRange = range.end.getTime() - range.start.getTime();
+  const operatingDays = Math.max(Math.ceil(msInRange / (1000 * 60 * 60 * 24)), 1);
+
+  const availableSlots = espaces.length * operatingDays;
+
+  return availableSlots > 0 ? Math.round(totalRevenue / availableSlots) : 0;
+}
+
+export function calcRevenuePerHour(
+  reservations: Reservation[],
+  range: PeriodRange,
+): number {
+  const hours = calcHoursBooked(reservations, range);
+  if (hours === 0) return 0;
+  const revenue = filterReservationsInRange(reservations, range)
+    .filter((r) => r.statut !== "annulee")
+    .reduce((sum, r) => sum + (r.montantTotal || 0), 0);
+  return Math.round(revenue / hours);
 }

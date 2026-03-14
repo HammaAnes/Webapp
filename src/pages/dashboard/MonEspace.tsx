@@ -10,6 +10,7 @@ import {
   Shield,
   Briefcase,
   Lock,
+  AlertCircle,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useAppStore } from "../../store/store";
@@ -311,8 +312,43 @@ const MonEspace = () => {
         : "warning"
     : null;
 
+  const userExpirationAlert = (() => {
+    if (!demande?.dateFinContrat || !["active", "domiciliation_creee"].includes(demande.statut)) return null;
+    const fin = new Date(demande.dateFinContrat);
+    const now = new Date();
+    const daysLeft = Math.ceil((fin.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysLeft < 0) return { type: "expired", daysLeft, fin };
+    if (daysLeft <= 30) return { type: "warning", daysLeft, fin };
+    return null;
+  })();
+
   return (
     <div className="space-y-6">
+      {userExpirationAlert && (
+        <div className={`flex items-start gap-3 p-4 rounded-xl border ${userExpirationAlert.type === "expired" ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"}`}>
+          <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${userExpirationAlert.type === "expired" ? "text-red-600" : "text-amber-600"}`} />
+          <div className="flex-1">
+            <p className={`font-semibold ${userExpirationAlert.type === "expired" ? "text-red-800" : "text-amber-800"}`}>
+              {userExpirationAlert.type === "expired" ? "Contrat de domiciliation expiré" : `Renouvellement — ${userExpirationAlert.daysLeft} jour${userExpirationAlert.daysLeft > 1 ? "s" : ""} restant${userExpirationAlert.daysLeft > 1 ? "s" : ""}`}
+            </p>
+            <p className={`text-sm mt-0.5 ${userExpirationAlert.type === "expired" ? "text-red-600" : "text-amber-600"}`}>
+              {userExpirationAlert.type === "expired"
+                ? "Votre contrat a expiré. Contactez l'équipe Coffice pour le renouveler."
+                : "Votre contrat de domiciliation arrive à échéance prochainement. Pensez à contacter Coffice pour le renouvellement."
+              }
+            </p>
+          </div>
+          {userExpirationAlert.type === "warning" && (
+            <button
+              onClick={handleRenewRequest}
+              disabled={domLoading}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors flex-shrink-0"
+            >
+              Demander le renouvellement
+            </button>
+          )}
+        </div>
+      )}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 md:p-8">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyem0wLThoMnYxMmgtMlYyNnptLTE2IDRWMTJIMTJ2LTJIMjR2MmgtNHY0em0xNi00aDJ2NEgzNHYtMmgydi0yaC0yem0tOC04aDJ2NEgyOHYtMmgydi0yaC0yem0tOCAwaDJ2MkgyMHYtMnptMCA4aDJ2MkgyMHYtMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-50" />
         <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">

@@ -20,6 +20,8 @@ import {
   ChevronRight,
   Check,
   X,
+  LayoutGrid,
+  CalendarDays,
 } from 'lucide-react';
 import { format, isToday, differenceInMinutes, isAfter, isBefore } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -34,13 +36,23 @@ import type { Reservation } from '../../../types';
 
 const AUTO_REFRESH_INTERVAL = 120000;
 
+type ViewMode = 'list' | 'timeline';
+
+const TIMELINE_HOURS = Array.from({ length: 21 }, (_, i) => {
+  const minutes = 8 * 60 + 30 + i * 30;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return { label: `${h}h${m === 0 ? '00' : m}`, minutes };
+});
+
 export default function Aujourdhui() {
-  const { reservations, initializeData, loadUsers, updateReservation } = useAppStore();
+  const { reservations, espaces, initializeData, loadUsers, updateReservation } = useAppStore();
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(new Date());
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const autoRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -369,6 +381,37 @@ export default function Aujourdhui() {
     );
   };
 
+  const todayEspacesWithReservations = useMemo(() => {
+    const espaceIds = new Set(todayReservations.map(r => r.espaceId));
+    return espaces.filter(e => espaceIds.has(e.id)).sort((a, b) => a.nom.localeCompare(b.nom));
+  }, [todayReservations, espaces]);
+
+  const getTimelinePosition = (date: Date | string) => {
+    const d = new Date(date);
+    const totalMinutes = d.getHours() * 60 + d.getMinutes();
+    const startMinutes = 8 * 60 + 30;
+    const endMinutes = 18 * 60 + 30;
+    const totalRange = endMinutes - startMinutes;
+    return Math.max(0, Math.min(100, ((totalMinutes - startMinutes) / totalRange) * 100));
+  };
+
+  const getTimelineWidth = (start: Date | string, end: Date | string) => {
+    const startD = new Date(start);
+    const endD = new Date(end);
+    const startMinutes = startD.getHours() * 60 + startD.getMinutes();
+    const endMinutes = endD.getHours() * 60 + endD.getMinutes();
+    const totalRange = 10 * 60;
+    return Math.max(1, Math.min(100, ((endMinutes - startMinutes) / totalRange) * 100));
+  };
+
+  const nowPosition = useMemo(() => {
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const startMinutes = 8 * 60 + 30;
+    const endMinutes = 18 * 60 + 30;
+    if (nowMinutes < startMinutes || nowMinutes > endMinutes) return null;
+    return ((nowMinutes - startMinutes) / (endMinutes - startMinutes)) * 100;
+  }, [now]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -395,6 +438,22 @@ export default function Aujourdhui() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${viewMode === 'list' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span className="hidden sm:inline">Liste</span>
+            </button>
+            <button
+              onClick={() => setViewMode('timeline')}
+              className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${viewMode === 'timeline' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+            >
+              <CalendarDays className="w-4 h-4" />
+              <span className="hidden sm:inline">Timeline</span>
+            </button>
+          </div>
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -452,7 +511,87 @@ export default function Aujourdhui() {
         </Card>
       </div>
 
-      {pendingReservations.length > 0 && (
+      {viewMode === 'timeline' && (
+        <Card className="overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="font-semibold text-gray-900">Vue Planning — {format(now, 'd MMMM yyyy', { locale: fr })}</h2>
+            <span className="text-xs text-gray-400">8h30 - 18h30</span>
+          </div>
+          <div className="overflow-x-auto">
+            <div className="min-w-[700px]">
+              <div className="flex border-b border-gray-100 bg-gray-50">
+                <div className="w-36 flex-shrink-0 px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Espace</div>
+                <div className="flex-1 relative">
+                  <div className="flex">
+                    {TIMELINE_HOURS.filter((_, i) => i % 2 === 0).map((h) => (
+                      <div key={h.minutes} className="flex-1 text-center text-xs text-gray-400 py-2">{h.label}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {todayEspacesWithReservations.length === 0 ? (
+                <div className="px-5 py-8 text-center text-gray-400 text-sm">
+                  Aucune réservation aujourd'hui
+                </div>
+              ) : (
+                todayEspacesWithReservations.map((espace) => {
+                  const espaceResas = todayReservations.filter(r => r.espaceId === espace.id && r.statut !== 'annulee');
+                  return (
+                    <div key={espace.id} className="flex border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                      <div className="w-36 flex-shrink-0 px-4 py-3">
+                        <p className="text-sm font-medium text-gray-900 truncate">{espace.nom}</p>
+                        <p className="text-xs text-gray-400">{espace.type}</p>
+                      </div>
+                      <div className="flex-1 relative py-3 pr-4">
+                        <div className="relative h-10 bg-gray-100 rounded-lg overflow-hidden">
+                          {nowPosition !== null && (
+                            <div
+                              className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10"
+                              style={{ left: `${nowPosition}%` }}
+                            />
+                          )}
+                          {espaceResas.map((r) => {
+                            const left = getTimelinePosition(r.dateDebut);
+                            const width = getTimelineWidth(r.dateDebut, r.dateFin);
+                            const isActive = r.statut === 'en_cours' || r.statut === 'confirmee';
+                            const color = r.statut === 'en_cours'
+                              ? 'bg-emerald-500'
+                              : r.statut === 'confirmee'
+                              ? 'bg-blue-500'
+                              : 'bg-gray-400';
+                            return (
+                              <div
+                                key={r.id}
+                                className={`absolute top-1 bottom-1 ${color} rounded-md flex items-center px-2 overflow-hidden cursor-pointer hover:brightness-110 transition-all`}
+                                style={{ left: `${left}%`, width: `${width}%`, minWidth: '2px' }}
+                                title={`${r.utilisateur?.prenom} ${r.utilisateur?.nom} | ${format(new Date(r.dateDebut), 'HH:mm')} - ${format(new Date(r.dateFin), 'HH:mm')}`}
+                              >
+                                {width > 8 && (
+                                  <span className="text-white text-xs font-medium truncate">
+                                    {r.utilisateur?.prenom} {r.utilisateur?.nom?.charAt(0)}.
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div className="px-5 py-2 bg-gray-50 border-t border-gray-100 flex items-center gap-4 text-xs text-gray-500">
+                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500" />En cours</div>
+                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-500" />Confirmée</div>
+                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-gray-400" />Autre</div>
+                {nowPosition !== null && <div className="flex items-center gap-1.5"><span className="w-0.5 h-4 bg-red-500" />Maintenant</div>}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {viewMode === 'list' && pendingReservations.length > 0 && (
         <Card className="overflow-hidden border-amber-200">
           <div className="flex items-center justify-between px-5 py-3 bg-amber-50 border-b border-amber-100">
             <div className="flex items-center gap-2">
@@ -529,7 +668,7 @@ export default function Aujourdhui() {
         </Card>
       )}
 
-      {categorizedReservations.activeNow.length > 0 && (
+      {viewMode === 'list' && categorizedReservations.activeNow.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-4">
             <UserCheck className="w-5 h-5 text-emerald-600" />
@@ -544,7 +683,7 @@ export default function Aujourdhui() {
         </div>
       )}
 
-      {categorizedReservations.arrivingSoon.length > 0 && (
+      {viewMode === 'list' && categorizedReservations.arrivingSoon.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-4">
             <ArrowRight className="w-5 h-5 text-amber-600" />
@@ -559,7 +698,7 @@ export default function Aujourdhui() {
         </div>
       )}
 
-      {categorizedReservations.leavingSoon.length > 0 && (
+      {viewMode === 'list' && categorizedReservations.leavingSoon.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Timer className="w-5 h-5 text-orange-600" />
@@ -574,7 +713,7 @@ export default function Aujourdhui() {
         </div>
       )}
 
-      {categorizedReservations.upcoming.length > 0 && (
+      {viewMode === 'list' && categorizedReservations.upcoming.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-blue-600" />
@@ -598,7 +737,7 @@ export default function Aujourdhui() {
         </div>
       )}
 
-      {categorizedReservations.completed.length > 0 && (
+      {viewMode === 'list' && categorizedReservations.completed.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-4">
             <CheckCircle className="w-5 h-5 text-gray-500" />
@@ -613,7 +752,7 @@ export default function Aujourdhui() {
         </div>
       )}
 
-      {todayReservations.length === 0 && (
+      {viewMode === 'list' && todayReservations.length === 0 && (
         <Card className="p-12 text-center">
           <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-900 mb-2">Aucune réservation aujourd'hui</h3>

@@ -32,9 +32,13 @@ interface EspaceAPI {
   prix_heure?: number;
   prix_jour?: number;
   prix_demi_journee?: number;
+  prix_semaine?: number;
+  prix_mois?: number;
   prixHeure?: number;
   prixJour?: number;
   prixDemiJournee?: number;
+  prixSemaine?: number;
+  prixMois?: number;
   disponible: boolean | number;
   description?: string;
   image?: string;
@@ -88,6 +92,18 @@ const getPrixDemiJournee = (espace: EspaceAPI | null): number => {
   if (prix > 0) return prix;
   const prixJ = getPrixJour(espace);
   return prixJ > 0 ? Math.round(prixJ / 2) : 0;
+};
+
+const getPrixSemaine = (espace: EspaceAPI | null): number => {
+  if (!espace) return 0;
+  const prix = espace.prix_semaine ?? espace.prixSemaine ?? 0;
+  return typeof prix === "string" ? parseFloat(prix) : prix;
+};
+
+const getPrixMois = (espace: EspaceAPI | null): number => {
+  if (!espace) return 0;
+  const prix = espace.prix_mois ?? espace.prixMois ?? 0;
+  return typeof prix === "string" ? parseFloat(prix) : prix;
 };
 
 const OPENING_HOUR = WORKING_HOURS.OPENING_HOUR;
@@ -333,6 +349,8 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
 
     const prixJ = getPrixJour(currentEspace);
     const prixDJ = getPrixDemiJournee(currentEspace);
+    const prixS = getPrixSemaine(currentEspace);
+    const prixM = getPrixMois(currentEspace);
     const isOS = isOpenSpace(currentEspace);
     const multiplier = isOS ? (watchParticipants || 1) : 1;
 
@@ -342,7 +360,12 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
         setEstimatedAmount(0);
         return;
       }
-      setEstimatedAmount(Math.round(days * prixJ * multiplier));
+      const baseCost = days * prixJ * multiplier;
+      const weeks = Math.floor(days / 5);
+      const remainingDays = days % 5;
+      const weeklyCost = prixS > 0 ? (weeks * prixS + remainingDays * prixJ) * multiplier : baseCost;
+      const bestCost = prixS > 0 ? Math.min(baseCost, weeklyCost) : baseCost;
+      setEstimatedAmount(Math.round(bestCost));
       return;
     }
 
@@ -500,11 +523,22 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     if (!currentEspace || !durationInfo) return null;
     const prixJ = getPrixJour(currentEspace);
     const prixDJ = getPrixDemiJournee(currentEspace);
+    const prixS = getPrixSemaine(currentEspace);
     const isOS = isOpenSpace(currentEspace);
     const participants = isOS ? (watchParticipants || 1) : 1;
 
     if (reservationType === "multi_day" && durationInfo.days) {
-      return { type: "multiday", rate: prixJ, quantity: durationInfo.days, unit: "jour", participants, isOpenSpace: isOS };
+      const days = durationInfo.days;
+      const weeks = Math.floor(days / 5);
+      const remainingDays = days % 5;
+      if (prixS > 0 && weeks > 0) {
+        const weeklyCost = (weeks * prixS + remainingDays * prixJ) * participants;
+        const dailyCost = days * prixJ * participants;
+        if (weeklyCost < dailyCost) {
+          return { type: "weekly", rate: prixS, quantity: weeks, unit: "semaine", remainingDays, remainingRate: prixJ, participants, isOpenSpace: isOS };
+        }
+      }
+      return { type: "multiday", rate: prixJ, quantity: days, unit: "jour", participants, isOpenSpace: isOS };
     }
 
     if (durationInfo.hours <= 4) {
@@ -1380,10 +1414,21 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                     </div>
                     <div className="flex items-center justify-between mb-2 text-sm">
                       <span className="text-gray-300">
-                        {pricingBreakdown.participants > 1
-                          ? `${pricingBreakdown.participants} pers. x ${pricingBreakdown.quantity} ${pricingBreakdown.unit}${pricingBreakdown.quantity > 1 && pricingBreakdown.type === "multiday" ? "s" : ""} x ${pricingBreakdown.rate.toLocaleString()} DA`
-                          : `${pricingBreakdown.quantity} ${pricingBreakdown.unit}${pricingBreakdown.quantity > 1 && pricingBreakdown.type === "multiday" ? "s" : ""} x ${pricingBreakdown.rate.toLocaleString()} DA`
-                        }
+                        {pricingBreakdown.type === "weekly" && "remainingDays" in pricingBreakdown ? (
+                          <>
+                            {pricingBreakdown.participants > 1
+                              ? `${pricingBreakdown.participants} pers. x ${pricingBreakdown.quantity} semaine${pricingBreakdown.quantity > 1 ? "s" : ""} x ${pricingBreakdown.rate.toLocaleString()} DA${(pricingBreakdown.remainingDays as number) > 0 ? ` + ${pricingBreakdown.remainingDays} j. x ${(pricingBreakdown.remainingRate as number).toLocaleString()} DA` : ""}`
+                              : `${pricingBreakdown.quantity} semaine${pricingBreakdown.quantity > 1 ? "s" : ""} x ${pricingBreakdown.rate.toLocaleString()} DA${(pricingBreakdown.remainingDays as number) > 0 ? ` + ${pricingBreakdown.remainingDays} j. x ${(pricingBreakdown.remainingRate as number).toLocaleString()} DA` : ""}`
+                            }
+                          </>
+                        ) : (
+                          <>
+                            {pricingBreakdown.participants > 1
+                              ? `${pricingBreakdown.participants} pers. x ${pricingBreakdown.quantity} ${pricingBreakdown.unit}${pricingBreakdown.quantity > 1 && pricingBreakdown.type === "multiday" ? "s" : ""} x ${pricingBreakdown.rate.toLocaleString()} DA`
+                              : `${pricingBreakdown.quantity} ${pricingBreakdown.unit}${pricingBreakdown.quantity > 1 && pricingBreakdown.type === "multiday" ? "s" : ""} x ${pricingBreakdown.rate.toLocaleString()} DA`
+                            }
+                          </>
+                        )}
                       </span>
                       <span className="font-medium">{estimatedAmount.toLocaleString()} DA</span>
                     </div>

@@ -518,14 +518,14 @@ const AdminDashboard = () => {
 
 const UserDashboard = () => {
   const { user } = useAuthStore();
-  const { reservations, espaces, initializeData } = useAppStore();
+  const { reservations, espaces, initializeData, getUserDemandeDomiciliation, loadDemandesDomiciliation, abonnementsUtilisateurs } = useAppStore();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
 
     const loadData = async () => {
-      await initializeData();
+      await Promise.all([initializeData(), loadDemandesDomiciliation()]);
       if (mounted) {
         setLoading(false);
       }
@@ -549,10 +549,46 @@ const UserDashboard = () => {
   const userReservations = reservations.filter((r) => r.userId === user.id);
   const upcomingReservations = userReservations.filter(
     (r) => new Date(r.dateDebut) > new Date() && r.statut !== "annulee",
-  );
+  ).sort((a, b) => new Date(a.dateDebut).getTime() - new Date(b.dateDebut).getTime());
   const completedReservations = userReservations.filter(
     (r) => new Date(r.dateFin) < new Date() && r.statut === "confirmee",
   );
+  const nextReservation = upcomingReservations[0] || null;
+  const demande = getUserDemandeDomiciliation(user.id);
+
+  const getHour = (date: string | Date) => format(new Date(date), "HH:mm");
+  const getDay = (date: string | Date) => format(new Date(date), "EEEE d MMMM", { locale: fr });
+
+  const domiciliationStatusColor = demande
+    ? demande.statut === "active" ? "bg-emerald-500"
+    : demande.statut === "refusee" || demande.statut === "resiliee" ? "bg-red-500"
+    : "bg-amber-500"
+    : null;
+
+  const activeSubscription = abonnementsUtilisateurs.find(
+    (s) => s.userId === user.id && s.statut === "actif"
+  );
+
+  const subscriptionAlert = (() => {
+    if (!activeSubscription?.dateFin) return null;
+    const fin = new Date(activeSubscription.dateFin);
+    const daysLeft = Math.ceil((fin.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    if (daysLeft < 0) return { type: "expired", daysLeft, fin };
+    if (daysLeft <= 7) return { type: "warning", daysLeft, fin };
+    return null;
+  })();
+
+  const domiciliationStatusLabel = demande
+    ? demande.statut === "active" ? "Active"
+    : demande.statut === "dossier_preparatoire" ? "En cours d'examen"
+    : demande.statut === "en_attente_signature" ? "En attente de signature"
+    : demande.statut === "en_attente_complements" ? "Compléments requis"
+    : demande.statut === "domiciliation_creee" ? "Domiciliation créée"
+    : demande.statut === "refusee" ? "Refusée"
+    : demande.statut === "expiree" ? "Expirée"
+    : demande.statut === "resiliee" ? "Résiliée"
+    : demande.statut
+    : null;
 
   return (
     <div className="space-y-8">
@@ -568,6 +604,59 @@ const UserDashboard = () => {
           Voici un aperçu de votre activité chez Coffice
         </p>
       </motion.div>
+
+      {subscriptionAlert && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.02 }}
+        >
+          <div className={`flex items-center gap-3 p-4 rounded-xl border ${subscriptionAlert.type === "expired" ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"}`}>
+            <AlertCircle className={`w-5 h-5 flex-shrink-0 ${subscriptionAlert.type === "expired" ? "text-red-600" : "text-amber-600"}`} />
+            <p className={`text-sm flex-1 ${subscriptionAlert.type === "expired" ? "text-red-700" : "text-amber-700"}`}>
+              {subscriptionAlert.type === "expired"
+                ? "Votre abonnement a expiré."
+                : `Votre abonnement expire dans ${subscriptionAlert.daysLeft} jour${subscriptionAlert.daysLeft > 1 ? "s" : ""}.`
+              }
+            </p>
+            <Link to="/app/abonnements">
+              <Button size="sm" variant="outline" className={subscriptionAlert.type === "expired" ? "border-red-300 text-red-700 hover:bg-red-100" : "border-amber-300 text-amber-700 hover:bg-amber-100"}>
+                Renouveler
+              </Button>
+            </Link>
+          </div>
+        </motion.div>
+      )}
+
+      {nextReservation && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.03 }}
+        >
+          <Card className="p-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white overflow-hidden relative">
+            <div className="absolute right-0 top-0 bottom-0 w-32 opacity-10">
+              <Calendar className="w-32 h-32 -translate-y-4 translate-x-8" />
+            </div>
+            <div className="flex items-start justify-between gap-4 relative">
+              <div>
+                <p className="text-white/80 text-xs font-semibold uppercase tracking-wide mb-1">Prochaine réservation</p>
+                <h3 className="text-xl font-bold text-white">{nextReservation.espace?.nom || "Espace"}</h3>
+                <p className="text-white/90 text-sm mt-1 capitalize">{getDay(nextReservation.dateDebut)}</p>
+                <p className="text-white/80 text-sm">{getHour(nextReservation.dateDebut)} — {getHour(nextReservation.dateFin)}</p>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <span className={`text-xs font-semibold px-3 py-1 rounded-full ${nextReservation.statut === "confirmee" ? "bg-white/20 text-white" : "bg-white/30 text-white"}`}>
+                  {nextReservation.statut === "confirmee" ? "Confirmée" : "En attente"}
+                </span>
+                {nextReservation.montantTotal > 0 && (
+                  <p className="text-white/70 text-xs mt-2">{nextReservation.montantTotal.toLocaleString()} DA</p>
+                )}
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -640,6 +729,28 @@ const UserDashboard = () => {
           <p className="text-white/60 text-xs mt-1 sm:mt-2">Réservations terminées</p>
         </Card>
       </div>
+
+      {demande && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.22 }}
+        >
+          <Link to="/app/mon-espace">
+            <Card hover className="p-5 border-2 border-transparent hover:border-teal-400 transition-all group">
+              <div className="flex items-center gap-4">
+                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${domiciliationStatusColor}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Domiciliation</p>
+                  <p className="font-semibold text-gray-900 text-sm">{demande.raisonSociale || "Mon entreprise"}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{domiciliationStatusLabel}</p>
+                </div>
+                <ArrowUpRight className="w-4 h-4 text-gray-300 group-hover:text-teal-500 transition-colors flex-shrink-0" />
+              </div>
+            </Card>
+          </Link>
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Link to="/app/reservations">

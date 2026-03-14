@@ -146,7 +146,10 @@ export default function DomiciliationDetail() {
           break;
         case "completer":
         case "activer":
-          response = await apiClient.activateDomiciliation(demande.id);
+          response = await apiClient.activateDomiciliation(
+            demande.id,
+            data?.numeroBureau as number | undefined
+          );
           break;
         case "resilier":
           response = await apiClient.updateDemandeDomiciliation(demande.id, {
@@ -260,8 +263,52 @@ export default function DomiciliationDetail() {
   const displayName = demande.raisonSociale || `${demande.representantLegal?.prenom || ""} ${demande.representantLegal?.nom || ""}`.trim() || "Non renseigne";
   const rep = demande.representantLegal;
 
+  const expirationAlert = (() => {
+    if (!demande.dateFinContrat || !["active", "domiciliation_creee"].includes(demande.statut)) return null;
+    const fin = new Date(demande.dateFinContrat);
+    const now = new Date();
+    const daysLeft = Math.ceil((fin.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysLeft < 0) return { type: "expired", daysLeft, date: fin };
+    if (daysLeft <= 30) return { type: "warning", daysLeft, date: fin };
+    return null;
+  })();
+
   return (
     <div className="space-y-6">
+      {expirationAlert && (
+        <div className={`flex items-start gap-3 p-4 rounded-xl border ${
+          expirationAlert.type === "expired"
+            ? "bg-red-50 border-red-200"
+            : "bg-amber-50 border-amber-200"
+        }`}>
+          <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${expirationAlert.type === "expired" ? "text-red-600" : "text-amber-600"}`} />
+          <div className="flex-1">
+            {expirationAlert.type === "expired" ? (
+              <p className="font-semibold text-red-800">Contrat expiré</p>
+            ) : (
+              <p className="font-semibold text-amber-800">
+                Expiration dans {expirationAlert.daysLeft} jour{expirationAlert.daysLeft > 1 ? "s" : ""}
+              </p>
+            )}
+            <p className={`text-sm mt-0.5 ${expirationAlert.type === "expired" ? "text-red-600" : "text-amber-600"}`}>
+              {expirationAlert.type === "expired"
+                ? `Le contrat a expiré le ${format(expirationAlert.date, "d MMMM yyyy", { locale: fr })}. Pensez à renouveler ou résilier.`
+                : `Le contrat expire le ${format(expirationAlert.date, "d MMMM yyyy", { locale: fr })}. Contactez le client pour le renouvellement.`
+              }
+            </p>
+          </div>
+          <button
+            onClick={() => setActiveTab("actions")}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex-shrink-0 ${
+              expirationAlert.type === "expired"
+                ? "bg-red-100 text-red-700 hover:bg-red-200"
+                : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+            }`}
+          >
+            Renouveler
+          </button>
+        </div>
+      )}
       <div className="flex items-center gap-4">
         <Button variant="ghost" onClick={() => navigate("/app/admin/domiciliations")} className="flex-shrink-0">
           <ArrowLeft className="w-5 h-5" />
@@ -652,7 +699,7 @@ function ContratTab({ demande, onUpdate, loading }: { demande: DemandeDomiciliat
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-all"
               >
                 <option value="">Non attribue</option>
-                {Array.from({ length: 36 }, (_, i) => i + 1).map((n) => {
+                {Array.from({ length: 60 }, (_, i) => i + 1).map((n) => {
                   const isOccupied = occupiedBureaux.includes(n);
                   return (
                     <option key={n} value={n} disabled={isOccupied} className={isOccupied ? "text-red-500" : ""}>
@@ -1436,6 +1483,7 @@ function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliat
     if (key === "rejeter" || key === "resilier") data.motif = motif;
     if (key === "signer") Object.assign(data, sd);
     if (key === "renouveler") Object.assign(data, sd);
+    if (key === "completer" || key === "activer") data.numeroBureau = sd.numeroBureau;
     await onAction(key, data);
     setActiveAction(null);
     setConfirmAction(null);
@@ -1481,13 +1529,13 @@ function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliat
                   {(a.key === "signer" || a.key === "renouveler") && (
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Numero de bureau (1-36)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Numero de bureau (1-60)</label>
                         <select
                           value={sd.numeroBureau}
                           onChange={(e) => setSd({ ...sd, numeroBureau: parseInt(e.target.value) })}
                           className="w-full px-3 py-2.5 border border-gray-300 rounded-lg"
                         >
-                          {Array.from({ length: 36 }, (_, i) => i + 1).map((n) => {
+                          {Array.from({ length: 60 }, (_, i) => i + 1).map((n) => {
                             const isOccupied = occupiedBureaux.includes(n);
                             return (
                               <option key={n} value={n} className={isOccupied ? "text-red-500 bg-red-50" : ""}>
@@ -1508,6 +1556,30 @@ function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliat
                       <Input label="Montant mensuel (DA)" type="number" value={sd.montantMensuel.toString()} onChange={(e) => setSd({ ...sd, montantMensuel: parseInt(e.target.value) || 0 })} />
                       <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
                         <p className="text-sm font-medium text-emerald-800">Total: {formatCurrency(montantTotal)} ({mois} mois)</p>
+                      </div>
+                    </div>
+                  )}
+                  {(a.key === "completer" || a.key === "activer") && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Numero de bureau (1-60) — optionnel</label>
+                        <select
+                          value={sd.numeroBureau}
+                          onChange={(e) => setSd({ ...sd, numeroBureau: parseInt(e.target.value) })}
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg"
+                        >
+                          {Array.from({ length: 60 }, (_, i) => i + 1).map((n) => {
+                            const isOccupied = occupiedBureaux.includes(n);
+                            return (
+                              <option key={n} value={n} className={isOccupied ? "text-red-500 bg-red-50" : ""}>
+                                Bureau {n}{isOccupied ? " (occupe)" : ""}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        {occupiedBureaux.includes(sd.numeroBureau) && (
+                          <p className="text-xs text-amber-600 mt-1 font-medium">Ce bureau est deja attribue a une autre domiciliation</p>
+                        )}
                       </div>
                     </div>
                   )}
