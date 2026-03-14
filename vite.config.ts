@@ -1,19 +1,49 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { copyFileSync, existsSync, mkdirSync } from "fs";
-import { resolve } from "path";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from "fs";
+import { resolve, join } from "path";
 
 export default defineConfig({
   plugins: [
     react(),
     {
-      name: "copy-htaccess",
+      name: "copy-public-safe",
+      apply: "build",
       closeBundle() {
-        try {
-          const distDir = resolve(__dirname, "dist");
-          if (!existsSync(distDir)) {
-            mkdirSync(distDir, { recursive: true });
+        const distDir = resolve(__dirname, "dist");
+        const publicDir = resolve(__dirname, "public");
+        if (!existsSync(distDir)) mkdirSync(distDir, { recursive: true });
+
+        const copyDirSafe = (src: string, dest: string) => {
+          if (!existsSync(dest)) mkdirSync(dest, { recursive: true });
+          try {
+            const entries = readdirSync(src);
+            for (const entry of entries) {
+              const srcPath = join(src, entry);
+              const destPath = join(dest, entry);
+              try {
+                const st = statSync(srcPath);
+                if (st.isDirectory()) {
+                  copyDirSafe(srcPath, destPath);
+                } else {
+                  try {
+                    copyFileSync(srcPath, destPath);
+                  } catch (e) {
+                    console.warn(`Warning: Skipping inaccessible file: ${srcPath}`);
+                  }
+                }
+              } catch (e) {
+                console.warn(`Warning: Cannot stat ${srcPath}, skipping`);
+              }
+            }
+          } catch (e) {
+            console.warn(`Warning: Cannot read dir ${src}`);
           }
+        };
+
+        copyDirSafe(publicDir, distDir);
+
+        try {
           const htaccessSource = resolve(__dirname, ".htaccess");
           const htaccessDest = resolve(distDir, ".htaccess");
           if (existsSync(htaccessSource)) {
@@ -26,6 +56,7 @@ export default defineConfig({
       },
     },
   ],
+  publicDir: false,
   resolve: {
     alias: {
       "@": resolve(__dirname, "src"),
