@@ -235,7 +235,7 @@ export default function HotelCalendar({ onReservationClick, onCreateClick }: Hot
     setTooltip({ res, x: rect.left + rect.width / 2, y: rect.top - 8 });
   };
 
-  const isFriday = (d: Date) => getDay(d) === 5;
+  const isClosed = (d: Date) => { const day = getDay(d); return day === 5 || day === 6; };
 
   return (
     <div className="space-y-4">
@@ -325,22 +325,22 @@ export default function HotelCalendar({ onReservationClick, onCreateClick }: Hot
               <div className="flex">
                 {days.map((day, i) => {
                   const isToday = isSameDay(day, today);
-                  const friday = isFriday(day);
+                  const closed = isClosed(day);
                   return (
                     <div
                       key={i}
                       className={`flex-shrink-0 border-r border-gray-100 text-center py-2 ${
-                        isToday ? "bg-sky-50" : friday ? "bg-gray-100" : ""
+                        isToday ? "bg-sky-50" : closed ? "bg-gray-100" : ""
                       }`}
                       style={{ width: colWidth }}
                     >
                       <div className={`text-[10px] uppercase tracking-wide ${
-                        isToday ? "text-sky-600 font-bold" : friday ? "text-gray-400" : "text-gray-400"
+                        isToday ? "text-sky-600 font-bold" : closed ? "text-gray-400" : "text-gray-400"
                       }`}>
                         {format(day, "EEE", { locale: fr })}
                       </div>
                       <div className={`text-sm font-bold ${
-                        isToday ? "text-sky-600" : friday ? "text-gray-400" : "text-gray-800"
+                        isToday ? "text-sky-600" : closed ? "text-gray-400" : "text-gray-800"
                       }`}>
                         {format(day, "d")}
                       </div>
@@ -380,16 +380,16 @@ export default function HotelCalendar({ onReservationClick, onCreateClick }: Hot
                     <div className="flex relative" style={{ minHeight: rowHeight }}>
                       {days.map((day, i) => {
                         const isToday = isSameDay(day, today);
-                        const friday = isFriday(day);
+                        const closed = isClosed(day);
                         return (
                           <div
                             key={i}
                             className={`flex-shrink-0 border-r border-gray-50 cursor-pointer hover:bg-gray-50/50 transition-colors ${
-                              isToday ? "bg-sky-50/30" : friday ? "bg-gray-50/60" : ""
+                              isToday ? "bg-sky-50/30" : closed ? "bg-gray-50/60" : ""
                             }`}
                             style={{ width: colWidth, minHeight: rowHeight }}
                             onClick={() => {
-                              if (!friday) {
+                              if (!closed) {
                                 onCreateClick(espace.id, format(day, "yyyy-MM-dd"));
                               }
                             }}

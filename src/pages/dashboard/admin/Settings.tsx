@@ -78,8 +78,8 @@ const defaultSettings: AllSettings = {
     email: "contact@coffice.dz",
     telephone: "+213 795 38 01 24",
     adresse: "4ème étage, Mohammadia Mall, Alger",
-    horaires_ouverture: "08:00",
-    horaires_fermeture: "20:00",
+    horaires_ouverture: "08:30",
+    horaires_fermeture: "18:30",
   },
   notifications: {
     email_nouvelles_reservations: true,

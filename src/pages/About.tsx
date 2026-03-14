@@ -442,7 +442,7 @@ const About = () => {
                       Horaires
                     </h3>
                     <p className="text-gray-600">
-                      Dimanche - Jeudi : 09h - 17h
+                      Dimanche - Jeudi : 8h30 - 18h30
                     </p>
                   </div>
                 </div>

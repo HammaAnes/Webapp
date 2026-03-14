@@ -888,7 +888,7 @@ const DomiciliationPublic = () => {
               <p className="text-gray-600 text-sm">
                 +213 23 804 924
                 <br />
-                Dim - Jeu: 08h30 - 16h30
+                Dim - Jeu: 8h30 - 18h30
               </p>
             </div>
             <div className="flex flex-col items-center">

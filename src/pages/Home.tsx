@@ -515,7 +515,7 @@ const Home = () => {
                 <p className="text-white/90 text-sm">
                   +213 23 804 924
                   <br />
-                  Dim - Jeu: 09h - 17h
+                  Dim - Jeu: 8h30 - 18h30
                 </p>
               </div>
               <div className="flex flex-col items-center">

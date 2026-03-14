@@ -42,7 +42,6 @@ import {
   isBefore,
   startOfDay,
   getDay,
-  isSaturday,
   eachDayOfInterval,
 } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -158,7 +157,7 @@ const getAvailabilityStatus = (espace: EspaceAPI): { label: string; color: strin
 
 const isOpenDay = (date: Date): boolean => {
   const day = getDay(date);
-  if (day === 5) return false;
+  if (day === 5 || day === 6) return false;
   return true;
 };
 
@@ -414,7 +413,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
       return false;
     }
     if (!isOpenDay(watchDateDebut)) {
-      toast.error("Le vendredi est un jour de fermeture");
+      toast.error("Ce jour est fermé (ouvert du dimanche au jeudi)");
       return false;
     }
 
@@ -650,7 +649,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
   const handleDateChange = useCallback((date: Date | null) => {
     if (!date) return;
     if (!isOpenDay(date)) {
-      toast.error("Coffice est fermé le vendredi");
+      toast.error("Coffice est fermé le vendredi et le samedi");
       return;
     }
     setSelectedDate(date);
@@ -828,7 +827,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                   <>
                     <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 rounded-xl text-sm text-blue-800">
                       <Info className="w-4 h-4 flex-shrink-0" />
-                      <span>Ouvert du dimanche au jeudi, samedi sur option | 8h30 - 18h30</span>
+                      <span>Ouvert du dimanche au jeudi | 8h30 - 18h30</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {sortedEspaces.map((espace) => {
@@ -1099,7 +1098,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                     </label>
                     <span className="text-xs text-gray-400 flex items-center gap-1">
                       <Info className="w-3 h-3" />
-                      Vendredi = fermé
+                      Vendredi &amp; samedi = fermés
                     </span>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
@@ -1114,12 +1113,6 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                       spaceCapacity={currentEspace.capacite || OPEN_SPACE_CAPACITY}
                     />
                   </div>
-                  {isSaturday(selectedDate) && (
-                    <div className="flex items-center gap-2 mt-2 p-2.5 bg-amber-50 rounded-lg text-sm text-amber-800">
-                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                      <span>Le samedi est ouvert sur option. Confirmez la disponibilité auprès de Coffice.</span>
-                    </div>
-                  )}
                 </div>
 
                 {reservationType === "single_day" && (
@@ -1326,13 +1319,6 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                         {durationInfo?.text || "-"}
                       </p>
                     </div>
-                  </div>
-                )}
-
-                {isSaturday(watchDateDebut) && (
-                  <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-xl text-sm text-amber-800">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>Réservation le samedi (ouverture optionnelle). Sera confirmée par l'équipe Coffice.</span>
                   </div>
                 )}
 

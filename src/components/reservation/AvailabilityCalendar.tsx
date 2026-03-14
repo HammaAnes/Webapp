@@ -72,7 +72,8 @@ const CLOSING_MINUTE = WORKING_HOURS.CLOSING_MINUTE;
 const SLOT_DURATION_MINUTES = 60;
 
 const isClosedDay = (date: Date): boolean => {
-  return getDay(date) === 5;
+  const day = getDay(date);
+  return day === 5 || day === 6;
 };
 
 const WEEKDAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
