@@ -160,7 +160,7 @@ const MonEspace = () => {
           }
         }
       } else if (uploadedDocuments.length > 0 && !demandeId) {
-        toast.error("Les documents n'ont pas pu etre lies a la demande. Utilisez l'onglet Documents pour les renvoyer.");
+        toast.error("Les documents n'ont pas pu être liés à la demande. Utilisez l'onglet Documents pour les renvoyer.");
       }
 
       try {
@@ -237,13 +237,13 @@ const MonEspace = () => {
               raisonSociale: demande.raisonSociale || "",
               formeJuridique: demande.formeJuridique || "",
               statut: "en_attente_complements",
-              statutLabel: "En attente de complements",
+              statutLabel: "En attente de compléments",
             }
           );
         } catch {
           // best-effort
         }
-        toast.success("Informations soumises avec succes.");
+        toast.success("Informations soumises avec succès.");
         await loadDemandesDomiciliation();
       } else {
         toast.error(response.error || "Erreur lors de la mise à jour");
@@ -263,7 +263,7 @@ const MonEspace = () => {
         commentaireAdmin: `[RENOUVELLEMENT] Demande de renouvellement soumise le ${new Date().toLocaleDateString("fr-FR")}. ${demande.commentaireAdmin || ""}`,
       });
       if (response.success) {
-        toast.success("Votre demande de renouvellement a ete envoyee. L'equipe Coffice vous contactera.");
+        toast.success("Votre demande de renouvellement a été envoyée. L'équipe Coffice vous contactera.");
         try {
           emailService.onDomiciliationStatusUpdate(
             demande.representantLegal?.email || user.email,

@@ -23,26 +23,26 @@ export interface DocumentSlot { type: string; label: string; required: boolean; 
 
 export const SOCIETE_DOCS: DocumentSlot[] = [
   { type: "rc", label: "Registre de Commerce", required: true, description: "Copie du registre de commerce" },
-  { type: "nif", label: "NIF", required: true, description: "Numero d'Identification Fiscale" },
-  { type: "nis", label: "NIS", required: true, description: "Numero d'Identification Statistique" },
-  { type: "c20", label: "Extrait C20", required: true, description: "Extrait du registre de commerce (modele C20)" },
-  { type: "statuts", label: "Statuts", required: false, description: "Statuts de la societe" },
-  { type: "cni", label: "CNI du gerant", required: true, description: "Copie de la carte d'identite du gerant" },
+  { type: "nif", label: "NIF", required: true, description: "Numéro d'Identification Fiscale" },
+  { type: "nis", label: "NIS", required: true, description: "Numéro d'Identification Statistique" },
+  { type: "c20", label: "Extrait C20", required: true, description: "Extrait du registre de commerce (modèle C20)" },
+  { type: "statuts", label: "Statuts", required: false, description: "Statuts de la société" },
+  { type: "cni", label: "CNI du gérant", required: true, description: "Copie de la carte d'identité du gérant" },
 ];
 
 export const AUTO_ENTREPRENEUR_DOCS: DocumentSlot[] = [
-  { type: "carte_ae", label: "Carte Auto-Entrepreneur", required: true, description: "Carte d'auto-entrepreneur delivree par l'ANADE" },
-  { type: "cni", label: "CNI", required: true, description: "Copie de la carte d'identite nationale" },
+  { type: "carte_ae", label: "Carte Auto-Entrepreneur", required: true, description: "Carte d'auto-entrepreneur délivrée par l'ANADE" },
+  { type: "cni", label: "CNI", required: true, description: "Copie de la carte d'identité nationale" },
 ];
 
 export const COMMON_DOCS: DocumentSlot[] = [
-  { type: "autre", label: "Autre document", required: false, description: "Document supplementaire" },
+  { type: "autre", label: "Autre document", required: false, description: "Document supplémentaire" },
 ];
 
 const STATUS_MAP: Record<string, { label: string; variant: "warning" | "success" | "danger" }> = {
   en_attente: { label: "En attente", variant: "warning" },
-  valide: { label: "Valide", variant: "success" },
-  rejete: { label: "Rejete", variant: "danger" },
+  valide: { label: "Validé", variant: "success" },
+  rejete: { label: "Rejeté", variant: "danger" },
 };
 
 export function mapApiDocument(raw: Record<string, unknown>): DocumentRecord {
@@ -78,7 +78,7 @@ export async function triggerDocumentDownload(doc: DocumentRecord) {
     a.click();
     URL.revokeObjectURL(url);
   } else {
-    throw new Error(res.error || "Impossible de telecharger");
+    throw new Error(res.error || "Impossible de télécharger");
   }
 }
 
@@ -142,15 +142,15 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !uploadTarget) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("Le fichier ne doit pas depasser 5 Mo"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Le fichier ne doit pas dépasser 5 Mo"); return; }
     if (!["application/pdf", "image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
-      toast.error("Format accepte : PDF, JPG, PNG"); return;
+      toast.error("Format accepté : PDF, JPG, PNG"); return;
     }
     try {
       setUploading(uploadTarget);
       const res = await apiClient.uploadDocument(file, "domiciliation", domiciliationId, uploadTarget);
-      if (res.success) { toast.success("Document telecharge avec succes"); await loadDocs(); }
-      else toast.error(res.error || "Erreur lors du telechargement");
+      if (res.success) { toast.success("Document téléchargé avec succès"); await loadDocs(); }
+      else toast.error(res.error || "Erreur lors du téléchargement");
     } catch { toast.error("Erreur lors de l'envoi du document"); }
     finally { setUploading(null); setUploadTarget(""); if (fileRef.current) fileRef.current.value = ""; }
   };
@@ -159,7 +159,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
     if (!deleteTarget) return;
     try {
       const res = await apiClient.deleteDocument(deleteTarget.id);
-      if (res.success) { toast.success("Document supprime"); setDeleteTarget(null); await loadDocs(); }
+      if (res.success) { toast.success("Document supprimé"); setDeleteTarget(null); await loadDocs(); }
       else toast.error(res.error || "Erreur lors de la suppression");
     } catch { toast.error("Erreur lors de la suppression"); }
   };
@@ -167,7 +167,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
   const handleDownload = async (doc: DocumentRecord) => {
     try {
       await triggerDocumentDownload(doc);
-    } catch { toast.error("Erreur lors du telechargement"); }
+    } catch { toast.error("Erreur lors du téléchargement"); }
   };
 
   const handlePreview = async (doc: DocumentRecord) => {
@@ -201,7 +201,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
         </div>
         {pct === 100 && (
           <p className="text-sm text-emerald-600 mt-2 flex items-center gap-1">
-            <CheckCircle className="w-4 h-4" />Tous les documents requis ont ete fournis
+            <CheckCircle className="w-4 h-4" />Tous les documents requis ont été fournis
           </p>
         )}
       </Card>
@@ -214,7 +214,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
             </div>
             <h3 className="font-semibold text-gray-900 mb-1">Aucun document</h3>
             <p className="text-sm text-gray-500 max-w-sm">
-              {readOnly ? "Aucun document n'a encore ete soumis pour ce dossier." : "Commencez par telecharger les documents requis ci-dessous pour completer votre dossier."}
+              {readOnly ? "Aucun document n'a encore été soumis pour ce dossier." : "Commencez par télécharger les documents requis ci-dessous pour compléter votre dossier."}
             </p>
           </div>
         </Card>
@@ -251,8 +251,8 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
                   <div className="flex gap-2 mt-3 flex-wrap">
                     {doc ? (
                       <>
-                        <ActionBtn onClick={() => handlePreview(doc)} icon={Eye} label="Apercu" cls="text-teal-700 hover:text-teal-900 hover:bg-teal-50" />
-                        <ActionBtn onClick={() => handleDownload(doc)} icon={Download} label="Telecharger" cls="text-gray-600 hover:text-gray-900 hover:bg-gray-100" />
+                        <ActionBtn onClick={() => handlePreview(doc)} icon={Eye} label="Aperçu" cls="text-teal-700 hover:text-teal-900 hover:bg-teal-50" />
+                        <ActionBtn onClick={() => handleDownload(doc)} icon={Download} label="Télécharger" cls="text-gray-600 hover:text-gray-900 hover:bg-gray-100" />
                         {!readOnly && (
                           <>
                             <ActionBtn onClick={() => handleUploadClick(slot.type)} icon={Upload} label="Remplacer" cls="text-gray-600 hover:text-gray-900 hover:bg-gray-100" />
@@ -263,7 +263,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
                     ) : !readOnly ? (
                       <button onClick={() => handleUploadClick(slot.type)} disabled={isUploading} className="text-xs text-white bg-gray-800 hover:bg-gray-900 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
                         {isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                        {isUploading ? "Envoi..." : "Telecharger"}
+                        {isUploading ? "Envoi..." : "Télécharger"}
                       </button>
                     ) : null}
                   </div>
@@ -279,7 +279,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-amber-800">
-              <p className="font-medium mb-1">Formats acceptes</p>
+              <p className="font-medium mb-1">Formats acceptés</p>
               <p>PDF, JPG, PNG -- Taille maximale : 5 Mo par fichier</p>
             </div>
           </div>
@@ -288,7 +288,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
 
       <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Supprimer le document">
         <div className="space-y-4">
-          <p className="text-gray-700">Etes-vous sur de vouloir supprimer le document <strong>{deleteTarget?.file_name}</strong> ?</p>
+          <p className="text-gray-700">Êtes-vous sûr de vouloir supprimer le document <strong>{deleteTarget?.file_name}</strong> ?</p>
           <div className="flex gap-3 justify-end">
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>Annuler</Button>
             <Button variant="danger" onClick={handleDelete}>Supprimer</Button>
@@ -296,8 +296,8 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
         </div>
       </Modal>
 
-      <Modal isOpen={!!previewUrl} onClose={() => { if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }} title="Apercu du document" size="lg">
-        {previewUrl && <iframe src={previewUrl} className="w-full h-[60vh] rounded-lg border border-gray-200" title="Apercu" />}
+      <Modal isOpen={!!previewUrl} onClose={() => { if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }} title="Aperçu du document" size="lg">
+        {previewUrl && <iframe src={previewUrl} className="w-full h-[60vh] rounded-lg border border-gray-200" title="Aperçu" />}
       </Modal>
     </div>
   );

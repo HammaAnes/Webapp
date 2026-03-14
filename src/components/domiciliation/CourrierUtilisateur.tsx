@@ -55,17 +55,17 @@ const TYPE_CONFIG: Record<string, { label: string; icon: React.ComponentType<{ c
 };
 
 const STATUT_CONFIG: Record<string, { label: string; variant: "info" | "warning" | "success" | "default" | "teal" }> = {
-  recu: { label: "Recu", variant: "default" },
-  notifie: { label: "Notifie", variant: "info" },
-  en_attente_instruction: { label: "Instruction donnee", variant: "warning" },
-  recupere: { label: "Recupere", variant: "success" },
-  scanne: { label: "Scanne", variant: "teal" },
-  reexpedier: { label: "Reexpedition", variant: "info" },
-  traite: { label: "Traite", variant: "success" },
+  recu: { label: "Reçu", variant: "default" },
+  notifie: { label: "Notifié", variant: "info" },
+  en_attente_instruction: { label: "Instruction donnée", variant: "warning" },
+  recupere: { label: "Récupéré", variant: "success" },
+  scanne: { label: "Scanné", variant: "teal" },
+  reexpedier: { label: "Réexpédition", variant: "info" },
+  traite: { label: "Traité", variant: "success" },
 };
 
-const TYPE_FILTERS = [{ value: "all", label: "Tous" }, { value: "lettre", label: "Lettres" }, { value: "colis", label: "Colis" }, { value: "recommande", label: "Recommandes" }, { value: "autre", label: "Autres" }];
-const STATUT_FILTERS = [{ value: "all", label: "Tous" }, { value: "recu", label: "Recu" }, { value: "notifie", label: "Notifie" }, { value: "en_attente_instruction", label: "Instruction" }, { value: "recupere", label: "Recupere" }, { value: "scanne", label: "Scanne" }, { value: "traite", label: "Traite" }];
+const TYPE_FILTERS = [{ value: "all", label: "Tous" }, { value: "lettre", label: "Lettres" }, { value: "colis", label: "Colis" }, { value: "recommande", label: "Recommandés" }, { value: "autre", label: "Autres" }];
+const STATUT_FILTERS = [{ value: "all", label: "Tous" }, { value: "recu", label: "Reçu" }, { value: "notifie", label: "Notifié" }, { value: "en_attente_instruction", label: "Instruction" }, { value: "recupere", label: "Récupéré" }, { value: "scanne", label: "Scanné" }, { value: "traite", label: "Traité" }];
 
 function FilterRow({ filters, value, onChange }: { filters: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) {
   return (
@@ -147,7 +147,7 @@ export default function CourrierUtilisateur({ domiciliationId, options }: Courri
     setActionLoading(`${courrierId}-${instruction}`);
     try {
       await apiClient.donnerInstructionCourrier(courrierId, instruction);
-      toast.success(`${label} effectue avec succes`);
+      toast.success(`${label} effectué avec succès`);
       await loadCourrier();
     } catch {
       toast.error(`Erreur lors de l'action : ${label}`);
@@ -212,18 +212,18 @@ export default function CourrierUtilisateur({ domiciliationId, options }: Courri
                     </div>
                     <div className="flex flex-wrap gap-2 mt-3">
                       {canGiveInstruction && (
-                        <Button size="sm" variant="primary" loading={isActLoading("recuperer")} onClick={() => handleAction(courrier.id, "recuperer", "Demande de recuperation")}>
-                          <CheckCircle className="w-3.5 h-3.5" /> Recuperer
+                        <Button size="sm" variant="primary" loading={isActLoading("recuperer")} onClick={() => handleAction(courrier.id, "recuperer", "Demande de récupération")}>
+                          <CheckCircle className="w-3.5 h-3.5" /> Récupérer
                         </Button>
                       )}
                       {canScan && (
-                        <Button size="sm" variant="outline" loading={isActLoading("scanner")} onClick={() => handleAction(courrier.id, "scanner", "Demande de scan")}>
+                        <Button size="sm" variant="outline" loading={isActLoading("scanner")} onClick={() => handleAction(courrier.id, "scanner", "Demande de numérisation")}>
                           <ScanLine className="w-3.5 h-3.5" /> Demander un scan
                         </Button>
                       )}
                       {canReexpedition && (
-                        <Button size="sm" variant="outline" loading={isActLoading("reexpedier")} onClick={() => handleAction(courrier.id, "reexpedier", "Demande de reexpedition")}>
-                          <Send className="w-3.5 h-3.5" /> Reexpedier
+                        <Button size="sm" variant="outline" loading={isActLoading("reexpedier")} onClick={() => handleAction(courrier.id, "reexpedier", "Demande de réexpédition")}>
+                          <Send className="w-3.5 h-3.5" /> Réexpédier
                         </Button>
                       )}
                     </div>
