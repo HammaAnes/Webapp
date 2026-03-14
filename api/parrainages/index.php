@@ -18,44 +18,44 @@ try {
     $database = Database::getInstance();
     $db = $database->getConnection();
 
-    // Paramètres de pagination
     $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-    $limit = isset($_GET['limit']) ? min((int)$_GET['limit'], 100) : 20;
+    $limit = isset($_GET['limit']) ? min((int)$_GET['limit'], 100) : 50;
     $offset = ($page - 1) * $limit;
 
-    // Filtres
     $statut = isset($_GET['statut']) ? $_GET['statut'] : null;
 
-    // Admin peut voir tous les parrainages
+    // Admin: voir tous les parrainages (depuis parrainages_details avec info parrain et filleul)
     if ($auth['role'] === 'admin' && !$userId) {
-        // Comptage
-        $countQuery = "SELECT COUNT(*) as total FROM parrainages";
         $whereConditions = [];
         $params = [];
 
         if ($statut) {
-            $whereConditions[] = "statut = :statut";
+            $whereConditions[] = "pd.statut = :statut";
             $params[':statut'] = $statut;
         }
 
-        if (!empty($whereConditions)) {
-            $countQuery .= " WHERE " . implode(" AND ", $whereConditions);
-        }
+        $where = !empty($whereConditions) ? " WHERE " . implode(" AND ", $whereConditions) : "";
 
+        $countQuery = "SELECT COUNT(*) as total FROM parrainages_details pd" . $where;
         $stmt = $db->prepare($countQuery);
         $stmt->execute($params);
         $totalCount = $stmt->fetch()['total'];
 
-        // Données avec pagination
-        $query = "SELECT p.*, u.nom, u.prenom, u.email
-                  FROM parrainages p
-                  LEFT JOIN users u ON p.parrain_id = u.id";
-
-        if (!empty($whereConditions)) {
-            $query .= " WHERE " . implode(" AND ", $whereConditions);
-        }
-
-        $query .= " ORDER BY p.created_at DESC LIMIT :limit OFFSET :offset";
+        $query = "SELECT pd.*,
+                         filleul.nom as filleul_nom,
+                         filleul.prenom as filleul_prenom,
+                         filleul.email as filleul_email,
+                         parrain.nom as parrain_nom,
+                         parrain.prenom as parrain_prenom,
+                         parrain.email as parrain_email,
+                         p.parrain_id,
+                         p.code_parrain
+                  FROM parrainages_details pd
+                  LEFT JOIN users filleul ON pd.filleul_id = filleul.id
+                  LEFT JOIN parrainages p ON pd.parrainage_id = p.id
+                  LEFT JOIN users parrain ON p.parrain_id = parrain.id"
+                  . $where .
+                  " ORDER BY pd.date_inscription DESC LIMIT :limit OFFSET :offset";
 
         $stmt = $db->prepare($query);
         foreach ($params as $key => $value) {
@@ -63,45 +63,64 @@ try {
         }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $formatted = [];
+        foreach ($rows as $r) {
+            $formatted[] = [
+                'id'                => $r['id'],
+                'parrainageId'      => $r['parrainage_id'],
+                'parrainId'         => $r['parrain_id'] ?? null,
+                'parrainNom'        => isset($r['parrain_prenom']) ? trim($r['parrain_prenom'] . ' ' . $r['parrain_nom']) : null,
+                'parrainEmail'      => $r['parrain_email'] ?? null,
+                'codeParrain'       => $r['code_parrain'] ?? null,
+                'filleulId'         => $r['filleul_id'],
+                'filleulNom'        => isset($r['filleul_prenom']) ? trim($r['filleul_prenom'] . ' ' . $r['filleul_nom']) : null,
+                'filleulEmail'      => $r['filleul_email'] ?? null,
+                'recompenseParrain' => (float)($r['recompense_parrain'] ?? 0),
+                'recompenseFilleul' => (float)($r['recompense_filleul'] ?? 0),
+                'statut'            => $r['statut'] ?? 'en_attente',
+                'dateInscription'   => $r['date_inscription'] ?? null,
+                'dateValidation'    => $r['date_validation'] ?? null,
+            ];
+        }
+
     } else {
-        // User voit uniquement ses parrainages
+        // User: voir ses propres filleuls
         $targetUserId = $userId ?: $auth['id'];
 
-        // Vérifier l'autorisation
         if ($auth['role'] !== 'admin' && $targetUserId !== $auth['id']) {
             Response::error("Accès non autorisé", 403);
         }
 
-        // Comptage basé sur parrainages_details
-        $countQuery = "SELECT COUNT(*) as total
-                       FROM parrainages_details pd
-                       WHERE pd.parrainage_id = (
-                         SELECT id FROM parrainages WHERE parrain_id = :parrain_id LIMIT 1
-                       )";
+        $whereConditions = ["p.parrain_id = :parrain_id"];
         $params = [':parrain_id' => $targetUserId];
 
         if ($statut) {
-            $countQuery .= " AND pd.statut = :statut";
+            $whereConditions[] = "pd.statut = :statut";
             $params[':statut'] = $statut;
         }
 
+        $where = " WHERE " . implode(" AND ", $whereConditions);
+
+        $countQuery = "SELECT COUNT(*) as total
+                       FROM parrainages_details pd
+                       JOIN parrainages p ON pd.parrainage_id = p.id"
+                       . $where;
         $stmt = $db->prepare($countQuery);
         $stmt->execute($params);
         $totalCount = $stmt->fetch()['total'] ?? 0;
 
-        // Données avec détails des filleuls
-        $query = "SELECT pd.*, u.nom, u.prenom, u.email, u.created_at as date_inscription_filleul
+        $query = "SELECT pd.*,
+                         filleul.nom as filleul_nom,
+                         filleul.prenom as filleul_prenom,
+                         filleul.email as filleul_email
                   FROM parrainages_details pd
-                  LEFT JOIN users u ON pd.filleul_id = u.id
-                  WHERE pd.parrainage_id = (
-                    SELECT id FROM parrainages WHERE parrain_id = :parrain_id LIMIT 1
-                  )";
-
-        if ($statut) {
-            $query .= " AND pd.statut = :statut";
-        }
-
-        $query .= " ORDER BY pd.date_inscription DESC LIMIT :limit OFFSET :offset";
+                  JOIN parrainages p ON pd.parrainage_id = p.id
+                  LEFT JOIN users filleul ON pd.filleul_id = filleul.id"
+                  . $where .
+                  " ORDER BY pd.date_inscription DESC LIMIT :limit OFFSET :offset";
 
         $stmt = $db->prepare($query);
         foreach ($params as $key => $value) {
@@ -109,34 +128,30 @@ try {
         }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $formatted = [];
+        foreach ($rows as $r) {
+            $formatted[] = [
+                'id'                => $r['id'],
+                'parrainageId'      => $r['parrainage_id'],
+                'filleulId'         => $r['filleul_id'],
+                'filleulNom'        => isset($r['filleul_prenom']) ? trim($r['filleul_prenom'] . ' ' . $r['filleul_nom']) : null,
+                'filleulEmail'      => $r['filleul_email'] ?? null,
+                'recompenseParrain' => (float)($r['recompense_parrain'] ?? 0),
+                'recompenseFilleul' => (float)($r['recompense_filleul'] ?? 0),
+                'statut'            => $r['statut'] ?? 'en_attente',
+                'dateInscription'   => $r['date_inscription'] ?? null,
+                'dateValidation'    => $r['date_validation'] ?? null,
+            ];
+        }
     }
 
-    $stmt->execute();
-    $parrainages = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Convertir en camelCase pour le frontend
-    $parrainagesFormatted = [];
-    foreach ($parrainages as $p) {
-        $parrainagesFormatted[] = [
-            'id' => $p['id'],
-            'parrainageId' => $p['parrainage_id'] ?? null,
-            'filleulId' => $p['filleul_id'] ?? null,
-            'filleulNom' => isset($p['nom']) && isset($p['prenom']) ? $p['prenom'] . ' ' . $p['nom'] : null,
-            'filleulEmail' => $p['email'] ?? null,
-            'recompenseParrain' => (float)($p['recompense_parrain'] ?? 0),
-            'recompenseFilleul' => (float)($p['recompense_filleul'] ?? 0),
-            'statut' => $p['statut'] ?? 'en_attente',
-            'dateInscription' => $p['date_inscription'] ?? $p['date_inscription_filleul'] ?? null,
-            'dateValidation' => $p['date_validation'] ?? null
-        ];
-    }
-    $parrainages = $parrainagesFormatted;
-
-    // Réponse avec pagination
     $pagination = Pagination::paginate($totalCount, $page, $limit);
 
     Response::success([
-        'data' => $parrainages,
+        'data'       => $formatted,
         'pagination' => $pagination
     ]);
 

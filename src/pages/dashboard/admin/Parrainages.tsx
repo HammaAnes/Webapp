@@ -5,7 +5,6 @@ import {
   Users,
   TrendingUp,
   Award,
-  Banknote,
   Calendar,
   Search,
   Download,
@@ -14,9 +13,9 @@ import {
   User,
   Mail,
   CreditCard,
+  ArrowRight,
 } from "lucide-react";
 import { apiClient } from "../../../lib/api-client";
-import { useAppStore } from "../../../store/store";
 import Card from "../../../components/ui/Card";
 import Badge from "../../../components/ui/Badge";
 import Input from "../../../components/ui/Input";
@@ -31,9 +30,13 @@ import { buildCsvContent } from "../../../utils/formatters";
 interface ParrainageDetail {
   id: string;
   parrainageId: string;
+  parrainId: string | null;
+  parrainNom: string | null;
+  parrainEmail: string | null;
+  codeParrain: string | null;
   filleulId: string;
-  filleulNom: string;
-  filleulEmail: string;
+  filleulNom: string | null;
+  filleulEmail: string | null;
   recompenseParrain: number;
   recompenseFilleul: number;
   statut: "en_attente" | "valide" | "paye";
@@ -51,14 +54,12 @@ interface Stats {
 interface TopParrain {
   id: string;
   nom: string;
-  prenom: string;
   email: string;
   count: number;
   credits: number;
 }
 
 const Parrainages = () => {
-  const { users } = useAppStore();
   const [parrainages, setParrainages] = useState<ParrainageDetail[]>([]);
   const [stats, setStats] = useState<Stats>({
     totalParrainages: 0,
@@ -72,17 +73,17 @@ const Parrainages = () => {
 
   useEffect(() => {
     loadData();
-  }, [users]);
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
       const response = await apiClient.getParrainages();
       const responseData = response.data as Record<string, any>;
-      const data = Array.isArray(responseData?.data)
+      const data: ParrainageDetail[] = Array.isArray(responseData?.data)
         ? responseData.data
         : Array.isArray(response.data)
-        ? response.data
+        ? (response.data as ParrainageDetail[])
         : [];
 
       setParrainages(data);
@@ -121,26 +122,22 @@ const Parrainages = () => {
     const parrainMap = new Map<string, TopParrain>();
 
     data.forEach((p) => {
-      const parrainId = p.parrainageId;
+      const parrainId = p.parrainId;
       if (!parrainId) return;
 
       if (!parrainMap.has(parrainId)) {
-        const parrainUser = users.find((u) => u.id === parrainId);
         parrainMap.set(parrainId, {
           id: parrainId,
-          prenom: parrainUser?.prenom || "Parrain",
-          nom: parrainUser?.nom || `#${parrainId.slice(0, 6)}`,
-          email: parrainUser?.email || "",
+          nom: p.parrainNom || `Parrain #${parrainId.slice(0, 6)}`,
+          email: p.parrainEmail || "",
           count: 0,
           credits: 0,
         });
       }
 
-      const parrain = parrainMap.get(parrainId);
-      if (parrain) {
-        parrain.count++;
-        parrain.credits += p.recompenseParrain || 0;
-      }
+      const parrain = parrainMap.get(parrainId)!;
+      parrain.count++;
+      parrain.credits += p.recompenseParrain || 0;
     });
 
     const top = Array.from(parrainMap.values())
@@ -153,13 +150,17 @@ const Parrainages = () => {
   const filteredParrainages = parrainages.filter(
     (p) =>
       p.filleulNom?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.filleulEmail?.toLowerCase().includes(searchQuery.toLowerCase())
+      p.filleulEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.parrainNom?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.parrainEmail?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const exportToCSV = () => {
     const headers = [
+      "Parrain",
+      "Email Parrain",
       "Filleul",
-      "Email",
+      "Email Filleul",
       "Date d'inscription",
       "Récompense Parrain (DA)",
       "Récompense Filleul (DA)",
@@ -167,6 +168,8 @@ const Parrainages = () => {
     ];
 
     const rows = filteredParrainages.map((p) => [
+      p.parrainNom || "N/A",
+      p.parrainEmail || "N/A",
       p.filleulNom || "N/A",
       p.filleulEmail || "N/A",
       p.dateInscription
@@ -178,7 +181,6 @@ const Parrainages = () => {
     ]);
 
     const csvContent = buildCsvContent(headers, rows);
-
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -317,15 +319,13 @@ const Parrainages = () => {
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">
-                        {parrain.prenom} {parrain.nom}
-                      </p>
+                      <p className="font-medium text-gray-900">{parrain.nom}</p>
                       <p className="text-sm text-gray-500">{parrain.email}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-blue-600">
-                      {parrain.count} parrainages
+                      {parrain.count} parrainage{parrain.count > 1 ? "s" : ""}
                     </p>
                     <p className="text-sm text-gray-600">
                       {parrain.credits.toLocaleString("fr-DZ")} DA
@@ -354,7 +354,7 @@ const Parrainages = () => {
               <div className="w-full max-w-sm">
                 <Input
                   type="search"
-                  placeholder="Rechercher un filleul..."
+                  placeholder="Rechercher parrain ou filleul..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   icon={<Search className="w-4 h-4" />}
@@ -368,6 +368,9 @@ const Parrainages = () => {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Parrain
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Filleul
                     </th>
@@ -390,16 +393,30 @@ const Parrainages = () => {
                     <tr key={parrainage.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <User className="w-5 h-5 text-blue-600" />
+                          <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center">
+                            <User className="w-4 h-4 text-gray-500" />
                           </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {parrainage.parrainNom || "—"}
+                            </p>
+                            <p className="text-xs text-gray-500 flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {parrainage.parrainEmail || "—"}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <ArrowRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
                           <div>
                             <p className="text-sm font-medium text-gray-900">
                               {parrainage.filleulNom || "Utilisateur"}
                             </p>
                             <p className="text-xs text-gray-500 flex items-center gap-1">
                               <Mail className="w-3 h-3" />
-                              {parrainage.filleulEmail}
+                              {parrainage.filleulEmail || "—"}
                             </p>
                           </div>
                         </div>
@@ -420,10 +437,7 @@ const Parrainages = () => {
                         <div className="flex items-center gap-2">
                           <CreditCard className="w-4 h-4 text-green-600" />
                           <span className="text-sm font-medium text-gray-900">
-                            {parrainage.recompenseParrain.toLocaleString(
-                              "fr-DZ"
-                            )}{" "}
-                            DA
+                            {parrainage.recompenseParrain.toLocaleString("fr-DZ")} DA
                           </span>
                         </div>
                       </td>
@@ -431,10 +445,7 @@ const Parrainages = () => {
                         <div className="flex items-center gap-2">
                           <CreditCard className="w-4 h-4 text-blue-600" />
                           <span className="text-sm font-medium text-gray-900">
-                            {parrainage.recompenseFilleul.toLocaleString(
-                              "fr-DZ"
-                            )}{" "}
-                            DA
+                            {parrainage.recompenseFilleul.toLocaleString("fr-DZ")} DA
                           </span>
                         </div>
                       </td>

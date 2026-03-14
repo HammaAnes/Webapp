@@ -29,8 +29,8 @@ import { fr } from "date-fns/locale";
 interface ParrainageDetail {
   id: string;
   filleulId: string;
-  filleulNom: string;
-  filleulEmail: string;
+  filleulNom: string | null;
+  filleulEmail: string | null;
   recompenseParrain: number;
   recompenseFilleul: number;
   statut: "en_attente" | "valide" | "paye";
@@ -43,53 +43,29 @@ interface ParrainageStats {
   recompensesTotales: number;
   recompensesPayees: number;
   recompensesEnAttente: number;
-  codeParrainage: string;
 }
 
-const generateReferralCode = (_userId: string, prenom: string, _nom: string): string => {
-  const prenomClean = prenom.replace(/[^A-Za-z]/g, "");
-  const prefix = prenomClean.substring(0, 3).toUpperCase().padEnd(3, "X");
-  const random = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
-  return `COFFICE-${prefix}${random}`;
-};
-
 const Parrainage = () => {
-  const { user, loadUser } = useAuthStore();
+  const { user } = useAuthStore();
   const [copied, setCopied] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
-  const [generatingCode, setGeneratingCode] = useState(false);
   const [stats, setStats] = useState<ParrainageStats>({
     parraines: 0,
     recompensesTotales: 0,
     recompensesPayees: 0,
     recompensesEnAttente: 0,
-    codeParrainage: user?.codeParrainage || "",
   });
   const [filleuls, setFilleuls] = useState<ParrainageDetail[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const codeParrainage = user?.codeParrainage || "";
+
   useEffect(() => {
     loadParrainageData();
-  }, [user]);
-
-  const handleGenerateCode = async () => {
-    if (!user || user.codeParrainage) return;
-    setGeneratingCode(true);
-    try {
-      const code = generateReferralCode(user.id, user.prenom, user.nom);
-      await apiClient.updateUser(user.id, { code_parrainage: code });
-      await loadUser();
-      setStats(prev => ({ ...prev, codeParrainage: code }));
-      toast.success("Code de parrainage généré avec succès !");
-    } catch {
-      toast.error("Erreur lors de la génération du code");
-    } finally {
-      setGeneratingCode(false);
-    }
-  };
+  }, [user?.id]);
 
   const loadParrainageData = async () => {
-    if (!user?.codeParrainage) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -99,42 +75,29 @@ const Parrainage = () => {
       const response = await apiClient.getParrainages(user.id);
 
       if (response.success && response.data) {
-        const rd = response.data as Record<string, any>;
-        const parrainages: ParrainageDetail[] = Array.isArray(rd.data)
-          ? rd.data
-          : Array.isArray(response.data)
-          ? (response.data as ParrainageDetail[])
+        const responseData = response.data as Record<string, any>;
+        const parrainages: ParrainageDetail[] = Array.isArray(responseData?.data)
+          ? responseData.data
           : [];
 
         setFilleuls(parrainages);
 
-        // Calculer les statistiques
         const recompensesTotales = parrainages.reduce(
-          (sum: number, p: ParrainageDetail) => sum + (p.recompenseParrain || 0),
+          (sum, p) => sum + (p.recompenseParrain || 0),
           0
         );
         const recompensesPayees = parrainages
-          .filter((p: ParrainageDetail) => p.statut === "paye")
-          .reduce(
-            (sum: number, p: ParrainageDetail) => sum + (p.recompenseParrain || 0),
-            0
-          );
+          .filter((p) => p.statut === "paye")
+          .reduce((sum, p) => sum + (p.recompenseParrain || 0), 0);
         const recompensesEnAttente = parrainages
-          .filter(
-            (p: ParrainageDetail) =>
-              p.statut === "en_attente" || p.statut === "valide"
-          )
-          .reduce(
-            (sum: number, p: ParrainageDetail) => sum + (p.recompenseParrain || 0),
-            0
-          );
+          .filter((p) => p.statut === "en_attente" || p.statut === "valide")
+          .reduce((sum, p) => sum + (p.recompenseParrain || 0), 0);
 
         setStats({
           parraines: parrainages.length,
           recompensesTotales,
           recompensesPayees,
           recompensesEnAttente,
-          codeParrainage: user.codeParrainage || "",
         });
       }
     } catch (error) {
@@ -145,21 +108,17 @@ const Parrainage = () => {
     }
   };
 
-  const getCode = () => stats.codeParrainage || user?.codeParrainage || "";
-
   const handleCopyCode = () => {
-    const code = getCode();
-    if (!code) return;
-    navigator.clipboard.writeText(code).catch(() => {});
+    if (!codeParrainage) return;
+    navigator.clipboard.writeText(codeParrainage).catch(() => {});
     setCopied(true);
     toast.success("Code copié dans le presse-papiers !");
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleCopyUrl = () => {
-    const code = getCode();
-    if (!code) return;
-    const url = `${window.location.origin}/inscription?parrain=${code}`;
+    if (!codeParrainage) return;
+    const url = `${window.location.origin}/inscription?parrain=${codeParrainage}`;
     navigator.clipboard.writeText(url).catch(() => {});
     setCopiedUrl(true);
     toast.success("Lien de parrainage copié !");
@@ -167,22 +126,15 @@ const Parrainage = () => {
   };
 
   const handleShare = () => {
-    const code = getCode();
-    if (!code) return;
-    const url = `${window.location.origin}/inscription?parrain=${code}`;
-    const text = `Rejoins Coffice avec mon code ${code} et gagne 3000 DA de bonus !`;
+    if (!codeParrainage) return;
+    const url = `${window.location.origin}/inscription?parrain=${codeParrainage}`;
+    const text = `Rejoins Coffice avec mon code ${codeParrainage} et gagne 3 000 DA de bonus !`;
 
     if (navigator.share) {
       navigator
-        .share({
-          title: "Rejoins Coffice",
-          text,
-          url,
-        })
+        .share({ title: "Rejoins Coffice", text, url })
         .catch((error) => {
-          if (error.name !== "AbortError") {
-            handleCopyUrl();
-          }
+          if (error.name !== "AbortError") handleCopyUrl();
         });
     } else {
       handleCopyUrl();
@@ -190,10 +142,9 @@ const Parrainage = () => {
   };
 
   const handleShareWhatsApp = () => {
-    const code = getCode();
-    if (!code) return;
+    if (!codeParrainage) return;
     const text = encodeURIComponent(
-      `Rejoins Coffice avec mon code ${code} et gagne 3000 DA de bonus ! ${window.location.origin}/inscription?parrain=${code}`
+      `Rejoins Coffice avec mon code ${codeParrainage} et gagne 3 000 DA de bonus ! ${window.location.origin}/inscription?parrain=${codeParrainage}`
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
   };
@@ -228,143 +179,108 @@ const Parrainage = () => {
         </p>
       </div>
 
-      {!stats.codeParrainage && !user?.codeParrainage ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Card className="p-8 bg-gradient-to-br from-gray-700 to-gray-800 text-white overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32"></div>
-            <div className="relative z-10 text-center">
-              <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Gift className="w-10 h-10 text-white" />
+      {/* Code parrainage */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Card className="p-8 bg-gradient-to-br from-teal-600 to-emerald-700 text-white overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full -ml-24 -mb-24"></div>
+
+          <div className="relative z-10">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                  <Gift className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold mb-1">
+                    Votre code de parrainage
+                  </h2>
+                  <p className="text-white/80 text-sm">
+                    Partagez-le avec vos amis et collègues
+                  </p>
+                </div>
               </div>
-              <h2 className="text-2xl font-bold mb-3">
-                Activez votre code de parrainage
-              </h2>
-              <p className="text-white/80 mb-6 max-w-md mx-auto">
-                Générez votre code unique pour commencer à parrainer vos amis et gagner des récompenses.
-              </p>
-              <Button
-                onClick={handleGenerateCode}
-                disabled={generatingCode}
-                className="bg-white text-gray-800 hover:bg-white/90 px-8"
-                size="lg"
-              >
-                {generatingCode ? (
-                  <span className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 animate-spin" />
-                    Génération...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <Gift className="w-5 h-5" />
-                    Générer mon code
-                  </span>
-                )}
-              </Button>
             </div>
-          </Card>
-        </motion.div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Card className="p-8 bg-gradient-to-br from-teal-600 to-emerald-700 text-white overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full -ml-24 -mb-24"></div>
 
-            <div className="relative z-10">
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                    <Gift className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold mb-1">
-                      Votre code de parrainage
-                    </h2>
-                    <p className="text-white/80 text-sm">
-                      Partagez-le avec vos amis et collègues
-                    </p>
-                  </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <p className="text-white/70 text-sm mb-2">Votre code unique</p>
+                  <p className="text-4xl font-bold tracking-widest font-mono">
+                    {codeParrainage || "—"}
+                  </p>
                 </div>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <p className="text-white/70 text-sm mb-2">Votre code unique</p>
-                    <p className="text-5xl font-bold tracking-widest font-mono">
-                      {stats.codeParrainage || user?.codeParrainage || "---"}
-                    </p>
-                  </div>
-                  <Button
-                    onClick={handleCopyCode}
-                    variant="outline"
-                    className="h-14 w-14 bg-white/20 border-white/30 text-white hover:bg-white/30 flex items-center justify-center p-0"
-                  >
-                    {copied ? (
-                      <Check className="w-6 h-6" />
-                    ) : (
-                      <Copy className="w-6 h-6" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-4">
-                <p className="text-white/70 text-xs mb-2">Lien de parrainage</p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 text-sm text-white/90 truncate">
-                    {window.location.origin}/inscription?parrain={stats.codeParrainage || user?.codeParrainage}
-                  </code>
-                  <Button
-                    onClick={handleCopyUrl}
-                    size="sm"
-                    variant="outline"
-                    className="bg-white/20 border-white/30 text-white hover:bg-white/30"
-                  >
-                    {copiedUrl ? (
-                      <>
-                        <Check className="w-4 h-4 mr-1" />
-                        Copié
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4 mr-1" />
-                        Copier
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
                 <Button
-                  onClick={handleShare}
-                  className="flex-1 bg-white text-teal-700 hover:bg-white/90"
-                  size="lg"
+                  onClick={handleCopyCode}
+                  variant="outline"
+                  disabled={!codeParrainage}
+                  className="h-14 w-14 bg-white/20 border-white/30 text-white hover:bg-white/30 flex items-center justify-center p-0"
                 >
-                  <Share2 className="w-5 h-5 mr-2" />
-                  Partager
-                </Button>
-                <Button
-                  onClick={handleShareWhatsApp}
-                  className="flex-1 bg-green-500 text-white hover:bg-green-600"
-                  size="lg"
-                >
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  WhatsApp
+                  {copied ? (
+                    <Check className="w-6 h-6" />
+                  ) : (
+                    <Copy className="w-6 h-6" />
+                  )}
                 </Button>
               </div>
             </div>
-          </Card>
-        </motion.div>
-      )}
+
+            {codeParrainage && (
+              <>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-4">
+                  <p className="text-white/70 text-xs mb-2">Lien de parrainage</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-sm text-white/90 truncate">
+                      {window.location.origin}/inscription?parrain={codeParrainage}
+                    </code>
+                    <Button
+                      onClick={handleCopyUrl}
+                      size="sm"
+                      variant="outline"
+                      className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                    >
+                      {copiedUrl ? (
+                        <>
+                          <Check className="w-4 h-4 mr-1" />
+                          Copié
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 mr-1" />
+                          Copier
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleShare}
+                    className="flex-1 bg-white text-teal-700 hover:bg-white/90"
+                    size="lg"
+                  >
+                    <Share2 className="w-5 h-5 mr-2" />
+                    Partager
+                  </Button>
+                  <Button
+                    onClick={handleShareWhatsApp}
+                    className="flex-1 bg-green-500 text-white hover:bg-green-600"
+                    size="lg"
+                  >
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                    WhatsApp
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </Card>
+      </motion.div>
 
       {/* Statistiques */}
       <motion.div
@@ -475,7 +391,7 @@ const Parrainage = () => {
                               {filleul.filleulNom || "Utilisateur"}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {filleul.filleulEmail}
+                              {filleul.filleulEmail || "—"}
                             </p>
                           </div>
                         </div>
@@ -496,8 +412,7 @@ const Parrainage = () => {
                         <div className="flex items-center gap-2">
                           <CreditCard className="w-4 h-4 text-green-600" />
                           <span className="text-sm font-medium text-gray-900">
-                            {filleul.recompenseParrain.toLocaleString("fr-DZ")}{" "}
-                            DA
+                            {(filleul.recompenseParrain || 0).toLocaleString("fr-DZ")} DA
                           </span>
                         </div>
                       </td>
@@ -530,46 +445,40 @@ const Parrainage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="relative">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-3xl font-bold text-blue-600">1</span>
-                </div>
-                <h4 className="font-bold text-gray-900 mb-2">
-                  Partagez votre code
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Envoyez votre code par WhatsApp, SMS ou en personne
-                </p>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <span className="text-3xl font-bold text-blue-600">1</span>
               </div>
+              <h4 className="font-bold text-gray-900 mb-2">
+                Partagez votre code
+              </h4>
+              <p className="text-sm text-gray-600">
+                Envoyez votre code par WhatsApp, SMS ou en personne
+              </p>
             </div>
 
-            <div className="relative">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-3xl font-bold text-green-600">2</span>
-                </div>
-                <h4 className="font-bold text-gray-900 mb-2">
-                  Votre ami s'inscrit
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Il entre votre code lors de l'inscription et reçoit 3000 DA de bonus
-                </p>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <span className="text-3xl font-bold text-green-600">2</span>
               </div>
+              <h4 className="font-bold text-gray-900 mb-2">
+                Votre ami s'inscrit
+              </h4>
+              <p className="text-sm text-gray-600">
+                Il entre votre code lors de l'inscription et reçoit 3 000 DA de bonus
+              </p>
             </div>
 
-            <div className="relative">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-3xl font-bold text-orange-600">3</span>
-                </div>
-                <h4 className="font-bold text-gray-900 mb-2">
-                  Vous gagnez aussi
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Recevez 3000 DA de crédit pour chaque ami parrainé
-                </p>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                <span className="text-3xl font-bold text-orange-600">3</span>
               </div>
+              <h4 className="font-bold text-gray-900 mb-2">
+                Vous gagnez aussi
+              </h4>
+              <p className="text-sm text-gray-600">
+                Recevez 3 000 DA de crédit pour chaque ami parrainé
+              </p>
             </div>
           </div>
         </Card>
@@ -591,30 +500,17 @@ const Parrainage = () => {
                 Les avantages du programme
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-green-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                  <p className="text-sm text-green-800">
-                    Gagnez des crédits à chaque parrainage validé
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-green-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                  <p className="text-sm text-green-800">
-                    Vos filleuls reçoivent aussi des réductions exclusives
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-green-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                  <p className="text-sm text-green-800">
-                    Parrainez un nombre illimité de personnes
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-green-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                  <p className="text-sm text-green-800">
-                    Utilisez vos crédits pour toutes vos réservations
-                  </p>
-                </div>
+                {[
+                  "Gagnez des crédits à chaque parrainage validé",
+                  "Vos filleuls reçoivent aussi des réductions exclusives",
+                  "Parrainez un nombre illimité de personnes",
+                  "Utilisez vos crédits pour toutes vos réservations",
+                ].map((text) => (
+                  <div key={text} className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-green-600 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <p className="text-sm text-green-800">{text}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
