@@ -46,18 +46,23 @@ const IdCardUpload: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
       }, 180);
 
       try {
-        const res = await apiClient.uploadDocument(file, "user", user!.id, "carte_identite");
+        const uploadRes = await apiClient.uploadDocument(file, "user", user!.id, "carte_identite");
         clearInterval(progressInterval);
-        if (res.success && res.data?.chemin_fichier) {
+        const cheminFichier = (uploadRes.data as Record<string, string> | undefined)?.chemin_fichier;
+        if (uploadRes.success && cheminFichier) {
+          setUploadProgress(90);
+          const updateRes = await apiClient.updateUser(user!.id, { carteIdentiteUrl: cheminFichier });
+          if (!updateRes.success) {
+            toast.error("Document uploadé mais enregistrement échoué. Réessayez.");
+            setUploadProgress(0);
+            return;
+          }
           setUploadProgress(100);
-          await apiClient.put(`/users/update.php?id=${user!.id}`, {
-            carteIdentiteUrl: res.data.chemin_fichier,
-          });
           await loadUser();
           toast.success("Carte d'identité enregistrée !");
           onComplete();
         } else {
-          toast.error((res as { error?: string }).error || "Erreur lors de l'upload.");
+          toast.error((uploadRes as { error?: string }).error || "Erreur lors de l'upload.");
           setPreview(null);
           setPreviewType(null);
           setUploadProgress(0);
@@ -189,18 +194,23 @@ const IdCardSection: React.FC = () => {
         setUploadProgress((p) => Math.min(p + 12, 85));
       }, 180);
       try {
-        const res = await apiClient.uploadDocument(file, "user", user!.id, "carte_identite");
+        const uploadRes = await apiClient.uploadDocument(file, "user", user!.id, "carte_identite");
         clearInterval(progressInterval);
-        if (res.success && res.data?.chemin_fichier) {
+        const cheminFichier = (uploadRes.data as Record<string, string> | undefined)?.chemin_fichier;
+        if (uploadRes.success && cheminFichier) {
+          setUploadProgress(90);
+          const updateRes = await apiClient.updateUser(user!.id, { carteIdentiteUrl: cheminFichier });
+          if (!updateRes.success) {
+            toast.error("Document uploadé mais enregistrement échoué. Réessayez.");
+            setUploadProgress(0);
+            return;
+          }
           setUploadProgress(100);
-          await apiClient.put(`/users/update.php?id=${user!.id}`, {
-            carteIdentiteUrl: res.data.chemin_fichier,
-          });
           await loadUser();
           toast.success("Document remplacé !");
           setReplacing(false);
         } else {
-          toast.error((res as { error?: string }).error || "Erreur lors de l'upload.");
+          toast.error((uploadRes as { error?: string }).error || "Erreur lors de l'upload.");
           setUploadProgress(0);
         }
       } catch {
