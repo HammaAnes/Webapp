@@ -93,7 +93,61 @@ export interface WelcomeData {
   email: string;
 }
 
-export function welcomeEmail(data: WelcomeData): EmailTemplate {
+export interface WelcomeOnboardingData extends WelcomeData {
+  codeParrainage?: string;
+  hasReferralBonus?: boolean;
+  referralBonus?: number;
+}
+
+export function welcomeEmail(data: WelcomeOnboardingData): EmailTemplate {
+  const referralSection = data.codeParrainage ? `
+<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:20px;margin:20px 0">
+<p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px">Votre code de parrainage</p>
+<p style="margin:0 0 12px;font-size:14px;color:#374151">Partagez ce code et gagnez <strong>3 000 DA</strong> pour chaque ami qui s'inscrit.</p>
+<div style="background:#0284c7;border-radius:8px;padding:12px 20px;text-align:center;display:inline-block;width:100%">
+<p style="margin:0;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:2px;font-family:monospace">${data.codeParrainage}</p>
+</div>
+</div>` : '';
+
+  const bonusSection = data.hasReferralBonus && data.referralBonus ? `
+<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin:20px 0">
+<p style="margin:0;font-size:14px;color:#166534"><strong>🎁 Bonus de bienvenue :</strong> ${(data.referralBonus).toLocaleString('fr-DZ')} DA ont été crédités sur votre compte !</p>
+</div>` : '';
+
+  const stepsSection = `
+<div style="margin:24px 0">
+<p style="font-size:15px;font-weight:600;color:#111827;margin:0 0 16px">Vos 3 premières étapes chez Coffice :</p>
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+<tr>
+  <td style="width:36px;vertical-align:top;padding:2px 12px 16px 0">
+    <div style="width:28px;height:28px;border-radius:50%;background:#0284c7;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#ffffff">1</div>
+  </td>
+  <td style="vertical-align:top;padding-bottom:16px">
+    <p style="margin:0 0 2px;font-size:14px;font-weight:600;color:#111827">Complétez votre profil</p>
+    <p style="margin:0;font-size:13px;color:#6b7280">Ajoutez votre photo, entreprise et informations de contact.</p>
+  </td>
+</tr>
+<tr>
+  <td style="width:36px;vertical-align:top;padding:2px 12px 16px 0">
+    <div style="width:28px;height:28px;border-radius:50%;background:#0284c7;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#ffffff">2</div>
+  </td>
+  <td style="vertical-align:top;padding-bottom:16px">
+    <p style="margin:0 0 2px;font-size:14px;font-weight:600;color:#111827">Explorez nos espaces</p>
+    <p style="margin:0;font-size:13px;color:#6b7280">Box privés, open space, salles de réunion — trouvez l'espace qui vous correspond.</p>
+  </td>
+</tr>
+<tr>
+  <td style="width:36px;vertical-align:top;padding:2px 12px 0 0">
+    <div style="width:28px;height:28px;border-radius:50%;background:#0284c7;text-align:center;line-height:28px;font-size:13px;font-weight:700;color:#ffffff">3</div>
+  </td>
+  <td style="vertical-align:top">
+    <p style="margin:0 0 2px;font-size:14px;font-weight:600;color:#111827">Effectuez votre première réservation</p>
+    <p style="margin:0;font-size:13px;color:#6b7280">Réservez en quelques clics et commencez à travailler dans un cadre inspirant.</p>
+  </td>
+</tr>
+</table>
+</div>`;
+
   const content = `
 <h2>Bienvenue chez Coffice, ${data.prenom}\u00a0!</h2>
 <p>Nous sommes ravis de vous compter parmi nos membres. Votre compte a \u00e9t\u00e9 cr\u00e9\u00e9 avec succ\u00e8s.</p>
@@ -101,20 +155,96 @@ ${infoBox([
   { label: "Nom complet", value: `${data.prenom} ${data.nom}` },
   { label: "E-mail", value: data.email },
 ])}
-<p>Vous pouvez d\u00e8s maintenant acc\u00e9der \u00e0 notre plateforme pour\u00a0:</p>
-<ul style="color:#4b5563;font-size:15px;line-height:2;padding-left:20px">
-<li>R\u00e9server un espace de travail (box, open space, salle de r\u00e9union)</li>
-<li>Consulter les disponibilit\u00e9s en temps r\u00e9el</li>
-<li>Demander une domiciliation commerciale</li>
-<li>G\u00e9rer vos r\u00e9servations et abonnements</li>
-</ul>
-<div style="text-align:center">
-<a href="${COFFICE_URL}/connexion" class="cta-btn">Acc\u00e9der \u00e0 mon espace</a>
-</div>`;
+${bonusSection}
+${stepsSection}
+${referralSection}
+<div style="text-align:center;margin-top:8px">
+<a href="${COFFICE_URL}/app" class="cta-btn">Acc\u00e9der \u00e0 mon espace</a>
+</div>
+<p style="font-size:13px;color:#9ca3af;text-align:center;margin-top:20px">Des questions ? Appelez-nous au ${COFFICE_MOBILE} ou écrivez à ${COFFICE_EMAIL}</p>`;
 
   return {
     subject: "Bienvenue chez Coffice\u00a0!",
     html: baseLayout("Bienvenue chez Coffice", content, "Votre compte Coffice a \u00e9t\u00e9 cr\u00e9\u00e9 avec succ\u00e8s"),
+  };
+}
+
+export interface OnboardingDiscoverData {
+  prenom: string;
+}
+
+export function onboardingDiscoverEmail(data: OnboardingDiscoverData): EmailTemplate {
+  const content = `
+<h2>D\u00e9couvrez vos espaces de travail</h2>
+<p>Bonjour ${data.prenom}, avez-vous d\u00e9j\u00e0 explor\u00e9 nos espaces\u00a0?</p>
+
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:20px 0">
+<tr>
+  <td style="padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:12px">
+    <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#111827">Box priv\u00e9e</p>
+    <p style="margin:0;font-size:13px;color:#6b7280">Votre espace ind\u00e9pendant pour travailler sans interruption. Id\u00e9al pour les r\u00e9unions et la concentration.</p>
+  </td>
+</tr>
+<tr><td style="height:8px"></td></tr>
+<tr>
+  <td style="padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:12px">
+    <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#111827">Open Space</p>
+    <p style="margin:0;font-size:13px;color:#6b7280">Un environnement dynamique pour travailler en communaut\u00e9. WiFi haut d\u00e9bit, caf\u00e9 et ambiance stimulante.</p>
+  </td>
+</tr>
+<tr><td style="height:8px"></td></tr>
+<tr>
+  <td style="padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px">
+    <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#111827">Salle de r\u00e9union</p>
+    <p style="margin:0;font-size:13px;color:#6b7280">\u00c9quip\u00e9e d'un \u00e9cran et visioc\u00f3nf\u00e9rence. Parfaite pour recevoir vos clients et partenaires.</p>
+  </td>
+</tr>
+</table>
+
+<p style="font-size:14px;color:#6b7280">R\u00e9servez \u00e0 l'heure, \u00e0 la demi-journ\u00e9e ou \u00e0 la journ\u00e9e \u2014 en quelques clics depuis votre espace personnel.</p>
+<div style="text-align:center">
+<a href="${COFFICE_URL}/espaces" class="cta-btn">Voir les espaces</a>
+</div>`;
+
+  return {
+    subject: "Explorez vos espaces de travail chez Coffice",
+    html: baseLayout("D\u00e9couvrez Coffice", content, "Box priv\u00e9es, open space, salles de r\u00e9union \u2014 trouvez l\u2019espace id\u00e9al"),
+  };
+}
+
+export interface OnboardingProfileData {
+  prenom: string;
+  profileComplete: boolean;
+  hasReservation: boolean;
+}
+
+export function onboardingProfileEmail(data: OnboardingProfileData): EmailTemplate {
+  const pendingSteps: string[] = [];
+  if (!data.profileComplete) pendingSteps.push('Compl\u00e9tez votre profil (entreprise, t\u00e9l\u00e9phone, adresse)');
+  if (!data.hasReservation) pendingSteps.push('Effectuez votre premi\u00e8re r\u00e9servation');
+
+  const stepsHtml = pendingSteps.length > 0 ? `
+<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:20px;margin:20px 0">
+<p style="margin:0 0 12px;font-size:14px;font-weight:600;color:#92400e">Il vous reste quelques \u00e9tapes :</p>
+${pendingSteps.map(s => `<p style="margin:0 0 8px;font-size:14px;color:#78350f">&#8226; ${s}</p>`).join('')}
+</div>` : `
+<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin:20px 0">
+<p style="margin:0;font-size:14px;color:#166534;font-weight:600">Votre profil est complet \u2014 vous \u00eates pr\u00eat(e) !</p>
+</div>`;
+
+  const content = `
+<h2>Comment se passe votre exp\u00e9rience\u00a0?</h2>
+<p>Bonjour ${data.prenom}, voil\u00e0 quelques jours que vous avez rejoint Coffice.</p>
+<p>Pour profiter pleinement de votre espace de travail, voici o\u00f9 vous en \u00eates :</p>
+${stepsHtml}
+<p style="font-size:14px;color:#6b7280">N'h\u00e9sitez pas \u00e0 nous contacter si vous avez des questions \u2014 l'\u00e9quipe du desk est l\u00e0 pour vous aider.</p>
+<div style="text-align:center">
+<a href="${COFFICE_URL}/app" class="cta-btn">Mon espace Coffice</a>
+</div>`;
+
+  return {
+    subject: "Comment se passe votre expérience chez Coffice ?",
+    html: baseLayout("Votre onboarding Coffice", content, "Quelques \u00e9tapes pour profiter pleinement de Coffice"),
   };
 }
 

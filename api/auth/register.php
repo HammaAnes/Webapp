@@ -186,7 +186,7 @@ try {
     error_log("Registration complete for: " . $data->email);
 
     try {
-        Mailer::sendWelcomeEmail($data->email, $data->prenom . ' ' . $data->nom);
+        Mailer::sendWelcomeEmail($data->email, $data->prenom . ' ' . $data->nom, $code_parrain, $data->email);
     } catch (Exception $e) {
         Logger::error('Failed to send welcome email', [
             'email' => $data->email,

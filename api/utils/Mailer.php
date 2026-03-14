@@ -144,12 +144,14 @@ class Mailer
         return mail($to, $subject, $body, implode("\r\n", $headers));
     }
 
-    public static function sendWelcomeEmail(string $to, string $name): bool
+    public static function sendWelcomeEmail(string $to, string $name, string $codeParrainage = '', string $email = ''): bool
     {
         $subject = 'Bienvenue chez Coffice !';
         $body = self::renderTemplate('welcome', [
             'name' => $name,
-            'login_url' => env('APP_URL', 'https://coffice.dz') . '/connexion'
+            'email' => $email ?: $to,
+            'code_parrainage' => $codeParrainage,
+            'login_url' => env('APP_URL', 'https://coffice.dz') . '/app'
         ]);
 
         return self::send($to, $subject, $body);

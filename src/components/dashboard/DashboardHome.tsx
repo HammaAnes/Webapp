@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
+import OnboardingChecklist from "./OnboardingChecklist";
 import {
   Calendar,
   Users,
@@ -555,6 +556,14 @@ const UserDashboard = () => {
         <p className="text-gray-600 text-base sm:text-lg">
           Voici un aperçu de votre activité chez Coffice
         </p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+      >
+        <OnboardingChecklist />
       </motion.div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
