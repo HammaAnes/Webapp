@@ -22,8 +22,7 @@ try {
     $database = Database::getInstance();
     $db = $database->getConnection();
 
-    // Vérifier que la demande appartient à l'utilisateur ou qu'il est admin
-    $query = "SELECT user_id FROM domiciliations WHERE id = :id";
+    $query = "SELECT user_id, statut FROM domiciliations WHERE id = :id";
     $stmt = $db->prepare($query);
     $stmt->bindParam(':id', $data->id);
     $stmt->execute();
@@ -38,7 +37,24 @@ try {
         Response::error("Accès refusé", 403);
     }
 
-    // Construire la requête UPDATE dynamiquement
+    if (isset($data->statut) && $auth['role'] !== 'admin') {
+        Response::error("Vous n'êtes pas autorisé à changer le statut d'une domiciliation", 403);
+    }
+
+    if (isset($data->statut) && $auth['role'] === 'admin') {
+        $rules = require __DIR__ . '/../config/business-rules.php';
+        $transitions = $rules['domiciliation']['transitions_statut_autorisees'];
+        $statutActuel = $demande['statut'] ?? '';
+        $nouveauStatut = $data->statut;
+
+        if (!isset($transitions[$statutActuel]) || !in_array($nouveauStatut, $transitions[$statutActuel], true)) {
+            Response::error(
+                "Transition de statut invalide : impossible de passer de '$statutActuel' à '$nouveauStatut'",
+                400
+            );
+        }
+    }
+
     $updates = [];
     $params = [':id' => $data->id];
 

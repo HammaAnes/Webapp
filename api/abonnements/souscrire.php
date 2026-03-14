@@ -44,6 +44,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ");
 
         $creditsRestants = $abonnement['credits_mensuels'] ?? 0;
+        $prixAbonnement = floatval($abonnement['prix'] ?? 0);
+
+        $db->beginTransaction();
 
         $insertStmt->execute([
             $id,
@@ -51,16 +54,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $abonnementId,
             $dateDebut,
             $dateFin,
-            $abonnement['prix'],
+            $prixAbonnement,
             $creditsRestants
         ]);
+
+        $transactionId = UuidHelper::generate();
+        $transStmt = $db->prepare("
+            INSERT INTO transactions
+            (id, user_id, type, montant, statut, mode_paiement, reference, description, date_paiement)
+            VALUES (?, ?, 'abonnement', ?, 'en_attente', 'cash', ?, ?, NOW())
+        ");
+        $transStmt->execute([
+            $transactionId,
+            $userId,
+            $prixAbonnement,
+            'ABO-' . date('YmdHis') . '-' . substr($id, 0, 8),
+            'Souscription ' . ($abonnement['nom'] ?? 'Abonnement') . ' du ' . $dateDebut . ' au ' . $dateFin,
+        ]);
+
+        $notifId = UuidHelper::generate();
+        $notifStmt = $db->prepare("
+            INSERT INTO notifications (id, user_id, type, titre, message, lue)
+            VALUES (?, ?, 'abonnement', 'Abonnement souscrit', ?, 0)
+        ");
+        $notifStmt->execute([
+            $notifId,
+            $userId,
+            'Votre abonnement ' . ($abonnement['nom'] ?? '') . ' est actif jusqu\'au ' . date('d/m/Y', strtotime($dateFin)) . '.',
+        ]);
+
+        $db->commit();
 
         try {
             $userStmt = $db->prepare("SELECT prenom, nom, email FROM users WHERE id = ?");
             $userStmt->execute([$userId]);
             $user = $userStmt->fetch(PDO::FETCH_ASSOC);
             if ($user) {
-                $montant = number_format((float)($abonnement['prix'] ?? 0), 0, ',', ' ') . ' DA';
+                $montant = number_format($prixAbonnement, 0, ',', ' ') . ' DA';
                 AdminNotifier::newSubscription(
                     $user['prenom'] . ' ' . $user['nom'],
                     $user['email'],
@@ -69,14 +99,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
             }
         } catch (Exception $notifErr) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
             error_log("Admin notification error: " . $notifErr->getMessage());
         }
 
         Response::success([
             'id' => $id,
+            'transaction_id' => $transactionId,
             'message' => 'Abonnement souscrit avec succès'
         ]);
     } catch (Exception $e) {
+        if (isset($db) && $db->inTransaction()) {
+            $db->rollBack();
+        }
         Response::error($e->getMessage());
     }
 } else {

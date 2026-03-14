@@ -55,7 +55,10 @@ ini_set('post_max_size', '10M');
 
 // Session configuration (si nécessaire pour certains endpoints)
 ini_set('session.cookie_httponly', '1');
-ini_set('session.cookie_secure', '0'); // Mettre à 1 en HTTPS
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+    || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443);
+ini_set('session.cookie_secure', $isHttps ? '1' : '0');
 ini_set('session.use_strict_mode', '1');
 ini_set('session.cookie_samesite', 'Lax');
 

@@ -15,6 +15,7 @@ require_once '../utils/Auth.php';
 require_once '../utils/Response.php';
 require_once '../utils/Validator.php';
 require_once '../utils/UuidHelper.php';
+require_once '../utils/Mailer.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     Response::methodNotAllowed();
@@ -83,6 +84,17 @@ try {
         $stmt->bindParam(':titre', $titre);
         $stmt->bindParam(':message', $message);
         $stmt->execute();
+
+        try {
+            $userStmt = $db->prepare("SELECT email, prenom, nom FROM users WHERE id = ?");
+            $userStmt->execute([$domiciliation['user_id']]);
+            $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+            if ($user) {
+                Mailer::sendDomiciliationStatus($user['email'], 'en_attente_signature', $domiciliation);
+            }
+        } catch (Exception $mailErr) {
+            error_log("Email domiciliation validate error: " . $mailErr->getMessage());
+        }
     }
 
     Response::success([

@@ -145,22 +145,43 @@ try {
         Response::error("Ce creneau est deja reserve", 409);
     }
 
-    $heures = ($fin - $debut) / 3600;
-    $prixHeure = floatval($espace['prix_heure']);
-    $prixJour = floatval($espace['prix_jour']);
+    $rules = require __DIR__ . '/../config/business-rules.php';
+    $seuilDemiJ = $rules['reservation']['seuil_heure_demi_journee'];
+    $seuilJour  = $rules['reservation']['seuil_demi_journee_journee'];
 
-    if ($heures <= 4) {
+    $heures = ($fin - $debut) / 3600;
+
+    $stmt = $db->prepare("SELECT prix_heure, prix_demi_journee, prix_jour, prix_semaine, prix_mois FROM espaces WHERE id = ?");
+    $stmt->execute([$espaceId]);
+    $tarifs = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    $prixHeure     = floatval($tarifs['prix_heure'] ?? $espace['prix_heure']);
+    $prixDemiJour  = floatval($tarifs['prix_demi_journee'] ?? 0);
+    $prixJour      = floatval($tarifs['prix_jour'] ?? $espace['prix_jour']);
+    $prixSemaine   = floatval($tarifs['prix_semaine'] ?? 0);
+    $prixMois      = floatval($tarifs['prix_mois'] ?? 0);
+
+    $jours = $heures / 24;
+    $semaines = $jours / 7;
+
+    if ($heures <= $seuilDemiJ) {
         $montant = ceil($heures) * $prixHeure;
         $type = 'heure';
-    } elseif ($heures <= 8) {
-        $montant = $prixJour / 2;
+    } elseif ($heures <= $seuilJour) {
+        $montant = $prixDemiJour > 0 ? $prixDemiJour : ($prixJour / 2);
         $type = 'demi_journee';
     } elseif ($heures <= 24) {
         $montant = $prixJour;
         $type = 'jour';
+    } elseif ($semaines >= 4 && $prixMois > 0) {
+        $mois = ceil($semaines / 4);
+        $montant = $mois * $prixMois;
+        $type = 'mois';
+    } elseif ($semaines >= 1 && $prixSemaine > 0) {
+        $montant = ceil($semaines) * $prixSemaine;
+        $type = 'semaine';
     } else {
-        $jours = ceil($heures / 24);
-        $montant = $jours * $prixJour;
+        $montant = ceil($jours) * $prixJour;
         $type = 'jour';
     }
 

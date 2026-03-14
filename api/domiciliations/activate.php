@@ -11,6 +11,7 @@ require_once '../utils/Auth.php';
 require_once '../utils/Response.php';
 require_once '../utils/Validator.php';
 require_once '../utils/UuidHelper.php';
+require_once '../utils/Mailer.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     Response::methodNotAllowed();
@@ -37,8 +38,7 @@ try {
     $database = Database::getInstance();
     $db = $database->getConnection();
 
-    // Vérifier que la domiciliation existe et est validée
-    $query = "SELECT * FROM domiciliations WHERE id = :id AND statut = 'validee'";
+    $query = "SELECT * FROM domiciliations WHERE id = :id AND statut IN ('en_attente_signature', 'domiciliation_creee')";
     $stmt = $db->prepare($query);
     $stmt->bindParam(':id', $data['domiciliation_id']);
     $stmt->execute();
@@ -46,7 +46,7 @@ try {
     $domiciliation = $stmt->fetch();
 
     if (!$domiciliation) {
-        Response::notFound('Demande de domiciliation introuvable ou non validée');
+        Response::notFound('Domiciliation introuvable ou ne peut pas être activée depuis son statut actuel (statut requis: en_attente_signature ou domiciliation_creee)');
     }
 
     // Activer la domiciliation
@@ -101,6 +101,20 @@ try {
     $stmt->bindParam(':titre', $titre);
     $stmt->bindParam(':message', $message);
     $stmt->execute();
+
+    try {
+        $userStmt = $db->prepare("SELECT email, prenom, nom FROM users WHERE id = ?");
+        $userStmt->execute([$domiciliation['user_id']]);
+        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+        if ($user) {
+            $domiciliation['date_debut'] = $data['date_debut'];
+            $domiciliation['date_fin'] = $data['date_fin'];
+            $domiciliation['montant_mensuel'] = $data['montant_mensuel'];
+            Mailer::sendDomiciliationStatus($user['email'], 'active', $domiciliation);
+        }
+    } catch (Exception $mailErr) {
+        error_log("Email domiciliation activate error: " . $mailErr->getMessage());
+    }
 
     Response::success([
         'message' => 'Domiciliation activée avec succès',

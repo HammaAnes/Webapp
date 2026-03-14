@@ -464,8 +464,8 @@ export const useAppStore = create<AppState>()(
       },
 
       addUser: async (data) => {
-        const { createUser } = await import("../services/user-service");
-        const result = await createUser(data as { email: string; nom: string; prenom: string; telephone?: string; password?: string });
+        const { userService } = await import("../services/user.service");
+        const result = await userService.adminCreateUser(data as { email: string; nom: string; prenom: string; telephone?: string; password?: string });
 
         if (result.success && result.user) {
           set({ users: [...get().users, result.user] });

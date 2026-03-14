@@ -16,16 +16,41 @@ try {
         Response::error("Données JSON invalides", 400);
     }
 
+    $rules = require __DIR__ . '/../config/business-rules.php';
+    $reglesDom = $rules['domiciliation'];
+    $reglesIds  = $rules['identifiants_fiscaux'];
+
     if (empty($data->raison_sociale) && empty($data->forme_juridique)) {
         Response::error("Raison sociale ou forme juridique requise", 400);
     }
 
-    if (!empty($data->nif) && strlen($data->nif) !== 20) {
-        Response::error("Le NIF doit contenir exactement 20 caractères", 400);
+    if (!empty($data->raison_sociale) && strlen($data->raison_sociale) > $reglesIds['raison_sociale_longueur_max']) {
+        Response::error("La raison sociale ne peut pas dépasser " . $reglesIds['raison_sociale_longueur_max'] . " caractères", 400);
     }
 
-    if (!empty($data->nis) && strlen($data->nis) !== 15) {
-        Response::error("Le NIS doit contenir exactement 15 caractères", 400);
+    if (!empty($data->nif) && strlen($data->nif) !== $reglesIds['nif_longueur']) {
+        Response::error("Le NIF doit contenir exactement " . $reglesIds['nif_longueur'] . " caractères", 400);
+    }
+
+    if (!empty($data->nis) && strlen($data->nis) !== $reglesIds['nis_longueur']) {
+        Response::error("Le NIS doit contenir exactement " . $reglesIds['nis_longueur'] . " caractères", 400);
+    }
+
+    if (!empty($data->registre_commerce) && strlen($data->registre_commerce) > $reglesIds['registre_longueur_max']) {
+        Response::error("Le numéro de registre de commerce ne peut pas dépasser " . $reglesIds['registre_longueur_max'] . " caractères", 400);
+    }
+
+    if (!empty($data->representant_email) && !filter_var($data->representant_email, FILTER_VALIDATE_EMAIL)) {
+        Response::error("L'email du représentant légal n'est pas valide", 400);
+    }
+
+    if (!empty($data->representant_telephone)) {
+        $tel = preg_replace('/[\s\-\(\)]/', '', $data->representant_telephone);
+        $algerien = '/^(\+213|0)?[5-7][0-9]{8}$/';
+        $francais = '/^(\+33|0)[1-9][0-9]{8}$/';
+        if (!preg_match($algerien, $tel) && !preg_match($francais, $tel)) {
+            Response::error("Le numéro de téléphone du représentant n'est pas valide", 400);
+        }
     }
 
     $database = Database::getInstance();
@@ -78,6 +103,22 @@ try {
 
         if ($stmt->rowCount() > 0) {
             Response::error("Vous avez déjà une demande de domiciliation en cours ou active", 400);
+        }
+    }
+
+    if (!empty($data->nif)) {
+        $stmt = $db->prepare("SELECT id FROM domiciliations WHERE nif = :nif AND statut NOT IN ('refusee','resiliee','expiree') LIMIT 1");
+        $stmt->execute([':nif' => $data->nif]);
+        if ($stmt->fetch()) {
+            Response::error("Une domiciliation existe déjà avec ce NIF (" . $data->nif . ")", 409);
+        }
+    }
+
+    if (!empty($data->registre_commerce)) {
+        $stmt = $db->prepare("SELECT id FROM domiciliations WHERE registre_commerce = :rc AND statut NOT IN ('refusee','resiliee','expiree') LIMIT 1");
+        $stmt->execute([':rc' => $data->registre_commerce]);
+        if ($stmt->fetch()) {
+            Response::error("Une domiciliation existe déjà avec ce registre de commerce (" . $data->registre_commerce . ")", 409);
         }
     }
 
