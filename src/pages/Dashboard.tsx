@@ -31,6 +31,7 @@ const Caisse = lazy(() => import("./dashboard/admin/Caisse"));
 const AdminContacts = lazy(() => import("./dashboard/admin/Contacts"));
 const ContactDetail = lazy(() => import("./dashboard/admin/ContactDetail"));
 const ContactCreate = lazy(() => import("./dashboard/admin/ContactCreate"));
+const AdminEmail = lazy(() => import("./dashboard/admin/Email"));
 
 const AdminGuard = () => {
   const { user } = useAuthStore();
@@ -81,6 +82,7 @@ const Dashboard = () => {
             <Route path="parrainages" element={<AdminParrainages />} />
             <Route path="caisse" element={<Caisse />} />
             <Route path="reports" element={<AdminReports />} />
+            <Route path="email" element={<AdminEmail />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
 

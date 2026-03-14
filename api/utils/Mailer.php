@@ -33,20 +33,38 @@ class Mailer
         }
     }
 
-    public static function send(string $to, string $subject, string $body, ?string $plainText = null): bool
+    public static function send(string $to, string $subject, string $body, ?string $plainText = null, string $type = 'custom', ?string $userId = null): bool
     {
         if (empty(self::$config)) {
             self::init();
         }
 
+        $attempts = 1;
+
         try {
             if (self::$usePHPMailer && self::$config['use_smtp']) {
                 $result = self::sendWithPHPMailer($to, $subject, $body, $plainText);
-                if ($result) return true;
+                if ($result) {
+                    EmailLogger::logSent($type, $to, $subject, $userId);
+                    return true;
+                }
                 Logger::warning('PHPMailer SMTP failed, trying mail() fallback', ['to' => $to]);
-                return self::sendWithMailFunction($to, $subject, $body);
+                $attempts = 2;
+                $fallback = self::sendWithMailFunction($to, $subject, $body);
+                if ($fallback) {
+                    EmailLogger::logSent($type, $to, $subject, $userId, ['fallback' => 'mail()']);
+                } else {
+                    EmailLogger::logFailed($type, $to, $subject, 'Both PHPMailer and mail() failed', $userId, $attempts);
+                }
+                return $fallback;
             } else {
-                return self::sendWithMailFunction($to, $subject, $body);
+                $result = self::sendWithMailFunction($to, $subject, $body);
+                if ($result) {
+                    EmailLogger::logSent($type, $to, $subject, $userId);
+                } else {
+                    EmailLogger::logFailed($type, $to, $subject, 'mail() returned false', $userId, $attempts);
+                }
+                return $result;
             }
         } catch (Exception $e) {
             Logger::error('Email sending failed', [
@@ -58,9 +76,17 @@ class Mailer
                 'use_phpmailer' => self::$usePHPMailer ? 'yes' : 'no'
             ]);
             try {
-                return self::sendWithMailFunction($to, $subject, $body);
+                $attempts = 2;
+                $fallback = self::sendWithMailFunction($to, $subject, $body);
+                if ($fallback) {
+                    EmailLogger::logSent($type, $to, $subject, $userId, ['fallback' => 'mail()', 'original_error' => $e->getMessage()]);
+                } else {
+                    EmailLogger::logFailed($type, $to, $subject, $e->getMessage(), $userId, $attempts);
+                }
+                return $fallback;
             } catch (Exception $fallbackError) {
                 Logger::error('mail() fallback also failed', ['error' => $fallbackError->getMessage()]);
+                EmailLogger::logFailed($type, $to, $subject, $e->getMessage() . ' | fallback: ' . $fallbackError->getMessage(), $userId, $attempts);
                 return false;
             }
         }

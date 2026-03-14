@@ -1048,6 +1048,37 @@ class ApiClient {
     });
   }
 
+  async getEmailLogs(params?: { page?: number; limit?: number; type?: string; status?: string; user_id?: string; date_debut?: string; date_fin?: string }) {
+    const query = params ? "?" + new URLSearchParams(Object.entries(params).reduce((acc, [k, v]) => { if (v !== undefined && v !== "") acc[k] = String(v); return acc; }, {} as Record<string, string>)).toString() : "";
+    return this.request(`/email/logs.php${query}`);
+  }
+
+  async getEmailLogStats() {
+    return this.request("/email/logs.php?stats=1");
+  }
+
+  async getEmailQueueStatus() {
+    return this.request("/email/queue-status.php");
+  }
+
+  async retryEmailQueueItem(id: string) {
+    return this.request("/email/retry.php", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    });
+  }
+
+  async getEmailPreferences() {
+    return this.request("/email/preferences.php");
+  }
+
+  async updateEmailPreferences(prefs: Record<string, boolean>) {
+    return this.request("/email/preferences.php", {
+      method: "PUT",
+      body: JSON.stringify(prefs),
+    });
+  }
+
   // ============= CHECK-INS =============
   async createCheckin(data: Record<string, unknown>) {
     return this.request("/checkins/create.php", {

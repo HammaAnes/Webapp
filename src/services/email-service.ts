@@ -1,6 +1,5 @@
 import { logger } from "../utils/logger";
 import { apiClient } from "../lib/api-client";
-import toast from "react-hot-toast";
 import {
   reservationCreatedEmail,
   reservationConfirmedEmail,
@@ -11,85 +10,6 @@ import {
   domiciliationRejectedEmail,
 } from "./email-templates";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-async function sendViaEdgeFunction(to: string, subject: string, html: string): Promise<boolean> {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    logger.warn("[Email] Supabase not configured, skipping Edge Function");
-    return false;
-  }
-
-  const url = `${SUPABASE_URL}/functions/v1/send-email`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-    body: JSON.stringify({ to, subject, html }),
-  });
-
-  const data = await response.json();
-  if (data.success) {
-    logger.info("[Email] Sent via Edge Function", { to, subject });
-    return true;
-  }
-  logger.warn("[Email] Edge Function failed:", data.error);
-  return false;
-}
-
-async function sendViaPhpBackend(to: string, subject: string, html: string): Promise<boolean> {
-  const response = await apiClient.sendEmail(to, subject, html);
-  if (response.success) {
-    logger.info("[Email] Sent via PHP backend", { to, subject });
-    return true;
-  }
-  logger.warn("[Email] PHP backend failed:", response.error);
-  return false;
-}
-
-async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-  try {
-    const edgeResult = await sendViaEdgeFunction(to, subject, html);
-    if (edgeResult) return true;
-  } catch (error) {
-    logger.warn("[Email] Edge Function error:", error instanceof Error ? error.message : String(error));
-  }
-
-  try {
-    return await sendViaPhpBackend(to, subject, html);
-  } catch (error) {
-    logger.error("[Email] PHP fallback error:", error instanceof Error ? error.message : String(error));
-    return false;
-  }
-}
-
-async function dispatchViaEdgeFunction(type: string, data: Record<string, unknown>): Promise<boolean> {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return false;
-
-  const url = `${SUPABASE_URL}/functions/v1/send-email`;
-
-  const template = buildTemplateFromType(type, data);
-  if (!template) return false;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-    body: JSON.stringify({
-      to: (data.user_email as string) || "",
-      subject: template.subject,
-      html: template.html,
-    }),
-  });
-
-  const result = await response.json();
-  return result.success === true;
-}
-
 async function dispatchViaPhp(type: string, data: Record<string, unknown>): Promise<boolean> {
   const response = await apiClient.dispatchEmail(type, data);
   return response.success === true;
@@ -97,25 +17,15 @@ async function dispatchViaPhp(type: string, data: Record<string, unknown>): Prom
 
 async function dispatch(type: string, data: Record<string, unknown>): Promise<boolean> {
   try {
-    const edgeResult = await dispatchViaEdgeFunction(type, data);
-    if (edgeResult) {
-      logger.info(`[Email] Dispatched via Edge Function: ${type}`);
+    const result = await dispatchViaPhp(type, data);
+    if (result) {
+      logger.info(`[Email] Dispatched: ${type}`);
       return true;
     }
-  } catch (error) {
-    logger.warn("[Email] Edge Function dispatch error:", error instanceof Error ? error.message : String(error));
-  }
-
-  try {
-    const phpResult = await dispatchViaPhp(type, data);
-    if (phpResult) {
-      logger.info(`[Email] Dispatched via PHP: ${type}`);
-      return true;
-    }
-    logger.error(`[Email] PHP dispatch also failed: ${type}`);
+    logger.error(`[Email] Dispatch failed: ${type}`);
     return false;
   } catch (error) {
-    logger.error("[Email] PHP dispatch error:", error instanceof Error ? error.message : String(error));
+    logger.error("[Email] Dispatch error:", error instanceof Error ? error.message : String(error));
     return false;
   }
 }
@@ -128,13 +38,10 @@ async function dispatchSafe(type: string, data: Record<string, unknown>, silent 
     }
   } catch (error) {
     logger.error("[Email] dispatchSafe error:", error instanceof Error ? error.message : String(error));
-    if (!silent) {
-      toast.error("L'envoi de l'email a echoue. Veuillez reessayer.");
-    }
   }
 }
 
-function buildTemplateFromType(type: string, data: Record<string, unknown>): { subject: string; html: string } | null {
+export function buildTemplateFromType(type: string, data: Record<string, unknown>): { subject: string; html: string } | null {
   switch (type) {
     case "reservation_created":
       return reservationCreatedEmail({
@@ -251,6 +158,32 @@ export interface DomiciliationEmailData {
   dateFin?: string;
 }
 
+export interface CourrierEmailData {
+  prenom: string;
+  expediteur: string;
+  typeCourrier: string;
+  dateReception: string;
+  raisonSociale: string;
+  userEmail: string;
+}
+
+export interface AbonnementExpirationData {
+  prenom: string;
+  planNom: string;
+  prixMensuel?: number;
+  dateFin: string;
+  joursRestants: number;
+  userEmail: string;
+}
+
+export interface ParrainageBonusData {
+  prenom: string;
+  filleulPrenom: string;
+  filleulNom: string;
+  bonusMontant: number;
+  userEmail: string;
+}
+
 export const emailService = {
   async onReservationCreated(userEmail: string, data: ReservationEmailData) {
     await dispatchSafe("reservation_created", {
@@ -316,9 +249,40 @@ export const emailService = {
     });
   },
 
-  async sendCustom(to: string, subject: string, html: string) {
-    return sendEmail(to, subject, html);
+  async onCourrierRecu(data: CourrierEmailData) {
+    await dispatchSafe("courrier_recu", {
+      prenom: data.prenom,
+      expediteur: data.expediteur,
+      type_courrier: data.typeCourrier,
+      date_reception: data.dateReception,
+      raison_sociale: data.raisonSociale,
+      user_email: data.userEmail,
+    }, true);
   },
 
-  sendViaEdgeFunction,
+  async onAbonnementExpiration(data: AbonnementExpirationData) {
+    await dispatchSafe("abonnement_expiration", {
+      prenom: data.prenom,
+      plan_nom: data.planNom,
+      prix_mensuel: data.prixMensuel,
+      date_fin: data.dateFin,
+      jours_restants: data.joursRestants,
+      user_email: data.userEmail,
+    }, true);
+  },
+
+  async onParrainageBonus(data: ParrainageBonusData) {
+    await dispatchSafe("parrainage_bonus", {
+      prenom: data.prenom,
+      filleul_prenom: data.filleulPrenom,
+      filleul_nom: data.filleulNom,
+      bonus_montant: data.bonusMontant,
+      user_email: data.userEmail,
+    }, true);
+  },
+
+  async sendCustom(to: string, subject: string, html: string) {
+    const response = await apiClient.sendEmail(to, subject, html);
+    return response.success;
+  },
 };

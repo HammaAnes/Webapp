@@ -502,6 +502,158 @@ export function passwordResetEmail(data: PasswordResetData): EmailTemplate {
   };
 }
 
+export interface CourrierEmailData {
+  prenom: string;
+  raisonSociale: string;
+  expediteur: string;
+  typeCourrier: string;
+  dateReception: string;
+  description?: string;
+}
+
+export function courrierRecuEmail(data: CourrierEmailData): EmailTemplate {
+  const content = `
+<h2>Nouveau courrier re\u00e7u</h2>
+<p>Bonjour ${data.prenom}, un courrier a \u00e9t\u00e9 re\u00e7u pour votre entreprise.</p>
+${infoBox([
+  { label: "Entreprise", value: data.raisonSociale },
+  { label: "Exp\u00e9diteur", value: data.expediteur },
+  { label: "Type", value: data.typeCourrier },
+  { label: "Date de r\u00e9ception", value: data.dateReception },
+])}
+${data.description ? `<div class="info-box"><p style="margin:0;font-size:14px;color:#374151"><strong>Description\u00a0:</strong> ${data.description}</p></div>` : ""}
+<p>Vous pouvez r\u00e9cup\u00e9rer votre courrier au bureau Coffice ou demander une r\u00e9exp\u00e9dition depuis votre espace personnel.</p>
+<div style="text-align:center">
+<a href="${COFFICE_URL}/app/mon-espace?tab=domiciliation" class="cta-btn">Voir mon courrier</a>
+</div>`;
+
+  return {
+    subject: `Nouveau courrier re\u00e7u \u2013 ${data.raisonSociale}`,
+    html: baseLayout("Nouveau courrier", content, `Un courrier de ${data.expediteur} vous attend`),
+  };
+}
+
+export interface AbonnementExpirationData {
+  prenom: string;
+  nomPlan: string;
+  dateExpiration: string;
+  joursRestants: number;
+  montant?: number;
+}
+
+export function abonnementExpirationEmail(data: AbonnementExpirationData): EmailTemplate {
+  const urgency = data.joursRestants <= 1 ? "danger" : data.joursRestants <= 7 ? "warning" : "info";
+  const urgencyLabel = data.joursRestants <= 1 ? "Expire aujourd\u2019hui" : data.joursRestants <= 7 ? `Expire dans ${data.joursRestants} jours` : `Expire dans ${data.joursRestants} jours`;
+  const urgencyClass = urgency === "danger" ? "status-danger" : urgency === "warning" ? "status-warning" : "status-info";
+
+  const content = `
+<h2>Votre abonnement arrive \u00e0 \u00e9ch\u00e9ance</h2>
+<p>Bonjour ${data.prenom}, votre abonnement <strong>${data.nomPlan}</strong> arrive bient\u00f4t \u00e0 expiration.</p>
+<div style="text-align:center;margin:20px 0">
+<span class="status-badge ${urgencyClass}">${urgencyLabel}</span>
+</div>
+${infoBox([
+  { label: "Plan", value: data.nomPlan },
+  { label: "Date d\u2019expiration", value: data.dateExpiration },
+  ...(data.montant ? [{ label: "Tarif mensuel", value: `${data.montant.toLocaleString("fr-DZ")} DA` }] : []),
+])}
+<p>Pour continuer \u00e0 profiter des services Coffice sans interruption, renouvelez votre abonnement d\u00e8s maintenant.</p>
+<div style="text-align:center">
+<a href="${COFFICE_URL}/app/abonnements" class="cta-btn">Renouveler mon abonnement</a>
+</div>`;
+
+  return {
+    subject: `Votre abonnement ${data.nomPlan} expire ${data.joursRestants <= 1 ? "aujourd\u2019hui" : `dans ${data.joursRestants} jours`}`,
+    html: baseLayout("Abonnement \u00e0 renouveler", content, `Votre abonnement ${data.nomPlan} expire le ${data.dateExpiration}`),
+  };
+}
+
+export interface DomiciliationExpirationData {
+  prenom: string;
+  raisonSociale: string;
+  dateExpiration: string;
+  joursRestants: number;
+}
+
+export function domiciliationExpirationEmail(data: DomiciliationExpirationData): EmailTemplate {
+  const content = `
+<h2>Votre contrat de domiciliation arrive \u00e0 \u00e9ch\u00e9ance</h2>
+<p>Bonjour ${data.prenom}, le contrat de domiciliation de votre entreprise arrive bient\u00f4t \u00e0 expiration.</p>
+<div style="text-align:center;margin:20px 0">
+<span class="status-badge status-warning">Expire dans ${data.joursRestants} jours</span>
+</div>
+${infoBox([
+  { label: "Entreprise", value: data.raisonSociale },
+  { label: "Date d\u2019expiration", value: data.dateExpiration },
+])}
+<p>Pour maintenir votre domiciliation et conserver l\u2019adresse de Coffice comme si\u00e8ge social, veuillez contacter notre \u00e9quipe pour le renouvellement.</p>
+<div style="text-align:center">
+<a href="${COFFICE_URL}/app/mon-espace?tab=domiciliation" class="cta-btn">Renouveler ma domiciliation</a>
+</div>
+<p style="font-size:13px;color:#9ca3af;text-align:center;margin-top:16px">Contactez-nous au ${COFFICE_MOBILE} ou \u00e0 ${COFFICE_EMAIL}</p>`;
+
+  return {
+    subject: `Domiciliation \u2013 expiration dans ${data.joursRestants} jours`,
+    html: baseLayout("Domiciliation \u00e0 renouveler", content, `Le contrat de ${data.raisonSociale} expire dans ${data.joursRestants} jours`),
+  };
+}
+
+export interface ParrainageBonusData {
+  prenom: string;
+  prenomFilleul: string;
+  montantBonus: number;
+}
+
+export function parainageBonusEmail(data: ParrainageBonusData): EmailTemplate {
+  const content = `
+<h2>Votre bonus de parrainage est arriv\u00e9\u00a0!</h2>
+<p>Bonjour ${data.prenom}, bonne nouvelle\u00a0! ${data.prenomFilleul} a effectu\u00e9 sa premi\u00e8re r\u00e9servation gr\u00e2ce \u00e0 votre code de parrainage.</p>
+<div class="highlight-box">
+<p class="label">Bonus de parrainage</p>
+<p class="amount">+${data.montantBonus.toLocaleString("fr-DZ")} DA</p>
+</div>
+<p>Ce montant a \u00e9t\u00e9 cr\u00e9dit\u00e9 sur votre compte. Vous pouvez l\u2019utiliser pour vos prochaines r\u00e9servations.</p>
+<p style="font-size:14px;color:#6b7280">Continuez \u00e0 parrainer vos contacts et cumulez des bonus\u00a0!</p>
+<div style="text-align:center">
+<a href="${COFFICE_URL}/app/parrainage" class="cta-btn">Mon programme parrainage</a>
+</div>`;
+
+  return {
+    subject: `+${data.montantBonus.toLocaleString("fr-DZ")} DA \u2013 Bonus parrainage re\u00e7u\u00a0!`,
+    html: baseLayout("Bonus de parrainage", content, `${data.prenomFilleul} a rejoint Coffice gr\u00e2ce \u00e0 vous`),
+  };
+}
+
+export interface CodePromoAttribueData {
+  prenom: string;
+  code: string;
+  reduction: string;
+  dateExpiration?: string;
+  description?: string;
+}
+
+export function codePromoAttribueEmail(data: CodePromoAttribueData): EmailTemplate {
+  const content = `
+<h2>Un code promo vous a \u00e9t\u00e9 attribu\u00e9\u00a0!</h2>
+<p>Bonjour ${data.prenom}, b\u00e9n\u00e9ficiez d\u2019une remise exclusive sur votre prochaine r\u00e9servation.</p>
+${data.description ? `<p style="font-size:14px;color:#6b7280">${data.description}</p>` : ""}
+<div style="background:#eff6ff;border:2px dashed #93c5fd;border-radius:12px;padding:24px;text-align:center;margin:24px 0">
+<p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#1e40af;text-transform:uppercase;letter-spacing:1px">Votre code promotionnel</p>
+<p style="margin:0;font-size:28px;font-weight:800;color:#1d4ed8;letter-spacing:3px;font-family:monospace">${data.code}</p>
+<p style="margin:8px 0 0;font-size:15px;font-weight:600;color:#1e40af">${data.reduction} de r\u00e9duction</p>
+</div>
+${data.dateExpiration ? `<p style="text-align:center;font-size:13px;color:#9ca3af">Valable jusqu\u2019au ${data.dateExpiration}</p>` : ""}
+<p>Utilisez ce code lors de votre prochaine r\u00e9servation pour profiter de votre remise.</p>
+<div style="text-align:center">
+<a href="${COFFICE_URL}/espaces" class="cta-btn">R\u00e9server maintenant</a>
+</div>`;
+
+  return {
+    subject: `Code promo ${data.code} \u2013 ${data.reduction} sur votre prochaine r\u00e9servation`,
+    html: baseLayout("Code promo Coffice", content, `Votre code ${data.code} offre ${data.reduction} sur votre prochaine r\u00e9servation`),
+  };
+}
+
 export interface AdminNotificationData {
   type:
     | "new_user"

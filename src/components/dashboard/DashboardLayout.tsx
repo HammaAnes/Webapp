@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, Calendar, CreditCard, Users, Settings, LogOut, Menu, X, User, Building, FileText, BarChart3, RefreshCw, Tag, Gift, Bell, Clock, ChevronDown, Wallet, CircleUser as UserCircle, Search, Plus } from "lucide-react";
+import { Home, Calendar, CreditCard, Users, Settings, LogOut, Menu, X, User, Building, FileText, BarChart3, RefreshCw, Tag, Gift, Bell, Clock, ChevronDown, Wallet, CircleUser as UserCircle, Search, Plus, Mail } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useAppStore } from "../../store/store";
 import NotificationCenter from "../ui/NotificationCenter";
@@ -140,6 +140,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       items: [
         { name: "Abonnements", href: "/app/admin/abonnements", icon: CreditCard },
         { name: "Rapports", href: "/app/admin/reports", icon: BarChart3 },
+      ],
+    },
+    {
+      label: "Système",
+      items: [
+        { name: "Emails", href: "/app/admin/email", icon: Mail },
         { name: "Paramètres", href: "/app/admin/settings", icon: Settings },
       ],
     },

@@ -66,6 +66,31 @@ try {
             $results[] = sendAdminNotification('Domiciliation – ' . $statusLabel, $data, $adminEmail, $appUrl);
             break;
 
+        case 'courrier_recu':
+            $to = $data['user_email'] ?? $userEmail;
+            $results[] = sendTemplateEmail('courrier-recu', $data, $to, 'Nouveau courrier reçu – ' . ($data['raison_sociale'] ?? ''), 'courrier_recu', $userId);
+            break;
+
+        case 'abonnement_expiration':
+            $to = $data['user_email'] ?? $userEmail;
+            $results[] = sendTemplateEmail('abonnement-expiration', $data, $to, 'Votre abonnement expire bientôt', 'abonnement_expiration', $userId);
+            break;
+
+        case 'domiciliation_expiration':
+            $to = $data['user_email'] ?? $userEmail;
+            $results[] = sendTemplateEmail('domiciliation-expiration', $data, $to, 'Votre domiciliation expire bientôt', 'domiciliation_expiration', $userId);
+            break;
+
+        case 'parrainage_bonus':
+            $to = $data['user_email'] ?? $userEmail;
+            $results[] = sendTemplateEmail('parrainage-bonus', $data, $to, 'Bonus de parrainage débloqué !', 'parrainage_bonus', $userId);
+            break;
+
+        case 'code_promo_attribue':
+            $to = $data['user_email'] ?? $userEmail;
+            $results[] = sendTemplateEmail('code-promo-attribue', $data, $to, 'Un code promo pour vous – ' . ($data['code_promo'] ?? ''), 'code_promo_attribue', $userId);
+            break;
+
         case 'user_registered':
             $results[] = sendAdminNotification('Nouvel utilisateur inscrit', $data, $adminEmail, $appUrl);
             break;
@@ -303,10 +328,10 @@ function sendAdminNotification(string $title, array $data, string $adminEmail, s
     return sendMail($adminEmail, $subject, $html);
 }
 
-function sendMail(string $to, string $subject, string $html): array
+function sendMail(string $to, string $subject, string $html, string $type = 'custom', ?string $userId = null): array
 {
     try {
-        $result = Mailer::send($to, $subject, $html);
+        $result = Mailer::send($to, $subject, $html, null, $type, $userId);
         if ($result) {
             return ['success' => true];
         }
@@ -316,4 +341,21 @@ function sendMail(string $to, string $subject, string $html): array
         Logger::error('Email send exception', ['to' => $to, 'error' => $e->getMessage()]);
         return ['success' => false, 'error' => $e->getMessage()];
     }
+}
+
+function sendTemplateEmail(string $template, array $data, string $to, string $subject, string $type, ?string $userId = null): array
+{
+    $templatePath = __DIR__ . '/../templates/emails/' . $template . '.php';
+
+    if (!file_exists($templatePath)) {
+        Logger::warning('Template not found: ' . $template);
+        return ['success' => false, 'error' => 'Template introuvable: ' . $template];
+    }
+
+    ob_start();
+    extract($data);
+    require $templatePath;
+    $html = ob_get_clean();
+
+    return sendMail($to, $subject, $html, $type, $userId);
 }
