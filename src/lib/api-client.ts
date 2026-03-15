@@ -161,7 +161,7 @@ class ApiClient {
     return this.refreshPromise;
   }
 
-  private async request<T>(
+  async request<T>(
     endpoint: string,
     options: RequestInit = {},
     retryWithRefresh = true,

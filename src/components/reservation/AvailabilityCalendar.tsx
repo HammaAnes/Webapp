@@ -99,8 +99,8 @@ const extractReservations = (responseData: unknown, espaceId: string): Reservati
   }
   return items
     .filter((r) => {
-      const rid = r.espace_id || r.espaceId || "";
-      return rid === "" || rid === espaceId;
+      const rid = String(r.espace_id || r.espaceId || "");
+      return rid === "" || rid === String(espaceId);
     })
     .filter((r) => r.statut !== "annulee")
     .map(normalizeReservation)

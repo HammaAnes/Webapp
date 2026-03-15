@@ -273,6 +273,8 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
   const [promoValidating, setPromoValidating] = useState(false);
   const [promoResult, setPromoResult] = useState<{ valid: boolean; reduction: number; codePromoId?: string; error?: string } | null>(null);
   const [slotSeatsAvailable, setSlotSeatsAvailable] = useState<number | null>(null);
+  const [slotSeatsTaken, setSlotSeatsTaken] = useState<number | null>(null);
+  const [slotCapacity, setSlotCapacity] = useState<number | null>(null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
 
   const {
@@ -390,6 +392,8 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
   useEffect(() => {
     if (!currentEspace || !watchDateDebut || !watchDateFin || !isOpenSpace(currentEspace)) {
       setSlotSeatsAvailable(null);
+      setSlotSeatsTaken(null);
+      setSlotCapacity(null);
       return;
     }
     const reqStart = new Date(watchDateDebut);
@@ -402,17 +406,23 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     const fetchSeats = async () => {
       setCheckingAvailability(true);
       try {
-        const response = await apiClient.get(
+        const response = await apiClient.request(
           `/reservations/availability.php?espace_id=${currentEspace.id}&date_debut=${dateStr}&date_fin=${dateStr}`
         );
         if (response.success && response.data?.days?.length > 0) {
           const dayData = response.data.days[0];
           setSlotSeatsAvailable(dayData.seats_available ?? null);
+          setSlotSeatsTaken(dayData.seats_taken ?? null);
+          setSlotCapacity(response.data.capacity ?? null);
         } else {
           setSlotSeatsAvailable(null);
+          setSlotSeatsTaken(null);
+          setSlotCapacity(null);
         }
       } catch {
         setSlotSeatsAvailable(null);
+        setSlotSeatsTaken(null);
+        setSlotCapacity(null);
       } finally {
         setCheckingAvailability(false);
       }
@@ -667,6 +677,9 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     setMultiDayEnd(null);
     setIsSubmitting(false);
     setLoadError(null);
+    setSlotSeatsAvailable(null);
+    setSlotSeatsTaken(null);
+    setSlotCapacity(null);
     setPromoCode("");
     setPromoResult(null);
     onClose();
@@ -1049,15 +1062,32 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-gray-900 text-lg truncate">{currentEspace.nom}</h3>
                     <p className="text-sm text-gray-500">
-                      {getSpaceTypeLabel(currentEspace.type)} - {isOpenSpace(currentEspace)
-                        ? checkingAvailability
-                          ? "Vérification des places..."
-                          : slotSeatsAvailable != null
-                            ? `${slotSeatsAvailable}/${currentEspace.capacite} places disponibles sur ce créneau`
-                            : `Capacité : ${currentEspace.capacite} places`
-                        : `Réservation exclusive (jusqu'à ${currentEspace.capacite} pers.)`
-                      }
+                      {getSpaceTypeLabel(currentEspace.type)}
                     </p>
+                    {isOpenSpace(currentEspace) && (
+                      <div className="mt-1">
+                        {checkingAvailability ? (
+                          <span className="text-xs text-gray-400 flex items-center gap-1">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Vérification des places...
+                          </span>
+                        ) : slotSeatsTaken != null && slotCapacity != null ? (
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${slotSeatsTaken >= slotCapacity ? "bg-red-500" : slotSeatsTaken > slotCapacity / 2 ? "bg-amber-500" : "bg-emerald-500"}`}
+                                style={{ width: `${Math.min(100, (slotSeatsTaken / slotCapacity) * 100)}%` }}
+                              />
+                            </div>
+                            <span className={`text-xs font-semibold ${slotSeatsTaken >= slotCapacity ? "text-red-600" : slotSeatsTaken > slotCapacity / 2 ? "text-amber-600" : "text-emerald-600"}`}>
+                              {slotSeatsTaken}/{slotCapacity} places prises
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">Capacité : {currentEspace.capacite} places</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <button
                     type="button"

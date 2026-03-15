@@ -70,28 +70,9 @@ try {
     ]);
     $blocages = $stmtBlocages->fetchAll(PDO::FETCH_ASSOC);
 
-    $slotSummary = [];
-
-    foreach ($reservations as $res) {
-        $rStart = strtotime($res['date_debut']);
-        $rEnd   = strtotime($res['date_fin']);
-        $participants = intval($res['participants']);
-
-        $slotStart = $rStart - ($rStart % 3600);
-        $slotCur = $slotStart;
-        while ($slotCur < $rEnd) {
-            $key = date('Y-m-d H:i', $slotCur);
-            if (!isset($slotSummary[$key])) {
-                $slotSummary[$key] = 0;
-            }
-            if ($isOpenSpace) {
-                $slotSummary[$key] += $participants;
-            } else {
-                $slotSummary[$key] = max($slotSummary[$key], 1);
-            }
-            $slotCur += 3600;
-        }
-    }
+    $OPEN_MINUTE  = 8 * 60 + 30;
+    $CLOSE_MINUTE = 18 * 60 + 30;
+    $SLOT_STEP    = 30;
 
     $dayAvailability = [];
     $current = strtotime($dateDebut);
@@ -111,7 +92,7 @@ try {
             $bStart = strtotime($b['date_debut']);
             $bEnd   = strtotime($b['date_fin']);
             $dayStart = strtotime($dayStr . ' 08:30:00');
-            $dayEnd   = strtotime($dayStr . ' 18:00:00');
+            $dayEnd   = strtotime($dayStr . ' 18:30:00');
             if ($bStart <= $dayStart && $bEnd >= $dayEnd) {
                 $isBlocked = true;
                 break;
@@ -131,16 +112,25 @@ try {
         }
 
         $maxSeats = 0;
-        for ($h = 8; $h < 18; $h++) {
-            $key = sprintf('%s %02d:00', $dayStr, $h);
-            $taken = $slotSummary[$key] ?? 0;
-            if ($taken > $maxSeats) {
-                $maxSeats = $taken;
+        for ($slotMin = $OPEN_MINUTE; $slotMin < $CLOSE_MINUTE; $slotMin += $SLOT_STEP) {
+            $slotStartTs = strtotime($dayStr) + $slotMin * 60;
+            $slotEndTs   = $slotStartTs + $SLOT_STEP * 60;
+
+            $seatsInSlot = 0;
+            foreach ($reservations as $res) {
+                $rStart = strtotime($res['date_debut']);
+                $rEnd   = strtotime($res['date_fin']);
+                if ($rStart < $slotEndTs && $rEnd > $slotStartTs) {
+                    if ($isOpenSpace) {
+                        $seatsInSlot += intval($res['participants']);
+                    } else {
+                        $seatsInSlot = max($seatsInSlot, 1);
+                    }
+                }
             }
-        }
-        $key_half = sprintf('%s 08:30', $dayStr);
-        if (isset($slotSummary[$key_half]) && $slotSummary[$key_half] > $maxSeats) {
-            $maxSeats = $slotSummary[$key_half];
+            if ($seatsInSlot > $maxSeats) {
+                $maxSeats = $seatsInSlot;
+            }
         }
 
         $seatsAvailable = max(0, $capacite - $maxSeats);
