@@ -148,7 +148,7 @@ set_error_handler(function ($errno, $errstr, $errfile, $errline) {
 });
 
 // Gestionnaire d'exceptions non capturées
-set_exception_handler(function ($exception) {
+set_exception_handler(function ($exception) use ($isProduction) {
     Logger::error('Uncaught Exception: ' . $exception->getMessage(), [
         'exception' => get_class($exception),
         'file' => $exception->getFile(),

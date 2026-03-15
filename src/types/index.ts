@@ -170,13 +170,18 @@ export interface Reservation {
 
 export interface Transaction {
   id: string;
-  utilisateur: User;
-  type: "reservation" | "domiciliation" | "remboursement";
+  utilisateur?: User;
+  userId?: string;
+  type: "reservation" | "domiciliation" | "abonnement" | "remboursement";
   montant: number;
-  statut: "en_attente" | "validee" | "echouee" | "rembourse";
-  methode: string;
-  dateCreation: Date;
+  statut: "en_attente" | "completee" | "echouee" | "remboursee";
+  modePaiement?: string;
+  reference?: string;
   description?: string;
+  metadata?: Record<string, unknown>;
+  datePaiement?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface DocumentLegal {
@@ -392,7 +397,6 @@ export interface Abonnement {
   prixAvecDomiciliation?: number;
   creditsMensuels?: number;
   dureeMois: number;
-  dureeJours: number;
   description: string;
   avantages: string[];
   actif: boolean;

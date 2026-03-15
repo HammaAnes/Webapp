@@ -159,7 +159,6 @@ export const abonnementAdapter = {
       prixAvecDomiciliation: Number(apiData.prix_avec_domiciliation || 0),
       creditsMensuels: Number(apiData.credits_mensuels || 0),
       dureeMois: Number(apiData.duree_mois || 1),
-      dureeJours: (Number(apiData.duree_mois) || 1) * 30,
       description: String(apiData.description || ""),
       avantages,
       statut: (apiData.statut as string) || "actif",

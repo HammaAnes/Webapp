@@ -238,7 +238,7 @@ try {
 
     if (!empty($codePromo)) {
         $stmt = $db->prepare("
-            SELECT id, type_reduction, valeur, montant_minimum, utilisations_max, utilisations_actuelles, date_expiration, actif
+            SELECT id, type, valeur, montant_min, utilisations_max, utilisations_actuelles, date_fin, actif
             FROM codes_promo
             WHERE code = ? AND actif = 1
             FOR UPDATE
@@ -249,7 +249,7 @@ try {
         if ($promo) {
             $isValid = true;
 
-            if ($promo['date_expiration'] && strtotime($promo['date_expiration']) < time()) {
+            if ($promo['date_fin'] && strtotime($promo['date_fin']) < time()) {
                 $isValid = false;
             }
 
@@ -257,13 +257,13 @@ try {
                 $isValid = false;
             }
 
-            if ($promo['montant_minimum'] > 0 && $montant < $promo['montant_minimum']) {
+            if ($promo['montant_min'] > 0 && $montant < $promo['montant_min']) {
                 $isValid = false;
             }
 
             if ($isValid) {
                 $codePromoId = $promo['id'];
-                if ($promo['type_reduction'] === 'pourcentage') {
+                if ($promo['type'] === 'pourcentage') {
                     $reduction = $montant * ($promo['valeur'] / 100);
                 } else {
                     $reduction = min($promo['valeur'], $montant);
@@ -316,6 +316,11 @@ try {
     }
 
     if ($codePromoId) {
+        $montantAvant = $montant + $reduction;
+        $db->prepare("
+            INSERT INTO utilisations_codes_promo (id, code_promo_id, user_id, reservation_id, montant_reduction, montant_avant, montant_apres, type_utilisation, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'reservation', NOW())
+        ")->execute([UuidHelper::generate(), $codePromoId, $userId, $id, $reduction, $montantAvant, $montant]);
         $db->prepare("UPDATE codes_promo SET utilisations_actuelles = utilisations_actuelles + 1 WHERE id = ?")->execute([$codePromoId]);
     }
 

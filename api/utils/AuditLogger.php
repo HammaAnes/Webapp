@@ -33,14 +33,18 @@ class AuditLogger
             $ipAddress = self::getClientIp();
             $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
 
-            // Préparer les valeurs JSON
-            $oldValuesJson = $oldValues ? json_encode($oldValues, JSON_UNESCAPED_UNICODE) : null;
-            $newValuesJson = $newValues ? json_encode($newValues, JSON_UNESCAPED_UNICODE) : null;
+            $changesJson = null;
+            if ($oldValues || $newValues) {
+                $changesArray = [];
+                if ($oldValues) $changesArray['old'] = $oldValues;
+                if ($newValues) $changesArray['new'] = $newValues;
+                $changesJson = json_encode($changesArray, JSON_UNESCAPED_UNICODE);
+            }
 
             $query = "INSERT INTO audit_logs
-                      (id, user_id, action, entity_type, entity_id, old_values, new_values, ip_address, user_agent, created_at)
+                      (id, user_id, action, entity_type, entity_id, changes, ip_address, user_agent, created_at)
                       VALUES
-                      (:id, :user_id, :action, :entity_type, :entity_id, :old_values, :new_values, :ip_address, :user_agent, NOW())";
+                      (:id, :user_id, :action, :entity_type, :entity_id, :changes, :ip_address, :user_agent, NOW())";
 
             $stmt = $db->prepare($query);
             $stmt->execute([
@@ -49,8 +53,7 @@ class AuditLogger
                 ':action' => $action,
                 ':entity_type' => $entityType,
                 ':entity_id' => $entityId,
-                ':old_values' => $oldValuesJson,
-                ':new_values' => $newValuesJson,
+                ':changes' => $changesJson,
                 ':ip_address' => $ipAddress,
                 ':user_agent' => $userAgent
             ]);
