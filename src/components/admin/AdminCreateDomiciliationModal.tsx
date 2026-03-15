@@ -18,7 +18,7 @@ import type { DomiciliationOptions } from "../../features/domiciliation/types";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (createdId?: string) => void;
 }
 
 type Step = "user" | "info" | "contrat" | "confirm";
@@ -205,7 +205,8 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
       const res = await apiClient.createDemandeDomiciliation(payload);
       if ((res as { success: boolean }).success) {
         toast.success("Domiciliation créée avec succès");
-        onCreated();
+        const createdId = (res as { data?: { id?: string } }).data?.id;
+        onCreated(createdId);
         onClose();
       } else {
         toast.error((res as { error?: string }).error || "Erreur lors de la création");

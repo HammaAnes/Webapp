@@ -19,12 +19,17 @@ import {
   ArrowDown,
   ChevronLeft,
   ChevronRight,
+  LayoutGrid,
+  List,
+  Zap,
 } from "lucide-react";
 import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import AdminCreateDomiciliationModal from "../../../components/admin/AdminCreateDomiciliationModal";
 import StatutBadge from "../../../features/domiciliation/components/StatutBadge";
+import DomiciliationKanban from "../../../features/domiciliation/components/DomiciliationKanban";
+import QuickPreviewPanel from "../../../features/domiciliation/components/QuickPreviewPanel";
 import { useAppStore } from "../../../store/store";
 import { formatDate, formatCurrency } from "../../../utils/formatters";
 import { getDisplayName, getSituationLabel, exportDomiciliationsCSV } from "../../../features/domiciliation/utils";
@@ -35,6 +40,7 @@ import type { DemandeDomiciliation } from "../../../features/domiciliation/types
 const PAGE_SIZE = 15;
 type SortKey = "entreprise" | "bureau" | "statut" | "date";
 type SortDir = "asc" | "desc";
+type ViewMode = "list" | "kanban";
 
 export default function AdminDomiciliations() {
   const navigate = useNavigate();
@@ -46,6 +52,8 @@ export default function AdminDomiciliations() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
   useEffect(() => {
     loadDemandesDomiciliation();
@@ -151,6 +159,11 @@ export default function AdminDomiciliations() {
     toast.success("Export CSV généré");
   };
 
+  const previewDemande = useMemo(
+    () => (previewId ? demandesDomiciliation.find((d) => d.id === previewId) ?? null : null),
+    [previewId, demandesDomiciliation]
+  );
+
   const SortIcon = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />;
     return sortDir === "asc" ? (
@@ -189,20 +202,44 @@ export default function AdminDomiciliations() {
           </p>
         </div>
         <div className="flex gap-3">
+          <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setViewMode("list")}
+              className={`px-3 py-2 flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                viewMode === "list"
+                  ? "bg-amber-500 text-white"
+                  : "text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <List className="w-4 h-4" />
+              Liste
+            </button>
+            <button
+              onClick={() => setViewMode("kanban")}
+              className={`px-3 py-2 flex items-center gap-1.5 text-sm font-medium transition-colors border-l border-gray-200 ${
+                viewMode === "kanban"
+                  ? "bg-amber-500 text-white"
+                  : "text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              Kanban
+            </button>
+          </div>
           <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
             {refreshing ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <RefreshCw className="w-4 h-4 mr-2" />
+              <RefreshCw className="w-4 h-4" />
             )}
             Actualiser
           </Button>
           <Button variant="outline" onClick={handleExport}>
-            <Download className="w-4 h-4 mr-2" />
-            Export CSV
+            <Download className="w-4 h-4" />
+            Export
           </Button>
           <Button onClick={() => setShowCreateModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4" />
             Nouvelle
           </Button>
         </div>
@@ -263,8 +300,10 @@ export default function AdminDomiciliations() {
         ].map(({ value, label, gradient, border, text, icon: Icon, iconBg, filter }) => (
           <Card
             key={label}
-            className={`p-4 bg-gradient-to-br ${gradient} border ${border} cursor-pointer hover:shadow-md transition-shadow`}
-            onClick={() => setStatusFilter(filter)}
+            className={`p-4 bg-gradient-to-br ${gradient} border ${border} cursor-pointer hover:shadow-md transition-shadow ${
+              statusFilter === filter ? "ring-2 ring-amber-400" : ""
+            }`}
+            onClick={() => setStatusFilter(statusFilter === filter ? "tous" : filter)}
           >
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconBg}`}>
@@ -413,98 +452,120 @@ export default function AdminDomiciliations() {
         </div>
       </Card>
 
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <SortableHeader label="Entreprise" col="entreprise" />
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                  Situation
-                </th>
-                <SortableHeader label="Bureau" col="bureau" />
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                  Représentant
-                </th>
-                <SortableHeader label="Statut" col="statut" />
-                <SortableHeader label="Date" col="date" />
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {paginated.length === 0 ? (
+      {viewMode === "kanban" ? (
+        <DomiciliationKanban
+          demandes={filtered}
+          onOpen={(id) => navigate(`/app/admin/domiciliations/${id}`)}
+        />
+      ) : (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
-                    Aucune domiciliation trouvée
-                  </td>
+                  <SortableHeader label="Entreprise" col="entreprise" />
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Situation
+                  </th>
+                  <SortableHeader label="Bureau" col="bureau" />
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Représentant
+                  </th>
+                  <SortableHeader label="Statut" col="statut" />
+                  <SortableHeader label="Date" col="date" />
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                    Actions
+                  </th>
                 </tr>
-              ) : (
-                paginated.map((d) => (
-                  <DomiciliationRow
-                    key={d.id}
-                    demande={d}
-                    onDetail={() => navigate(`/app/admin/domiciliations/${d.id}`)}
-                  />
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
-            <p className="text-sm text-gray-600">
-              {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sorted.length)} sur{" "}
-              {sorted.length}
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="p-2 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-                .map((p, idx, arr) => (
-                  <React.Fragment key={p}>
-                    {idx > 0 && arr[idx - 1] !== p - 1 && (
-                      <span className="text-gray-400">...</span>
-                    )}
-                    <button
-                      onClick={() => setPage(p)}
-                      className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                        page === p
-                          ? "bg-amber-500 text-white"
-                          : "hover:bg-gray-200 text-gray-600"
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  </React.Fragment>
-                ))}
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="p-2 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {paginated.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
+                      Aucune domiciliation trouvée
+                    </td>
+                  </tr>
+                ) : (
+                  paginated.map((d) => (
+                    <DomiciliationRow
+                      key={d.id}
+                      demande={d}
+                      onDetail={() => navigate(`/app/admin/domiciliations/${d.id}`)}
+                      onPreview={() => setPreviewId(d.id)}
+                    />
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
-      </Card>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
+              <p className="text-sm text-gray-600">
+                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sorted.length)} sur{" "}
+                {sorted.length}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="p-2 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                  .map((p, idx, arr) => (
+                    <React.Fragment key={p}>
+                      {idx > 0 && arr[idx - 1] !== p - 1 && (
+                        <span className="text-gray-400">...</span>
+                      )}
+                      <button
+                        onClick={() => setPage(p)}
+                        className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                          page === p
+                            ? "bg-amber-500 text-white"
+                            : "hover:bg-gray-200 text-gray-600"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    </React.Fragment>
+                  ))}
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="p-2 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
 
       <AdminCreateDomiciliationModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onCreated={async () => {
+        onCreated={async (createdId?: string) => {
           await loadDemandesDomiciliation();
+          if (createdId) {
+            navigate(`/app/admin/domiciliations/${createdId}`);
+          }
         }}
       />
+
+      {previewDemande && (
+        <QuickPreviewPanel
+          demande={previewDemande}
+          onClose={() => setPreviewId(null)}
+          onOpenFull={() => {
+            navigate(`/app/admin/domiciliations/${previewDemande.id}`);
+            setPreviewId(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -512,9 +573,11 @@ export default function AdminDomiciliations() {
 function DomiciliationRow({
   demande,
   onDetail,
+  onPreview,
 }: {
   demande: DemandeDomiciliation;
   onDetail: () => void;
+  onPreview: () => void;
 }) {
   const name = getDisplayName(demande);
   const createdTs = demande.dateCreation ? new Date(demande.dateCreation as string).getTime() : Date.now();
@@ -616,17 +679,29 @@ function DomiciliationRow({
         )}
       </td>
       <td className="px-4 py-4 text-right">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDetail();
-          }}
-        >
-          <Eye className="w-4 h-4 mr-1" />
-          Détails
-        </Button>
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onPreview();
+            }}
+            className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+            title="Aperçu rapide"
+          >
+            <Zap className="w-4 h-4" />
+          </button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDetail();
+            }}
+          >
+            <Eye className="w-4 h-4" />
+            Détails
+          </Button>
+        </div>
       </td>
     </motion.tr>
   );

@@ -56,7 +56,7 @@ const Dashboard = () => {
           <Route path="reservations/:id" element={<ReservationDetail />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="mon-espace" element={<MonEspace />} />
-          <Route path="domiciliation" element={<Navigate to="/app/mon-espace?tab=domiciliation" replace />} />
+          <Route path="domiciliation" element={<MonEspace initialTab="domiciliation" />} />
           <Route path="mon-entreprise" element={<Navigate to="/app/mon-espace?tab=entreprise" replace />} />
           <Route path="abonnements" element={<Abonnements />} />
           <Route path="parrainage" element={<Parrainage />} />

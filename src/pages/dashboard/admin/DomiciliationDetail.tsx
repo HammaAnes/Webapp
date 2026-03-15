@@ -9,6 +9,7 @@ import {
   Hash,
   Calendar,
   Banknote,
+  FileText,
   Mail,
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -19,12 +20,14 @@ import { formatDate, formatCurrency } from "../../../utils/formatters";
 import { getDisplayName } from "../../../features/domiciliation/utils";
 import StatutBadge from "../../../features/domiciliation/components/StatutBadge";
 import WorkflowTimeline from "../../../features/domiciliation/components/WorkflowTimeline";
+import ActionsSidebar from "../../../features/domiciliation/components/ActionsSidebar";
+import DossierCompleteness from "../../../features/domiciliation/components/DossierCompleteness";
 import InformationsTab from "../../../features/domiciliation/tabs/InformationsTab";
 import ContratTab from "../../../features/domiciliation/tabs/ContratTab";
 import CourrierTab from "../../../features/domiciliation/tabs/CourrierTab";
 import DocumentsTab from "../../../features/domiciliation/tabs/DocumentsTab";
 import NotesTab from "../../../features/domiciliation/tabs/NotesTab";
-import ActionsTab from "../../../features/domiciliation/tabs/ActionsTab";
+import HistoriqueTab from "../../../features/domiciliation/tabs/HistoriqueTab";
 import type { DemandeDomiciliation } from "../../../features/domiciliation/types";
 import type { ActionKey, ActionData } from "../../../features/domiciliation/types";
 
@@ -34,20 +37,28 @@ const TABS = [
   { key: "courrier", label: "Courrier" },
   { key: "documents", label: "Documents" },
   { key: "notes", label: "Notes" },
-  { key: "actions", label: "Actions" },
+  { key: "historique", label: "Historique" },
 ] as const;
 
 type TabKey = typeof TABS[number]["key"];
 
-function KpiCard({ icon: Icon, label, value, sub, color }: {
+function KpiCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  color,
+  highlight,
+}: {
   icon: React.ElementType;
   label: string;
   value: string;
   sub?: string;
   color: string;
+  highlight?: boolean;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+    <div className={`bg-white rounded-xl border p-4 flex items-center gap-3 ${highlight ? "border-amber-200 shadow-sm" : "border-gray-200"}`}>
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
         <Icon className="w-5 h-5 text-white" />
       </div>
@@ -76,6 +87,7 @@ export default function AdminDomiciliationDetail() {
     if (!demande) {
       loadDemandesDomiciliation();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const refresh = useCallback(async () => {
@@ -89,7 +101,7 @@ export default function AdminDomiciliationDetail() {
       if (!id) return;
       setLoading(true);
       try {
-        const res = await apiClient.updateDemandeDomiciliation(id, data);
+        const res = await apiClient.updateDemandeDomiciliation(id, data as Parameters<typeof apiClient.updateDemandeDomiciliation>[1]);
         if ((res as { success: boolean }).success) {
           toast.success("Informations mises à jour");
           await loadDemandesDomiciliation();
@@ -200,14 +212,14 @@ export default function AdminDomiciliationDetail() {
   const isAutoEntrepreneur = demande.typeStructure === "auto_entrepreneur";
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
+    <div className="max-w-7xl mx-auto space-y-5 pb-10">
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate("/app/admin/domiciliations")}
-          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors font-medium"
+          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors font-medium text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Domiciliations</span>
+          Domiciliations
         </button>
         <Button
           size="sm"
@@ -221,15 +233,15 @@ export default function AdminDomiciliationDetail() {
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-amber-500 to-orange-500 h-2" />
+        <div className="h-1.5 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
         <div className="p-6">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-5">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-md flex-shrink-0">
+              <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-md flex-shrink-0">
                 {isAutoEntrepreneur ? (
-                  <User className="w-8 h-8 text-white" />
+                  <User className="w-7 h-7 text-white" />
                 ) : (
-                  <Building2 className="w-8 h-8 text-white" />
+                  <Building2 className="w-7 h-7 text-white" />
                 )}
               </div>
               <div>
@@ -248,33 +260,29 @@ export default function AdminDomiciliationDetail() {
                   )}
                 </div>
                 {rep && (
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 mt-0.5">
                     {rep.prenom} {rep.nom}
-                    {rep.email && (
-                      <span className="ml-1 text-gray-400">· {rep.email}</span>
-                    )}
+                    {rep.email && <span className="ml-1 text-gray-400">· {rep.email}</span>}
                   </p>
                 )}
               </div>
             </div>
             <div className="flex flex-col items-start sm:items-end gap-2">
-              <StatutBadge statut={demande.statut} />
+              <StatutBadge statut={demande.statut} labelType="full" />
               <p className="text-xs text-gray-400">Créée le {formatDate(demande.dateCreation)}</p>
             </div>
           </div>
-        </div>
-
-        <div className="px-6 pb-5">
           <WorkflowTimeline statut={demande.statut} />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <KpiCard
           icon={Hash}
           label="Bureau"
           value={demande.numeroBureau ? `Bureau ${demande.numeroBureau}` : "Non attribué"}
           color={demande.numeroBureau ? "bg-amber-500" : "bg-gray-400"}
+          highlight={!!demande.numeroBureau}
         />
         <KpiCard
           icon={Banknote}
@@ -289,47 +297,66 @@ export default function AdminDomiciliationDetail() {
           color="bg-sky-500"
         />
         <KpiCard
+          icon={FileText}
+          label="Documents"
+          value="—"
+          sub="Voir onglet Documents"
+          color="bg-blue-500"
+        />
+        <KpiCard
           icon={Mail}
           label="Email"
-          value={rep?.email || demande.email || "—"}
-          color="bg-blue-500"
+          value={rep?.email || "—"}
+          color="bg-slate-500"
         />
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="border-b border-gray-200">
-          <nav className="flex gap-0 overflow-x-auto">
-            {TABS.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`px-5 py-3.5 text-sm font-medium whitespace-nowrap transition-all border-b-2 ${
-                  activeTab === tab.key
-                    ? "border-amber-500 text-amber-700 bg-amber-50/30"
-                    : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
+      <div className="flex gap-5 items-start">
+        <div className="flex-1 min-w-0 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="border-b border-gray-200">
+            <nav className="flex gap-0 overflow-x-auto">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`px-5 py-3.5 text-sm font-medium whitespace-nowrap transition-all border-b-2 ${
+                    activeTab === tab.key
+                      ? "border-amber-500 text-amber-700 bg-amber-50/30"
+                      : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          <div className="p-6">
+            {activeTab === "infos" && (
+              <InformationsTab demande={demande} onUpdate={handleUpdate} loading={loading} />
+            )}
+            {activeTab === "contrat" && (
+              <ContratTab demande={demande} onUpdate={handleUpdate} loading={loading} />
+            )}
+            {activeTab === "courrier" && <CourrierTab demande={demande} />}
+            {activeTab === "documents" && <DocumentsTab demande={demande} />}
+            {activeTab === "notes" && (
+              <NotesTab demande={demande} onUpdate={handleUpdate} loading={loading} />
+            )}
+            {activeTab === "historique" && <HistoriqueTab demande={demande} />}
+          </div>
         </div>
 
-        <div className="p-6">
-          {activeTab === "infos" && (
-            <InformationsTab demande={demande} onUpdate={handleUpdate} loading={loading} />
-          )}
-          {activeTab === "contrat" && (
-            <ContratTab demande={demande} onUpdate={handleUpdate} loading={loading} />
-          )}
-          {activeTab === "courrier" && <CourrierTab demande={demande} />}
-          {activeTab === "documents" && <DocumentsTab demande={demande} />}
-          {activeTab === "notes" && (
-            <NotesTab demande={demande} onUpdate={handleUpdate} loading={loading} />
-          )}
-          {activeTab === "actions" && (
-            <ActionsTab demande={demande} onAction={handleAction} loading={loading} />
-          )}
+        <div className="w-80 flex-shrink-0 space-y-4 sticky top-4">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+            <h3 className="font-bold text-gray-900 text-sm mb-4">Actions</h3>
+            <ActionsSidebar demande={demande} onAction={handleAction} loading={loading} />
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+            <h3 className="font-bold text-gray-900 text-sm mb-4">Complétude du dossier</h3>
+            <DossierCompleteness demande={demande} />
+          </div>
         </div>
       </div>
     </div>

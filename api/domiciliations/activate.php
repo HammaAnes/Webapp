@@ -50,6 +50,9 @@ try {
     }
 
     // Activer la domiciliation
+    $numeroBureau = isset($data['numero_bureau']) && $data['numero_bureau'] > 0 ? intval($data['numero_bureau']) : null;
+    $bureauSet = $numeroBureau !== null ? ", numero_bureau = :numero_bureau, date_debut_contrat = :date_debut_contrat, date_fin_contrat = :date_fin_contrat" : "";
+
     $query = "UPDATE domiciliations
               SET statut = 'active',
                   date_debut = :date_debut,
@@ -57,6 +60,7 @@ try {
                   montant_mensuel = :montant_mensuel,
                   visible_sur_site = TRUE,
                   updated_at = NOW()
+                  $bureauSet
               WHERE id = :id";
 
     $stmt = $db->prepare($query);
@@ -64,6 +68,11 @@ try {
     $stmt->bindParam(':date_debut', $data['date_debut']);
     $stmt->bindParam(':date_fin', $data['date_fin']);
     $stmt->bindParam(':montant_mensuel', $data['montant_mensuel']);
+    if ($numeroBureau !== null) {
+        $stmt->bindParam(':numero_bureau', $numeroBureau, PDO::PARAM_INT);
+        $stmt->bindParam(':date_debut_contrat', $data['date_debut']);
+        $stmt->bindParam(':date_fin_contrat', $data['date_fin']);
+    }
 
     if (!$stmt->execute()) {
         Response::serverError('Erreur lors de l\'activation');

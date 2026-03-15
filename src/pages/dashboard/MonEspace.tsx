@@ -42,9 +42,9 @@ const ALL_TABS: { id: TabId; label: string; icon: React.ComponentType<{ classNam
   { id: "documents", label: "Mes documents", icon: FileText, requiresActive: true },
 ];
 
-const MonEspace = () => {
+const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = (searchParams.get("tab") as TabId) || "domiciliation";
+  const initialTab = initialTabProp || (searchParams.get("tab") as TabId) || "domiciliation";
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 
   const { user } = useAuthStore();
