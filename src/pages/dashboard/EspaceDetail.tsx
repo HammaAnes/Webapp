@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  MapPin,
-  Users,
-  Banknote,
-  Clock,
-  Calendar,
-  ArrowLeft,
-  Edit,
-  Trash2,
-  Image as ImageIcon,
-} from "lucide-react";
+import { MapPin, Users, Banknote, Clock, Calendar, ArrowLeft, FileEdit as Edit, Trash2, Image as ImageIcon } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { apiClient } from "../../lib/api-client";
 import { useAppStore } from "../../store/store";
@@ -130,7 +120,7 @@ const EspaceDetail: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">{espace.nom}</h1>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant={espace.disponible ? "success" : "error"}>
+          <Badge variant={espace.disponible ? "success" : "danger"}>
             {espace.disponible ? "Disponible" : "Indisponible"}
           </Badge>
           {isAdmin && (
@@ -278,7 +268,7 @@ const EspaceDetail: React.FC = () => {
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-gray-600">Status</p>
-                <Badge variant={espace.disponible ? "success" : "error"}>
+                <Badge variant={espace.disponible ? "success" : "danger"}>
                   {espace.disponible ? "Disponible" : "Indisponible"}
                 </Badge>
               </div>

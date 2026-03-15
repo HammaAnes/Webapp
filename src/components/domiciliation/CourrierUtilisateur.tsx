@@ -54,12 +54,12 @@ const TYPE_CONFIG: Record<string, { label: string; icon: React.ComponentType<{ c
   autre: { label: "Autre", icon: Mail, color: "text-gray-600 bg-gray-50" },
 };
 
-const STATUT_CONFIG: Record<string, { label: string; variant: "info" | "warning" | "success" | "default" | "teal" }> = {
-  recu: { label: "Reçu", variant: "default" },
+const STATUT_CONFIG: Record<string, { label: string; variant: "info" | "warning" | "success" | "neutral" | "accent" }> = {
+  recu: { label: "Reçu", variant: "neutral" },
   notifie: { label: "Notifié", variant: "info" },
   en_attente_instruction: { label: "Instruction donnée", variant: "warning" },
   recupere: { label: "Récupéré", variant: "success" },
-  scanne: { label: "Scanné", variant: "teal" },
+  scanne: { label: "Scanné", variant: "accent" },
   reexpedier: { label: "Réexpédition", variant: "info" },
   traite: { label: "Traité", variant: "success" },
 };

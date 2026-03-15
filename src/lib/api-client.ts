@@ -218,11 +218,21 @@ class ApiClient {
     const url = `${API_URL}${endpoint}`;
     logger.debug(`Request: ${options.method || "GET"} ${url}`);
 
+    const timeoutMs = 30000;
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
+    const existingSignal = options.signal as AbortSignal | undefined;
+    const mergedSignal = existingSignal
+      ? (AbortSignal as { any?: (signals: AbortSignal[]) => AbortSignal }).any?.([existingSignal, timeoutController.signal]) ?? timeoutController.signal
+      : timeoutController.signal;
+
     try {
       const response = await fetch(url, {
         ...options,
         headers,
+        signal: mergedSignal,
       });
+      clearTimeout(timeoutId);
 
       logger.debug(`Response status: ${response.status}`);
 
@@ -301,6 +311,18 @@ class ApiClient {
 
       return data as unknown as ApiResponse<T>;
     } catch (error) {
+      clearTimeout(timeoutId);
+      const isAbortError = error instanceof Error && error.name === "AbortError";
+      if (isAbortError && !existingSignal?.aborted) {
+        return {
+          success: false,
+          error: "La requête a expiré. Vérifiez votre connexion.",
+        };
+      }
+      if (isAbortError) {
+        return { success: false, error: "Requête annulée" };
+      }
+
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       logger.error("[API] Request failed:", {
         url,

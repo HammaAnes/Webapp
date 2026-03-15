@@ -24,12 +24,13 @@ export const RESERVATION_STATUT_LABELS: Record<ReservationStatut, string> = {
 };
 
 export type BadgeVariant =
-  | "default"
+  | "primary"
   | "success"
   | "warning"
   | "danger"
   | "info"
-  | "error";
+  | "accent"
+  | "neutral";
 
 export const RESERVATION_STATUT_COLORS: Record<
   ReservationStatut,
@@ -39,8 +40,8 @@ export const RESERVATION_STATUT_COLORS: Record<
   [RESERVATION_STATUTS.EN_ATTENTE]: "warning",
   [RESERVATION_STATUTS.EN_COURS]: "info",
   [RESERVATION_STATUTS.ANNULEE]: "danger",
-  [RESERVATION_STATUTS.TERMINEE]: "default",
-  [RESERVATION_STATUTS.NO_SHOW]: "error",
+  [RESERVATION_STATUTS.TERMINEE]: "neutral",
+  [RESERVATION_STATUTS.NO_SHOW]: "danger",
 };
 
 export function getReservationStatutLabel(statut: string): string {
@@ -48,7 +49,7 @@ export function getReservationStatutLabel(statut: string): string {
 }
 
 export function getReservationStatutColor(statut: string): BadgeVariant {
-  return RESERVATION_STATUT_COLORS[statut as ReservationStatut] || "default";
+  return RESERVATION_STATUT_COLORS[statut as ReservationStatut] || "neutral";
 }
 
 export const USER_ROLES = {

@@ -1011,7 +1011,7 @@ const Step5Documents: React.FC<{
                   {doc.required ? (
                     <Badge variant="warning" className="text-xs">Requis</Badge>
                   ) : (
-                    <Badge variant="default" className="text-xs">Optionnel</Badge>
+                    <Badge variant="neutral" className="text-xs">Optionnel</Badge>
                   )}
                 </div>
                 {doc.description && <p className="text-xs text-gray-500 mt-1">{doc.description}</p>}

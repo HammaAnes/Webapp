@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { Building, Plus, FileEdit as Edit, Trash2, Search, Users, Banknote, CheckCircle, XCircle, Wifi, Monitor, Coffee, Printer, Video, Grid2x2 as Grid, List, Eye } from "lucide-react";
 import { useAppStore } from "../../../store/store";
 import { Input, Select, Textarea, Checkbox, Button, Card, Modal } from "../../../components/ui";
+import SelectNative from "../../../components/ui/SelectNative";
 import toast from "react-hot-toast";
 import {
   ESPACE_TYPE_OPTIONS,
@@ -458,13 +459,16 @@ const Spaces = () => {
             required
           />
 
-          <Select
+          <SelectNative
             label="Type d'espace"
-            options={ESPACE_TYPE_OPTIONS}
             {...register("type", { required: "Type requis" })}
             error={errors.type?.message}
             required
-          />
+          >
+            {ESPACE_TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </SelectNative>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input

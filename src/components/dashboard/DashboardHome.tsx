@@ -151,7 +151,7 @@ const AdminDashboard = () => {
     } else if (reservation.statut === "confirmee") {
       return <Badge variant="success">Confirmée</Badge>;
     }
-    return <Badge variant="default">{reservation.statut}</Badge>;
+    return <Badge variant="neutral">{reservation.statut}</Badge>;
   };
 
   return (

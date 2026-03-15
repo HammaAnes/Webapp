@@ -193,8 +193,8 @@ const CodesPromo = () => {
       toast.error("Les dates sont requises");
       return;
     }
-    if (new Date(formData.date_fin) <= new Date(formData.date_debut)) {
-      toast.error("La date de fin doit \u00eatre apr\u00e8s la date de d\u00e9but");
+    if (new Date(formData.date_fin) < new Date(formData.date_debut)) {
+      toast.error("La date de fin doit \u00eatre apr\u00e8s ou \u00e9gale \u00e0 la date de d\u00e9but");
       return;
     }
 
@@ -203,18 +203,16 @@ const CodesPromo = () => {
       const montantMin = formData.montant_min
         ? parseFloat(formData.montant_min)
         : 0;
+      const utilisationsMaxRaw = parseInt(formData.utilisations_max);
       const payload = {
         code: formData.code.toUpperCase(),
         type: formData.type,
-        type_reduction: formData.type,
         valeur: parseFloat(formData.valeur),
         date_debut: formData.date_debut,
         date_fin: formData.date_fin,
-        date_expiration: formData.date_fin,
-        utilisations_max: parseInt(formData.utilisations_max) || null,
+        utilisations_max: !isNaN(utilisationsMaxRaw) && utilisationsMaxRaw > 0 ? utilisationsMaxRaw : null,
         montant_min: montantMin,
-        montant_minimum: montantMin,
-        types_application: [formData.types_application],
+        types_application: formData.types_application,
         description: formData.description || null,
       };
 
@@ -737,15 +735,14 @@ const CodesPromo = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Utilisations max *"
+              label="Utilisations max (0 = illimité)"
               type="number"
               value={formData.utilisations_max}
               onChange={(e) =>
                 setFormData({ ...formData, utilisations_max: e.target.value })
               }
-              required
-              placeholder="100"
-              min="1"
+              placeholder="0"
+              min="0"
             />
             <Input
               label="Montant min. commande (DA)"

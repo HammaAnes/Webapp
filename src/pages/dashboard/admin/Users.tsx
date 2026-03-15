@@ -435,7 +435,7 @@ const Users = () => {
                           <div className="flex flex-wrap gap-2">
                             <Badge
                               variant={
-                                user.role === "admin" ? "info" : "default"
+                                user.role === "admin" ? "info" : "neutral"
                               }
                             >
                               {user.role === "admin" ? "Admin" : "User"}

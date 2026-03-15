@@ -580,7 +580,7 @@ const Settings = () => {
                         <td className="px-4 py-3 text-sm text-gray-600">{tpl.trigger}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">{tpl.to}</td>
                         <td className="px-4 py-3 text-center">
-                          <Badge variant={isEnabled ? "success" : "default"} className="text-xs">
+                          <Badge variant={isEnabled ? "success" : "neutral"} className="text-xs">
                             {isEnabled ? "Actif" : "Désactivé"}
                           </Badge>
                         </td>
@@ -730,7 +730,7 @@ const Settings = () => {
                         <td className="px-4 py-3 text-sm text-gray-600">{u.email}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">{u.telephone || "-"}</td>
                         <td className="px-4 py-3">
-                          <Badge variant={u.role === "admin" ? "warning" : "default"} className="text-xs">
+                          <Badge variant={u.role === "admin" ? "warning" : "neutral"} className="text-xs">
                             {u.role === "admin" ? "Admin" : "User"}
                           </Badge>
                         </td>

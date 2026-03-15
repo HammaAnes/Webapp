@@ -8,6 +8,7 @@ interface CardProps {
   padding?: keyof typeof cardVariants.padding;
   radius?: keyof typeof cardVariants.radius;
   interactive?: boolean;
+  hover?: boolean;
   onClick?: () => void;
   style?: React.CSSProperties;
   as?: "div" | "article" | "section";
@@ -22,6 +23,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       padding = "md",
       radius = "md",
       interactive = false,
+      hover = false,
       onClick,
       style,
       as: Component = "div",

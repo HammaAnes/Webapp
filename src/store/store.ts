@@ -314,6 +314,8 @@ export const useAppStore = create<AppState>()(
       },
 
       loadCodesPromo: async () => {
+        const user = useAuthStore.getState().user;
+        if (user?.role !== "admin") return;
         try {
           const response = await apiClient.getCodesPromo();
           if (response.success && response.data) {
@@ -356,7 +358,7 @@ export const useAppStore = create<AppState>()(
 
                 return {
                   id: d.id,
-                  userId: d.userId,
+                  userId: d.userId || "",
                   demande: d,
                   companyName: d.raisonSociale,
                   legalForm: d.formeJuridique || "",
