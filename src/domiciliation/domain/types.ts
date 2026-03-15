@@ -14,8 +14,10 @@ export type DomiciliationStatut =
 
 export type CourrierType = 'lettre' | 'colis' | 'recommande' | 'autre';
 export type CourrierStatut =
-  | 'recu' | 'notifie' | 'en_attente_instruction' | 'recupere'
-  | 'retire' | 'scanne' | 'reexpedier' | 'envoye' | 'traite' | 'archive';
+  | 'recu' | 'notifie' | 'en_attente_instruction'
+  | 'recupere' | 'retire'
+  | 'scanne' | 'reexpedier' | 'envoye'
+  | 'traite' | 'archive';
 export type DocumentStatus = 'en_attente' | 'valide' | 'rejete';
 
 export type CasMetier = 'A1' | 'A2' | 'B1' | 'B2';
@@ -44,8 +46,8 @@ export interface RepresentantLegal {
   prenom: string;
   telephone: string;
   email: string;
-  adresseResidence: string;
-  ville: string;
+  adresseResidence?: string;
+  ville?: string;
   fonction?: string;
 }
 
@@ -139,8 +141,8 @@ export interface DemandeDomiciliation {
   id: string;
   userId?: string;
   contactId?: string;
-  utilisateur?: { id: string; nom: string; prenom: string; email: string };
-  contact?: { id: string; nom: string; prenom: string; email: string };
+  utilisateur?: { id: string; nom: string; prenom: string; email?: string };
+  contact?: { id: string; nom: string; prenom: string; email?: string };
   situationAdministrative: SituationAdministrative;
   typeStructure: TypeStructure;
   raisonSociale: string;
@@ -187,10 +189,11 @@ export interface CourrierItem {
   id: string;
   type: CourrierType;
   expediteur: string;
-  description: string;
+  description?: string;
   statut: CourrierStatut;
   dateReception: string;
   dateRetrait?: string;
+  retirePar?: string;
   instructionClient?: string;
 }
 

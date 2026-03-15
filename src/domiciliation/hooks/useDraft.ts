@@ -12,14 +12,14 @@ function reviveDates(data: WizardFormData): WizardFormData {
     revived.dateDebutSouhaitee = new Date(revived.dateDebutSouhaitee);
   }
   if (revived.entreprise) {
-    const e = revived.entreprise as Record<string, unknown>;
+    const e = revived.entreprise as unknown as Record<string, unknown>;
     if (e.dateCreationEntreprise && typeof e.dateCreationEntreprise === 'string') {
       e.dateCreationEntreprise = new Date(e.dateCreationEntreprise as string);
     }
     if (e.dateInscriptionAutoEntrepreneur && typeof e.dateInscriptionAutoEntrepreneur === 'string') {
       e.dateInscriptionAutoEntrepreneur = new Date(e.dateInscriptionAutoEntrepreneur as string);
     }
-    revived.entreprise = e as WizardFormData['entreprise'];
+    revived.entreprise = e as unknown as WizardFormData['entreprise'];
   }
   return revived;
 }

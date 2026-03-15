@@ -88,7 +88,7 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
       const isAutoEntrepreneur = formData.typeStructure === 'auto_entrepreneur';
       const raisonSociale = isAutoEntrepreneur
         ? `${formData.dirigeant.prenom} ${formData.dirigeant.nom}`.trim()
-        : (formData.entreprise as Record<string, unknown>)?.denominationSociale as string || '';
+        : (formData.entreprise as unknown as Record<string, unknown>)?.denominationSociale as string || '';
 
       try {
         const companyData: Record<string, unknown> = {};
@@ -97,7 +97,7 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
           companyData.raisonSociale = raisonSociale;
           companyData.formeJuridique = 'auto_entrepreneur';
         } else {
-          const ent = formData.entreprise as Record<string, unknown>;
+          const ent = formData.entreprise as unknown as Record<string, unknown>;
           companyData.raisonSociale = ent?.denominationSociale;
           companyData.formeJuridique = (ent?.formeJuridique as string)?.toLowerCase() || '';
           companyData.typeEntreprise = (ent?.formeJuridique as string)?.toLowerCase() || '';
@@ -113,7 +113,7 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
         emailService.onDomiciliationSubmitted(recipientEmail, {
           prenom: formData.dirigeant.prenom || user?.prenom || '',
           raisonSociale: raisonSociale || '',
-          formeJuridique: isAutoEntrepreneur ? 'Auto-entrepreneur' : ((formData.entreprise as Record<string, unknown>)?.formeJuridique as string || ''),
+          formeJuridique: isAutoEntrepreneur ? 'Auto-entrepreneur' : ((formData.entreprise as unknown as Record<string, unknown>)?.formeJuridique as string || ''),
           statut: 'dossier_preparatoire',
           statutLabel: 'Dossier préparatoire',
         });

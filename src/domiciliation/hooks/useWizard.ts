@@ -231,7 +231,7 @@ export function useWizard(
   const updateEntreprise = useCallback((partial: Record<string, unknown>) => {
     setFormData(prev => ({
       ...prev,
-      entreprise: prev.entreprise ? { ...prev.entreprise as Record<string, unknown>, ...partial } as WizardFormData['entreprise'] : null,
+      entreprise: prev.entreprise ? { ...prev.entreprise as unknown as Record<string, unknown>, ...partial } as unknown as WizardFormData['entreprise'] : null,
     }));
   }, []);
 

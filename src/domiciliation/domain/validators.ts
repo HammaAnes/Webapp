@@ -42,7 +42,7 @@ export function isValidBureau(num: number, occupied: number[]): boolean {
 }
 
 export function isValidFile(file: File): boolean {
-  return file.size <= RULES.FILE_MAX_BYTES && RULES.ALLOWED_FILE_TYPES.includes(file.type);
+  return file.size <= RULES.FILE_MAX_BYTES && (RULES.ALLOWED_FILE_TYPES as readonly string[]).includes(file.type);
 }
 
 export function validateStep1(data: Pick<WizardFormData, 'situation'>): ValidationResult {

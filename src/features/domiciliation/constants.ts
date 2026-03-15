@@ -108,12 +108,12 @@ export const WORKFLOW_STEPS: { key: DomiciliationStatut; label: string }[] = [
 ];
 
 export const WORKFLOW_TRANSITIONS: Record<DomiciliationStatut, DomiciliationStatut[]> = {
-  dossier_preparatoire: ["en_attente_signature", "en_attente_complements", "refusee"],
+  dossier_preparatoire: ["en_attente_complements", "en_attente_signature", "refusee"],
   en_attente_complements: ["en_attente_signature", "refusee"],
   en_attente_signature: ["domiciliation_creee", "refusee"],
   domiciliation_creee: ["active", "en_attente_complements", "refusee"],
-  active: ["resiliee"],
-  expiree: ["active"],
+  active: ["resiliee", "expiree"],
+  expiree: [],
   refusee: [],
   resiliee: [],
 };
@@ -150,13 +150,17 @@ export const COURRIER_TYPE_CONFIG: Record<
 
 export const COURRIER_STATUT_CONFIG: Record<
   string,
-  { label: string; variant: "warning" | "success" | "info" | "danger" | "neutral" }
+  { label: string; variant: "warning" | "success" | "info" | "danger" | "neutral" | "accent" }
 > = {
   recu: { label: "Reçu", variant: "warning" },
   notifie: { label: "Notifié", variant: "info" },
   en_attente_instruction: { label: "Att. instruction", variant: "warning" },
+  recupere: { label: "Récupéré", variant: "success" },
   retire: { label: "Retiré", variant: "success" },
+  scanne: { label: "Scanné", variant: "accent" },
+  reexpedier: { label: "Réexpédition", variant: "info" },
   envoye: { label: "Envoyé", variant: "info" },
+  traite: { label: "Traité", variant: "success" },
   archive: { label: "Archivé", variant: "neutral" },
 };
 
