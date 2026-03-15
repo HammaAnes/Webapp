@@ -123,30 +123,48 @@ try {
         $participants = 1;
     }
 
-    if ($participants > intval($espace['capacite'])) {
-        $participants = intval($espace['capacite']);
+    $capacite = intval($espace['capacite']);
+    if ($participants > $capacite) {
+        Response::error("Le nombre de participants ($participants) depasse la capacite maximale de l'espace ($capacite places)", 400);
     }
 
-    $stmt = $db->prepare("
-        SELECT id FROM reservations
-        WHERE espace_id = ?
-        AND statut NOT IN ('annulee', 'terminee')
-        AND (
-            (date_debut < ? AND date_fin > ?)
-            OR (date_debut < ? AND date_fin > ?)
-            OR (date_debut >= ? AND date_fin <= ?)
-        )
-        LIMIT 1
-    ");
-    $stmt->execute([
-        $espaceId,
-        $finMysql, $debutMysql,
-        $finMysql, $debutMysql,
-        $debutMysql, $finMysql
-    ]);
+    $isOpenSpace = strtolower($espace['type']) === 'open_space' || stripos($espace['nom'], 'open') !== false || stripos($espace['nom'], 'coworking') !== false;
 
-    if ($stmt->fetch()) {
-        Response::error("Ce creneau est deja reserve", 409);
+    if ($isOpenSpace) {
+        $stmt = $db->prepare("
+            SELECT COALESCE(SUM(participants), 0) as seats_taken
+            FROM reservations
+            WHERE espace_id = ?
+            AND statut NOT IN ('annulee', 'terminee')
+            AND date_debut < ?
+            AND date_fin > ?
+        ");
+        $stmt->execute([$espaceId, $finMysql, $debutMysql]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $seatsTaken = intval($row['seats_taken'] ?? 0);
+
+        if ($seatsTaken + $participants > $capacite) {
+            $seatsLeft = max(0, $capacite - $seatsTaken);
+            if ($seatsLeft === 0) {
+                Response::error("L'Open Space est complet sur ce creneau (0 place disponible)", 409);
+            } else {
+                Response::error("Seulement $seatsLeft place(s) disponible(s) sur ce creneau (vous en demandez $participants)", 409);
+            }
+        }
+    } else {
+        $stmt = $db->prepare("
+            SELECT id FROM reservations
+            WHERE espace_id = ?
+            AND statut NOT IN ('annulee', 'terminee')
+            AND date_debut < ?
+            AND date_fin > ?
+            LIMIT 1
+        ");
+        $stmt->execute([$espaceId, $finMysql, $debutMysql]);
+
+        if ($stmt->fetch()) {
+            Response::error("Ce creneau est deja reserve", 409);
+        }
     }
 
     $rules = require __DIR__ . '/../config/business-rules.php';

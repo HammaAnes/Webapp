@@ -118,26 +118,27 @@ const isOpenSpace = (espace: EspaceAPI): boolean => {
   return lower.includes("open") || lower.includes("coworking") || espace.type === "open_space";
 };
 
-const getAvailableSeats = (espace: EspaceAPI): number => {
+const getAvailableSeats = (espace: EspaceAPI, seatsFromAvailability?: number): number => {
+  if (seatsFromAvailability != null) return seatsFromAvailability;
   if (espace.places_disponibles != null) return Number(espace.places_disponibles);
   if (espace.placesDisponibles != null) return Number(espace.placesDisponibles);
   const occupied = espace.places_occupees ?? espace.placesOccupees ?? 0;
   return espace.capacite - Number(occupied);
 };
 
-const getAvailabilityStatus = (espace: EspaceAPI): { label: string; color: string; bgColor: string; borderColor: string; cardBorder: string; cardBg: string; available: boolean; seats?: number } => {
+const getAvailabilityStatus = (espace: EspaceAPI, realtimeSeats?: number | null): { label: string; color: string; bgColor: string; borderColor: string; cardBorder: string; cardBg: string; available: boolean; seats?: number } => {
   const dispo = espace.disponible;
   const isBoolFalse = typeof dispo === "boolean" && !dispo;
   const isNumFalse = typeof dispo === "number" && dispo === 0;
 
   if (isOpenSpace(espace)) {
-    const seats = getAvailableSeats(espace);
+    const seats = getAvailableSeats(espace, realtimeSeats ?? undefined);
     const total = espace.capacite || OPEN_SPACE_CAPACITY;
     const occupied = total - seats;
     if (seats <= 0 || isBoolFalse || isNumFalse) {
       return { label: "Complet", color: "text-red-700", bgColor: "bg-red-500", borderColor: "border-red-200", cardBorder: "border-red-400", cardBg: "bg-red-50/50", available: false, seats: 0 };
     }
-    if (occupied > 6) {
+    if (occupied > total / 2) {
       return { label: `${seats}/${total} places`, color: "text-amber-700", bgColor: "bg-amber-500", borderColor: "border-amber-200", cardBorder: "border-amber-400", cardBg: "bg-amber-50/50", available: true, seats };
     }
     return { label: `${seats}/${total} places`, color: "text-emerald-700", bgColor: "bg-emerald-500", borderColor: "border-emerald-200", cardBorder: "border-emerald-400", cardBg: "bg-emerald-50/50", available: true, seats };
@@ -271,6 +272,8 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
   const [promoCode, setPromoCode] = useState("");
   const [promoValidating, setPromoValidating] = useState(false);
   const [promoResult, setPromoResult] = useState<{ valid: boolean; reduction: number; codePromoId?: string; error?: string } | null>(null);
+  const [slotSeatsAvailable, setSlotSeatsAvailable] = useState<number | null>(null);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
 
   const {
     register,
@@ -384,6 +387,41 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     }
   }, [currentEspace, watchDateDebut, watchDateFin, reservationType, watchParticipants]);
 
+  useEffect(() => {
+    if (!currentEspace || !watchDateDebut || !watchDateFin || !isOpenSpace(currentEspace)) {
+      setSlotSeatsAvailable(null);
+      return;
+    }
+    const reqStart = new Date(watchDateDebut);
+    const reqEnd = new Date(watchDateFin);
+    if (reqStart >= reqEnd) return;
+
+    const dateStr = format(reqStart, "yyyy-MM-dd");
+    const controller = new AbortController();
+
+    const fetchSeats = async () => {
+      setCheckingAvailability(true);
+      try {
+        const response = await apiClient.get(
+          `/reservations/availability.php?espace_id=${currentEspace.id}&date_debut=${dateStr}&date_fin=${dateStr}`
+        );
+        if (response.success && response.data?.days?.length > 0) {
+          const dayData = response.data.days[0];
+          setSlotSeatsAvailable(dayData.seats_available ?? null);
+        } else {
+          setSlotSeatsAvailable(null);
+        }
+      } catch {
+        setSlotSeatsAvailable(null);
+      } finally {
+        setCheckingAvailability(false);
+      }
+    };
+
+    fetchSeats();
+    return () => controller.abort();
+  }, [currentEspace, watchDateDebut, watchDateFin]);
+
   const loadEspaces = async () => {
     try {
       setLoadingEspaces(true);
@@ -455,9 +493,9 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     }
 
     if (currentEspace && isOpenSpace(currentEspace)) {
-      const seats = getAvailableSeats(currentEspace);
+      const seats = getAvailableSeats(currentEspace, slotSeatsAvailable ?? undefined);
       if ((watchParticipants || 1) > seats) {
-        toast.error(`Seulement ${seats} places disponibles sur l'Open Space`);
+        toast.error(`Seulement ${seats} place${seats > 1 ? "s" : ""} disponible${seats > 1 ? "s" : ""} sur ce créneau`);
         return false;
       }
     }
@@ -719,11 +757,11 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
   const maxParticipants = useMemo(() => {
     if (!currentEspace) return 1;
     if (isOpenSpace(currentEspace)) {
-      const seats = getAvailableSeats(currentEspace);
+      const seats = getAvailableSeats(currentEspace, slotSeatsAvailable ?? undefined);
       return Math.max(1, Math.min(seats, currentEspace.capacite));
     }
     return currentEspace.capacite || 4;
-  }, [currentEspace]);
+  }, [currentEspace, slotSeatsAvailable]);
 
   const singleDayHours = useMemo(() => {
     const [startH, startM] = selectedStartTime.split(":").map(Number);
@@ -1012,7 +1050,11 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                     <h3 className="font-bold text-gray-900 text-lg truncate">{currentEspace.nom}</h3>
                     <p className="text-sm text-gray-500">
                       {getSpaceTypeLabel(currentEspace.type)} - {isOpenSpace(currentEspace)
-                        ? `${getAvailableSeats(currentEspace)}/${currentEspace.capacite} places dispo.`
+                        ? checkingAvailability
+                          ? "Vérification des places..."
+                          : slotSeatsAvailable != null
+                            ? `${slotSeatsAvailable}/${currentEspace.capacite} places disponibles sur ce créneau`
+                            : `Capacité : ${currentEspace.capacite} places`
                         : `Réservation exclusive (jusqu'à ${currentEspace.capacite} pers.)`
                       }
                     </p>
@@ -1038,6 +1080,26 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                         {format(new Date(spaceConflict.dateFin), "HH:mm")}.
                         Choisissez un autre créneau ou changez d'espace.
                       </p>
+                    </div>
+                  </div>
+                )}
+
+                {isOpenSpace(currentEspace) && slotSeatsAvailable != null && slotSeatsAvailable <= 0 && (
+                  <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-semibold text-red-800">Open Space complet sur ce créneau</p>
+                      <p className="text-red-600 mt-0.5">Toutes les places sont occupées. Choisissez une autre date ou un autre espace.</p>
+                    </div>
+                  </div>
+                )}
+
+                {isOpenSpace(currentEspace) && slotSeatsAvailable != null && slotSeatsAvailable > 0 && slotSeatsAvailable <= 3 && (
+                  <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                    <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-semibold text-amber-800">Plus que {slotSeatsAvailable} place{slotSeatsAvailable > 1 ? "s" : ""} disponible{slotSeatsAvailable > 1 ? "s" : ""}</p>
+                      <p className="text-amber-700 mt-0.5">L'Open Space se remplit rapidement sur ce créneau.</p>
                     </div>
                   </div>
                 )}

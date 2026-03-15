@@ -21,6 +21,7 @@ try {
     $espaceId = $_GET['espace_id'] ?? null;
     $dateDebut = $_GET['date_debut'] ?? null;
     $dateFin = $_GET['date_fin'] ?? null;
+    $includeBlocages = isset($_GET['include_blocages']) && $_GET['include_blocages'] === 'true';
 
     $params = [];
 
@@ -44,6 +45,27 @@ try {
             LEFT JOIN contacts c ON r.contact_id = c.id
             WHERE 1=1
         ";
+    } elseif ($espaceId) {
+        $query = "
+            SELECT r.id,
+                   r.espace_id,
+                   r.date_debut,
+                   r.date_fin,
+                   r.statut,
+                   r.participants,
+                   r.type_reservation,
+                   CASE WHEN r.user_id = ? THEN r.montant_total ELSE NULL END as montant_total,
+                   CASE WHEN r.user_id = ? THEN r.notes ELSE NULL END as notes,
+                   e.nom as espace_nom,
+                   e.type as espace_type,
+                   e.prix_heure,
+                   e.prix_jour
+            FROM reservations r
+            JOIN espaces e ON r.espace_id = e.id
+            WHERE 1=1
+        ";
+        $params[] = $userId;
+        $params[] = $userId;
     } else {
         $query = "
             SELECT r.*,
@@ -80,7 +102,30 @@ try {
 
     $reservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    Response::success($reservations);
+    if ($includeBlocages && $espaceId) {
+        $blocageParams = [$espaceId];
+        $blocageQuery = "
+            SELECT id, espace_id, date_debut, date_fin, type, motif, statut
+            FROM blocages_espaces
+            WHERE espace_id = ?
+            AND statut NOT IN ('annule', 'termine')
+        ";
+        if ($dateDebut) {
+            $blocageQuery .= " AND date_fin >= ?";
+            $blocageParams[] = $dateDebut . ' 00:00:00';
+        }
+        if ($dateFin) {
+            $blocageQuery .= " AND date_debut <= ?";
+            $blocageParams[] = $dateFin . ' 23:59:59';
+        }
+        $stmtBlocages = $db->prepare($blocageQuery);
+        $stmtBlocages->execute($blocageParams);
+        $blocages = $stmtBlocages->fetchAll(PDO::FETCH_ASSOC);
+
+        Response::success(['reservations' => $reservations, 'blocages' => $blocages]);
+    } else {
+        Response::success($reservations);
+    }
 
 } catch (Exception $e) {
     error_log("Erreur reservations index: " . $e->getMessage());
