@@ -18,21 +18,20 @@ export interface CourrierItem {
   expediteur: string;
   description?: string;
   statut: "recu" | "notifie" | "en_attente_instruction" | "retire" | "envoye" | "archive";
-  date_reception?: string;
-  dateReception?: string;
-  date_retrait?: string;
-  retire_par?: string;
+  dateReception: string;
+  dateRetrait?: string;
+  retirePar?: string;
 }
 
 export interface DocumentRecord {
   id: string;
-  document_type: string;
-  file_name: string;
-  file_size?: number;
-  created_at: string;
+  documentType: string;
+  fileName: string;
+  fileSize?: number;
+  createdAt: string;
   url?: string;
-  status?: "en_attente" | "valide" | "rejete";
-  commentaire_rejet?: string;
+  status: "en_attente" | "valide" | "rejete";
+  commentaireRejet?: string;
 }
 
 export interface DocumentSlot {

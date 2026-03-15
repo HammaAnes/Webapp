@@ -1,5 +1,5 @@
 import React, { useReducer, useEffect } from "react";
-import { Building, Save, User, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Building2, Save, User, ChevronLeft, ChevronRight, Check, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import Modal from "../ui/Modal";
 import Card from "../ui/Card";
@@ -24,7 +24,7 @@ interface Props {
 type Step = "user" | "info" | "contrat" | "confirm";
 
 const STEPS: { id: Step; label: string; num: number }[] = [
-  { id: "user", label: "Utilisateur", num: 1 },
+  { id: "user", label: "Client", num: 1 },
   { id: "info", label: "Entreprise", num: 2 },
   { id: "contrat", label: "Contrat", num: 3 },
   { id: "confirm", label: "Confirmation", num: 4 },
@@ -112,10 +112,10 @@ function reducer(state: FormState, action: Action): FormState {
       return {
         ...state,
         selectedUser: u,
-        repNom: u?.nom || "",
-        repPrenom: u?.prenom || "",
-        repTel: u?.telephone || "",
-        repEmail: u?.email || "",
+        repNom: u?.nom || state.repNom,
+        repPrenom: u?.prenom || state.repPrenom,
+        repTel: u?.telephone || state.repTel,
+        repEmail: u?.email || state.repEmail,
       };
     }
     case "SET_FIELD":
@@ -143,6 +143,7 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
     dispatch({ type: "SET_FIELD", field, value });
 
   const currentStepIdx = STEPS.findIndex((s) => s.id === state.step);
+
   const canGoNext = () => {
     if (state.step === "user") return !!state.selectedUser;
     if (state.step === "info")
@@ -220,8 +221,8 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
     <Modal isOpen={isOpen} onClose={onClose} size="xl" noPadding>
       <div className="px-6 py-4 border-b border-gray-100">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-            <Building className="w-5 h-5 text-amber-600" />
+          <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+            <Building2 className="w-5 h-5 text-amber-600" />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Nouvelle domiciliation</h3>
@@ -231,7 +232,7 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
       </div>
 
       <div className="px-6 py-3 border-b border-gray-100 bg-gray-50">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {STEPS.map((s, i) => {
             const isActive = s.id === state.step;
             const isPast = currentStepIdx > i;
@@ -246,12 +247,12 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
                     isActive
                       ? "bg-amber-500 text-white"
                       : isPast
-                      ? "bg-amber-100 text-amber-700 cursor-pointer"
+                      ? "bg-amber-100 text-amber-700 cursor-pointer hover:bg-amber-200"
                       : "text-gray-400 cursor-default"
                   }`}
                 >
                   <span
-                    className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                       isActive
                         ? "bg-white text-amber-600"
                         : isPast
@@ -271,10 +272,16 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
 
       <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
         {state.step === "user" && (
-          <div className="space-y-4">
-            <p className="text-sm text-gray-500">
-              Recherchez un client existant ou créez-en un nouveau.
-            </p>
+          <div className="space-y-5">
+            <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <Users className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-blue-900">Sélectionner ou créer un client</p>
+                <p className="text-xs text-blue-700 mt-1">
+                  Recherchez parmi les utilisateurs existants. Si le client n'a pas encore de compte, cliquez sur "Nouveau" pour créer un contact et générer ses accès.
+                </p>
+              </div>
+            </div>
             <UserSelector
               value={state.selectedUser}
               onChange={(u) => dispatch({ type: "SET_USER", payload: u })}
@@ -288,7 +295,7 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Situation administrative
                 </label>
                 <select
@@ -296,14 +303,14 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
                   onChange={(e) =>
                     set("situationAdministrative", e.target.value as "en_cours_creation" | "deja_creee")
                   }
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white text-sm"
                 >
                   <option value="en_cours_creation">En cours de création</option>
                   <option value="deja_creee">Déjà créée</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Type de structure
                 </label>
                 <select
@@ -311,7 +318,7 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
                   onChange={(e) =>
                     set("typeStructure", e.target.value as "societe" | "auto_entrepreneur")
                   }
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white text-sm"
                 >
                   <option value="societe">Société</option>
                   <option value="auto_entrepreneur">Auto-entrepreneur</option>
@@ -328,65 +335,33 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
               />
               {state.typeStructure === "societe" && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Forme juridique
                   </label>
                   <select
                     value={state.formeJuridique}
                     onChange={(e) => set("formeJuridique", e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white text-sm"
                   >
                     {FORMES_JURIDIQUES.map((f) => (
-                      <option key={f} value={f}>
-                        {f}
-                      </option>
+                      <option key={f} value={f}>{f}</option>
                     ))}
                   </select>
                 </div>
               )}
               {state.typeStructure === "societe" && (
                 <>
-                  <Input
-                    label="NIF"
-                    value={state.nif}
-                    onChange={(e) => set("nif", e.target.value)}
-                    maxLength={20}
-                  />
-                  <Input
-                    label="NIS"
-                    value={state.nis}
-                    onChange={(e) => set("nis", e.target.value)}
-                    maxLength={15}
-                  />
-                  <Input
-                    label="Registre de commerce"
-                    value={state.registreCommerce}
-                    onChange={(e) => set("registreCommerce", e.target.value)}
-                  />
-                  <Input
-                    label="Article d'imposition"
-                    value={state.articleImposition}
-                    onChange={(e) => set("articleImposition", e.target.value)}
-                  />
-                  <Input
-                    label="Code NAE"
-                    value={state.codeNae}
-                    onChange={(e) => set("codeNae", e.target.value)}
-                  />
+                  <Input label="NIF" value={state.nif} onChange={(e) => set("nif", e.target.value)} maxLength={20} />
+                  <Input label="NIS" value={state.nis} onChange={(e) => set("nis", e.target.value)} maxLength={15} />
+                  <Input label="Registre de commerce" value={state.registreCommerce} onChange={(e) => set("registreCommerce", e.target.value)} />
+                  <Input label="Article d'imposition" value={state.articleImposition} onChange={(e) => set("articleImposition", e.target.value)} />
+                  <Input label="Code NAE" value={state.codeNae} onChange={(e) => set("codeNae", e.target.value)} />
                 </>
               )}
               {state.typeStructure === "auto_entrepreneur" && (
                 <>
-                  <Input
-                    label="N° Auto-entrepreneur"
-                    value={state.numeroAutoEntrepreneur}
-                    onChange={(e) => set("numeroAutoEntrepreneur", e.target.value)}
-                  />
-                  <Input
-                    label="Activité exercée"
-                    value={state.activiteExercee}
-                    onChange={(e) => set("activiteExercee", e.target.value)}
-                  />
+                  <Input label="N° Auto-entrepreneur" value={state.numeroAutoEntrepreneur} onChange={(e) => set("numeroAutoEntrepreneur", e.target.value)} />
+                  <Input label="Activité exercée" value={state.activiteExercee} onChange={(e) => set("activiteExercee", e.target.value)} />
                 </>
               )}
             </div>
@@ -397,64 +372,36 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
                 Représentant légal
               </h4>
               <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label="Prénom"
-                  value={state.repPrenom}
-                  onChange={(e) => set("repPrenom", e.target.value)}
-                  required
-                />
-                <Input
-                  label="Nom"
-                  value={state.repNom}
-                  onChange={(e) => set("repNom", e.target.value)}
-                  required
-                />
-                <Input
-                  label="Téléphone"
-                  value={state.repTel}
-                  onChange={(e) => set("repTel", e.target.value)}
-                />
-                <Input
-                  label="Email"
-                  value={state.repEmail}
-                  onChange={(e) => set("repEmail", e.target.value)}
-                />
-                <Input
-                  label="Fonction"
-                  value={state.repFonction}
-                  onChange={(e) => set("repFonction", e.target.value)}
-                  placeholder="Ex : Gérant"
-                />
-                <Input
-                  label="Ville"
-                  value={state.repVille}
-                  onChange={(e) => set("repVille", e.target.value)}
-                />
+                <Input label="Prénom" value={state.repPrenom} onChange={(e) => set("repPrenom", e.target.value)} required />
+                <Input label="Nom" value={state.repNom} onChange={(e) => set("repNom", e.target.value)} required />
+                <Input label="Téléphone" value={state.repTel} onChange={(e) => set("repTel", e.target.value)} />
+                <Input label="Email" value={state.repEmail} onChange={(e) => set("repEmail", e.target.value)} />
+                <Input label="Fonction" value={state.repFonction} onChange={(e) => set("repFonction", e.target.value)} placeholder="Ex : Gérant" />
+                <Input label="Ville" value={state.repVille} onChange={(e) => set("repVille", e.target.value)} />
                 <div className="col-span-2">
-                  <Input
-                    label="Adresse de résidence"
-                    value={state.repAdresse}
-                    onChange={(e) => set("repAdresse", e.target.value)}
-                  />
+                  <Input label="Adresse de résidence" value={state.repAdresse} onChange={(e) => set("repAdresse", e.target.value)} />
                 </div>
               </div>
             </div>
 
             <div className="border-t border-gray-200 pt-4">
-              <h4 className="font-semibold text-gray-900 mb-3">Options</h4>
-              <div className="grid grid-cols-2 gap-2">
+              <h4 className="font-semibold text-gray-900 mb-3">Services souhaités</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {OPTIONS_DOMICILIATION.map((opt) => (
                   <label
                     key={opt.key}
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer border border-transparent hover:border-gray-200 transition-colors"
                   >
                     <input
                       type="checkbox"
                       checked={state.options[opt.key]}
                       onChange={() => dispatch({ type: "TOGGLE_OPTION", key: opt.key })}
-                      className="w-4 h-4 rounded border-gray-300 text-amber-500 focus:ring-amber-500"
+                      className="w-4 h-4 mt-0.5 rounded border-gray-300 text-amber-500 focus:ring-amber-500"
                     />
-                    <span className="text-sm text-gray-700">{opt.label}</span>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{opt.label}</p>
+                      <p className="text-xs text-gray-500">{opt.description}</p>
+                    </div>
                   </label>
                 ))}
               </div>
@@ -464,37 +411,25 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
 
         {state.step === "contrat" && (
           <div className="space-y-4">
+            <div className="flex items-start gap-3 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+              Ces informations peuvent être renseignées maintenant ou plus tard depuis la fiche de domiciliation.
+            </div>
             <BureauSelector
               value={state.numeroBureau}
               onChange={(val) => set("numeroBureau", val)}
               occupiedBureaux={occupiedBureaux}
               showEmpty
-              label="Numéro de bureau (1-60)"
+              label="Numéro de bureau (optionnel)"
             />
             <Input
-              label="Référence contrat notarié"
+              label="Référence contrat notarié (optionnel)"
               value={state.referenceContratNotarie}
               onChange={(e) => set("referenceContratNotarie", e.target.value)}
             />
             <div className="grid grid-cols-3 gap-4">
-              <Input
-                label="Date début"
-                type="date"
-                value={state.dateDebutContrat}
-                onChange={(e) => set("dateDebutContrat", e.target.value)}
-              />
-              <Input
-                label="Date fin"
-                type="date"
-                value={state.dateFinContrat}
-                onChange={(e) => set("dateFinContrat", e.target.value)}
-              />
-              <Input
-                label="Montant mensuel (DA)"
-                type="number"
-                value={state.montantMensuel.toString()}
-                onChange={(e) => set("montantMensuel", parseInt(e.target.value) || 0)}
-              />
+              <Input label="Date début" type="date" value={state.dateDebutContrat} onChange={(e) => set("dateDebutContrat", e.target.value)} />
+              <Input label="Date fin" type="date" value={state.dateFinContrat} onChange={(e) => set("dateFinContrat", e.target.value)} />
+              <Input label="Montant mensuel (DA)" type="number" value={state.montantMensuel.toString()} onChange={(e) => set("montantMensuel", parseInt(e.target.value) || 0)} />
             </div>
             {state.dateDebutContrat && state.dateFinContrat && state.montantMensuel > 0 && (
               <ContratSummary
@@ -507,100 +442,51 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
         )}
 
         {state.step === "confirm" && state.selectedUser && (
-          <Card className="p-4 bg-gray-50">
-            <h4 className="font-semibold text-gray-900 mb-3">Récapitulatif</h4>
-            <div className="grid grid-cols-2 gap-3 text-sm">
+          <Card className="p-5 bg-gray-50">
+            <h4 className="font-semibold text-gray-900 mb-4">Récapitulatif</h4>
+            <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-gray-500">Client</p>
-                <p className="font-medium">
-                  {state.selectedUser.prenom} {state.selectedUser.nom}
-                </p>
-                <p className="text-xs text-gray-400">{state.selectedUser.email}</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Client</p>
+                <p className="font-semibold text-gray-900">{state.selectedUser.prenom} {state.selectedUser.nom}</p>
+                <p className="text-xs text-gray-500">{state.selectedUser.email}</p>
               </div>
               <div>
-                <p className="text-gray-500">Structure</p>
-                <p className="font-medium">{state.raisonSociale}</p>
-                <p className="text-xs text-gray-400">
-                  {state.typeStructure === "auto_entrepreneur"
-                    ? "Auto-entrepreneur"
-                    : state.formeJuridique}
-                </p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Structure</p>
+                <p className="font-semibold text-gray-900">{state.raisonSociale}</p>
+                <p className="text-xs text-gray-500">{state.typeStructure === "auto_entrepreneur" ? "Auto-entrepreneur" : state.formeJuridique}</p>
               </div>
               <div>
-                <p className="text-gray-500">Situation</p>
-                <Badge
-                  variant={
-                    state.situationAdministrative === "en_cours_creation" ? "warning" : "info"
-                  }
-                >
-                  {state.situationAdministrative === "en_cours_creation"
-                    ? "En cours de création"
-                    : "Déjà créée"}
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Situation</p>
+                <Badge variant={state.situationAdministrative === "en_cours_creation" ? "warning" : "info"} size="sm">
+                  {state.situationAdministrative === "en_cours_creation" ? "En cours de création" : "Déjà créée"}
                 </Badge>
               </div>
               {state.numeroBureau > 0 && (
                 <div>
-                  <p className="text-gray-500">Bureau</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Bureau</p>
                   <p className="font-bold text-amber-700">N°{state.numeroBureau}</p>
-                </div>
-              )}
-              {state.referenceContratNotarie && (
-                <div>
-                  <p className="text-gray-500">Réf. contrat</p>
-                  <p className="font-medium">{state.referenceContratNotarie}</p>
                 </div>
               )}
               {state.montantMensuel > 0 && (
                 <div>
-                  <p className="text-gray-500">Montant</p>
-                  <p className="font-medium">
-                    {state.montantMensuel.toLocaleString("fr-DZ")} DA/mois
-                  </p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Montant</p>
+                  <p className="font-semibold text-gray-900">{state.montantMensuel.toLocaleString("fr-DZ")} DA/mois</p>
                   {months > 0 && (
-                    <p className="text-xs text-emerald-600 font-medium">
-                      Total : {montantTotal.toLocaleString("fr-DZ")} DA ({months} mois)
-                    </p>
+                    <p className="text-xs text-emerald-600 font-medium">Total : {montantTotal.toLocaleString("fr-DZ")} DA ({months} mois)</p>
                   )}
                 </div>
               )}
               <div>
-                <p className="text-gray-500">Représentant</p>
-                <p className="font-medium">
-                  {state.repPrenom} {state.repNom}
-                </p>
-                <p className="text-xs text-gray-400">
-                  {state.repEmail}
-                  {state.repTel && ` / ${state.repTel}`}
-                </p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Représentant</p>
+                <p className="font-semibold text-gray-900">{state.repPrenom} {state.repNom}</p>
+                <p className="text-xs text-gray-500">{state.repEmail}{state.repTel && ` / ${state.repTel}`}</p>
               </div>
-              <div>
-                <p className="text-gray-500">Options</p>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {state.options.domiciliationSimple && (
-                    <Badge variant="success" size="sm">
-                      Domiciliation
-                    </Badge>
-                  )}
-                  {state.options.receptionCourrier && (
-                    <Badge variant="info" size="sm">
-                      Courrier
-                    </Badge>
-                  )}
-                  {state.options.scanNotificationEmail && (
-                    <Badge variant="info" size="sm">
-                      Scan email
-                    </Badge>
-                  )}
-                  {state.options.reexpeditionCourrier && (
-                    <Badge variant="info" size="sm">
-                      Réexpédition
-                    </Badge>
-                  )}
-                  {state.options.accesPonctuelEspaces && (
-                    <Badge variant="teal" size="sm">
-                      Espaces
-                    </Badge>
-                  )}
+              <div className="col-span-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Services</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {OPTIONS_DOMICILIATION.filter((o) => state.options[o.key]).map((o) => (
+                    <Badge key={o.key} variant="info" size="sm">{o.label}</Badge>
+                  ))}
                 </div>
               </div>
             </div>
@@ -621,11 +507,7 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
             Annuler
           </Button>
           {state.step === "confirm" ? (
-            <Button
-              onClick={handleSubmit}
-              loading={submitting}
-              disabled={!state.selectedUser}
-            >
+            <Button onClick={handleSubmit} loading={submitting} disabled={!state.selectedUser}>
               <Save className="w-4 h-4" /> Créer la domiciliation
             </Button>
           ) : (

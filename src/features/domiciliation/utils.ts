@@ -1,5 +1,5 @@
-import type { DemandeDomiciliation } from "./types";
-import type { DocumentRecord, DocumentSlot } from "./types";
+import { differenceInMonths, differenceInDays } from "date-fns";
+import type { DemandeDomiciliation, DocumentRecord, DocumentSlot } from "./types";
 import {
   SOCIETE_DOCS,
   AUTO_ENTREPRENEUR_DOCS,
@@ -30,9 +30,13 @@ export function getTypeLabel(t: string): string {
 
 export function calculateContractDurationMonths(dateDebut: string, dateFin: string): number {
   if (!dateDebut || !dateFin) return 0;
-  const debut = new Date(dateDebut);
-  const fin = new Date(dateFin);
-  return Math.max(0, Math.round((fin.getTime() - debut.getTime()) / (30.44 * 24 * 60 * 60 * 1000)));
+  try {
+    const debut = new Date(dateDebut);
+    const fin = new Date(dateFin);
+    return Math.max(0, differenceInMonths(fin, debut));
+  } catch {
+    return 0;
+  }
 }
 
 export function calculateContractTotal(montantMensuel: number, months: number): number {
@@ -40,31 +44,65 @@ export function calculateContractTotal(montantMensuel: number, months: number): 
 }
 
 export function getContractExpirationAlert(demande: DemandeDomiciliation): {
-  type: "expired" | "warning";
+  type: "expired" | "warning" | "critical";
   daysLeft: number;
   date: Date;
 } | null {
   if (!demande.dateFinContrat || !["active", "domiciliation_creee"].includes(demande.statut)) {
     return null;
   }
-  const fin = new Date(demande.dateFinContrat as string);
-  const now = new Date();
-  const daysLeft = Math.ceil((fin.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  if (daysLeft < 0) return { type: "expired", daysLeft, date: fin };
-  if (daysLeft <= 30) return { type: "warning", daysLeft, date: fin };
-  return null;
+  try {
+    const fin = new Date(demande.dateFinContrat as string);
+    const now = new Date();
+    const daysLeft = differenceInDays(fin, now);
+    if (daysLeft < 0) return { type: "expired", daysLeft, date: fin };
+    if (daysLeft <= 7) return { type: "critical", daysLeft, date: fin };
+    if (daysLeft <= 30) return { type: "warning", daysLeft, date: fin };
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 export function mapApiDocument(raw: Record<string, unknown>): DocumentRecord {
   return {
     id: String(raw.id || ""),
-    document_type: String(raw.type_document || raw.document_type || "autre"),
-    file_name: String(raw.nom_original || raw.nom_fichier || raw.file_name || ""),
-    file_size: raw.taille ? Number(raw.taille) : (raw.file_size ? Number(raw.file_size) : undefined),
-    created_at: String(raw.created_at || raw.uploaded_at || ""),
-    url: String(raw.download_url || raw.url || ""),
+    documentType: String(raw.type_document || raw.document_type || raw.documentType || "autre"),
+    fileName: String(raw.nom_original || raw.nom_fichier || raw.file_name || raw.fileName || ""),
+    fileSize: raw.taille
+      ? Number(raw.taille)
+      : raw.file_size
+      ? Number(raw.file_size)
+      : raw.fileSize
+      ? Number(raw.fileSize)
+      : undefined,
+    createdAt: String(raw.created_at || raw.uploaded_at || raw.createdAt || ""),
+    url: raw.download_url || raw.url ? String(raw.download_url || raw.url) : undefined,
     status: (raw.statut || raw.status || "en_attente") as DocumentRecord["status"],
-    commentaire_rejet: raw.commentaire_rejet ? String(raw.commentaire_rejet) : undefined,
+    commentaireRejet: raw.commentaire_rejet
+      ? String(raw.commentaire_rejet)
+      : raw.commentaireRejet
+      ? String(raw.commentaireRejet)
+      : undefined,
+  };
+}
+
+export function mapApiCourrier(raw: Record<string, unknown>) {
+  return {
+    id: String(raw.id || ""),
+    type: String(raw.type || "autre") as "lettre" | "colis" | "recommande" | "autre",
+    expediteur: String(raw.expediteur || ""),
+    description: raw.description ? String(raw.description) : undefined,
+    statut: String(raw.statut || "recu") as
+      | "recu"
+      | "notifie"
+      | "en_attente_instruction"
+      | "retire"
+      | "envoye"
+      | "archive",
+    dateReception: String(raw.date_reception || raw.dateReception || raw.created_at || ""),
+    dateRetrait: raw.date_retrait ? String(raw.date_retrait) : undefined,
+    retirePar: raw.retire_par ? String(raw.retire_par) : undefined,
   };
 }
 
@@ -89,11 +127,9 @@ export function getRequiredDocSlots(
     : REQUIRED_DOCS_EXISTING_AUTO_ENTREPRENEUR;
 }
 
-export function getAllDocSlots(
-  situation: string,
-  typeStructure: string
-): DocumentSlot[] {
-  const apiSlots = typeStructure === "auto_entrepreneur" ? AUTO_ENTREPRENEUR_DOCS : SOCIETE_DOCS;
+export function getAllDocSlots(situation: string, typeStructure: string): DocumentSlot[] {
+  const apiSlots =
+    typeStructure === "auto_entrepreneur" ? AUTO_ENTREPRENEUR_DOCS : SOCIETE_DOCS;
   const wizardSlots = getRequiredDocSlots(situation, typeStructure);
   const all = [...apiSlots, ...COMMON_DOCS];
   for (const ws of wizardSlots) {
@@ -140,34 +176,27 @@ export function exportDomiciliationsCSV(
     "Montant Mensuel",
     "Réf. Contrat",
     "Options",
-    "Ancienneté (jours)",
   ];
 
-  const rows = demandes.map((d) => {
-    const ageJours = Math.floor(
-      (Date.now() - new Date(d.dateCreation as string).getTime()) / (1000 * 60 * 60 * 24)
-    );
-    return [
-      esc(getDisplayName(d)),
-      esc(getSituationLabel(d.situationAdministrative)),
-      esc(getTypeLabel(d.typeStructure)),
-      esc(d.formeJuridique || ""),
-      esc(d.nif || ""),
-      esc(d.nis || ""),
-      d.numeroBureau?.toString() || "",
-      esc(d.statut),
-      esc(`${d.representantLegal?.prenom || ""} ${d.representantLegal?.nom || ""}`),
-      esc(d.representantLegal?.email || ""),
-      esc(d.representantLegal?.telephone || ""),
-      formatDate(d.dateCreation),
-      d.dateDebutContrat ? formatDate(d.dateDebutContrat) : "",
-      d.dateFinContrat ? formatDate(d.dateFinContrat) : "",
-      d.montantMensuel ? formatCurrency(d.montantMensuel) : "",
-      esc(d.referenceContratNotarie || ""),
-      esc(formatOpts(d.options as unknown as Record<string, boolean>)),
-      ageJours.toString(),
-    ];
-  });
+  const rows = demandes.map((d) => [
+    esc(getDisplayName(d)),
+    esc(getSituationLabel(d.situationAdministrative)),
+    esc(getTypeLabel(d.typeStructure)),
+    esc(d.formeJuridique || ""),
+    esc(d.nif || ""),
+    esc(d.nis || ""),
+    d.numeroBureau?.toString() || "",
+    esc(d.statut),
+    esc(`${d.representantLegal?.prenom || ""} ${d.representantLegal?.nom || ""}`),
+    esc(d.representantLegal?.email || ""),
+    esc(d.representantLegal?.telephone || ""),
+    formatDate(d.dateCreation),
+    d.dateDebutContrat ? formatDate(d.dateDebutContrat) : "",
+    d.dateFinContrat ? formatDate(d.dateFinContrat) : "",
+    d.montantMensuel ? formatCurrency(d.montantMensuel) : "",
+    esc(d.referenceContratNotarie || ""),
+    esc(formatOpts(d.options as unknown as Record<string, boolean>)),
+  ]);
 
   const csv = "\uFEFF" + [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -177,4 +206,14 @@ export function exportDomiciliationsCSV(
   link.download = `domiciliations_${new Date().toISOString().split("T")[0]}.csv`;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+export function toDateInputValue(date: Date | string | undefined | null): string {
+  if (!date) return "";
+  try {
+    const d = typeof date === "string" ? new Date(date) : date;
+    return d.toISOString().split("T")[0];
+  } catch {
+    return "";
+  }
 }

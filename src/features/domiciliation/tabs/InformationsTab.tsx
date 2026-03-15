@@ -1,8 +1,18 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Briefcase, User, CheckCircle, Pencil, X, Save } from "lucide-react";
+import {
+  Briefcase,
+  User,
+  CheckCircle2,
+  Pencil,
+  X,
+  Save,
+  Building2,
+  Lightbulb,
+} from "lucide-react";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import Badge from "../../../components/ui/Badge";
+import { OPTIONS_DOMICILIATION } from "../constants";
 import type { DemandeDomiciliation } from "../types";
 
 interface Props {
@@ -11,38 +21,44 @@ interface Props {
   loading: boolean;
 }
 
-function Field({ label, value }: { label: string; value?: string }) {
+function InfoField({ label, value }: { label: string; value?: string }) {
   return (
-    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">{label}</p>
-      <p className="font-medium text-gray-900 text-sm">{value || "-"}</p>
+    <div className="space-y-1">
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{label}</p>
+      <p className="text-sm font-medium text-gray-900">{value || "—"}</p>
     </div>
   );
 }
 
-function SectionHeader({
-  icon: Icon,
+function SectionCard({
   title,
-  gradient,
+  icon: Icon,
+  accent,
+  children,
 }: {
-  icon: React.ElementType;
   title: string;
-  gradient: string;
+  icon: React.ElementType;
+  accent: string;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3 mb-4">
-      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-        <Icon className="w-6 h-6 text-white" />
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className={`px-5 py-4 flex items-center gap-3 border-b border-gray-100 ${accent}`}>
+        <div className="w-8 h-8 rounded-lg bg-white/60 flex items-center justify-center">
+          <Icon className="w-4 h-4" />
+        </div>
+        <h3 className="font-semibold text-sm">{title}</h3>
       </div>
-      <h4 className="font-bold text-gray-900 text-base">{title}</h4>
+      <div className="p-5">{children}</div>
     </div>
   );
 }
 
 export default function InformationsTab({ demande, onUpdate, loading }: Props) {
-  const [editing, setEditing] = useState(false);
+  const [editingEntreprise, setEditingEntreprise] = useState(false);
+  const [editingRep, setEditingRep] = useState(false);
 
-  const initForm = useCallback(
+  const initEntrepriseForm = useCallback(
     () => ({
       raisonSociale: demande.raisonSociale || "",
       formeJuridique: demande.formeJuridique || "",
@@ -53,46 +69,74 @@ export default function InformationsTab({ demande, onUpdate, loading }: Props) {
       codeNae: demande.codeNae || "",
       activiteExercee: demande.activiteExercee || "",
       numeroAutoEntrepreneur: demande.numeroAutoEntrepreneur || "",
+    }),
+    [demande]
+  );
+
+  const initRepForm = useCallback(
+    () => ({
       repNom: demande.representantLegal?.nom || "",
       repPrenom: demande.representantLegal?.prenom || "",
       repTel: demande.representantLegal?.telephone || "",
       repEmail: demande.representantLegal?.email || "",
       repVille: demande.representantLegal?.ville || "",
       repAdresse: demande.representantLegal?.adresseResidence || "",
+      repFonction: demande.representantLegal?.fonction || "",
     }),
     [demande]
   );
 
-  const [form, setForm] = useState(initForm);
+  const [entrepriseForm, setEntrepriseForm] = useState(initEntrepriseForm);
+  const [repForm, setRepForm] = useState(initRepForm);
 
   useEffect(() => {
-    setForm(initForm());
-  }, [initForm]);
+    setEntrepriseForm(initEntrepriseForm());
+    setEditingEntreprise(false);
+  }, [initEntrepriseForm]);
 
-  const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
+  useEffect(() => {
+    setRepForm(initRepForm());
+    setEditingRep(false);
+  }, [initRepForm]);
 
-  const handleSave = async () => {
+  const setE = (k: string, v: string) =>
+    setEntrepriseForm((p) => ({ ...p, [k]: v }));
+  const setR = (k: string, v: string) =>
+    setRepForm((p) => ({ ...p, [k]: v }));
+
+  const handleSaveEntreprise = async () => {
     try {
       await onUpdate({
-        raisonSociale: form.raisonSociale,
-        formeJuridique: form.formeJuridique,
-        nif: form.nif,
-        nis: form.nis,
-        registreCommerce: form.registreCommerce,
-        articleImposition: form.articleImposition,
-        codeNae: form.codeNae,
-        activiteExercee: form.activiteExercee,
-        numeroAutoEntrepreneur: form.numeroAutoEntrepreneur,
+        raisonSociale: entrepriseForm.raisonSociale,
+        formeJuridique: entrepriseForm.formeJuridique,
+        nif: entrepriseForm.nif,
+        nis: entrepriseForm.nis,
+        registreCommerce: entrepriseForm.registreCommerce,
+        articleImposition: entrepriseForm.articleImposition,
+        codeNae: entrepriseForm.codeNae,
+        activiteExercee: entrepriseForm.activiteExercee,
+        numeroAutoEntrepreneur: entrepriseForm.numeroAutoEntrepreneur,
+      });
+      setEditingEntreprise(false);
+    } catch {
+      // error already toasted
+    }
+  };
+
+  const handleSaveRep = async () => {
+    try {
+      await onUpdate({
         representantLegal: {
-          nom: form.repNom,
-          prenom: form.repPrenom,
-          telephone: form.repTel,
-          email: form.repEmail,
-          ville: form.repVille,
-          adresseResidence: form.repAdresse,
+          nom: repForm.repNom,
+          prenom: repForm.repPrenom,
+          telephone: repForm.repTel,
+          email: repForm.repEmail,
+          ville: repForm.repVille,
+          adresseResidence: repForm.repAdresse,
+          fonction: repForm.repFonction,
         },
       });
-      setEditing(false);
+      setEditingRep(false);
     } catch {
       // error already toasted
     }
@@ -101,215 +145,266 @@ export default function InformationsTab({ demande, onUpdate, loading }: Props) {
   const isSociete = demande.typeStructure === "societe";
   const isAE = demande.typeStructure === "auto_entrepreneur";
   const rep = demande.representantLegal || {};
+  const selectedOptions = OPTIONS_DOMICILIATION.filter(
+    (o) => demande.options?.[o.key]
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button
-          size="sm"
-          variant={editing ? "danger" : "outline"}
-          onClick={() => {
-            if (editing) setForm(initForm());
-            setEditing(!editing);
-          }}
-        >
-          {editing ? (
-            <>
-              <X className="w-4 h-4" /> Annuler
-            </>
-          ) : (
-            <>
-              <Pencil className="w-4 h-4" /> Modifier
-            </>
-          )}
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-          <p className="text-xs text-amber-700 uppercase tracking-wide font-semibold">Situation</p>
-          <p className="font-semibold text-amber-900 text-sm mt-1">
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-amber-50 rounded-xl px-4 py-3 border border-amber-100">
+          <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">
+            Situation
+          </p>
+          <p className="font-semibold text-amber-900 text-sm">
             {demande.situationAdministrative === "en_cours_creation"
               ? "En cours de création"
               : "Déjà créée"}
           </p>
         </div>
-        <div className="bg-sky-50 rounded-xl p-4 border border-sky-200">
-          <p className="text-xs text-sky-700 uppercase tracking-wide font-semibold">Type</p>
-          <p className="font-semibold text-sky-900 text-sm mt-1">
+        <div className="bg-sky-50 rounded-xl px-4 py-3 border border-sky-100">
+          <p className="text-xs font-semibold text-sky-600 uppercase tracking-wider mb-1">
+            Type de structure
+          </p>
+          <p className="font-semibold text-sky-900 text-sm">
             {isAE ? "Auto-entrepreneur" : "Société"}
           </p>
         </div>
       </div>
 
-      <div>
-        <SectionHeader icon={Briefcase} title="Entreprise" gradient="from-amber-500 to-orange-500" />
-        {editing ? (
+      <SectionCard title="Entreprise" icon={Briefcase} accent="bg-amber-50 text-amber-800">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs text-gray-500">Informations légales de la structure</p>
+          {editingEntreprise ? (
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setEntrepriseForm(initEntrepriseForm());
+                  setEditingEntreprise(false);
+                }}
+              >
+                <X className="w-3.5 h-3.5" /> Annuler
+              </Button>
+              <Button size="sm" variant="success" onClick={handleSaveEntreprise} loading={loading}>
+                <Save className="w-3.5 h-3.5" /> Enregistrer
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => setEditingEntreprise(true)}>
+              <Pencil className="w-3.5 h-3.5" /> Modifier
+            </Button>
+          )}
+        </div>
+
+        {editingEntreprise ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Raison sociale"
-              value={form.raisonSociale}
-              onChange={(e) => set("raisonSociale", e.target.value)}
+              value={entrepriseForm.raisonSociale}
+              onChange={(e) => setE("raisonSociale", e.target.value)}
             />
             <Input
               label="Forme juridique"
-              value={form.formeJuridique}
-              onChange={(e) => set("formeJuridique", e.target.value)}
+              value={entrepriseForm.formeJuridique}
+              onChange={(e) => setE("formeJuridique", e.target.value)}
             />
             {isSociete && (
               <>
                 <Input
                   label="NIF"
-                  value={form.nif}
-                  onChange={(e) => set("nif", e.target.value)}
+                  value={entrepriseForm.nif}
+                  onChange={(e) => setE("nif", e.target.value)}
                   maxLength={20}
                 />
                 <Input
                   label="NIS"
-                  value={form.nis}
-                  onChange={(e) => set("nis", e.target.value)}
+                  value={entrepriseForm.nis}
+                  onChange={(e) => setE("nis", e.target.value)}
                   maxLength={15}
                 />
                 <Input
                   label="Registre de Commerce"
-                  value={form.registreCommerce}
-                  onChange={(e) => set("registreCommerce", e.target.value)}
+                  value={entrepriseForm.registreCommerce}
+                  onChange={(e) => setE("registreCommerce", e.target.value)}
                 />
                 <Input
                   label="Article d'imposition"
-                  value={form.articleImposition}
-                  onChange={(e) => set("articleImposition", e.target.value)}
+                  value={entrepriseForm.articleImposition}
+                  onChange={(e) => setE("articleImposition", e.target.value)}
                 />
                 <Input
                   label="Code NAE"
-                  value={form.codeNae}
-                  onChange={(e) => set("codeNae", e.target.value)}
+                  value={entrepriseForm.codeNae}
+                  onChange={(e) => setE("codeNae", e.target.value)}
+                />
+                <Input
+                  label="Activité exercée"
+                  value={entrepriseForm.activiteExercee}
+                  onChange={(e) => setE("activiteExercee", e.target.value)}
                 />
               </>
             )}
             {isAE && (
               <>
                 <Input
-                  label="Activité exercée"
-                  value={form.activiteExercee}
-                  onChange={(e) => set("activiteExercee", e.target.value)}
+                  label="N° Auto-entrepreneur"
+                  value={entrepriseForm.numeroAutoEntrepreneur}
+                  onChange={(e) => setE("numeroAutoEntrepreneur", e.target.value)}
                 />
                 <Input
-                  label="N° Auto-entrepreneur"
-                  value={form.numeroAutoEntrepreneur}
-                  onChange={(e) => set("numeroAutoEntrepreneur", e.target.value)}
+                  label="Activité exercée"
+                  value={entrepriseForm.activiteExercee}
+                  onChange={(e) => setE("activiteExercee", e.target.value)}
                 />
               </>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <Field label="Raison sociale" value={demande.raisonSociale} />
-            <Field label="Forme juridique" value={demande.formeJuridique} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
+            <InfoField label="Raison sociale" value={demande.raisonSociale} />
+            <InfoField label="Forme juridique" value={demande.formeJuridique} />
             {isSociete && (
               <>
-                <Field label="NIF" value={demande.nif} />
-                <Field label="NIS" value={demande.nis} />
-                <Field label="Registre de Commerce" value={demande.registreCommerce} />
-                <Field label="Article d'imposition" value={demande.articleImposition} />
-                <Field label="Code NAE" value={demande.codeNae} />
+                <InfoField label="NIF" value={demande.nif} />
+                <InfoField label="NIS" value={demande.nis} />
+                <InfoField label="RC" value={demande.registreCommerce} />
+                <InfoField label="Art. d'imposition" value={demande.articleImposition} />
+                <InfoField label="Code NAE" value={demande.codeNae} />
+                <InfoField label="Activité" value={demande.activiteExercee} />
               </>
             )}
             {isAE && (
               <>
-                <Field label="Activité exercée" value={demande.activiteExercee} />
-                <Field label="N° Auto-entrepreneur" value={demande.numeroAutoEntrepreneur} />
+                <InfoField label="N° Auto-entrepreneur" value={demande.numeroAutoEntrepreneur} />
+                <InfoField label="Activité" value={demande.activiteExercee} />
               </>
             )}
           </div>
         )}
-      </div>
+      </SectionCard>
 
-      <div>
-        <SectionHeader icon={User} title="Représentant légal" gradient="from-sky-500 to-cyan-500" />
-        {editing ? (
+      <SectionCard title="Représentant légal" icon={User} accent="bg-sky-50 text-sky-800">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs text-gray-500">Identité et coordonnées du représentant</p>
+          {editingRep ? (
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setRepForm(initRepForm());
+                  setEditingRep(false);
+                }}
+              >
+                <X className="w-3.5 h-3.5" /> Annuler
+              </Button>
+              <Button size="sm" variant="success" onClick={handleSaveRep} loading={loading}>
+                <Save className="w-3.5 h-3.5" /> Enregistrer
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => setEditingRep(true)}>
+              <Pencil className="w-3.5 h-3.5" /> Modifier
+            </Button>
+          )}
+        </div>
+
+        {editingRep ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Prénom"
-              value={form.repPrenom}
-              onChange={(e) => set("repPrenom", e.target.value)}
+              value={repForm.repPrenom}
+              onChange={(e) => setR("repPrenom", e.target.value)}
             />
             <Input
               label="Nom"
-              value={form.repNom}
-              onChange={(e) => set("repNom", e.target.value)}
+              value={repForm.repNom}
+              onChange={(e) => setR("repNom", e.target.value)}
             />
             <Input
               label="Téléphone"
-              value={form.repTel}
-              onChange={(e) => set("repTel", e.target.value)}
+              value={repForm.repTel}
+              onChange={(e) => setR("repTel", e.target.value)}
             />
             <Input
               label="Email"
-              value={form.repEmail}
-              onChange={(e) => set("repEmail", e.target.value)}
+              value={repForm.repEmail}
+              onChange={(e) => setR("repEmail", e.target.value)}
+            />
+            <Input
+              label="Fonction"
+              value={repForm.repFonction}
+              onChange={(e) => setR("repFonction", e.target.value)}
+              placeholder="Ex : Gérant"
             />
             <Input
               label="Ville"
-              value={form.repVille}
-              onChange={(e) => set("repVille", e.target.value)}
+              value={repForm.repVille}
+              onChange={(e) => setR("repVille", e.target.value)}
             />
             <div className="sm:col-span-2">
               <Input
                 label="Adresse de résidence"
-                value={form.repAdresse}
-                onChange={(e) => set("repAdresse", e.target.value)}
+                value={repForm.repAdresse}
+                onChange={(e) => setR("repAdresse", e.target.value)}
               />
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <Field
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
+            <InfoField
               label="Nom complet"
               value={`${rep.prenom || ""} ${rep.nom || ""}`.trim()}
             />
-            <Field label="Téléphone" value={rep.telephone} />
-            <Field label="Email" value={rep.email} />
-            <Field label="Ville" value={rep.ville} />
-            {rep.adresseResidence && (
-              <Field label="Adresse de résidence" value={rep.adresseResidence} />
-            )}
+            <InfoField label="Fonction" value={rep.fonction} />
+            <InfoField label="Téléphone" value={rep.telephone} />
+            <InfoField label="Email" value={rep.email} />
+            <InfoField label="Ville" value={rep.ville} />
+            <InfoField label="Adresse" value={rep.adresseResidence} />
           </div>
         )}
-      </div>
+      </SectionCard>
 
-      {demande.options && (
-        <div>
-          <SectionHeader
-            icon={CheckCircle}
-            title="Options sélectionnées"
-            gradient="from-teal-500 to-emerald-500"
-          />
-          <div className="flex flex-wrap gap-2">
-            {demande.options.domiciliationSimple && (
-              <Badge variant="success">Domiciliation simple</Badge>
-            )}
-            {demande.options.receptionCourrier && (
-              <Badge variant="info">Réception courrier</Badge>
-            )}
-            {demande.options.scanNotificationEmail && (
-              <Badge variant="info">Scan email</Badge>
-            )}
-            {demande.options.reexpeditionCourrier && (
-              <Badge variant="info">Réexpédition</Badge>
-            )}
-            {demande.options.accesPonctuelEspaces && (
-              <Badge variant="teal">Accès espaces</Badge>
-            )}
+      {selectedOptions.length > 0 && (
+        <SectionCard
+          title="Options souscrites"
+          icon={CheckCircle2}
+          accent="bg-emerald-50 text-emerald-800"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {selectedOptions.map((opt) => (
+              <div
+                key={opt.key}
+                className="flex items-center gap-3 px-3 py-2.5 bg-emerald-50 rounded-xl border border-emerald-100"
+              >
+                <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-emerald-900">{opt.label}</p>
+                  <p className="text-xs text-emerald-600">{opt.description}</p>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        </SectionCard>
       )}
 
-      {editing && (
-        <div className="flex justify-end pt-2">
-          <Button onClick={handleSave} loading={loading}>
-            <Save className="w-4 h-4" /> Enregistrer
-          </Button>
+      {demande.dateCreationEntreprise && (
+        <div className="flex items-start gap-3 px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
+          <Lightbulb className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-gray-600">
+            Entreprise créée le{" "}
+            <span className="font-medium">
+              {new Date(demande.dateCreationEntreprise as string).toLocaleDateString("fr-FR", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </span>
+          </p>
         </div>
       )}
     </div>

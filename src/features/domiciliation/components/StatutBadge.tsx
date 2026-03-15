@@ -7,18 +7,29 @@ interface Props {
   statut: DomiciliationStatut | string;
   showIcon?: boolean;
   size?: "sm" | "md";
+  labelType?: "short" | "full";
 }
 
-export default function StatutBadge({ statut, showIcon = true, size = "md" }: Props) {
+export default function StatutBadge({
+  statut,
+  showIcon = true,
+  size = "md",
+  labelType = "short",
+}: Props) {
   const cfg = STATUT_CONFIG[statut as DomiciliationStatut];
   if (!cfg) {
-    return <Badge variant="default" size={size}>{statut}</Badge>;
+    return (
+      <Badge variant="neutral" size={size}>
+        {statut}
+      </Badge>
+    );
   }
   const Icon = cfg.icon;
+  const label = labelType === "full" ? cfg.label : cfg.shortLabel;
   return (
     <Badge variant={cfg.variant} size={size}>
       {showIcon && <Icon className="w-3 h-3 mr-1" />}
-      {cfg.shortLabel}
+      {label}
     </Badge>
   );
 }

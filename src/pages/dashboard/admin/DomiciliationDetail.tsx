@@ -1,13 +1,24 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, RefreshCw, Loader2, User, Building } from "lucide-react";
+import {
+  ArrowLeft,
+  RefreshCw,
+  Loader2,
+  User,
+  Building2,
+  Hash,
+  Calendar,
+  Banknote,
+  Mail,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import Button from "../../../components/ui/Button";
 import { useAppStore } from "../../../store/store";
 import { apiClient } from "../../../lib/api-client";
-import { formatDate } from "../../../utils/formatters";
+import { formatDate, formatCurrency } from "../../../utils/formatters";
 import { getDisplayName } from "../../../features/domiciliation/utils";
 import StatutBadge from "../../../features/domiciliation/components/StatutBadge";
+import WorkflowTimeline from "../../../features/domiciliation/components/WorkflowTimeline";
 import InformationsTab from "../../../features/domiciliation/tabs/InformationsTab";
 import ContratTab from "../../../features/domiciliation/tabs/ContratTab";
 import CourrierTab from "../../../features/domiciliation/tabs/CourrierTab";
@@ -27,6 +38,27 @@ const TABS = [
 ] as const;
 
 type TabKey = typeof TABS[number]["key"];
+
+function KpiCard({ icon: Icon, label, value, sub, color }: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  sub?: string;
+  color: string;
+}) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
+        <Icon className="w-5 h-5 text-white" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>
+        <p className="font-bold text-gray-900 text-sm truncate">{value}</p>
+        {sub && <p className="text-xs text-gray-400 truncate">{sub}</p>}
+      </div>
+    </div>
+  );
+}
 
 export default function AdminDomiciliationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -160,16 +192,17 @@ export default function AdminDomiciliationDetail() {
 
   const rep = demande.representantLegal;
   const displayName = getDisplayName(demande);
+  const isAutoEntrepreneur = demande.typeStructure === "auto_entrepreneur";
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate("/app/admin/domiciliations")}
-          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
+          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors font-medium"
         >
-          <ArrowLeft className="w-5 h-5" />
-          <span className="font-medium">Retour aux domiciliations</span>
+          <ArrowLeft className="w-4 h-4" />
+          <span>Domiciliations</span>
         </button>
         <Button
           size="sm"
@@ -177,92 +210,122 @@ export default function AdminDomiciliationDetail() {
           onClick={refresh}
           disabled={refreshing}
         >
-          {refreshing ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <RefreshCw className="w-4 h-4" />
-          )}
+          {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           Actualiser
         </Button>
       </div>
 
-      <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border-2 border-amber-200">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-400 rounded-2xl flex items-center justify-center shadow-md">
-              {demande.typeStructure === "auto_entrepreneur" ? (
-                <User className="w-8 h-8 text-white" />
-              ) : (
-                <Building className="w-8 h-8 text-white" />
-              )}
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{displayName}</h1>
-              <div className="flex items-center gap-3 mt-1">
-                <p className="text-sm text-gray-600">
-                  {demande.typeStructure === "auto_entrepreneur"
-                    ? "Auto-entrepreneur"
-                    : demande.formeJuridique || "Société"}
-                </p>
-                {demande.numeroBureau && (
-                  <>
-                    <span className="text-gray-300">•</span>
-                    <span className="text-sm font-bold text-amber-700">
-                      Bureau {demande.numeroBureau}
-                    </span>
-                  </>
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 h-2" />
+        <div className="p-6">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-md flex-shrink-0">
+                {isAutoEntrepreneur ? (
+                  <User className="w-8 h-8 text-white" />
+                ) : (
+                  <Building2 className="w-8 h-8 text-white" />
                 )}
               </div>
-              {rep && (
-                <p className="text-sm text-gray-500 mt-1">
-                  {rep.prenom} {rep.nom}
-                  {rep.email && ` · ${rep.email}`}
-                </p>
-              )}
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 leading-tight">{displayName}</h1>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <span className="text-sm text-gray-500">
+                    {isAutoEntrepreneur ? "Auto-entrepreneur" : demande.formeJuridique || "Société"}
+                  </span>
+                  {demande.numeroBureau && (
+                    <>
+                      <span className="text-gray-300">·</span>
+                      <span className="text-sm font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+                        Bureau {demande.numeroBureau}
+                      </span>
+                    </>
+                  )}
+                </div>
+                {rep && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    {rep.prenom} {rep.nom}
+                    {rep.email && (
+                      <span className="ml-1 text-gray-400">· {rep.email}</span>
+                    )}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col items-start sm:items-end gap-2">
+              <StatutBadge statut={demande.statut} />
+              <p className="text-xs text-gray-400">Créée le {formatDate(demande.dateCreation)}</p>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <StatutBadge statut={demande.statut} />
-            <p className="text-xs text-gray-500">
-              Créée le {formatDate(demande.dateCreation)}
-            </p>
-          </div>
+        </div>
+
+        <div className="px-6 pb-5">
+          <WorkflowTimeline statut={demande.statut} />
         </div>
       </div>
 
-      <div className="border-b border-gray-200">
-        <nav className="flex gap-1 overflow-x-auto">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-all border-b-2 ${
-                activeTab === tab.key
-                  ? "border-amber-500 text-amber-700 bg-amber-50/50"
-                  : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <KpiCard
+          icon={Hash}
+          label="Bureau"
+          value={demande.numeroBureau ? `Bureau ${demande.numeroBureau}` : "Non attribué"}
+          color={demande.numeroBureau ? "bg-amber-500" : "bg-gray-400"}
+        />
+        <KpiCard
+          icon={Banknote}
+          label="Mensualité"
+          value={demande.montantMensuel ? formatCurrency(demande.montantMensuel) : "—"}
+          color="bg-emerald-500"
+        />
+        <KpiCard
+          icon={Calendar}
+          label="Fin de contrat"
+          value={demande.dateFinContrat ? formatDate(demande.dateFinContrat as string) : "—"}
+          color="bg-sky-500"
+        />
+        <KpiCard
+          icon={Mail}
+          label="Email"
+          value={rep?.email || demande.email || "—"}
+          color="bg-blue-500"
+        />
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-        {activeTab === "infos" && (
-          <InformationsTab demande={demande} onUpdate={handleUpdate} loading={loading} />
-        )}
-        {activeTab === "contrat" && (
-          <ContratTab demande={demande} onUpdate={handleUpdate} loading={loading} />
-        )}
-        {activeTab === "courrier" && <CourrierTab demande={demande} />}
-        {activeTab === "documents" && <DocumentsTab demande={demande} />}
-        {activeTab === "notes" && (
-          <NotesTab demande={demande} onUpdate={handleUpdate} loading={loading} />
-        )}
-        {activeTab === "actions" && (
-          <ActionsTab demande={demande} onAction={handleAction} loading={loading} />
-        )}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="border-b border-gray-200">
+          <nav className="flex gap-0 overflow-x-auto">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-5 py-3.5 text-sm font-medium whitespace-nowrap transition-all border-b-2 ${
+                  activeTab === tab.key
+                    ? "border-amber-500 text-amber-700 bg-amber-50/30"
+                    : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        <div className="p-6">
+          {activeTab === "infos" && (
+            <InformationsTab demande={demande} onUpdate={handleUpdate} loading={loading} />
+          )}
+          {activeTab === "contrat" && (
+            <ContratTab demande={demande} onUpdate={handleUpdate} loading={loading} />
+          )}
+          {activeTab === "courrier" && <CourrierTab demande={demande} />}
+          {activeTab === "documents" && <DocumentsTab demande={demande} />}
+          {activeTab === "notes" && (
+            <NotesTab demande={demande} onUpdate={handleUpdate} loading={loading} />
+          )}
+          {activeTab === "actions" && (
+            <ActionsTab demande={demande} onAction={handleAction} loading={loading} />
+          )}
+        </div>
       </div>
     </div>
   );
