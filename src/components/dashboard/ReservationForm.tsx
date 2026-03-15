@@ -255,7 +255,8 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
   reservationId,
   initialData,
 }) => {
-  const { reservations: storeReservations, loadReservations } = useAppStore();
+  const { loadReservations } = useAppStore();
+  const [liveReservations, setLiveReservations] = useState<Array<{ espaceId: string; dateDebut: string; dateFin: string; statut: string; id?: string }>>([]);
   const { user } = useAuthStore();
   const [step, setStep] = useState(1);
   const [espaces, setEspaces] = useState<EspaceAPI[]>([]);
@@ -431,6 +432,34 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     fetchSeats();
     return () => controller.abort();
   }, [currentEspace, watchDateDebut, watchDateFin]);
+
+  useEffect(() => {
+    if (!currentEspace || isOpenSpace(currentEspace)) {
+      setLiveReservations([]);
+      return;
+    }
+    const dateStart = watchDateDebut ? format(startOfDay(new Date(watchDateDebut)), "yyyy-MM-dd") : format(startOfDay(new Date()), "yyyy-MM-dd");
+    const dateEnd = watchDateFin ? format(addDays(new Date(watchDateFin), 30), "yyyy-MM-dd") : format(addDays(new Date(), 60), "yyyy-MM-dd");
+
+    apiClient.request(
+      `/reservations/index.php?espace_id=${currentEspace.id}&date_debut=${dateStart}&date_fin=${dateEnd}`
+    ).then((response) => {
+      if (response.success && response.data) {
+        const raw = Array.isArray(response.data) ? response.data : (response.data as { reservations?: unknown[] }).reservations ?? [];
+        setLiveReservations(
+          (raw as Array<Record<string, string>>)
+            .filter((r) => r.statut !== "annulee" && r.statut !== "terminee")
+            .map((r) => ({
+              id: r.id,
+              espaceId: String(r.espace_id || r.espaceId || ""),
+              dateDebut: r.date_debut || r.dateDebut || "",
+              dateFin: r.date_fin || r.dateFin || "",
+              statut: r.statut,
+            }))
+        );
+      }
+    }).catch(() => {});
+  }, [currentEspace, watchDateDebut]);
 
   const loadEspaces = async () => {
     try {
@@ -680,6 +709,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     setSlotSeatsAvailable(null);
     setSlotSeatsTaken(null);
     setSlotCapacity(null);
+    setLiveReservations([]);
     setPromoCode("");
     setPromoResult(null);
     onClose();
@@ -790,8 +820,8 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     const reqEnd = new Date(watchDateFin).getTime();
     if (reqStart >= reqEnd) return null;
 
-    const conflict = storeReservations.find((r) => {
-      if (r.espaceId !== currentEspace.id) return false;
+    const conflict = liveReservations.find((r) => {
+      if (String(r.espaceId) !== String(currentEspace.id)) return false;
       if (r.statut === "annulee" || r.statut === "terminee") return false;
       if (editMode && r.id === reservationId) return false;
       const rStart = new Date(r.dateDebut).getTime();
@@ -799,7 +829,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
       return reqStart < rEnd && reqEnd > rStart;
     });
     return conflict || null;
-  }, [currentEspace, watchDateDebut, watchDateFin, storeReservations, editMode, reservationId]);
+  }, [currentEspace, watchDateDebut, watchDateFin, liveReservations, editMode, reservationId]);
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="lg" noPadding>

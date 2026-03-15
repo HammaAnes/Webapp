@@ -156,7 +156,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
     try {
       const monthStart = format(startOfMonth(currentMonth), "yyyy-MM-dd");
       const monthEnd = format(endOfMonth(currentMonth), "yyyy-MM-dd");
-      const response = await apiClient.get(
+      const response = await apiClient.request(
         `/reservations/index.php?espace_id=${espaceId}&date_debut=${monthStart}&date_fin=${monthEnd}&include_blocages=true`
       );
       if (response.success && response.data) {
