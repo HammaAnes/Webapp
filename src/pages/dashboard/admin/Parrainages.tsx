@@ -130,11 +130,14 @@ const Parrainages = () => {
       if (!parrainId) return;
 
       if (!parrainMap.has(parrainId)) {
-        const nameParts = (p.parrainNom || "").split(" ");
+        const fullName = (p.parrainNom || "").trim();
+        const spaceIdx = fullName.indexOf(" ");
+        const prenom = spaceIdx > -1 ? fullName.slice(0, spaceIdx) : (fullName || "Parrain");
+        const nom = spaceIdx > -1 ? fullName.slice(spaceIdx + 1) : "";
         parrainMap.set(parrainId, {
           id: parrainId,
-          prenom: nameParts[0] || "Parrain",
-          nom: nameParts.slice(1).join(" ") || `#${parrainId.slice(0, 6)}`,
+          prenom,
+          nom,
           email: p.parrainEmail || "",
           count: 0,
           credits: 0,

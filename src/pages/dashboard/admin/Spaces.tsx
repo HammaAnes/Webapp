@@ -76,6 +76,29 @@ const Spaces = () => {
   }, []);
 
   const onSubmit = async (data: SpaceFormData) => {
+    if (data.capacite < 1) {
+      toast.error("La capacité doit être d'au moins 1 personne");
+      return;
+    }
+
+    const prixH = Number(data.prixHeure) || 0;
+    const prixDJ = Number(data.prixDemiJournee) || 0;
+    const prixJ = Number(data.prixJour) || 0;
+    const prixS = Number(data.prixSemaine) || 0;
+
+    if (prixDJ > 0 && prixH > 0 && prixDJ < prixH) {
+      toast.error("Le prix demi-journée doit être supérieur ou égal au prix horaire");
+      return;
+    }
+    if (prixJ > 0 && prixDJ > 0 && prixJ < prixDJ) {
+      toast.error("Le prix journée doit être supérieur ou égal au prix demi-journée");
+      return;
+    }
+    if (prixS > 0 && prixJ > 0 && prixS < prixJ) {
+      toast.error("Le prix semaine doit être supérieur ou égal au prix journée");
+      return;
+    }
+
     setLoading(true);
 
     try {

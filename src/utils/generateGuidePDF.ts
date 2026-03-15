@@ -62,7 +62,7 @@ function splitTextToLines(doc: jsPDF, text: string, maxWidth: number, fontSize: 
 function ensureSpace(doc: jsPDF, y: number, needed: number, title: string, date: string): number {
   if (y + needed > PAGE_HEIGHT - 20) {
     doc.addPage();
-    addPageHeader(doc, title, (doc as any).internal.getNumberOfPages(), 0);
+    addPageHeader(doc, title, (doc as unknown as { internal: { getNumberOfPages: () => number } }).internal.getNumberOfPages(), 0);
     addPageFooter(doc, date);
     return 22;
   }
@@ -269,12 +269,12 @@ export function generateGuidePDF(article: BlogArticle): void {
         fillColor: COLORS.gray100,
       },
       didDrawPage: () => {
-        const pageCount = (doc as any).internal.getNumberOfPages();
+        const pageCount = (doc as unknown as { internal: { getNumberOfPages: () => number } }).internal.getNumberOfPages();
         addPageHeader(doc, shortTitle, pageCount, 0);
         addPageFooter(doc, dateStr);
       },
     });
-    y = (doc as any).lastAutoTable.finalY + 6;
+    y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
   };
 
   const flushCallout = () => {
@@ -455,7 +455,7 @@ export function generateGuidePDF(article: BlogArticle): void {
   flushTable();
   flushCallout();
 
-  const totalPages = (doc as any).internal.getNumberOfPages();
+  const totalPages = (doc as unknown as { internal: { getNumberOfPages: () => number } }).internal.getNumberOfPages();
   for (let i = 2; i <= totalPages; i++) {
     doc.setPage(i);
     addPageHeader(doc, shortTitle, i, totalPages);

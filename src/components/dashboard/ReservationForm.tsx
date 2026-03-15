@@ -352,7 +352,8 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     const prixS = getPrixSemaine(currentEspace);
     const prixM = getPrixMois(currentEspace);
     const isOS = isOpenSpace(currentEspace);
-    const multiplier = isOS ? (watchParticipants || 1) : 1;
+    const parsedParticipants = parseInt(String(watchParticipants), 10);
+    const multiplier = isOS ? (isNaN(parsedParticipants) || parsedParticipants < 1 ? 1 : parsedParticipants) : 1;
 
     if (reservationType === "multi_day") {
       const days = countWorkingDays(watchDateDebut, watchDateFin);
@@ -410,8 +411,8 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
       return false;
     }
     const now = new Date();
-    if (isBefore(watchDateDebut, startOfDay(now))) {
-      toast.error("La date de début ne peut pas être dans le passé");
+    if (isBefore(watchDateDebut, now)) {
+      toast.error("La date et l'heure de début ne peuvent pas être dans le passé");
       return false;
     }
     if (!isOpenDay(watchDateDebut)) {

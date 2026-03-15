@@ -107,7 +107,7 @@ export default function Contacts() {
                   {contacts.map((contact) => (
                     <ContactCard
                       key={contact.id}
-                      contact={contact as any}
+                      contact={contact}
                       onView={(id) => navigate(`/app/admin/contacts/${id}`)}
                     />
                   ))}

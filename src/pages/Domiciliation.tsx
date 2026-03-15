@@ -28,6 +28,8 @@ import Badge from "../components/ui/Badge";
 import { useSEO } from "../hooks/useSEO";
 import { apiClient } from "../lib/api-client";
 import { IMAGES } from "../config/images";
+import { useAppStore } from "../store/store";
+import { formatCurrency } from "../utils/formatters";
 
 interface PublicDomiciliationStats {
   activeCount: number;
@@ -35,11 +37,20 @@ interface PublicDomiciliationStats {
 }
 
 const DomiciliationPublic = () => {
+  const { abonnements } = useAppStore();
   const [stats, setStats] = React.useState<PublicDomiciliationStats>({
     activeCount: 0,
     visibleCompanies: [],
   });
+  const [loadError, setLoadError] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
+
+  const prixDomiciliation = React.useMemo(() => {
+    const ab = abonnements.find(
+      (a) => a.actif && (a.type === "domiciliation" || a.nom.toLowerCase().includes("domicil"))
+    );
+    return ab?.prix || null;
+  }, [abonnements]);
 
   useSEO({
     title: "Domiciliation d'Entreprise à Alger | Coffice Coworking",
@@ -54,31 +65,33 @@ const DomiciliationPublic = () => {
     ],
   });
 
-  React.useEffect(() => {
-    const loadPublicStats = async () => {
-      try {
-        const response = await apiClient.getPublicDomiciliationStats();
-        if (response.success && response.data) {
-          const data = response.data as Record<string, unknown>;
-          const companies = Array.isArray(data.companies)
-            ? data.companies
-            : [];
-          setStats({
-            activeCount: (data.active_count as number) || 0,
-            visibleCompanies: companies.map((c: Record<string, unknown>) => ({
-              companyName: (c.raison_sociale as string) || "",
-              legalForm: (c.forme_juridique as string) || "",
-            })),
-          });
-        }
-      } catch {
-        setStats({ activeCount: 0, visibleCompanies: [] });
-      } finally {
-        setLoading(false);
+  const loadPublicStats = React.useCallback(async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const response = await apiClient.getPublicDomiciliationStats();
+      if (response.success && response.data) {
+        const data = response.data as Record<string, unknown>;
+        const companies = Array.isArray(data.companies) ? data.companies : [];
+        setStats({
+          activeCount: (data.active_count as number) || 0,
+          visibleCompanies: companies.map((c: Record<string, unknown>) => ({
+            companyName: (c.raison_sociale as string) || "",
+            legalForm: (c.forme_juridique as string) || "",
+          })),
+        });
       }
-    };
-    loadPublicStats();
+    } catch (error) {
+      console.warn("[Domiciliation] Failed to load public stats:", error instanceof Error ? error.message : String(error));
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  React.useEffect(() => {
+    loadPublicStats();
+  }, [loadPublicStats]);
 
   const visibleCompanies = stats.visibleCompanies;
   const MAX_DOMICILIATIONS = 60;
@@ -343,16 +356,25 @@ const DomiciliationPublic = () => {
             className="grid grid-cols-3 gap-6 mt-16"
           >
             <div className="text-center bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/10">
-              <div className="text-3xl md:text-4xl font-bold text-white mb-1">
-                {activeCount}
-              </div>
+              {loadError ? (
+                <button
+                  onClick={loadPublicStats}
+                  className="text-white/60 text-xs underline hover:text-white transition-colors"
+                >
+                  Réessayer
+                </button>
+              ) : (
+                <div className="text-3xl md:text-4xl font-bold text-white mb-1">
+                  {loading ? "…" : activeCount}
+                </div>
+              )}
               <div className="text-white/70 text-sm">
                 Entreprises domiciliées
               </div>
             </div>
             <div className="text-center bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/10">
               <div className="text-3xl md:text-4xl font-bold text-white mb-1">
-                {placesRestantes}
+                {loading ? "…" : placesRestantes}
               </div>
               <div className="text-white/70 text-sm">Places disponibles</div>
             </div>
@@ -441,12 +463,20 @@ const DomiciliationPublic = () => {
                 </div>
 
                 <div className="pt-4 mb-8">
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-5xl font-bold text-primary">
-                      12 000
-                    </span>
-                    <span className="text-xl text-gray-500">DA HT/mois</span>
-                  </div>
+                  {prixDomiciliation ? (
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-5xl font-bold text-primary">
+                        {prixDomiciliation.toLocaleString("fr-DZ")}
+                      </span>
+                      <span className="text-xl text-gray-500">DA HT/mois</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-2xl font-bold text-primary">
+                        Contactez-nous pour les tarifs
+                      </span>
+                    </div>
+                  )}
                   <p className="text-gray-600">
                     Formule complète pour votre domiciliation professionnelle
                   </p>

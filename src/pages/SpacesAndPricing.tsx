@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { useSEO } from "../hooks/useSEO";
 import { IMAGES } from "../config/images";
+import { useAppStore } from "../store/store";
+import { formatCurrency } from "../utils/formatters";
 
 const SpacesAndPricing = () => {
   useSEO({
@@ -34,7 +36,23 @@ const SpacesAndPricing = () => {
       "Découvrez nos espaces de coworking (200m²) et nos formules d'abonnement flexibles. Private booths, salle de réunion et tarifs adaptés aux entrepreneurs.",
   });
 
+  const { espaces } = useAppStore();
   const [activeSpace, setActiveSpace] = useState<string>("coworking");
+
+  const espaceCoworking = useMemo(
+    () => espaces.find((e) => e.type === "open_space" || e.nom.toLowerCase().includes("coworking")),
+    [espaces]
+  );
+  const espaceMeeting = useMemo(
+    () => espaces.find((e) => e.type === "salle_reunion" || e.nom.toLowerCase().includes("réunion") || e.nom.toLowerCase().includes("reunion")),
+    [espaces]
+  );
+  const espaceBooths = useMemo(
+    () => espaces.filter((e) => e.type === "bureau_prive" || e.nom.toLowerCase().includes("booth") || e.nom.toLowerCase().includes("aurès") || e.nom.toLowerCase().includes("atlas") || e.nom.toLowerCase().includes("hoogar")),
+    [espaces]
+  );
+
+  const formatPrix = (v?: number) => (v && v > 0 ? formatCurrency(v) : null);
 
   // ============ ESPACES ============
   const spaces = [
@@ -45,10 +63,8 @@ const SpacesAndPricing = () => {
       description:
         "Un environnement dynamique de 200m² avec 24 postes open space",
       image: IMAGES.spaces.coworking.url,
-      price: "1 200 DA TTC / jour",
-      priceValue: 1200,
-      period: "jour",
-      priceFullDay: "1 200 DA TTC",
+      price: espaceCoworking?.prixJour ? `${formatCurrency(espaceCoworking.prixJour)} / jour` : null,
+      priceFullDay: formatPrix(espaceCoworking?.prixJour),
       color: "from-blue-500 to-cyan-500",
       textColor: "text-blue-600",
       bgColor: "bg-blue-50",
@@ -61,8 +77,8 @@ const SpacesAndPricing = () => {
         { icon: Shield, text: "Casiers de rangement sécurisés" },
       ],
       stats: [
-        { label: "Postes disponibles", value: "24" },
-        { label: "Capacité max", value: "24 pers." },
+        { label: "Postes disponibles", value: espaceCoworking ? String(espaceCoworking.capacite) : "24" },
+        { label: "Capacité max", value: espaceCoworking ? `${espaceCoworking.capacite} pers.` : "24 pers." },
         { label: "Surface", value: "200m²" },
       ],
     },
@@ -73,17 +89,15 @@ const SpacesAndPricing = () => {
       description:
         "Équipée pour vos présentations, formations et réunions d'équipe",
       image: IMAGES.spaces.meeting.url,
-      price: "2 500 DA TTC / heure",
-      priceValue: 2500,
-      period: "heure",
-      priceHour: "2 500 DA TTC",
-      priceHalfDay: "7 000 DA TTC",
-      priceFullDay: "12 000 DA TTC",
+      price: espaceMeeting?.prixHeure ? `${formatCurrency(espaceMeeting.prixHeure)} / heure` : null,
+      priceHour: formatPrix(espaceMeeting?.prixHeure),
+      priceHalfDay: formatPrix(espaceMeeting?.prixDemiJournee),
+      priceFullDay: formatPrix(espaceMeeting?.prixJour),
       color: "from-emerald-500 to-teal-500",
       textColor: "text-emerald-600",
       bgColor: "bg-emerald-50",
       features: [
-        { icon: Users, text: "Jusqu'à 12 personnes" },
+        { icon: Users, text: `Jusqu'à ${espaceMeeting?.capacite || 12} personnes` },
         { icon: Presentation, text: 'TV 75" et tableau blanc' },
         { icon: Volume2, text: "Système audio professionnel" },
         { icon: PenTool, text: "Tableau blanc interactif" },
@@ -91,7 +105,7 @@ const SpacesAndPricing = () => {
         { icon: Coffee, text: "Service café et eau minérale" },
       ],
       stats: [
-        { label: "Capacité", value: "12 pers." },
+        { label: "Capacité", value: espaceMeeting ? `${espaceMeeting.capacite} pers.` : "12 pers." },
         { label: "Écran", value: '75"' },
         { label: "Terrasse", value: "Privée" },
       ],
@@ -103,9 +117,9 @@ const SpacesAndPricing = () => {
       description:
         "3 espaces privatifs pour 2 à 4 personnes : Aurès et Atlas (6m² chacun pour 2-4 personnes) et Hoogar (5m² pour 2 personnes)",
       image: IMAGES.booths.atlas.url,
-      price: "À partir de 5 000 DA TTC",
-      priceValue: 5000,
-      period: "jour",
+      price: espaceBooths.length > 0
+        ? `À partir de ${formatCurrency(Math.min(...espaceBooths.map(e => e.prixJour || Infinity).filter(isFinite)))}`
+        : null,
       color: "from-amber-500 to-amber-600",
       textColor: "text-amber-600",
       bgColor: "bg-amber-50",
@@ -130,8 +144,8 @@ const SpacesAndPricing = () => {
           image: IMAGES.booths.aures.url,
           description:
             "Booth spacieux idéal pour petites équipes et réunions confidentielles",
-          priceFullDay: "6 000 DA TTC",
-          priceHalfDay: "3 500 DA TTC",
+          priceFullDay: formatPrix(espaceBooths.find(e => e.nom.toLowerCase().includes("aurès") || e.nom.toLowerCase().includes("aures"))?.prixJour),
+          priceHalfDay: formatPrix(espaceBooths.find(e => e.nom.toLowerCase().includes("aurès") || e.nom.toLowerCase().includes("aures"))?.prixDemiJournee),
         },
         {
           name: "Atlas",
@@ -139,8 +153,8 @@ const SpacesAndPricing = () => {
           capacity: "2-4 personnes",
           image: IMAGES.booths.atlas.url,
           description: "Espace privé confortable avec vue panoramique",
-          priceFullDay: "6 000 DA TTC",
-          priceHalfDay: "3 500 DA TTC",
+          priceFullDay: formatPrix(espaceBooths.find(e => e.nom.toLowerCase().includes("atlas"))?.prixJour),
+          priceHalfDay: formatPrix(espaceBooths.find(e => e.nom.toLowerCase().includes("atlas"))?.prixDemiJournee),
         },
         {
           name: "Hoogar",
@@ -149,8 +163,8 @@ const SpacesAndPricing = () => {
           image: IMAGES.booths.hoggar.url,
           description:
             "Booth intimiste parfait pour le travail concentré ou les entretiens",
-          priceFullDay: "5 000 DA TTC",
-          priceHalfDay: "3 000 DA TTC",
+          priceFullDay: formatPrix(espaceBooths.find(e => e.nom.toLowerCase().includes("hoogar") || e.nom.toLowerCase().includes("hoggar"))?.prixJour),
+          priceHalfDay: formatPrix(espaceBooths.find(e => e.nom.toLowerCase().includes("hoogar") || e.nom.toLowerCase().includes("hoggar"))?.prixDemiJournee),
         },
       ],
     },
@@ -307,11 +321,13 @@ const SpacesAndPricing = () => {
                       className="w-full h-[400px] object-cover"
                       loading="lazy"
                     />
-                    <div
-                      className={`absolute top-4 right-4 px-4 py-2 bg-gradient-to-r ${activeSpaceData.color} text-white rounded-full font-bold`}
-                    >
-                      {activeSpaceData.price}
-                    </div>
+                    {activeSpaceData.price && (
+                      <div
+                        className={`absolute top-4 right-4 px-4 py-2 bg-gradient-to-r ${activeSpaceData.color} text-white rounded-full font-bold`}
+                      >
+                        {activeSpaceData.price}
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -353,7 +369,7 @@ const SpacesAndPricing = () => {
                     </div>
 
                     {/* Pricing Details */}
-                    {activeSpace === "coworking" && (
+                    {activeSpace === "coworking" && activeSpaceData.priceFullDay && (
                       <div className="mb-6 p-4 bg-blue-50 rounded-xl border-2 border-blue-200">
                         <h4 className="font-bold text-primary mb-3">Tarif :</h4>
                         <div className="flex justify-center items-center">
@@ -364,32 +380,38 @@ const SpacesAndPricing = () => {
                       </div>
                     )}
 
-                    {activeSpace === "meeting" && (
+                    {activeSpace === "meeting" && (activeSpaceData.priceHour || activeSpaceData.priceHalfDay || activeSpaceData.priceFullDay) && (
                       <div className="mb-6 p-4 bg-emerald-50 rounded-xl border-2 border-emerald-200">
                         <h4 className="font-bold text-primary mb-3">
                           Tarifs de location :
                         </h4>
                         <div className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-700">À l'heure</span>
-                            <span className="font-bold text-emerald-600">
-                              {activeSpaceData.priceHour}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-700">Demi-journée</span>
-                            <span className="font-bold text-emerald-600">
-                              {activeSpaceData.priceHalfDay}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-700">
-                              Journée complète
-                            </span>
-                            <span className="font-bold text-emerald-600">
-                              {activeSpaceData.priceFullDay}
-                            </span>
-                          </div>
+                          {activeSpaceData.priceHour && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-700">À l'heure</span>
+                              <span className="font-bold text-emerald-600">
+                                {activeSpaceData.priceHour}
+                              </span>
+                            </div>
+                          )}
+                          {activeSpaceData.priceHalfDay && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-700">Demi-journée</span>
+                              <span className="font-bold text-emerald-600">
+                                {activeSpaceData.priceHalfDay}
+                              </span>
+                            </div>
+                          )}
+                          {activeSpaceData.priceFullDay && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-700">
+                                Journée complète
+                              </span>
+                              <span className="font-bold text-emerald-600">
+                                {activeSpaceData.priceFullDay}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -468,24 +490,30 @@ const SpacesAndPricing = () => {
                             {booth.description}
                           </p>
 
-                          <div className="mb-6 p-3 bg-amber-50 rounded-lg">
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-sm text-gray-600">
-                                Journée complète
-                              </span>
-                              <span className="font-bold text-amber-600">
-                                {booth.priceFullDay}
-                              </span>
+                          {(booth.priceFullDay || booth.priceHalfDay) && (
+                            <div className="mb-6 p-3 bg-amber-50 rounded-lg">
+                              {booth.priceFullDay && (
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="text-sm text-gray-600">
+                                    Journée complète
+                                  </span>
+                                  <span className="font-bold text-amber-600">
+                                    {booth.priceFullDay}
+                                  </span>
+                                </div>
+                              )}
+                              {booth.priceHalfDay && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-600">
+                                    Demi-journée
+                                  </span>
+                                  <span className="font-bold text-amber-600">
+                                    {booth.priceHalfDay}
+                                  </span>
+                                </div>
+                              )}
                             </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-gray-600">
-                                Demi-journée
-                              </span>
-                              <span className="font-bold text-amber-600">
-                                {booth.priceHalfDay}
-                              </span>
-                            </div>
-                          </div>
+                          )}
 
                           <Link
                             to="/inscription"

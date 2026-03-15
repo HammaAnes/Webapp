@@ -72,7 +72,9 @@ export default function Aujourdhui() {
       try {
         await Promise.all([initializeData(), loadUsers()]);
         setLastRefresh(new Date());
-      } catch {}
+      } catch (error) {
+        console.warn("[Aujourdhui] Auto-refresh failed:", error instanceof Error ? error.message : String(error));
+      }
     }, AUTO_REFRESH_INTERVAL);
 
     return () => {

@@ -45,8 +45,8 @@ export default function ContactDetail() {
       toast.success('Contact mis à jour');
       setIsEditing(false);
       fetchContactById(id);
-    } catch (error: any) {
-      toast.error(error.message || 'Erreur lors de la mise à jour');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la mise à jour');
     }
   };
 
@@ -57,8 +57,8 @@ export default function ContactDetail() {
       await deleteContact(id);
       toast.success('Contact supprimé');
       navigate('/app/admin/contacts');
-    } catch (error: any) {
-      toast.error(error.message || 'Erreur lors de la suppression');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la suppression');
     }
   };
 
@@ -82,8 +82,8 @@ export default function ContactDetail() {
     );
   }
 
-  const contact = currentContact as any;
-  const history: ContactHistory[] = contact.history || [];
+  const contact = currentContact;
+  const history: ContactHistory[] = (currentContact as (Contact & { history?: ContactHistory[] })).history || [];
 
   return (
     <div className="space-y-6">
@@ -228,7 +228,7 @@ export default function ContactDetail() {
                 {isEditing ? (
                   <SelectNative
                     value={formData.source || 'autre'}
-                    onChange={(e) => setFormData({ ...formData, source: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, source: e.target.value as Contact['source'] })}
                   >
                     {SOURCE_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -248,7 +248,7 @@ export default function ContactDetail() {
                 {isEditing ? (
                   <SelectNative
                     value={formData.statut || 'prospect'}
-                    onChange={(e) => setFormData({ ...formData, statut: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, statut: e.target.value as Contact['statut'] })}
                   >
                     {STATUT_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>

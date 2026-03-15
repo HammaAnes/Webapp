@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { apiClient } from "../lib/api-client";
 import { logger } from "../utils/logger";
+import { userService } from "../services/user.service";
+import { useAuthStore } from "./authStore";
 import toast from "react-hot-toast";
 import {
   espaceAdapter,
@@ -41,6 +43,7 @@ interface AppState {
   notificationSettings: NotificationSettings;
   initialized: boolean;
   loading: boolean;
+  initError: string | null;
 
   initializeData: () => Promise<void>;
 
@@ -123,22 +126,17 @@ export const useAppStore = create<AppState>()(
       notificationSettings: defaultNotificationSettings,
       initialized: false,
       loading: false,
+      initError: null,
 
       initializeData: async () => {
         const state = get();
         if (state.loading || state.initialized) return;
-        set({ loading: true });
+        set({ loading: true, initError: null });
 
         try {
           await get().loadEspaces();
 
-          let user: import("../types").User | null = null;
-          try {
-            const { useAuthStore: authRef } = await import("./authStore");
-            user = authRef.getState().user;
-          } catch (authImportError) {
-            logger.warn("Could not import authStore:", authImportError instanceof Error ? authImportError.message : String(authImportError));
-          }
+          const user = useAuthStore.getState().user;
           const isAdmin = user?.role === "admin";
 
           await Promise.all([
@@ -149,11 +147,11 @@ export const useAppStore = create<AppState>()(
             isAdmin ? get().loadCodesPromo() : Promise.resolve(),
           ]);
 
-          set({ initialized: true, loading: false });
+          set({ initialized: true, loading: false, initError: null });
         } catch (error) {
           const msg = error instanceof Error ? error.message : String(error);
           logger.error("Erreur initialisation:", msg);
-          set({ initialized: true, loading: false });
+          set({ initialized: true, loading: false, initError: msg });
           if (msg.includes("Failed to fetch") || msg.includes("Impossible de contacter")) {
             toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.");
           } else {
@@ -383,7 +381,7 @@ export const useAppStore = create<AppState>()(
                     "Courrier",
                     "Support administratif",
                   ],
-                  monthlyFee: d.montantMensuel || 12000,
+                  monthlyFee: d.montantMensuel || 0,
                   setupFee: 0,
                   documentsLegaux: [],
                   representantLegal: {
@@ -463,7 +461,6 @@ export const useAppStore = create<AppState>()(
       },
 
       addUser: async (data) => {
-        const { userService } = await import("../services/user.service");
         const result = await userService.adminCreateUser(data as { email: string; nom: string; prenom: string; telephone?: string; password?: string });
 
         if (result.success && result.user) {
@@ -485,18 +482,9 @@ export const useAppStore = create<AppState>()(
             return { success: false, error: errorMsg };
           }
 
-          let authUser: import("../types").User | null = null;
-          let authLoadUser: (() => Promise<void>) | undefined;
-          try {
-            const { useAuthStore: authStoreRef } = await import("./authStore");
-            const authState = authStoreRef.getState();
-            authUser = authState.user;
-            authLoadUser = authState.loadUser;
-          } catch (authImportError) {
-            logger.warn("Could not import authStore:", authImportError instanceof Error ? authImportError.message : String(authImportError));
-          }
-          const user = authUser;
-          const loadUser = authLoadUser;
+          const authState = useAuthStore.getState();
+          const user = authState.user;
+          const loadUser = authState.loadUser;
 
           if (user?.id === userId) {
             await loadUser();

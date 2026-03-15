@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -24,9 +24,35 @@ import {
 } from "lucide-react";
 import { useSEO } from "../hooks/useSEO";
 import { IMAGES } from "../config/images";
+import { useAppStore } from "../store/store";
+import { formatCurrency } from "../utils/formatters";
 
 const Home = () => {
   useSEO();
+  const { espaces } = useAppStore();
+
+  const prixCoworking = useMemo(() => {
+    const espace = espaces.find((e) =>
+      e.type === "open_space" || e.nom.toLowerCase().includes("coworking") || e.nom.toLowerCase().includes("open space")
+    );
+    return espace?.prixJour ? `À partir de ${formatCurrency(espace.prixJour)}/jour` : null;
+  }, [espaces]);
+
+  const prixBooth = useMemo(() => {
+    const booths = espaces.filter((e) =>
+      e.type === "bureau_prive" || e.nom.toLowerCase().includes("booth") || e.nom.toLowerCase().includes("box") || e.nom.toLowerCase().includes("bureau privé")
+    );
+    if (booths.length === 0) return null;
+    const minPrix = Math.min(...booths.map((e) => e.prixJour || Infinity).filter(isFinite));
+    return minPrix !== Infinity ? `À partir de ${formatCurrency(minPrix)}/jour` : null;
+  }, [espaces]);
+
+  const prixReunion = useMemo(() => {
+    const espace = espaces.find((e) =>
+      e.type === "salle_reunion" || e.nom.toLowerCase().includes("réunion") || e.nom.toLowerCase().includes("reunion")
+    );
+    return espace?.prixHeure ? `${formatCurrency(espace.prixHeure)}/h` : null;
+  }, [espaces]);
 
   const features = [
     {
@@ -284,9 +310,11 @@ const Home = () => {
                   </li>
                 </ul>
                 <div className="pt-4 border-t">
-                  <p className="text-2xl font-bold text-accent mb-3">
-                    À partir de 1 200 DA TTC/jour
-                  </p>
+                  {prixCoworking && (
+                    <p className="text-2xl font-bold text-accent mb-3">
+                      {prixCoworking}
+                    </p>
+                  )}
                   <Link
                     to="/espaces"
                     className="btn-primary w-full text-center"
@@ -340,9 +368,11 @@ const Home = () => {
                   </li>
                 </ul>
                 <div className="pt-4 border-t">
-                  <p className="text-2xl font-bold text-accent mb-3">
-                    À partir de 1 500 DA TTC/jour
-                  </p>
+                  {prixBooth && (
+                    <p className="text-2xl font-bold text-accent mb-3">
+                      {prixBooth}
+                    </p>
+                  )}
                   <Link
                     to="/espaces"
                     className="btn-primary w-full text-center"
@@ -396,9 +426,11 @@ const Home = () => {
                   </li>
                 </ul>
                 <div className="pt-4 border-t">
-                  <p className="text-2xl font-bold text-teal mb-3">
-                    2 500 DA TTC/h
-                  </p>
+                  {prixReunion && (
+                    <p className="text-2xl font-bold text-teal mb-3">
+                      {prixReunion}
+                    </p>
+                  )}
                   <Link
                     to="/espaces"
                     className="btn-primary w-full text-center"

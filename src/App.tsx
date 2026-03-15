@@ -40,13 +40,15 @@ function App() {
         } else {
           await useAppStore.getState().loadEspaces();
         }
-      } catch {
-        // Errors are handled inside initialize() and initializeData()
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        if (msg && !msg.includes("initialize") && !msg.includes("initializeData")) {
+          console.error("[App] Initialization error:", msg);
+        }
       }
     };
 
     initApp();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!isInitialized) {

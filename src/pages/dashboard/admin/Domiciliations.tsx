@@ -112,10 +112,15 @@ export default function AdminDomiciliations() {
   const stats = useMemo(
     () => ({
       preparatoires: demandesDomiciliation.filter((d) => d.statut === "dossier_preparatoire").length,
+      enAttenteComplements: demandesDomiciliation.filter((d) => d.statut === "en_attente_complements").length,
       enAttenteSignature: demandesDomiciliation.filter((d) => d.statut === "en_attente_signature").length,
+      domiciliationsCreees: demandesDomiciliation.filter((d) => d.statut === "domiciliation_creee").length,
       actives: demandesDomiciliation.filter((d) => d.statut === "active").length,
       expirees: demandesDomiciliation.filter((d) => d.statut === "expiree").length,
       refusees: demandesDomiciliation.filter((d) => ["refusee", "resiliee"].includes(d.statut)).length,
+      enCours: demandesDomiciliation.filter((d) =>
+        ["dossier_preparatoire", "en_attente_complements", "en_attente_signature", "domiciliation_creee"].includes(d.statut)
+      ).length,
       revenuMensuel: demandesDomiciliation
         .filter((d) => d.statut === "active")
         .reduce((sum, d) => sum + (d.montantMensuel || 0), 0),

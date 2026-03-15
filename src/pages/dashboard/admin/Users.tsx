@@ -113,12 +113,14 @@ const Users = () => {
   };
 
   const handleDelete = async (userId: string) => {
+    const userToDelete = users.find((u) => u.id === userId);
+    const userName = userToDelete ? `${userToDelete.prenom} ${userToDelete.nom}` : "cet utilisateur";
     if (
-      window.confirm("Etes-vous sur de vouloir supprimer cet utilisateur ?")
+      window.confirm(`Êtes-vous sûr de vouloir supprimer ${userName} ? Cette action est irréversible.`)
     ) {
       const result = await deleteUser(userId);
       if (result.success) {
-        toast.success("Utilisateur supprime");
+        toast.success("Utilisateur supprimé");
       } else {
         toast.error(result.error || "Erreur lors de la suppression");
       }
