@@ -10,6 +10,7 @@ import { apiClient } from "../../lib/api-client";
 import { emailService } from "../../services/email-service";
 import { useAuthStore } from "../../store/authStore";
 import { useAppStore } from "../../store/store";
+import { useAvailabilityStore } from "../../store/availabilityStore";
 import { WORKING_HOURS } from "../../constants/algeria";
 import {
   differenceInMinutes,
@@ -256,6 +257,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
   initialData,
 }) => {
   const { loadReservations } = useAppStore();
+  const invalidateAvailability = useAvailabilityStore((s) => s.invalidateSpace);
   const [liveReservations, setLiveReservations] = useState<Array<{ espaceId: string; dateDebut: string; dateFin: string; statut: string; id?: string }>>([]);
   const { user } = useAuthStore();
   const [step, setStep] = useState(1);
@@ -643,6 +645,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
           notes: data.notes || "",
         });
         if (response.success) {
+          invalidateAvailability(data.espace_id);
           toast.success("Réservation modifiée avec succès !");
           handleClose();
         } else {
@@ -658,6 +661,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
           ...(promoResult?.valid && promoCode ? { codePromo: promoCode.toUpperCase() } : {}),
         });
         if (response.success) {
+          invalidateAvailability(data.espace_id);
           toast.success("Réservation confirmée avec succès !");
           const user = useAuthStore.getState().user;
           if (user?.email && currentEspace) {

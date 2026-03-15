@@ -22,14 +22,17 @@ import {
   X,
   LayoutGrid,
   CalendarDays,
+  Wifi,
 } from 'lucide-react';
-import { format, isToday, differenceInMinutes, isAfter, isBefore } from 'date-fns';
+import { format, isToday, differenceInMinutes, isAfter, isBefore, startOfDay, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
 import { useAppStore } from '../../../store/store';
+import { useAvailabilityStore } from '../../../store/availabilityStore';
+import { computeDayAvailability } from '../../../services/availability.service';
 import { apiClient } from '../../../lib/api-client';
 import toast from 'react-hot-toast';
 import type { Reservation } from '../../../types';
@@ -170,6 +173,24 @@ export default function Aujourdhui() {
       revenue: revenueToday,
     };
   }, [todayReservations, categorizedReservations]);
+
+  const availabilityCache = useAvailabilityStore((s) => s.cache);
+  const today = new Date();
+  const todayStart = startOfDay(today);
+  const currentMonth = startOfMonth(today);
+
+  const spaceAvailabilities = useMemo(() => {
+    return espaces.map((espace) => {
+      const isOS = espace.type === 'open_space' || espace.nom?.toLowerCase().includes('open') || espace.nom?.toLowerCase().includes('coworking');
+      const capacity = espace.capacite || 1;
+      const monthKey = `${espace.id}::${format(currentMonth, 'yyyy-MM')}`;
+      const monthData = availabilityCache[monthKey];
+      const reservations = monthData?.reservations ?? [];
+      const blocages = monthData?.blocages ?? [];
+      const dayInfo = computeDayAvailability(todayStart, todayStart, currentMonth, reservations, blocages, isOS, capacity);
+      return { espace, dayInfo, isOS, hasData: !!monthData };
+    });
+  }, [espaces, availabilityCache, todayStart, currentMonth]);
 
   const handleCheckin = async (reservation: Reservation) => {
     setActionLoading(`checkin-${reservation.id}`);
@@ -511,6 +532,67 @@ export default function Aujourdhui() {
           <p className="text-white/80 text-sm">DA Revenus</p>
         </Card>
       </div>
+
+      <Card className="overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold text-gray-900 text-sm">Disponibilité en ce moment</h2>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] text-gray-400">Temps réel</span>
+            </span>
+          </div>
+          <Wifi className="w-4 h-4 text-gray-300" />
+        </div>
+        <div className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {spaceAvailabilities.map(({ espace, dayInfo, isOS, hasData }) => {
+            const statusColor =
+              !hasData ? 'border-gray-200 bg-gray-50'
+              : dayInfo.status === 'available' ? 'border-emerald-200 bg-emerald-50'
+              : dayInfo.status === 'partial' ? 'border-amber-200 bg-amber-50'
+              : dayInfo.status === 'full' ? 'border-red-200 bg-red-50'
+              : dayInfo.status === 'blocked' ? 'border-gray-200 bg-gray-100'
+              : 'border-gray-200 bg-gray-50';
+            const dotColor =
+              !hasData ? 'bg-gray-300'
+              : dayInfo.status === 'available' ? 'bg-emerald-500 animate-pulse'
+              : dayInfo.status === 'partial' ? 'bg-amber-500 animate-pulse'
+              : dayInfo.status === 'full' ? 'bg-red-500'
+              : 'bg-gray-400';
+            const label =
+              !hasData ? '—'
+              : isOS && dayInfo.reservedSeats != null && dayInfo.totalCapacity != null
+                ? `${dayInfo.reservedSeats}/${dayInfo.totalCapacity} places`
+              : dayInfo.status === 'available' ? 'Disponible'
+              : dayInfo.status === 'partial' ? `${dayInfo.freeSlots}/${dayInfo.totalSlots} créneaux`
+              : dayInfo.status === 'full' ? 'Complet'
+              : dayInfo.status === 'blocked' ? 'Bloqué'
+              : '—';
+
+            return (
+              <div key={espace.id} className={`p-3 rounded-xl border ${statusColor} flex flex-col gap-1.5`}>
+                <div className="flex items-start justify-between gap-1">
+                  <p className="text-xs font-semibold text-gray-800 leading-tight truncate">{espace.nom}</p>
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 mt-0.5 ${dotColor}`} />
+                </div>
+                <p className="text-[11px] text-gray-500">{label}</p>
+                {isOS && dayInfo.reservedSeats != null && dayInfo.totalCapacity != null && (
+                  <div className="w-full h-1.5 bg-white/60 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        (dayInfo.reservedSeats / dayInfo.totalCapacity) >= 0.8 ? 'bg-red-500'
+                        : (dayInfo.reservedSeats / dayInfo.totalCapacity) >= 0.5 ? 'bg-amber-500'
+                        : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.min(100, (dayInfo.reservedSeats / dayInfo.totalCapacity) * 100)}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Card>
 
       {viewMode === 'timeline' && (
         <Card className="overflow-hidden">

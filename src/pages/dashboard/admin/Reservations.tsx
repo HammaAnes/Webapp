@@ -27,6 +27,7 @@ import {
   List,
 } from "lucide-react";
 import { useAppStore } from "../../../store/store";
+import { useAvailabilityStore } from "../../../store/availabilityStore";
 import Card from "../../../components/ui/Card";
 import Badge from "../../../components/ui/Badge";
 import Button from "../../../components/ui/Button";
@@ -75,6 +76,7 @@ const STATUS_TABS: { key: StatusTab; label: string; color: string; dotColor: str
 
 const Reservations = () => {
   const { reservations, updateReservation, espaces, loadReservations } = useAppStore();
+  const invalidateAll = useAvailabilityStore((s) => s.invalidateAll);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusTab, setStatusTab] = useState<StatusTab>("tous");
   const [espaceFilter, setEspaceFilter] = useState<string>("tous");
@@ -112,6 +114,7 @@ const Reservations = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
+    invalidateAll();
     await loadReservations();
     setRefreshing(false);
     toast.success("Données actualisées");
@@ -185,6 +188,7 @@ const Reservations = () => {
         statut: "confirmee",
       });
       if (response.success) {
+        invalidateAll();
         toast.success("Réservation créée avec succès");
         setShowCreateModal(false);
         resetForm();
@@ -206,6 +210,7 @@ const Reservations = () => {
     try {
       const response = await apiClient.cancelReservation(selectedReservation);
       if (response.success) {
+        invalidateAll();
         toast.success("Réservation annulée");
         setShowDeleteModal(false);
         setSelectedReservation(null);
@@ -228,6 +233,7 @@ const Reservations = () => {
         toast.error(result.error || "Erreur lors de la mise à jour");
         return;
       }
+      invalidateAll();
       toast.success(`Réservation ${statut === "confirmee" ? "confirmée" : statut === "annulee" ? "refusée" : "mise à jour"}`);
       setActionMenu(null);
 
@@ -275,6 +281,7 @@ const Reservations = () => {
         toast.error(`${failed.length} réservation(s) non mises à jour`);
         return;
       }
+      invalidateAll();
       toast.success(`${selectedIds.length} réservation(s) ${action === "confirmer" ? "confirmées" : "refusées"}`);
       setSelectedIds([]);
     } catch {

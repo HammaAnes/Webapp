@@ -1,58 +1,20 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { ChevronLeft, ChevronRight, Loader2, Users } from "lucide-react";
+import React, { useState, useCallback, useRef } from "react";
+import { ChevronLeft, ChevronRight, Loader2, Users, RefreshCw, WifiOff } from "lucide-react";
 import {
   format,
   addMonths,
   subMonths,
   startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
   isSameMonth,
   isSameDay,
   isBefore,
   isAfter,
   startOfDay,
-  getDay,
 } from "date-fns";
 import { fr } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
-import { apiClient } from "../../lib/api-client";
-import { WORKING_HOURS } from "../../constants/algeria";
-
-interface RawReservation {
-  id?: string;
-  espace_id?: string;
-  espaceId?: string;
-  date_debut: string;
-  date_fin: string;
-  dateDebut?: string;
-  dateFin?: string;
-  statut: string;
-  participants?: number;
-}
-
-interface ReservationSlot {
-  date_debut: string;
-  date_fin: string;
-  statut: string;
-  participants: number;
-}
-
-interface BlocageSlot {
-  date_debut: string;
-  date_fin: string;
-}
-
-interface DayAvailability {
-  date: Date;
-  totalSlots: number;
-  freeSlots: number;
-  status: "available" | "partial" | "full" | "closed" | "past" | "blocked";
-  reservedSeats?: number;
-  totalCapacity?: number;
-}
+import { useAvailability } from "../../hooks/useAvailability";
+import { isClosedDay, type DayAvailability } from "../../services/availability.service";
 
 export interface AvailabilityCalendarProps {
   espaceId: string;
@@ -65,63 +27,7 @@ export interface AvailabilityCalendarProps {
   spaceCapacity?: number;
 }
 
-const OPENING_HOUR = WORKING_HOURS.OPENING_HOUR;
-const OPENING_MINUTE = WORKING_HOURS.OPENING_MINUTE;
-const CLOSING_HOUR = WORKING_HOURS.CLOSING_HOUR;
-const CLOSING_MINUTE = WORKING_HOURS.CLOSING_MINUTE;
-const SLOT_DURATION_MINUTES = 60;
-
-const isClosedDay = (date: Date): boolean => {
-  const day = getDay(date);
-  return day === 5 || day === 6;
-};
-
 const WEEKDAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
-
-const normalizeReservation = (r: RawReservation): ReservationSlot => ({
-  date_debut: r.date_debut || r.dateDebut || "",
-  date_fin: r.date_fin || r.dateFin || "",
-  statut: r.statut || "",
-  participants: r.participants || 1,
-});
-
-const extractReservations = (responseData: unknown, espaceId: string): ReservationSlot[] => {
-  let items: RawReservation[] = [];
-  if (Array.isArray(responseData)) {
-    items = responseData as RawReservation[];
-  } else if (responseData && typeof responseData === "object") {
-    const obj = responseData as Record<string, unknown>;
-    if (Array.isArray(obj.reservations)) {
-      items = obj.reservations as RawReservation[];
-    } else if (Array.isArray(obj.data)) {
-      items = obj.data as RawReservation[];
-    }
-  }
-  return items
-    .filter((r) => {
-      const rid = String(r.espace_id || r.espaceId || "");
-      return rid === "" || rid === String(espaceId);
-    })
-    .filter((r) => r.statut !== "annulee")
-    .map(normalizeReservation)
-    .filter((r) => r.date_debut && r.date_fin);
-};
-
-const extractBlocages = (responseData: unknown, espaceId: string): BlocageSlot[] => {
-  if (!responseData || typeof responseData !== "object" || Array.isArray(responseData)) return [];
-  const obj = responseData as Record<string, unknown>;
-  if (!Array.isArray(obj.blocages)) return [];
-  return (obj.blocages as Array<Record<string, unknown>>)
-    .filter((b) => {
-      const bid = (b.espace_id || b.espaceId || "") as string;
-      return bid === "" || bid === espaceId;
-    })
-    .map((b) => ({
-      date_debut: (b.date_debut || b.dateDebut || "") as string,
-      date_fin: (b.date_fin || b.dateFin || "") as string,
-    }))
-    .filter((b) => b.date_debut && b.date_fin);
-};
 
 const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
   espaceId,
@@ -134,212 +40,65 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
   spaceCapacity = 12,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(selectedDate));
-  const [reservations, setReservations] = useState<ReservationSlot[]>([]);
-  const [blocages, setBlocages] = useState<BlocageSlot[]>([]);
-  const [loading, setLoading] = useState(false);
   const [direction, setDirection] = useState(0);
+  const [rangeStartLocal, setRangeStartLocal] = useState<Date | null>(null);
   const prevEspaceId = useRef(espaceId);
 
-  const [rangeStartLocal, setRangeStartLocal] = useState<Date | null>(null);
+  if (prevEspaceId.current !== espaceId) {
+    prevEspaceId.current = espaceId;
+  }
 
-  useEffect(() => {
-    if (prevEspaceId.current !== espaceId) {
-      setReservations([]);
-      setBlocages([]);
-      prevEspaceId.current = espaceId;
-    }
-  }, [espaceId]);
+  const { dayAvailabilities, isLoading, hasError, isStale, refresh } = useAvailability({
+    espaceId,
+    currentMonth,
+    isOpenSpace,
+    spaceCapacity,
+    enabled: !!espaceId,
+  });
 
-  const loadAvailability = useCallback(async () => {
-    if (!espaceId) return;
-    setLoading(true);
-    try {
-      const monthStart = format(startOfMonth(currentMonth), "yyyy-MM-dd");
-      const monthEnd = format(endOfMonth(currentMonth), "yyyy-MM-dd");
-      const response = await apiClient.request(
-        `/reservations/index.php?espace_id=${espaceId}&date_debut=${monthStart}&date_fin=${monthEnd}&include_blocages=true`
-      );
-      if (response.success && response.data) {
-        setReservations(extractReservations(response.data, espaceId));
-        setBlocages(extractBlocages(response.data, espaceId));
-      } else {
-        setReservations([]);
-        setBlocages([]);
-      }
-    } catch {
-      setReservations([]);
-      setBlocages([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [espaceId, currentMonth]);
-
-  useEffect(() => {
-    loadAvailability();
-  }, [loadAvailability]);
-
-  const calendarDays = useMemo(() => {
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(currentMonth);
-    const calStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-    const calEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
-    return eachDayOfInterval({ start: calStart, end: calEnd });
-  }, [currentMonth]);
-
-  const getReservedSeatsForDay = useCallback((day: Date): number => {
-    const dayStr = format(day, "yyyy-MM-dd");
-    const dayStart = new Date(`${dayStr}T${String(OPENING_HOUR).padStart(2, "0")}:${String(OPENING_MINUTE).padStart(2, "0")}:00`);
-    const dayEnd = new Date(`${dayStr}T${String(CLOSING_HOUR).padStart(2, "0")}:${String(CLOSING_MINUTE).padStart(2, "0")}:00`);
-
-    let maxSeats = 0;
-    const totalMinutes = (CLOSING_HOUR * 60 + CLOSING_MINUTE) - (OPENING_HOUR * 60 + OPENING_MINUTE);
-    const totalSlots = Math.floor(totalMinutes / SLOT_DURATION_MINUTES);
-
-    for (let i = 0; i < totalSlots; i++) {
-      const slotStartMin = (OPENING_HOUR * 60 + OPENING_MINUTE) + i * SLOT_DURATION_MINUTES;
-      const slotEndMin = slotStartMin + SLOT_DURATION_MINUTES;
-      const slotStartH = Math.floor(slotStartMin / 60);
-      const slotStartM = slotStartMin % 60;
-      const slotEndH = Math.floor(slotEndMin / 60);
-      const slotEndM = slotEndMin % 60;
-
-      const slotStart = new Date(`${dayStr}T${String(slotStartH).padStart(2, "0")}:${String(slotStartM).padStart(2, "0")}:00`);
-      const slotEnd = new Date(`${dayStr}T${String(slotEndH).padStart(2, "0")}:${String(slotEndM).padStart(2, "0")}:00`);
-
-      let seatsInSlot = 0;
-      reservations.forEach((r) => {
-        const rStart = new Date(r.date_debut);
-        const rEnd = new Date(r.date_fin);
-        if (rStart < slotEnd && rEnd > slotStart) {
-          seatsInSlot += r.participants;
-        }
-      });
-      if (seatsInSlot > maxSeats) maxSeats = seatsInSlot;
-    }
-
-    return maxSeats;
-  }, [reservations]);
-
-  const dayAvailabilities = useMemo((): DayAvailability[] => {
-    const today = startOfDay(new Date());
-
-    return calendarDays.map((day) => {
-      if (!isSameMonth(day, currentMonth)) {
-        return { date: day, totalSlots: 0, freeSlots: 0, status: "closed" };
-      }
-      if (isBefore(day, today)) {
-        return { date: day, totalSlots: 0, freeSlots: 0, status: "past" };
-      }
-      if (isClosedDay(day)) {
-        return { date: day, totalSlots: 0, freeSlots: 0, status: "closed" };
-      }
-
-      const dayStr = format(day, "yyyy-MM-dd");
-      const totalMinutes = (CLOSING_HOUR * 60 + CLOSING_MINUTE) - (OPENING_HOUR * 60 + OPENING_MINUTE);
-      const totalSlots = Math.floor(totalMinutes / SLOT_DURATION_MINUTES);
-
-      const isBlocked = blocages.some((b) => {
-        const bStart = new Date(b.date_debut);
-        const bEnd = new Date(b.date_fin);
-        const dayStart = new Date(`${dayStr}T${String(OPENING_HOUR).padStart(2, "0")}:${String(OPENING_MINUTE).padStart(2, "0")}:00`);
-        const dayEnd = new Date(`${dayStr}T${String(CLOSING_HOUR).padStart(2, "0")}:${String(CLOSING_MINUTE).padStart(2, "0")}:00`);
-        return bStart <= dayStart && bEnd >= dayEnd;
-      });
-
-      if (isBlocked) {
-        return { date: day, totalSlots, freeSlots: 0, status: "blocked" };
-      }
-
-      if (isOpenSpace) {
-        const reservedSeats = getReservedSeatsForDay(day);
-        const freeSeats = spaceCapacity - reservedSeats;
-        if (freeSeats <= 0) {
-          return { date: day, totalSlots, freeSlots: 0, status: "full", reservedSeats, totalCapacity: spaceCapacity };
-        }
-        if (reservedSeats > 0) {
-          return { date: day, totalSlots, freeSlots: totalSlots, status: "partial", reservedSeats, totalCapacity: spaceCapacity };
-        }
-        return { date: day, totalSlots, freeSlots: totalSlots, status: "available", reservedSeats: 0, totalCapacity: spaceCapacity };
-      }
-
-      let occupiedSlots = 0;
-      for (let i = 0; i < totalSlots; i++) {
-        const slotStartMin = (OPENING_HOUR * 60 + OPENING_MINUTE) + i * SLOT_DURATION_MINUTES;
-        const slotEndMin = slotStartMin + SLOT_DURATION_MINUTES;
-        const slotStartH = Math.floor(slotStartMin / 60);
-        const slotStartM = slotStartMin % 60;
-        const slotEndH = Math.floor(slotEndMin / 60);
-        const slotEndM = slotEndMin % 60;
-
-        const slotStart = new Date(`${dayStr}T${String(slotStartH).padStart(2, "0")}:${String(slotStartM).padStart(2, "0")}:00`);
-        const slotEnd = new Date(`${dayStr}T${String(slotEndH).padStart(2, "0")}:${String(slotEndM).padStart(2, "0")}:00`);
-
-        const isOccupied = reservations.some((r) => {
-          const rStart = new Date(r.date_debut);
-          const rEnd = new Date(r.date_fin);
-          return rStart < slotEnd && rEnd > slotStart;
-        }) || blocages.some((b) => {
-          const bStart = new Date(b.date_debut);
-          const bEnd = new Date(b.date_fin);
-          return bStart < slotEnd && bEnd > slotStart;
-        });
-
-        if (isOccupied) occupiedSlots++;
-      }
-
-      const freeSlots = totalSlots - occupiedSlots;
-      if (freeSlots === 0) {
-        return { date: day, totalSlots, freeSlots: 0, status: "full" };
-      }
-      if (freeSlots < totalSlots) {
-        return { date: day, totalSlots, freeSlots, status: "partial" };
-      }
-      return { date: day, totalSlots, freeSlots, status: "available" };
-    });
-  }, [calendarDays, currentMonth, reservations, blocages, isOpenSpace, spaceCapacity, getReservedSeatsForDay]);
-
-  const goToPreviousMonth = () => {
+  const goToPreviousMonth = useCallback(() => {
     const prev = subMonths(currentMonth, 1);
-    if (!isBefore(endOfMonth(prev), startOfDay(new Date()))) {
+    if (!isBefore(prev, startOfMonth(startOfDay(new Date())))) {
       setDirection(-1);
       setCurrentMonth(prev);
     }
-  };
+  }, [currentMonth]);
 
-  const goToNextMonth = () => {
+  const goToNextMonth = useCallback(() => {
     const maxDate = addMonths(new Date(), 3);
     const next = addMonths(currentMonth, 1);
     if (isBefore(next, maxDate)) {
       setDirection(1);
       setCurrentMonth(next);
     }
-  };
+  }, [currentMonth]);
 
-  const handleDayClick = (dayInfo: DayAvailability) => {
-    if (dayInfo.status === "past" || dayInfo.status === "closed" || dayInfo.status === "blocked") return;
-    if (!isSameMonth(dayInfo.date, currentMonth)) return;
-    if (dayInfo.status === "full" && !isOpenSpace) return;
+  const handleDayClick = useCallback(
+    (dayInfo: DayAvailability) => {
+      if (dayInfo.status === "past" || dayInfo.status === "closed" || dayInfo.status === "blocked") return;
+      if (!isSameMonth(dayInfo.date, currentMonth)) return;
+      if (dayInfo.status === "full" && !isOpenSpace) return;
 
-    if (selectionMode === "range") {
-      if (!rangeStartLocal || (rangeStartLocal && rangeEnd)) {
-        setRangeStartLocal(dayInfo.date);
-        onDateSelect(dayInfo.date);
-      } else {
-        const start = isBefore(dayInfo.date, rangeStartLocal) ? dayInfo.date : rangeStartLocal;
-        const end = isAfter(dayInfo.date, rangeStartLocal) ? dayInfo.date : rangeStartLocal;
-        if (isSameDay(start, end)) {
+      if (selectionMode === "range") {
+        if (!rangeStartLocal || (rangeStartLocal && rangeEnd)) {
+          setRangeStartLocal(dayInfo.date);
           onDateSelect(dayInfo.date);
-          return;
+        } else {
+          const start = isBefore(dayInfo.date, rangeStartLocal) ? dayInfo.date : rangeStartLocal;
+          const end = isAfter(dayInfo.date, rangeStartLocal) ? dayInfo.date : rangeStartLocal;
+          if (isSameDay(start, end)) {
+            onDateSelect(dayInfo.date);
+            return;
+          }
+          setRangeStartLocal(null);
+          if (onRangeSelect) onRangeSelect(start, end);
         }
-        setRangeStartLocal(null);
-        if (onRangeSelect) {
-          onRangeSelect(start, end);
-        }
+      } else {
+        onDateSelect(dayInfo.date);
       }
-    } else {
-      onDateSelect(dayInfo.date);
-    }
-  };
+    },
+    [currentMonth, isOpenSpace, selectionMode, rangeStartLocal, rangeEnd, onDateSelect, onRangeSelect],
+  );
 
   const isInRange = (date: Date): boolean => {
     if (selectionMode !== "range") return false;
@@ -406,10 +165,24 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
     if (isSameDay(dayInfo.date, selectedDate) && selectionMode === "single") return null;
     if (isRangeStart(dayInfo.date) || isRangeEnd(dayInfo.date)) return null;
 
-    if (isOpenSpace && dayInfo.reservedSeats != null && dayInfo.totalCapacity != null && dayInfo.status !== "past" && dayInfo.status !== "closed" && dayInfo.status !== "blocked") {
+    if (
+      isOpenSpace &&
+      dayInfo.reservedSeats != null &&
+      dayInfo.totalCapacity != null &&
+      dayInfo.status !== "past" &&
+      dayInfo.status !== "closed" &&
+      dayInfo.status !== "blocked"
+    ) {
       const reserved = dayInfo.reservedSeats;
       const total = dayInfo.totalCapacity;
-      const color = reserved === 0 ? "text-emerald-600" : reserved >= total ? "text-red-500" : reserved > total / 2 ? "text-amber-600" : "text-emerald-600";
+      const color =
+        reserved === 0
+          ? "text-emerald-600"
+          : reserved >= total
+          ? "text-red-500"
+          : reserved > total / 2
+          ? "text-amber-600"
+          : "text-emerald-600";
       return (
         <span className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[9px] font-bold ${color} whitespace-nowrap`}>
           {reserved}/{total}
@@ -429,7 +202,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
     }
   };
 
-  const canGoPrev = !isBefore(endOfMonth(subMonths(currentMonth, 1)), startOfDay(new Date()));
+  const canGoPrev = !isBefore(subMonths(currentMonth, 1), startOfMonth(startOfDay(new Date())));
   const canGoNext = isBefore(addMonths(currentMonth, 1), addMonths(new Date(), 3));
 
   return (
@@ -440,18 +213,30 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
           onClick={goToPreviousMonth}
           disabled={!canGoPrev}
           className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
-            canGoPrev
-              ? "hover:bg-gray-100 text-gray-700 hover:shadow-sm"
-              : "text-gray-300 cursor-not-allowed"
+            canGoPrev ? "hover:bg-gray-100 text-gray-700 hover:shadow-sm" : "text-gray-300 cursor-not-allowed"
           }`}
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
 
-        <div className="text-center">
+        <div className="text-center flex items-center gap-2">
           <h4 className="text-lg font-bold text-gray-900 capitalize">
             {format(currentMonth, "MMMM yyyy", { locale: fr })}
           </h4>
+          {hasError ? (
+            <span title="Erreur de chargement — données en cache">
+              <WifiOff className="w-4 h-4 text-amber-500" />
+            </span>
+          ) : isStale && !isLoading ? (
+            <button
+              type="button"
+              onClick={refresh}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+              title="Rafraîchir la disponibilité"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+          ) : null}
         </div>
 
         <button
@@ -459,9 +244,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
           onClick={goToNextMonth}
           disabled={!canGoNext}
           className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
-            canGoNext
-              ? "hover:bg-gray-100 text-gray-700 hover:shadow-sm"
-              : "text-gray-300 cursor-not-allowed"
+            canGoNext ? "hover:bg-gray-100 text-gray-700 hover:shadow-sm" : "text-gray-300 cursor-not-allowed"
           }`}
         >
           <ChevronRight className="w-5 h-5" />
@@ -472,9 +255,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
         {WEEKDAY_LABELS.map((label, i) => (
           <div
             key={label}
-            className={`text-center text-xs font-semibold py-2 ${
-              i === 5 ? "text-red-400" : "text-gray-500"
-            }`}
+            className={`text-center text-xs font-semibold py-2 ${i === 5 ? "text-red-400" : "text-gray-500"}`}
           >
             {label}
           </div>
@@ -482,7 +263,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
       </div>
 
       <div className="relative min-h-[240px]">
-        {loading && (
+        {isLoading && (
           <div className="absolute inset-0 bg-white/70 z-10 flex items-center justify-center rounded-xl">
             <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
           </div>
@@ -500,7 +281,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
             {dayAvailabilities.map((dayInfo, idx) => {
               const isCurrentMonth = isSameMonth(dayInfo.date, currentMonth);
               return (
-                <button
+                <motion.button
                   key={idx}
                   type="button"
                   onClick={() => handleDayClick(dayInfo)}
@@ -511,18 +292,19 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                     dayInfo.status === "blocked" ||
                     (dayInfo.status === "full" && !isOpenSpace)
                   }
+                  layout
                   className={`aspect-square rounded-xl text-sm flex flex-col items-center justify-center ${getDayStyles(dayInfo)} ${isOpenSpace ? "pb-1" : ""}`}
                   title={
                     isOpenSpace && dayInfo.reservedSeats != null
-                      ? `${dayInfo.reservedSeats}/${dayInfo.totalCapacity} places reservees`
+                      ? `${dayInfo.reservedSeats}/${dayInfo.totalCapacity} places réservées`
                       : dayInfo.status === "available"
-                      ? `${dayInfo.freeSlots} creneaux libres`
+                      ? `${dayInfo.freeSlots} créneaux libres`
                       : dayInfo.status === "partial"
-                      ? `${dayInfo.freeSlots}/${dayInfo.totalSlots} creneaux libres`
+                      ? `${dayInfo.freeSlots}/${dayInfo.totalSlots} créneaux libres`
                       : dayInfo.status === "full"
                       ? "Complet"
                       : dayInfo.status === "closed"
-                      ? "Ferme"
+                      ? "Fermé"
                       : dayInfo.status === "blocked"
                       ? "Indisponible"
                       : ""
@@ -530,53 +312,58 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                 >
                   <span>{isCurrentMonth ? format(dayInfo.date, "d") : ""}</span>
                   {getIndicator(dayInfo)}
-                </button>
+                </motion.button>
               );
             })}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      <div className="flex items-center justify-center gap-4 mt-4 pt-3 border-t border-gray-100">
-        {isOpenSpace ? (
-          <>
+      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-3">
+          {isOpenSpace ? (
             <div className="flex items-center gap-1.5">
               <Users className="w-3 h-3 text-gray-400" />
-              <span className="text-xs text-gray-500">X/{spaceCapacity} = places reservees</span>
+              <span className="text-xs text-gray-500">X/{spaceCapacity} = places réservées</span>
             </div>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span className="text-xs text-gray-500">Disponible</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-              <span className="text-xs text-gray-500">Partiel</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
-              <span className="text-xs text-gray-500">Complet</span>
-            </div>
-          </>
-        )}
+          ) : (
+            <>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                <span className="text-xs text-gray-500">Disponible</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                <span className="text-xs text-gray-500">Partiel</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                <span className="text-xs text-gray-500">Complet</span>
+              </div>
+            </>
+          )}
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-gray-300" />
+            <span className="text-xs text-gray-500">Fermé</span>
+          </div>
+        </div>
+
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-gray-300" />
-          <span className="text-xs text-gray-500">Ferme</span>
+          <span className={`w-2 h-2 rounded-full ${hasError ? "bg-amber-400" : "bg-emerald-400 animate-pulse"}`} />
+          <span className="text-[10px] text-gray-400">{hasError ? "Mode hors-ligne" : "Temps réel"}</span>
         </div>
       </div>
 
       {selectionMode === "range" && (
         <div className="mt-2 text-center">
           {!rangeEnd && rangeStartLocal ? (
-            <p className="text-xs text-gray-500">Cliquez sur une deuxieme date pour definir la fin</p>
+            <p className="text-xs text-gray-500">Cliquez sur une deuxième date pour définir la fin</p>
           ) : rangeEnd ? (
             <p className="text-xs text-emerald-600 font-medium">
               Du {format(selectedDate, "d MMM", { locale: fr })} au {format(rangeEnd, "d MMM", { locale: fr })}
             </p>
           ) : (
-            <p className="text-xs text-gray-500">Cliquez sur la date de debut</p>
+            <p className="text-xs text-gray-500">Cliquez sur la date de début</p>
           )}
         </div>
       )}
