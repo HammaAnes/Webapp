@@ -106,11 +106,11 @@ export default function ActionsSidebar({ demande, onAction, loading }: Props) {
     await handleAction(action, data);
   };
 
-  const canValider = ["dossier_preparatoire"].includes(statut);
+  const canValider = ["dossier_preparatoire", "en_attente_complements"].includes(statut);
   const canComplements = ["dossier_preparatoire", "domiciliation_creee"].includes(statut);
   const canRejeter = ["dossier_preparatoire", "en_attente_complements", "en_attente_signature", "domiciliation_creee"].includes(statut);
   const canSigner = statut === "en_attente_signature";
-  const canActiver = ["domiciliation_creee", "en_attente_complements"].includes(statut);
+  const canActiver = statut === "domiciliation_creee";
   const canRenouveler = ["expiree", "active"].includes(statut);
   const canResilier = statut === "active";
 

@@ -48,10 +48,8 @@ export default function WorkflowTimeline({ statut, size = "md" }: Props) {
       <div className="flex items-center w-full overflow-x-auto pb-1">
         {WORKFLOW_STEPS.map((step, idx) => {
           const stepCfg = STATUT_CONFIG[step.key];
-          const isDone = currentStep > stepCfg.step && !isComplement
-            ? true
-            : isComplement
-            ? stepCfg.step < 0
+          const isDone = isComplement
+            ? stepCfg.step < currentStep
             : currentStep > stepCfg.step;
           const isCurrent =
             step.key === statut ||

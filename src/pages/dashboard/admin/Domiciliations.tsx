@@ -455,7 +455,7 @@ export default function AdminDomiciliations() {
       {viewMode === "kanban" ? (
         <DomiciliationKanban
           demandes={filtered}
-          onOpen={(id) => navigate(`/app/admin/domiciliations/${id}`)}
+          onAction={(demande) => navigate(`/app/admin/domiciliations/${demande.id}`)}
         />
       ) : (
         <Card className="overflow-hidden">
@@ -560,8 +560,8 @@ export default function AdminDomiciliations() {
         <QuickPreviewPanel
           demande={previewDemande}
           onClose={() => setPreviewId(null)}
-          onOpenFull={() => {
-            navigate(`/app/admin/domiciliations/${previewDemande.id}`);
+          onNavigate={(id) => {
+            navigate(`/app/admin/domiciliations/${id}`);
             setPreviewId(null);
           }}
         />

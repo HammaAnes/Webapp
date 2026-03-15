@@ -72,9 +72,13 @@ export default function DossierCompleteness({ demande, docs = [], compact = fals
   const total = items.length;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-  const color = pct >= 70 ? "emerald" : pct >= 40 ? "amber" : "red";
   const barColor = pct >= 70 ? "bg-emerald-500" : pct >= 40 ? "bg-amber-500" : "bg-red-500";
   const textColor = pct >= 70 ? "text-emerald-700" : pct >= 40 ? "text-amber-700" : "text-red-700";
+  const tagClass = pct >= 70
+    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+    : pct >= 40
+    ? "bg-amber-50 text-amber-700 border-amber-200"
+    : "bg-red-50 text-red-700 border-red-200";
   const missing = items.filter((i) => !i.done);
 
   if (compact) {
@@ -120,7 +124,7 @@ export default function DossierCompleteness({ demande, docs = [], compact = fals
             {missing.map((item) => (
               <span
                 key={item.label}
-                className={`text-xs px-2 py-0.5 rounded-full bg-${color}-50 text-${color}-700 border border-${color}-200`}
+                className={`text-xs px-2 py-0.5 rounded-full border ${tagClass}`}
               >
                 {item.label}
               </span>
