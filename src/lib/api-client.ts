@@ -585,8 +585,10 @@ class ApiClient {
       delete transformedData.representantLegal;
     }
 
-    if (data.options) {
-      transformedData.options = JSON.stringify(data.options);
+    if (data.options !== undefined) {
+      transformedData.options = typeof data.options === "string"
+        ? data.options
+        : JSON.stringify(data.options);
     }
 
     const snakeCaseData = objectToSnakeCase(transformedData);

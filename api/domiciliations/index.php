@@ -47,7 +47,7 @@ try {
 
         $stmt = $db->prepare($countQuery);
         $stmt->execute($params);
-        $totalCount = $stmt->fetch()['total'];
+        $totalCount = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
         // Requête des données avec pagination
         $query = "SELECT d.*, u.email, u.nom, u.prenom
@@ -78,7 +78,7 @@ try {
 
         $stmt = $db->prepare($countQuery);
         $stmt->execute($params);
-        $totalCount = $stmt->fetch()['total'];
+        $totalCount = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
         // Requête des données
         $query = "SELECT * FROM domiciliations WHERE user_id = :user_id";

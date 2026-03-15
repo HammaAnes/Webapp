@@ -165,7 +165,7 @@ const Reservations = () => {
       return;
     }
     const selectedSpace = espaces.find((esp) => esp.id === formData.espace_id);
-    const isOS = selectedSpace?.type === "open_space" || selectedSpace?.nom?.toLowerCase().includes("open");
+    const isOS = selectedSpace?.type === "open_space";
     if (!isOS) {
       const reqStart = new Date(`${formData.date_debut}T${formData.heure_debut}:00`).getTime();
       const reqEnd = new Date(`${formData.date_fin}T${formData.heure_fin}:00`).getTime();
@@ -201,7 +201,7 @@ const Reservations = () => {
         resetForm();
         await loadReservations();
       } else {
-        toast.error(response.message || "Erreur lors de la création");
+        toast.error(response.error || "Erreur lors de la création");
       }
     } catch (error) {
       logger.error("Erreur création réservation :", error as Error);

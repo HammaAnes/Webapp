@@ -30,6 +30,8 @@ try {
     $codePromo = $data['code_promo'] ?? null;
     $statutDemande = $data['statut'] ?? null;
 
+    $db = Database::getInstance()->getConnection();
+
     $allowedStatuts = ['en_attente', 'confirmee', 'en_cours', 'terminee', 'annulee'];
     if ($authUser['role'] === 'admin') {
         if ($targetUserId && $targetContactId) {
@@ -107,8 +109,6 @@ try {
     $debutMysql = date('Y-m-d H:i:s', $debut);
     $finMysql = date('Y-m-d H:i:s', $fin);
 
-    $db = Database::getInstance()->getConnection();
-
     $stmt = $db->prepare("SELECT id, nom, type, capacite, prix_heure, prix_jour, disponible FROM espaces WHERE id = ?");
     $stmt->execute([$espaceId]);
     $espace = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -135,7 +135,7 @@ try {
         }
     }
 
-    $isOpenSpace = strtolower($espace['type']) === 'open_space' || stripos($espace['nom'], 'open') !== false || stripos($espace['nom'], 'coworking') !== false;
+    $isOpenSpace = strtolower($espace['type']) === 'open_space';
 
     $rules = require __DIR__ . '/../config/business-rules.php';
     $seuilDemiJ = $rules['reservation']['seuil_heure_demi_journee'];
@@ -181,6 +181,7 @@ try {
 
     $reduction = 0;
     $codePromoId = null;
+    $montantAvantReduction = $montant;
 
     // Bug 6 — Begin transaction BEFORE availability check to prevent race conditions
     $db->beginTransaction();
@@ -294,7 +295,7 @@ try {
     }
 
     if ($codePromoId) {
-        $montantAvant = $montant + $reduction;
+        $montantAvant = $montantAvantReduction;
         $db->prepare("
             INSERT INTO utilisations_codes_promo (id, code_promo_id, user_id, reservation_id, montant_reduction, montant_avant, montant_apres, type_utilisation, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, 'reservation', NOW())

@@ -10,11 +10,14 @@ require_once __DIR__ . '/../bootstrap.php';
 try {
     $auth = Auth::verifyAuth();
 
-    $data = json_decode(file_get_contents("php://input"));
+    $rawInput = file_get_contents("php://input");
+    $data = json_decode($rawInput);
 
     if (!$data || json_last_error() !== JSON_ERROR_NONE) {
         Response::error("Données JSON invalides", 400);
     }
+
+    $dataArr = json_decode($rawInput, true);
 
     $rules = require __DIR__ . '/../config/business-rules.php';
     $reglesDom = $rules['domiciliation'];
@@ -206,7 +209,7 @@ try {
         ':date_cgu_acceptation' => !empty($data->cgu_acceptees) ? date('Y-m-d H:i:s') : null,
         ':date_debut_souhaitee' => $data->date_debut_souhaitee ?? null,
         ':statut' => $statut_initial,
-        ':montant_mensuel' => $data->montant_mensuel ?? 12000,
+        ':montant_mensuel' => isset($data->montant_mensuel) ? floatval($data->montant_mensuel) : null,
         ':date_debut' => $data->date_debut ?? null,
         ':date_fin' => $data->date_fin ?? null,
         ':notes_admin' => $data->notes_admin ?? null,
@@ -217,10 +220,16 @@ try {
         $montant_mensuel = floatval($data->montant_mensuel);
         $mois = 6;
         if (!empty($data->date_debut_contrat) && !empty($data->date_fin_contrat)) {
-            $debut = new DateTime($data->date_debut_contrat);
-            $fin = new DateTime($data->date_fin_contrat);
-            $diff = $debut->diff($fin);
-            $mois = max(1, $diff->m + ($diff->y * 12));
+            try {
+                $debut = new DateTime($data->date_debut_contrat);
+                $fin = new DateTime($data->date_fin_contrat);
+                if ($fin > $debut) {
+                    $diff = $debut->diff($fin);
+                    $mois = max(1, $diff->m + ($diff->y * 12));
+                }
+            } catch (Exception $dateErr) {
+                error_log("Invalid contract dates: " . $dateErr->getMessage());
+            }
         }
         $montant_total = $montant_mensuel * $mois;
 

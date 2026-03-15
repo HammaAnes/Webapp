@@ -44,7 +44,7 @@ try {
     $stmt = $db->prepare($query);
     $stmt->bindParam(':id', $data['domiciliation_id']);
     $stmt->execute();
-    $domiciliation = $stmt->fetch();
+    $domiciliation = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$domiciliation) {
         Response::notFound('Demande de domiciliation introuvable');

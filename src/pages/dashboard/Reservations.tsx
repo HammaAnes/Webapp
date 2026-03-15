@@ -220,7 +220,7 @@ const Reservations = () => {
     const completed = reservations.filter((r) => r.statut === "terminee").length;
     const cancelled = reservations.filter((r) => r.statut === "annulee").length;
     const totalSpent = reservations
-      .filter((r) => r.statut === "terminee" || r.statut === "confirmee")
+      .filter((r) => r.statut === "terminee")
       .reduce((sum, r) => sum + (r.montantTotal || 0), 0);
     return { total: reservations.length, upcoming, completed, cancelled, totalSpent };
   }, [reservations]);

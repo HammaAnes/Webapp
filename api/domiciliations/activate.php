@@ -43,7 +43,7 @@ try {
     $stmt->bindParam(':id', $data['domiciliation_id']);
     $stmt->execute();
 
-    $domiciliation = $stmt->fetch();
+    $domiciliation = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$domiciliation) {
         Response::notFound('Domiciliation introuvable ou ne peut pas être activée depuis son statut actuel (statut requis: en_attente_signature ou domiciliation_creee)');

@@ -369,11 +369,13 @@ export const useAppStore = create<AppState>()(
               .filter((d) => d.statut === "active" || d.statut === "domiciliation_creee")
               .map((d) => {
                 const startDateStr = d.dateDebutContrat || d.dateValidation || d.dateCreation;
-                const startDate = new Date(startDateStr as string);
+                const startDateRaw = startDateStr ? new Date(startDateStr as string) : null;
+                const startDate = startDateRaw && !isNaN(startDateRaw.getTime()) ? startDateRaw : new Date(d.dateCreation as string);
                 const endDateStr = d.dateFinContrat || null;
                 let endDate: Date;
                 if (endDateStr) {
-                  endDate = new Date(endDateStr as string);
+                  const parsed = new Date(endDateStr as string);
+                  endDate = !isNaN(parsed.getTime()) ? parsed : new Date(startDate.getTime() + 365 * 24 * 60 * 60 * 1000);
                 } else if (!isNaN(startDate.getTime())) {
                   endDate = new Date(startDate);
                   endDate.setFullYear(endDate.getFullYear() + 1);

@@ -29,7 +29,7 @@ try {
     $stmt->bindParam(':id', $data->id);
     $stmt->execute();
 
-    $demande = $stmt->fetch();
+    $demande = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$demande) {
         Response::error("Demande non trouvée", 404);

@@ -216,6 +216,7 @@ export const userAdapter = {
     activitePrincipale: apiData.activite_principale as string | undefined,
     formeJuridique: apiData.forme_juridique as string | undefined,
     codeParrainage: apiData.code_parrainage as string | undefined,
+    carteIdentiteUrl: apiData.carte_identite_url as string | undefined,
     absences: apiData.absences as number | undefined,
     bannedUntil: apiData.banned_until ? new Date(apiData.banned_until as string) : undefined,
     derniereConnexion: apiData.derniere_connexion ? new Date(apiData.derniere_connexion as string) : undefined,
@@ -408,7 +409,16 @@ export const domiciliationAdapter = {
     if (domiciliation.dateCreationEntreprise !== undefined) data.date_creation_entreprise = toDateStr(domiciliation.dateCreationEntreprise);
     if (domiciliation.villeImmatriculation !== undefined) data.ville_immatriculation = domiciliation.villeImmatriculation;
     if (domiciliation.dateInscriptionAutoEntrepreneur !== undefined) data.date_inscription_auto_entrepreneur = toDateStr(domiciliation.dateInscriptionAutoEntrepreneur);
-    if (domiciliation.representantLegal !== undefined) data.representant_legal = domiciliation.representantLegal;
+    if (domiciliation.representantLegal !== undefined) {
+      const rl = domiciliation.representantLegal;
+      if (rl.nom !== undefined) data.representant_nom = rl.nom;
+      if (rl.prenom !== undefined) data.representant_prenom = rl.prenom;
+      if (rl.fonction !== undefined) data.representant_fonction = rl.fonction;
+      if (rl.telephone !== undefined) data.representant_telephone = rl.telephone;
+      if (rl.email !== undefined) data.representant_email = rl.email;
+      if (rl.adresseResidence !== undefined) data.representant_adresse_residence = rl.adresseResidence;
+      if (rl.ville !== undefined) data.representant_ville = rl.ville;
+    }
     if (domiciliation.domaineActivite !== undefined) data.domaine_activite = domiciliation.domaineActivite;
     if (domiciliation.adresseSiegeSocial !== undefined) data.adresse_siege_social = domiciliation.adresseSiegeSocial;
     if (domiciliation.capital !== undefined) data.capital = String(domiciliation.capital);
