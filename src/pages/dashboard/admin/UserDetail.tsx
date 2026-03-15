@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { User, Mail, Phone, Briefcase, Building, Calendar, ArrowLeft, FileEdit as Edit, Trash2, Shield, CheckCircle, XCircle, CreditCard, CheckCircle2, AlertCircle, ExternalLink } from "lucide-react";
+import { User, Mail, Phone, Briefcase, Building, Calendar, ArrowLeft, FileEdit as Edit, Trash2, Shield, CheckCircle, XCircle, CreditCard, CheckCircle2, AlertCircle, ExternalLink, Upload, Loader2, FileText } from "lucide-react";
 import { apiClient } from "../../../lib/api-client";
 import { useAppStore } from "../../../store/store";
 import Button from "../../../components/ui/Button";
@@ -128,6 +128,43 @@ const UserDetail: React.FC = () => {
       setSaving(false);
     }
   };
+
+  const [uploadingId, setUploadingId] = useState(false);
+  const idFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAdminIdUpload = useCallback(async (file: File) => {
+    if (!id || !user) return;
+    const accepted = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    if (!accepted.includes(file.type)) {
+      toast.error("Format non supporté. Utilisez JPG, PNG, WebP ou PDF.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Fichier trop volumineux (max 5 Mo).");
+      return;
+    }
+    try {
+      setUploadingId(true);
+      const uploadRes = await apiClient.uploadDocument(file, "user", id, "carte_identite");
+      const cheminFichier = (uploadRes.data as Record<string, string> | undefined)?.chemin_fichier;
+      if (uploadRes.success && cheminFichier) {
+        const updateRes = await apiClient.updateUser(id, { carteIdentiteUrl: cheminFichier });
+        if (updateRes.success) {
+          toast.success("Carte d'identité enregistrée pour l'utilisateur.");
+          await loadUser();
+        } else {
+          toast.error("Document uploadé mais enregistrement échoué.");
+        }
+      } else {
+        toast.error((uploadRes as { error?: string }).error || "Erreur lors de l'upload.");
+      }
+    } catch {
+      toast.error("Erreur lors de l'upload.");
+    } finally {
+      setUploadingId(false);
+      if (idFileInputRef.current) idFileInputRef.current.value = "";
+    }
+  }, [id, user, loadUser]);
 
   const handleToggleRole = async () => {
     if (!user || !id) return;
@@ -335,30 +372,89 @@ const UserDetail: React.FC = () => {
           </Card>
 
           <Card className="p-6">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-accent" />
-              Carte d'identité
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-accent" />
+                Carte d'identité
+              </h2>
+              {user.carte_identite_url && (
+                <span className="flex items-center gap-1.5 text-emerald-700 text-xs font-medium bg-emerald-50 px-2.5 py-1 rounded-lg">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Archivée
+                </span>
+              )}
+            </div>
+
+            <input
+              ref={idFileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAdminIdUpload(f); }}
+            />
+
             {user.carte_identite_url ? (
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-emerald-700 text-sm font-medium">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Document archivé
+                {!user.carte_identite_url.toLowerCase().endsWith(".pdf") && (
+                  <div className="rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                    <img
+                      src={user.carte_identite_url.startsWith('/api/') || user.carte_identite_url.startsWith('api/') ? `/${user.carte_identite_url.replace(/^\//, '')}` : `/api/${user.carte_identite_url}`}
+                      alt="Carte d'identité"
+                      className="w-full max-h-40 object-contain"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                  </div>
+                )}
+                {user.carte_identite_url.toLowerCase().endsWith(".pdf") && (
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-4 h-4 text-red-600" />
+                    </div>
+                    <span className="text-sm text-gray-700 font-medium">Document PDF</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <a
+                    href={user.carte_identite_url.startsWith('/api/') || user.carte_identite_url.startsWith('api/') ? `/${user.carte_identite_url.replace(/^\//, '')}` : `/api/${user.carte_identite_url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-sky-600 hover:text-sky-700 font-medium transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Consulter le document
+                  </a>
+                  <button
+                    onClick={() => idFileInputRef.current?.click()}
+                    disabled={uploadingId}
+                    className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    Remplacer
+                  </button>
                 </div>
-                <a
-                  href={user.carte_identite_url?.startsWith('/api/') || user.carte_identite_url?.startsWith('api/') ? `/${user.carte_identite_url?.replace(/^\//, '')}` : `/api/${user.carte_identite_url}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-sky-600 hover:text-sky-700 font-medium transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Consulter le document
-                </a>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-amber-700 text-sm">
-                <AlertCircle className="w-4 h-4" />
-                Carte d'identité non fournie
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-amber-700 text-sm mb-3">
+                  <AlertCircle className="w-4 h-4" />
+                  Document non fourni par l'utilisateur
+                </div>
+                <button
+                  onClick={() => idFileInputRef.current?.click()}
+                  disabled={uploadingId}
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed text-sm font-medium transition-all ${
+                    uploadingId
+                      ? "border-sky-300 bg-sky-50 text-sky-600 cursor-default"
+                      : "border-gray-300 text-gray-600 hover:border-sky-400 hover:bg-sky-50 hover:text-sky-700 cursor-pointer"
+                  }`}
+                >
+                  {uploadingId ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Envoi en cours…</>
+                  ) : (
+                    <><Upload className="w-4 h-4" /> Soumettre pour l'utilisateur</>
+                  )}
+                </button>
+                <p className="text-xs text-gray-400">JPG, PNG, WebP ou PDF — max 5 Mo</p>
               </div>
             )}
           </Card>

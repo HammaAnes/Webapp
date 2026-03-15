@@ -335,19 +335,16 @@ const Reservations = () => {
   return (
     <div className="space-y-6">
       {user && !user.carteIdentiteUrl && (
-        <div className="flex items-start gap-3 px-4 py-3.5 bg-amber-50 border border-amber-200 rounded-xl">
-          <CreditCard className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-800">Carte d'identité requise pour réserver</p>
-            <p className="text-sm text-amber-700 mt-0.5">
-              Ajoutez une copie de votre carte d'identité nationale dans votre profil avant d'effectuer une réservation.
-            </p>
-          </div>
+        <div className="flex items-center gap-3 px-4 py-3 bg-sky-50 border border-sky-200 rounded-xl">
+          <CreditCard className="w-4 h-4 text-sky-600 flex-shrink-0" />
+          <p className="text-sm text-sky-800 flex-1">
+            Complétez votre profil en ajoutant votre carte d'identité pour faciliter vos réservations.
+          </p>
           <button
             onClick={() => navigate("/app/profil")}
-            className="flex-shrink-0 text-sm font-medium text-amber-800 hover:text-amber-900 underline underline-offset-2 transition-colors"
+            className="flex-shrink-0 text-sm font-semibold text-sky-700 hover:text-sky-900 underline underline-offset-2 transition-colors whitespace-nowrap"
           >
-            Compléter mon profil
+            Compléter maintenant
           </button>
         </div>
       )}

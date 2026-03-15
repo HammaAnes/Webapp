@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $allowedRecipients = [
                 $userEmail,
                 'desk@coffice.dz',
-                env('MAIL_FROM_ADDRESS', 'noreply@coffice.dz')
+                env('MAIL_FROM_ADDRESS', 'desk@coffice.dz')
             ];
             if (!in_array($data['to'], $allowedRecipients)) {
                 Response::forbidden('Envoi non autorisé vers cette adresse');
