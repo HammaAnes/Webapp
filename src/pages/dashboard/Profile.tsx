@@ -19,7 +19,29 @@ const IdCardUpload: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [preview, setPreview] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<"image" | "pdf" | null>(null);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const saveToProfile = useCallback(
+    async (cheminFichier: string) => {
+      setUploadProgress(90);
+      const updateRes = await apiClient.updateUser(user!.id, { carteIdentiteUrl: cheminFichier });
+      if (!updateRes.success) {
+        const errMsg = (updateRes as { error?: string }).error || "Enregistrement échoué.";
+        toast.error(`Document uploadé mais enregistrement échoué : ${errMsg}`);
+        setPendingPath(cheminFichier);
+        setUploadProgress(0);
+        return false;
+      }
+      setUploadProgress(100);
+      await loadUser();
+      toast.success("Carte d'identité enregistrée !");
+      setPendingPath(null);
+      onComplete();
+      return true;
+    },
+    [user, loadUser, onComplete]
+  );
 
   const processFile = useCallback(
     async (file: File) => {
@@ -46,6 +68,7 @@ const IdCardUpload: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
       }
       setUploading(true);
       setUploadProgress(0);
+      setPendingPath(null);
 
       const progressInterval = setInterval(() => {
         setUploadProgress((p) => Math.min(p + 12, 85));
@@ -56,17 +79,7 @@ const IdCardUpload: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
         clearInterval(progressInterval);
         const cheminFichier = (uploadRes.data as Record<string, string> | undefined)?.chemin_fichier;
         if (uploadRes.success && cheminFichier) {
-          setUploadProgress(90);
-          const updateRes = await apiClient.updateUser(user!.id, { carteIdentiteUrl: cheminFichier });
-          if (!updateRes.success) {
-            toast.error("Document uploadé mais enregistrement échoué. Réessayez.");
-            setUploadProgress(0);
-            return;
-          }
-          setUploadProgress(100);
-          await loadUser();
-          toast.success("Carte d'identité enregistrée !");
-          onComplete();
+          await saveToProfile(cheminFichier);
         } else {
           toast.error((uploadRes as { error?: string }).error || "Erreur lors de l'upload.");
           setPreview(null);
@@ -84,7 +97,7 @@ const IdCardUpload: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     },
-    [user, loadUser, onComplete]
+    [user, saveToProfile]
   );
 
   useEffect(() => {
@@ -179,6 +192,21 @@ const IdCardUpload: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
           </div>
         )}
       </div>
+
+      {pendingPath && !uploading && (
+        <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+          <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+          <p className="text-xs text-amber-700 flex-1">
+            Fichier uploadé mais non enregistré dans votre profil.
+          </p>
+          <button
+            onClick={() => saveToProfile(pendingPath)}
+            className="text-xs font-semibold text-amber-700 hover:text-amber-900 underline whitespace-nowrap"
+          >
+            Réessayer
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -189,6 +217,28 @@ const IdCardSection: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+
+  const saveToProfile = useCallback(
+    async (cheminFichier: string) => {
+      setUploadProgress(90);
+      const updateRes = await apiClient.updateUser(user!.id, { carteIdentiteUrl: cheminFichier });
+      if (!updateRes.success) {
+        const errMsg = (updateRes as { error?: string }).error || "Enregistrement échoué.";
+        toast.error(`Document uploadé mais enregistrement échoué : ${errMsg}`);
+        setPendingPath(cheminFichier);
+        setUploadProgress(0);
+        return false;
+      }
+      setUploadProgress(100);
+      await loadUser();
+      toast.success("Document remplacé !");
+      setPendingPath(null);
+      setReplacing(false);
+      return true;
+    },
+    [user, loadUser]
+  );
 
   const processReplace = useCallback(
     async (file: File) => {
@@ -202,6 +252,7 @@ const IdCardSection: React.FC = () => {
       }
       setUploading(true);
       setUploadProgress(0);
+      setPendingPath(null);
       const progressInterval = setInterval(() => {
         setUploadProgress((p) => Math.min(p + 12, 85));
       }, 180);
@@ -210,17 +261,7 @@ const IdCardSection: React.FC = () => {
         clearInterval(progressInterval);
         const cheminFichier = (uploadRes.data as Record<string, string> | undefined)?.chemin_fichier;
         if (uploadRes.success && cheminFichier) {
-          setUploadProgress(90);
-          const updateRes = await apiClient.updateUser(user!.id, { carteIdentiteUrl: cheminFichier });
-          if (!updateRes.success) {
-            toast.error("Document uploadé mais enregistrement échoué. Réessayez.");
-            setUploadProgress(0);
-            return;
-          }
-          setUploadProgress(100);
-          await loadUser();
-          toast.success("Document remplacé !");
-          setReplacing(false);
+          await saveToProfile(cheminFichier);
         } else {
           toast.error((uploadRes as { error?: string }).error || "Erreur lors de l'upload.");
           setUploadProgress(0);
@@ -234,7 +275,7 @@ const IdCardSection: React.FC = () => {
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     },
-    [user, loadUser]
+    [user, saveToProfile]
   );
 
   const handleReplace = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -302,6 +343,21 @@ const IdCardSection: React.FC = () => {
             </div>
           )}
         </div>
+
+        {pendingPath && !uploading && (
+          <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+            <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+            <p className="text-xs text-amber-700 flex-1">
+              Fichier uploadé mais non enregistré dans votre profil.
+            </p>
+            <button
+              onClick={() => saveToProfile(pendingPath)}
+              className="text-xs font-semibold text-amber-700 hover:text-amber-900 underline whitespace-nowrap"
+            >
+              Réessayer
+            </button>
+          </div>
+        )}
       </div>
     );
   }

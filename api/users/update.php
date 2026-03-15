@@ -173,13 +173,6 @@ try {
 } catch (Exception $e) {
     error_log("User update error: " . $e->getMessage());
     error_log("User update trace: " . $e->getTraceAsString());
-    error_log("APP_ENV value: " . ($_ENV['APP_ENV'] ?? 'not set'));
 
-    $isDev = ($_ENV['APP_ENV'] ?? 'production') === 'development';
-
-    if ($isDev) {
-        Response::error("Mise à jour utilisateur échouée: " . $e->getMessage(), 500);
-    } else {
-        Response::serverError("Erreur lors de la mise à jour");
-    }
+    Response::error("Erreur lors de la mise à jour: " . $e->getMessage(), 500);
 }
