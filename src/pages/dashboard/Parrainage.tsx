@@ -46,8 +46,11 @@ interface ParrainageStats {
   codeParrainage: string;
 }
 
+const PARRAINAGE_BONUS = 3000;
+
 const Parrainage = () => {
   const { user } = useAuthStore();
+  const userId = user?.id;
   const [copied, setCopied] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [stats, setStats] = useState<ParrainageStats>({
@@ -62,7 +65,8 @@ const Parrainage = () => {
 
   useEffect(() => {
     loadParrainageData();
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   const loadParrainageData = async () => {
     if (!user?.id) {
@@ -151,7 +155,7 @@ const Parrainage = () => {
     const code = getCode();
     if (!code) return;
     const url = `${window.location.origin}/inscription?parrain=${code}`;
-    const text = `Rejoins Coffice avec mon code ${code} et gagne 3000 DA de bonus !`;
+    const text = `Rejoins Coffice avec mon code ${code} et gagne ${PARRAINAGE_BONUS} DA de bonus !`;
 
     if (navigator.share) {
       navigator
@@ -174,7 +178,7 @@ const Parrainage = () => {
     const code = getCode();
     if (!code) return;
     const text = encodeURIComponent(
-      `Rejoins Coffice avec mon code ${code} et gagne 3000 DA de bonus ! ${window.location.origin}/inscription?parrain=${code}`
+      `Rejoins Coffice avec mon code ${code} et gagne ${PARRAINAGE_BONUS} DA de bonus ! ${window.location.origin}/inscription?parrain=${code}`
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
   };
@@ -535,7 +539,7 @@ const Parrainage = () => {
                   Votre ami s'inscrit
                 </h4>
                 <p className="text-sm text-gray-600">
-                  Il entre votre code lors de l'inscription et reçoit 3000 DA de bonus
+                  Il entre votre code lors de l'inscription et reçoit {PARRAINAGE_BONUS} DA de bonus
                 </p>
               </div>
             </div>
@@ -549,7 +553,7 @@ const Parrainage = () => {
                   Vous gagnez aussi
                 </h4>
                 <p className="text-sm text-gray-600">
-                  Recevez 3000 DA de crédit pour chaque ami parrainé
+                  Recevez {PARRAINAGE_BONUS} DA de crédit pour chaque ami parrainé
                 </p>
               </div>
             </div>

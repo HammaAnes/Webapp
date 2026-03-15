@@ -11,6 +11,7 @@ import type {
   EspaceType,
   TypeReservation,
 } from "../types";
+import { logger } from "../utils/logger";
 
 type ApiRecord = Record<string, unknown>;
 
@@ -68,7 +69,7 @@ function parseDateSafe(value: unknown, fallback: Date = new Date()): Date {
     return parseDate(value);
   } catch {
     if (value !== undefined && value !== null && value !== "") {
-      console.warn("[parseDateSafe] Could not parse date value:", value, "— using fallback");
+      logger.warn("[parseDateSafe] Could not parse date value, using fallback");
     }
     return fallback;
   }
@@ -147,7 +148,7 @@ export const abonnementAdapter = {
       avantages = avantagesRaw as string[];
     } else if (typeof avantagesRaw === "string" && avantagesRaw) {
       try { avantages = JSON.parse(avantagesRaw); } catch (e) {
-        console.warn("[abonnementAdapter] Invalid avantages JSON:", String(e));
+        logger.warn("[abonnementAdapter] Invalid avantages JSON");
         avantages = [];
       }
     }

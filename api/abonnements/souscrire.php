@@ -22,16 +22,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Response::notFound('Abonnement non trouvé ou inactif');
         }
 
-        $checkStmt = $db->prepare("
-            SELECT id FROM abonnements_utilisateurs
-            WHERE user_id = ? AND statut = 'actif'
-            LIMIT 1
-        ");
-        $checkStmt->execute([$userId]);
-        if ($checkStmt->fetch()) {
-            Response::error('Vous avez déjà un abonnement actif', 400);
-        }
-
         $commentaire = isset($data['commentaire']) ? trim($data['commentaire']) : null;
         $dateDebutSouhaitee = isset($data['date_debut_souhaitee']) ? $data['date_debut_souhaitee'] : null;
         $entreprise = isset($data['entreprise']) ? trim($data['entreprise']) : null;
@@ -40,16 +30,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $interval = '+' . $abonnement['duree_mois'] . ' months';
         $dateFin = date('Y-m-d', strtotime($interval, strtotime($dateDebut)));
 
+        $prixAbonnement = floatval($abonnement['prix'] ?? 0);
+
+        $db->beginTransaction();
+
+        $checkStmt = $db->prepare("
+            SELECT id FROM abonnements_utilisateurs
+            WHERE user_id = ? AND statut = 'actif'
+            LIMIT 1
+            FOR UPDATE
+        ");
+        $checkStmt->execute([$userId]);
+        if ($checkStmt->fetch()) {
+            $db->rollBack();
+            Response::error('Vous avez déjà un abonnement actif', 400);
+        }
+
         $id = UuidHelper::generate();
         $insertStmt = $db->prepare("
             INSERT INTO abonnements_utilisateurs
             (id, user_id, abonnement_id, date_debut, date_fin, statut, commentaire, date_debut_souhaitee, entreprise)
             VALUES (?, ?, ?, ?, ?, 'actif', ?, ?, ?)
         ");
-
-        $prixAbonnement = floatval($abonnement['prix'] ?? 0);
-
-        $db->beginTransaction();
 
         $insertStmt->execute([
             $id,

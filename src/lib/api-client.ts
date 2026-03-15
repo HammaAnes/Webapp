@@ -222,9 +222,15 @@ class ApiClient {
     const timeoutController = new AbortController();
     const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
     const existingSignal = options.signal as AbortSignal | undefined;
-    const mergedSignal = existingSignal
-      ? (AbortSignal as { any?: (signals: AbortSignal[]) => AbortSignal }).any?.([existingSignal, timeoutController.signal]) ?? timeoutController.signal
-      : timeoutController.signal;
+    let mergedSignal: AbortSignal;
+    if (existingSignal) {
+      const abortSignalAny = (AbortSignal as unknown as { any?: (signals: AbortSignal[]) => AbortSignal }).any;
+      mergedSignal = abortSignalAny
+        ? abortSignalAny([existingSignal, timeoutController.signal])
+        : timeoutController.signal;
+    } else {
+      mergedSignal = timeoutController.signal;
+    }
 
     try {
       const response = await fetch(url, {
@@ -276,7 +282,7 @@ class ApiClient {
           data = { success: false, error: ERROR_MESSAGES.SESSION_EXPIRED };
         } else if (response.status >= 500 && retryCount < MAX_RETRIES) {
           logger.debug(`Server error, retrying... (${retryCount + 1}/${MAX_RETRIES})`);
-          await new Promise((resolve) => setTimeout(resolve, 1000 * (retryCount + 1)));
+          await new Promise((resolve) => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
           return this.request<T>(endpoint, options, retryWithRefresh, retryCount + 1);
         } else {
           throw new Error(`Erreur serveur (${response.status}): Le serveur n'a pas renvoyé de réponse JSON valide`);
@@ -335,7 +341,7 @@ class ApiClient {
           `Network error, retrying... (${retryCount + 1}/${MAX_RETRIES})`,
         );
         await new Promise((resolve) =>
-          setTimeout(resolve, 1000 * (retryCount + 1)),
+          setTimeout(resolve, 1000 * Math.pow(2, retryCount)),
         );
         return this.request<T>(
           endpoint,
@@ -558,6 +564,10 @@ class ApiClient {
   // ============= DOMICILIATION =============
   async getDomiciliations() {
     return this.request("/domiciliations/index.php");
+  }
+
+  async getDomiciliationById(id: string) {
+    return this.request(`/domiciliations/index.php?id=${encodeURIComponent(id)}`);
   }
 
   async createDemandeDomiciliation(data: Record<string, unknown> & {

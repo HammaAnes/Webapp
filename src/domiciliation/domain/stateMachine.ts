@@ -3,7 +3,7 @@ import type { DomiciliationStatut } from './types';
 export const TRANSITIONS: Record<DomiciliationStatut, DomiciliationStatut[]> = {
   dossier_preparatoire: ['en_attente_complements', 'en_attente_signature', 'refusee'],
   en_attente_complements: ['en_attente_signature', 'refusee'],
-  en_attente_signature: ['domiciliation_creee', 'refusee'],
+  en_attente_signature: ['domiciliation_creee', 'en_attente_complements', 'refusee'],
   domiciliation_creee: ['active', 'en_attente_complements', 'refusee'],
   active: ['resiliee', 'expiree'],
   refusee: [],
@@ -91,11 +91,12 @@ export function getStepOrder(statut: DomiciliationStatut): number {
 }
 
 export function getProgressPercent(statut: DomiciliationStatut): number {
-  if (isTerminal(statut) && statut !== 'expiree') return 0;
+  if (statut === 'refusee' || statut === 'resiliee') return 0;
+  if (statut === 'expiree') return 100;
   if (statut === 'en_attente_complements') return 15;
   const order = getStepOrder(statut);
   if (order < 0) return 0;
-  const nonTerminalSteps = WORKFLOW_STEPS.length - 1;
+  const nonTerminalSteps = WORKFLOW_STEPS.filter(s => s.key !== 'expiree').length;
   return Math.round(((order + 1) / nonTerminalSteps) * 100);
 }
 

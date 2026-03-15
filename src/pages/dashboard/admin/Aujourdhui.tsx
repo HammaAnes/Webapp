@@ -35,6 +35,7 @@ import { useAvailabilityStore } from '../../../store/availabilityStore';
 import { type DayAvailability } from '../../../services/availability.service';
 import { apiClient } from '../../../lib/api-client';
 import toast from 'react-hot-toast';
+import { logger } from '../../../utils/logger';
 import type { Reservation } from '../../../types';
 
 const AUTO_REFRESH_INTERVAL = 120000;
@@ -76,7 +77,7 @@ export default function Aujourdhui() {
         await Promise.all([initializeData(), loadUsers()]);
         setLastRefresh(new Date());
       } catch (error) {
-        console.warn("[Aujourdhui] Auto-refresh failed:", error instanceof Error ? error.message : String(error));
+        logger.warn("[Aujourdhui] Auto-refresh failed");
       }
     }, AUTO_REFRESH_INTERVAL);
 

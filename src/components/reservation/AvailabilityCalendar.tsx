@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Loader2, Users, RefreshCw, WifiOff } from "lucide-react";
 import {
   format,
@@ -44,9 +44,13 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
   const [rangeStartLocal, setRangeStartLocal] = useState<Date | null>(null);
   const prevEspaceId = useRef(espaceId);
 
-  if (prevEspaceId.current !== espaceId) {
-    prevEspaceId.current = espaceId;
-  }
+  useEffect(() => {
+    if (prevEspaceId.current !== espaceId) {
+      prevEspaceId.current = espaceId;
+      setRangeStartLocal(null);
+      setCurrentMonth(startOfMonth(new Date()));
+    }
+  }, [espaceId]);
 
   const { dayAvailabilities, isLoading, hasError, isStale, refresh } = useAvailability({
     espaceId,
@@ -80,16 +84,16 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
       if (dayInfo.status === "full" && !isOpenSpace) return;
 
       if (selectionMode === "range") {
-        if (!rangeStartLocal || (rangeStartLocal && rangeEnd)) {
+        if (!rangeStartLocal) {
           setRangeStartLocal(dayInfo.date);
           onDateSelect(dayInfo.date);
         } else {
-          const start = isBefore(dayInfo.date, rangeStartLocal) ? dayInfo.date : rangeStartLocal;
-          const end = isAfter(dayInfo.date, rangeStartLocal) ? dayInfo.date : rangeStartLocal;
-          if (isSameDay(start, end)) {
-            onDateSelect(dayInfo.date);
+          if (isSameDay(dayInfo.date, rangeStartLocal)) {
+            setRangeStartLocal(null);
             return;
           }
+          const start = isBefore(dayInfo.date, rangeStartLocal) ? dayInfo.date : rangeStartLocal;
+          const end = isBefore(dayInfo.date, rangeStartLocal) ? rangeStartLocal : dayInfo.date;
           setRangeStartLocal(null);
           if (onRangeSelect) onRangeSelect(start, end);
         }
@@ -97,7 +101,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
         onDateSelect(dayInfo.date);
       }
     },
-    [currentMonth, isOpenSpace, selectionMode, rangeStartLocal, rangeEnd, onDateSelect, onRangeSelect],
+    [currentMonth, isOpenSpace, selectionMode, rangeStartLocal, onDateSelect, onRangeSelect],
   );
 
   const isInRange = (date: Date): boolean => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useCallback, useId } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -22,12 +22,18 @@ const Modal: React.FC<ModalProps> = ({
   noPadding = false,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<Element | null>(null);
+  const titleId = useId();
 
   useEffect(() => {
     if (isOpen) {
+      triggerRef.current = document.activeElement;
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
+      if (triggerRef.current && (triggerRef.current as HTMLElement).focus) {
+        (triggerRef.current as HTMLElement).focus();
+      }
     }
     return () => {
       document.body.style.overflow = "unset";
@@ -96,7 +102,12 @@ const Modal: React.FC<ModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={title ? titleId : undefined}
+        >
           <div className="flex items-center justify-center min-h-screen px-4 py-6">
             <motion.div
               initial={{ opacity: 0 }}
@@ -118,7 +129,7 @@ const Modal: React.FC<ModalProps> = ({
               {title && (
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+                    <h3 id={titleId} className="text-lg font-semibold text-gray-900">{title}</h3>
                     {subtitle && (
                       <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>
                     )}

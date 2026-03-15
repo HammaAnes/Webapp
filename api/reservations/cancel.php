@@ -44,26 +44,26 @@ try {
         Response::error("Impossible d'annuler une reservation terminee", 400);
     }
 
+    $db->beginTransaction();
+
     $stmt = $db->prepare("UPDATE reservations SET statut = 'annulee' WHERE id = ?");
     $result = $stmt->execute([$id]);
 
     if (!$result) {
+        $db->rollBack();
         Response::error("Erreur lors de l'annulation", 500);
     }
 
-    // Bug 9 — Release promo code when reservation is cancelled
     if (!empty($reservation['code_promo_id'])) {
-        try {
-            $stmtPromo = $db->prepare("
-                UPDATE codes_promo
-                SET utilisations_actuelles = GREATEST(utilisations_actuelles - 1, 0)
-                WHERE id = ?
-            ");
-            $stmtPromo->execute([$reservation['code_promo_id']]);
-        } catch (Exception $promoErr) {
-            error_log("Promo release error on cancel: " . $promoErr->getMessage());
-        }
+        $stmtPromo = $db->prepare("
+            UPDATE codes_promo
+            SET utilisations_actuelles = GREATEST(utilisations_actuelles - 1, 0)
+            WHERE id = ?
+        ");
+        $stmtPromo->execute([$reservation['code_promo_id']]);
     }
+
+    $db->commit();
 
     $stmt = $db->prepare("
         SELECT r.*, e.nom as espace_nom, e.type as espace_type
@@ -88,6 +88,9 @@ try {
     Response::success($updated, "Reservation annulee");
 
 } catch (Exception $e) {
+    if (isset($db) && $db->inTransaction()) {
+        $db->rollBack();
+    }
     error_log("Erreur reservation cancel: " . $e->getMessage());
     Response::error("Erreur serveur", 500);
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   DollarSign,
@@ -19,6 +19,8 @@ import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner";
 import Badge from "../../../components/ui/Badge";
+import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
+import { useConfirm } from "../../../hooks/useConfirm";
 import { logger } from "../../../utils/logger";
 
 interface Transaction {
@@ -110,6 +112,7 @@ export default function Caisse() {
   const [clotures, setClotures] = useState<Cloture[]>([]);
   const [showClotures, setShowClotures] = useState(false);
   const [loadingClotures, setLoadingClotures] = useState(false);
+  const { confirm, isOpen: confirmOpen, options: confirmOptions, handleConfirm, handleCancel } = useConfirm();
 
   useEffect(() => {
     loadTransactions();
@@ -161,10 +164,15 @@ export default function Caisse() {
     setShowClotures(!showClotures);
   };
 
-  const handleCloture = async () => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir clôturer la caisse pour le ${new Date(selectedDate + "T00:00:00").toLocaleDateString("fr-FR")} ?`)) {
-      return;
-    }
+  const handleCloture = useCallback(async () => {
+    const dateLabel = new Date(selectedDate + "T00:00:00").toLocaleDateString("fr-FR");
+    const ok = await confirm({
+      title: "Clôturer la caisse",
+      message: `Êtes-vous sûr de vouloir clôturer la caisse pour le ${dateLabel} ?`,
+      confirmLabel: "Clôturer",
+      variant: "warning",
+    });
+    if (!ok) return;
 
     try {
       const response = await apiClient.cloturerCaisse(selectedDate, clotureNotes);
@@ -181,7 +189,7 @@ export default function Caisse() {
       logger.error("Erreur clôture caisse:", error as Error);
       toast.error("Erreur lors de la cloture");
     }
-  };
+  }, [confirm, selectedDate, clotureNotes, showClotures]);
 
   const handleCreateTransaction = async () => {
     const montant = parseFloat(paymentForm.montant);
@@ -618,6 +626,17 @@ export default function Caisse() {
           </motion.div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={handleCancel}
+        onConfirm={handleConfirm}
+        title={confirmOptions.title}
+        message={confirmOptions.message}
+        confirmLabel={confirmOptions.confirmLabel}
+        cancelLabel={confirmOptions.cancelLabel}
+        variant={confirmOptions.variant}
+      />
     </div>
   );
 }

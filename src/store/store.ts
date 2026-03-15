@@ -44,7 +44,7 @@ interface AppState {
   loading: boolean;
   initError: string | null;
 
-  initializeData: () => Promise<void>;
+  initializeData: (force?: boolean) => Promise<void>;
 
   loadAbonnements: () => Promise<void>;
   loadAbonnementsUtilisateurs: () => Promise<void>;
@@ -127,9 +127,9 @@ export const useAppStore = create<AppState>()(
       loading: false,
       initError: null,
 
-      initializeData: async () => {
+      initializeData: async (force = false) => {
         const state = get();
-        if (state.loading || state.initialized) return;
+        if (!force && (state.loading || state.initialized)) return;
         set({ loading: true, initError: null });
 
         try {
@@ -465,15 +465,13 @@ export const useAppStore = create<AppState>()(
           if (response.success) {
             const responseData = response.data as Record<string, unknown> | undefined;
             const createdId = String(responseData?.id || responseData?.domiciliation_id || "");
-            await get().loadDemandesDomiciliation();
             if (!createdId) {
-              const userDemandes = get().demandesDomiciliation.filter(d => d.userId === (data as unknown as Record<string, unknown>).userId);
-              const latest = [...userDemandes].sort((a, b) => new Date(b.dateCreation || 0).getTime() - new Date(a.dateCreation || 0).getTime())[0];
-              return { success: true, id: latest?.id || "" };
+              return { success: false, error: "L'identifiant de la domiciliation créée est manquant dans la réponse" };
             }
+            await get().loadDemandesDomiciliation();
             return { success: true, id: createdId };
           }
-          return { success: false, error: response.error || "Erreur cr\u00e9ation" };
+          return { success: false, error: response.error || "Erreur création" };
         } catch (error) {
           return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }

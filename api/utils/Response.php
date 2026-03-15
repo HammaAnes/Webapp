@@ -89,6 +89,30 @@ class Response
     }
 
     /**
+     * Méthode non autorisée (405)
+     */
+    public static function methodNotAllowed($message = "Méthode non autorisée")
+    {
+        self::error($message, 405);
+    }
+
+    /**
+     * Mauvaise requête (400)
+     */
+    public static function badRequest($message = "Requête invalide", $details = null)
+    {
+        self::error($message, 400, $details);
+    }
+
+    /**
+     * Trop de requêtes (429)
+     */
+    public static function tooManyRequests($message = "Trop de requêtes, réessayez plus tard")
+    {
+        self::error($message, 429);
+    }
+
+    /**
      * Récupérer et parser le JSON du body de la requête
      * @return object|null
      */

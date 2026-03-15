@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Settings as SettingsIcon,
@@ -26,6 +26,8 @@ import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import Badge from "../../../components/ui/Badge";
 import Modal from "../../../components/ui/Modal";
+import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
+import { useConfirm } from "../../../hooks/useConfirm";
 import toast from "react-hot-toast";
 import { logger } from "../../../utils/logger";
 import { apiClient } from "../../../lib/api-client";
@@ -103,6 +105,7 @@ type SettingsTab = "general" | "notifications" | "mailing" | "comptes" | "mainte
 const Settings = () => {
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [loading, setLoading] = useState(false);
+  const { confirm, isOpen: confirmOpen, options: confirmOptions, handleConfirm, handleCancel } = useConfirm();
   const [settings, setSettings] = useState<AllSettings>(defaultSettings);
   const [apiStatus, setApiStatus] = useState<"connected" | "disconnected" | "checking">("checking");
 
@@ -172,10 +175,14 @@ const Settings = () => {
   const handleSaveMailing = () =>
     saveSection('mailing', settings.mailing as unknown as Record<string, unknown>, "Paramètres mailing enregistrés");
 
-  const handleClearCache = () => {
-    if (!window.confirm("Êtes-vous sûr de vouloir effacer le cache ? Vous allez être déconnecté.")) {
-      return;
-    }
+  const handleClearCache = useCallback(async () => {
+    const ok = await confirm({
+      title: "Effacer le cache",
+      message: "Êtes-vous sûr de vouloir effacer le cache ? Vous allez être déconnecté.",
+      confirmLabel: "Effacer",
+      variant: "warning",
+    });
+    if (!ok) return;
 
     try {
       localStorage.removeItem("coffice-app-storage");
@@ -185,7 +192,7 @@ const Settings = () => {
       logger.error("Erreur suppression cache:", error as Error);
       toast.error("Erreur lors de la suppression du cache");
     }
-  };
+  }, [confirm]);
 
   const updateGeneral = (field: keyof GeneralSettings, value: string) => {
     setSettings((prev) => ({
@@ -883,6 +890,17 @@ const Settings = () => {
           </div>
         )}
       </Modal>
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={handleCancel}
+        onConfirm={handleConfirm}
+        title={confirmOptions.title}
+        message={confirmOptions.message}
+        confirmLabel={confirmOptions.confirmLabel}
+        cancelLabel={confirmOptions.cancelLabel}
+        variant={confirmOptions.variant}
+      />
     </div>
   );
 };

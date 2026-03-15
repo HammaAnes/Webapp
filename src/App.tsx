@@ -10,6 +10,7 @@ import { useScrollAnimation } from "./hooks/useScrollAnimation";
 import { useAuthStore } from "./store/authStore";
 import { useAppStore } from "./store/store";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { logger } from "./utils/logger";
 
 const Home = lazy(() => import("./pages/Home"));
 const SpacesAndPricing = lazy(() => import("./pages/SpacesAndPricing"));
@@ -43,7 +44,7 @@ function App() {
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         if (msg && !msg.includes("initialize") && !msg.includes("initializeData")) {
-          console.error("[App] Initialization error:", msg);
+          logger.error("[App] Initialization error:", msg);
         }
       }
     };

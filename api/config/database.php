@@ -102,10 +102,12 @@ class Database
         } catch (PDOException $e) {
             error_log("DB Connection Error: " . $e->getMessage());
             http_response_code(500);
-            die(json_encode([
+            header('Content-Type: application/json');
+            echo json_encode([
                 'success' => false,
-                'message' => 'Erreur de connexion à la base de données'
-            ]));
+                'error' => 'Erreur de connexion à la base de données'
+            ], JSON_UNESCAPED_UNICODE);
+            exit();
         }
 
         return $this->conn;

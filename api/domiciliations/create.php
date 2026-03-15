@@ -101,32 +101,38 @@ try {
         $target_user_id = $auth['id'];
     }
 
+    $db->beginTransaction();
+
     if (!$is_admin_creation) {
         $query = "SELECT id FROM domiciliations
                   WHERE user_id = :user_id
-                  AND statut IN ('dossier_preparatoire', 'en_attente_signature', 'domiciliation_creee', 'en_attente_complements', 'active')";
+                  AND statut IN ('dossier_preparatoire', 'en_attente_signature', 'domiciliation_creee', 'en_attente_complements', 'active')
+                  FOR UPDATE";
 
         $stmt = $db->prepare($query);
         $stmt->bindParam(':user_id', $target_user_id);
         $stmt->execute();
 
         if ($stmt->rowCount() > 0) {
+            $db->rollBack();
             Response::error("Vous avez déjà une demande de domiciliation en cours ou active", 400);
         }
     }
 
     if (!empty($data->nif)) {
-        $stmt = $db->prepare("SELECT id FROM domiciliations WHERE nif = :nif AND statut NOT IN ('refusee','resiliee','expiree') LIMIT 1");
+        $stmt = $db->prepare("SELECT id FROM domiciliations WHERE nif = :nif AND statut NOT IN ('refusee','resiliee','expiree') LIMIT 1 FOR UPDATE");
         $stmt->execute([':nif' => $data->nif]);
         if ($stmt->fetch()) {
+            $db->rollBack();
             Response::error("Une domiciliation existe déjà avec ce NIF (" . $data->nif . ")", 409);
         }
     }
 
     if (!empty($data->registre_commerce)) {
-        $stmt = $db->prepare("SELECT id FROM domiciliations WHERE registre_commerce = :rc AND statut NOT IN ('refusee','resiliee','expiree') LIMIT 1");
+        $stmt = $db->prepare("SELECT id FROM domiciliations WHERE registre_commerce = :rc AND statut NOT IN ('refusee','resiliee','expiree') LIMIT 1 FOR UPDATE");
         $stmt->execute([':rc' => $data->registre_commerce]);
         if ($stmt->fetch()) {
+            $db->rollBack();
             Response::error("Une domiciliation existe déjà avec ce registre de commerce (" . $data->registre_commerce . ")", 409);
         }
     }
@@ -250,6 +256,8 @@ try {
         ]);
     }
 
+    $db->commit();
+
     try {
         $userStmt = $db->prepare("SELECT prenom, nom, email FROM users WHERE id = ?");
         $userStmt->execute([$target_user_id]);
@@ -276,6 +284,9 @@ try {
     Response::success(['id' => $id], "Demande de domiciliation créée avec succès", 201);
 
 } catch (Exception $e) {
+    if (isset($db) && $db->inTransaction()) {
+        $db->rollBack();
+    }
     error_log("Create domiciliation error: " . $e->getMessage());
     Response::serverError();
 }

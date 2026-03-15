@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -6,6 +6,8 @@ import { Building, Plus, FileEdit as Edit, Trash2, Search, Users, Banknote, Chec
 import { useAppStore } from "../../../store/store";
 import { Input, Select, Textarea, Checkbox, Button, Card, Modal } from "../../../components/ui";
 import SelectNative from "../../../components/ui/SelectNative";
+import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
+import { useConfirm } from "../../../hooks/useConfirm";
 import toast from "react-hot-toast";
 import {
   ESPACE_TYPE_OPTIONS,
@@ -49,6 +51,7 @@ const Spaces = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [loading, setLoading] = useState(false);
   const [equipements, setEquipements] = useState<string[]>([]);
+  const { confirm, isOpen: confirmOpen, options: confirmOptions, handleConfirm, handleCancel } = useConfirm();
 
   const {
     register,
@@ -157,9 +160,14 @@ const Spaces = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet espace?"))
-      return;
+  const handleDelete = useCallback(async (id: string) => {
+    const ok = await confirm({
+      title: "Supprimer l'espace",
+      message: "Êtes-vous sûr de vouloir supprimer cet espace ? Cette action est irréversible.",
+      confirmLabel: "Supprimer",
+      variant: "danger",
+    });
+    if (!ok) return;
 
     try {
       const result = await deleteEspace(id);
@@ -171,7 +179,7 @@ const Spaces = () => {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erreur lors de la suppression");
     }
-  };
+  }, [confirm, deleteEspace]);
 
   const toggleEquipement = (equipId: string) => {
     setEquipements((prev) =>
@@ -588,6 +596,17 @@ const Spaces = () => {
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={handleCancel}
+        onConfirm={handleConfirm}
+        title={confirmOptions.title}
+        message={confirmOptions.message}
+        confirmLabel={confirmOptions.confirmLabel}
+        cancelLabel={confirmOptions.cancelLabel}
+        variant={confirmOptions.variant}
+      />
     </div>
   );
 };

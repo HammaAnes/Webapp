@@ -30,6 +30,7 @@ import { apiClient } from "../lib/api-client";
 import { IMAGES } from "../config/images";
 import { useAppStore } from "../store/store";
 import { formatCurrency } from "../utils/formatters";
+import { logger } from "../utils/logger";
 
 interface PublicDomiciliationStats {
   activeCount: number;
@@ -82,7 +83,7 @@ const DomiciliationPublic = () => {
         });
       }
     } catch (error) {
-      console.warn("[Domiciliation] Failed to load public stats:", error instanceof Error ? error.message : String(error));
+      logger.warn("[Domiciliation] Failed to load public stats");
       setLoadError(true);
     } finally {
       setLoading(false);

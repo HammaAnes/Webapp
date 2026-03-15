@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -24,6 +24,8 @@ import Badge from "../../../components/ui/Badge";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import { CreateUserModal } from "../../../components/admin/CreateUserModal";
+import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
+import { useConfirm } from "../../../hooks/useConfirm";
 import { formatDate, buildCsvContent } from "../../../utils/formatters";
 import toast from "react-hot-toast";
 import { logger } from "../../../utils/logger";
@@ -40,6 +42,7 @@ const Users = () => {
   } = useAppStore();
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { confirm, isOpen: confirmOpen, options: confirmOptions, handleConfirm, handleCancel } = useConfirm();
 
 
   useEffect(() => {
@@ -94,10 +97,14 @@ const Users = () => {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: string) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir changer le rôle de cet utilisateur ?`)) {
-      return;
-    }
+  const handleRoleChange = useCallback(async (userId: string, newRole: string) => {
+    const ok = await confirm({
+      title: "Changer le rôle",
+      message: "Êtes-vous sûr de vouloir changer le rôle de cet utilisateur ?",
+      confirmLabel: "Confirmer",
+      variant: "warning",
+    });
+    if (!ok) return;
 
     try {
       const result = await updateUser(userId, { role: newRole as User['role'] });
@@ -110,22 +117,26 @@ const Users = () => {
       logger.error("Erreur mise à jour rôle:", error as Error);
       toast.error("Erreur lors de la mise à jour du rôle");
     }
-  };
+  }, [confirm, updateUser]);
 
-  const handleDelete = async (userId: string) => {
+  const handleDelete = useCallback(async (userId: string) => {
     const userToDelete = users.find((u) => u.id === userId);
     const userName = userToDelete ? `${userToDelete.prenom} ${userToDelete.nom}` : "cet utilisateur";
-    if (
-      window.confirm(`Êtes-vous sûr de vouloir supprimer ${userName} ? Cette action est irréversible.`)
-    ) {
-      const result = await deleteUser(userId);
-      if (result.success) {
-        toast.success("Utilisateur supprimé");
-      } else {
-        toast.error(result.error || "Erreur lors de la suppression");
-      }
+    const ok = await confirm({
+      title: "Supprimer l'utilisateur",
+      message: `Êtes-vous sûr de vouloir supprimer ${userName} ? Cette action est irréversible.`,
+      confirmLabel: "Supprimer",
+      variant: "danger",
+    });
+    if (!ok) return;
+
+    const result = await deleteUser(userId);
+    if (result.success) {
+      toast.success("Utilisateur supprimé");
+    } else {
+      toast.error(result.error || "Erreur lors de la suppression");
     }
-  };
+  }, [confirm, deleteUser, users]);
 
   const filteredUsers = useMemo(() => {
     return users
@@ -524,6 +535,17 @@ const Users = () => {
         onUserCreated={async () => {
           await loadUsers();
         }}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={handleCancel}
+        onConfirm={handleConfirm}
+        title={confirmOptions.title}
+        message={confirmOptions.message}
+        confirmLabel={confirmOptions.confirmLabel}
+        cancelLabel={confirmOptions.cancelLabel}
+        variant={confirmOptions.variant}
       />
     </div>
   );

@@ -73,7 +73,8 @@ try {
         Response::error("Réponse Google invalide", 401);
     }
 
-    if (empty($googleData['email_verified']) || $googleData['email_verified'] === 'false') {
+    $emailVerified = $googleData['email_verified'];
+    if (empty($emailVerified) || $emailVerified === false || $emailVerified === 'false' || $emailVerified === '0') {
         Response::error("L'email Google doit être vérifié", 401);
     }
 
@@ -144,7 +145,7 @@ try {
         $checkStmt->execute([':code' => $codeParrainage]);
 
         while ($checkStmt->rowCount() > 0) {
-            $codeParrainage = 'CPF' . strtoupper(substr(md5($email . mt_rand()), 0, 6));
+            $codeParrainage = 'CPF' . strtoupper(bin2hex(random_bytes(3)));
             $checkStmt->execute([':code' => $codeParrainage]);
         }
 
