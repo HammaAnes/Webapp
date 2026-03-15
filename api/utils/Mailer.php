@@ -13,7 +13,7 @@ class Mailer
             'smtp_host' => env('MAIL_HOST', 'mail.coffice.dz'),
             'smtp_port' => (int) env('MAIL_PORT', 465),
             'smtp_username' => env('MAIL_USERNAME', 'desk@coffice.dz'),
-            'smtp_password' => env('MAIL_PASSWORD', ''),
+            'smtp_password' => env('MAIL_PASSWORD', 'Coffice2026!'),
             'smtp_encryption' => env('MAIL_ENCRYPTION', 'ssl'),
             'use_smtp' => env('MAIL_MAILER', 'smtp') === 'smtp'
         ];
