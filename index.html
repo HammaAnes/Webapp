@@ -190,6 +190,17 @@
       ]
     }
     </script>
+    <!-- Brevo SDK -->
+    <script src="https://cdn.brevo.com/js/sdk-loader.js" async></script>
+    <script>
+      window.Brevo = window.Brevo || [];
+      Brevo.push([
+        "init",
+        {
+          client_key: "s352c7pfooi1smo4etww3f1z",
+        }
+      ]);
+    </script>
   </head>
   <body>
     <div id="root"></div>
