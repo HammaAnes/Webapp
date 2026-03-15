@@ -14,7 +14,7 @@ class ReservationService {
 
       if (response.success && response.data) {
         const reservations = Array.isArray(response.data)
-          ? response.data.map(reservationAdapter)
+          ? response.data.map((r: Record<string, unknown>) => reservationAdapter.fromAPI(r))
           : [];
         store.setReservations(reservations);
       } else {
@@ -38,7 +38,7 @@ class ReservationService {
       const response = await apiClient.createReservation(data);
 
       if (response.success && response.data) {
-        const reservation = reservationAdapter(response.data);
+        const reservation = reservationAdapter.fromAPI(response.data as Record<string, unknown>);
         store.addReservation(reservation);
         return reservation;
       } else {
@@ -62,7 +62,7 @@ class ReservationService {
       const response = await apiClient.updateReservation(id, data);
 
       if (response.success && response.data) {
-        const reservation = reservationAdapter(response.data);
+        const reservation = reservationAdapter.fromAPI(response.data as Record<string, unknown>);
         store.updateReservation(id, reservation);
         return reservation;
       } else {

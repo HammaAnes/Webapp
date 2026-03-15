@@ -14,7 +14,7 @@ class AbonnementService {
 
       if (response.success && response.data) {
         const abonnements = Array.isArray(response.data)
-          ? response.data.map(abonnementAdapter)
+          ? response.data.map((a: Record<string, unknown>) => abonnementAdapter.fromAPI(a))
           : [];
         store.setAbonnements(abonnements);
       } else {
@@ -38,7 +38,7 @@ class AbonnementService {
       const response = await apiClient.createAbonnement(data);
 
       if (response.success && response.data) {
-        const abonnement = abonnementAdapter(response.data);
+        const abonnement = abonnementAdapter.fromAPI(response.data as Record<string, unknown>);
         store.addAbonnement(abonnement);
         return abonnement;
       } else {
@@ -62,7 +62,7 @@ class AbonnementService {
       const response = await apiClient.updateAbonnement(id, data);
 
       if (response.success && response.data) {
-        const abonnement = abonnementAdapter(response.data);
+        const abonnement = abonnementAdapter.fromAPI(response.data as Record<string, unknown>);
         store.updateAbonnement(id, abonnement);
         return abonnement;
       } else {

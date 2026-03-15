@@ -14,7 +14,7 @@ class EspaceService {
 
       if (response.success && response.data) {
         const espaces = Array.isArray(response.data)
-          ? response.data.map(espaceAdapter)
+          ? response.data.map((e: Record<string, unknown>) => espaceAdapter.fromAPI(e))
           : [];
         store.setEspaces(espaces);
       } else {
@@ -38,7 +38,7 @@ class EspaceService {
       const response = await apiClient.createEspace(data);
 
       if (response.success && response.data) {
-        const espace = espaceAdapter(response.data);
+        const espace = espaceAdapter.fromAPI(response.data as Record<string, unknown>);
         store.addEspace(espace);
         return espace;
       } else {
@@ -62,7 +62,7 @@ class EspaceService {
       const response = await apiClient.updateEspace(id, data);
 
       if (response.success && response.data) {
-        const espace = espaceAdapter(response.data);
+        const espace = espaceAdapter.fromAPI(response.data as Record<string, unknown>);
         store.updateEspace(id, espace);
         return espace;
       } else {
