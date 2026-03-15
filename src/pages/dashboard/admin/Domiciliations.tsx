@@ -7,81 +7,36 @@ import {
   Search,
   Download,
   Eye,
-  CheckCircle,
-  XCircle,
   Clock,
   User,
-  FileText,
-  AlertCircle,
   Banknote,
-  Ban,
-  PlayCircle,
-  Scale,
-  RefreshCw,
-  ChevronLeft,
-  ChevronRight,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
   Loader2,
   Plus,
   AlertTriangle,
+  RefreshCw,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
-import Badge from "../../../components/ui/Badge";
 import Input from "../../../components/ui/Input";
 import AdminCreateDomiciliationModal from "../../../components/admin/AdminCreateDomiciliationModal";
+import StatutBadge from "../../../features/domiciliation/components/StatutBadge";
 import { useAppStore } from "../../../store/store";
 import { formatDate, formatCurrency } from "../../../utils/formatters";
+import { getDisplayName, getSituationLabel, exportDomiciliationsCSV } from "../../../features/domiciliation/utils";
+import { STATUS_FILTERS, STATUT_CONFIG } from "../../../features/domiciliation/constants";
 import toast from "react-hot-toast";
-import type { DemandeDomiciliation } from "../../../types";
-import { DOMICILIATION_STATUT_LABELS } from "../../../constants";
+import type { DemandeDomiciliation } from "../../../features/domiciliation/types";
 
 const PAGE_SIZE = 15;
-
 type SortKey = "entreprise" | "bureau" | "statut" | "date";
 type SortDir = "asc" | "desc";
 
-const STATUS_BADGES: Record<string, { variant: "warning" | "success" | "danger" | "default" | "info" | "teal"; icon: React.ReactNode; label: string }> = {
-  dossier_preparatoire: { variant: "warning", icon: <Clock className="w-3 h-3 mr-1" />, label: "Dossier préparatoire" },
-  en_attente_signature: { variant: "info", icon: <Scale className="w-3 h-3 mr-1" />, label: "Attente signature" },
-  domiciliation_creee: { variant: "teal", icon: <CheckCircle className="w-3 h-3 mr-1" />, label: "Domiciliation créée" },
-  en_attente_complements: { variant: "warning", icon: <FileText className="w-3 h-3 mr-1" />, label: "Attente compléments" },
-  active: { variant: "success", icon: <PlayCircle className="w-3 h-3 mr-1" />, label: "Active" },
-  refusee: { variant: "danger", icon: <XCircle className="w-3 h-3 mr-1" />, label: "Refusée" },
-  expiree: { variant: "default", icon: <AlertCircle className="w-3 h-3 mr-1" />, label: "Expirée" },
-  resiliee: { variant: "danger", icon: <Ban className="w-3 h-3 mr-1" />, label: "Résiliée" },
-};
-
-const STATUS_FILTERS = [
-  { key: "tous", label: "Tous" },
-  { key: "dossier_preparatoire", label: "Préparatoires" },
-  { key: "en_attente_signature", label: "Att. signature" },
-  { key: "domiciliation_creee", label: "Créées" },
-  { key: "en_attente_complements", label: "Att. compléments" },
-  { key: "active", label: "Actives" },
-  { key: "refusee", label: "Refusées" },
-  { key: "resiliee", label: "Résiliées" },
-  { key: "expiree", label: "Expirées" },
-];
-
-function getDisplayName(d: DemandeDomiciliation) {
-  return d.raisonSociale || (d.typeStructure === "auto_entrepreneur"
-    ? `${d.representantLegal?.prenom || ""} ${d.representantLegal?.nom || ""}`.trim() || "Non renseigné"
-    : "Non renseigné"
-  );
-}
-
-function getSituationLabel(s: string) {
-  return s === "en_cours_creation" ? "En cours de création" : "Déjà créée";
-}
-
-function getTypeLabel(t: string) {
-  return t === "auto_entrepreneur" ? "Auto-entrepreneur" : "Société";
-}
-
-const AdminDomiciliations = () => {
+export default function AdminDomiciliations() {
   const navigate = useNavigate();
   const { demandesDomiciliation, loadDemandesDomiciliation } = useAppStore();
   const [searchTerm, setSearchTerm] = useState("");
@@ -92,16 +47,27 @@ const AdminDomiciliations = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => { loadDemandesDomiciliation(); }, []);
+  useEffect(() => {
+    loadDemandesDomiciliation();
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter]);
 
   const filtered = useMemo(() => {
     const q = searchTerm.toLowerCase();
     return demandesDomiciliation.filter((d) => {
-      const matchSearch = !q || [
-        d.raisonSociale, d.nif, d.representantLegal?.nom,
-        d.representantLegal?.prenom, d.representantLegal?.email,
-        d.numeroBureau?.toString(),
-      ].some((v) => (v || "").toLowerCase().includes(q));
+      const matchSearch =
+        !q ||
+        [
+          d.raisonSociale,
+          d.nif,
+          d.representantLegal?.nom,
+          d.representantLegal?.prenom,
+          d.representantLegal?.email,
+          d.numeroBureau?.toString(),
+        ].some((v) => (v || "").toLowerCase().includes(q));
       const matchStatus = statusFilter === "tous" || d.statut === statusFilter;
       return matchSearch && matchStatus;
     });
@@ -122,7 +88,9 @@ const AdminDomiciliations = () => {
           cmp = (a.statut || "").localeCompare(b.statut || "");
           break;
         case "date":
-          cmp = new Date(a.dateCreation as string).getTime() - new Date(b.dateCreation as string).getTime();
+          cmp =
+            new Date(a.dateCreation as string).getTime() -
+            new Date(b.dateCreation as string).getTime();
           break;
       }
       return sortDir === "desc" ? -cmp : cmp;
@@ -133,31 +101,31 @@ const AdminDomiciliations = () => {
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  useEffect(() => { setPage(1); }, [searchTerm, statusFilter]);
-
-  const stats = useMemo(() => ({
-    preparatoires: demandesDomiciliation.filter((d) => d.statut === "dossier_preparatoire").length,
-    enAttenteSignature: demandesDomiciliation.filter((d) => d.statut === "en_attente_signature").length,
-    creees: demandesDomiciliation.filter((d) => d.statut === "domiciliation_creee").length,
-    enAttenteComplements: demandesDomiciliation.filter((d) => d.statut === "en_attente_complements").length,
-    actives: demandesDomiciliation.filter((d) => d.statut === "active").length,
-    refusees: demandesDomiciliation.filter((d) => d.statut === "refusee").length,
-    expirees: demandesDomiciliation.filter((d) => d.statut === "expiree").length,
-    resiliees: demandesDomiciliation.filter((d) => d.statut === "resiliee").length,
-    revenuMensuel: demandesDomiciliation
-      .filter((d) => d.statut === "active")
-      .reduce((sum, d) => sum + (d.montantMensuel || 0), 0),
-  }), [demandesDomiciliation]);
+  const stats = useMemo(
+    () => ({
+      preparatoires: demandesDomiciliation.filter((d) => d.statut === "dossier_preparatoire").length,
+      enAttenteSignature: demandesDomiciliation.filter((d) => d.statut === "en_attente_signature").length,
+      actives: demandesDomiciliation.filter((d) => d.statut === "active").length,
+      expirees: demandesDomiciliation.filter((d) => d.statut === "expiree").length,
+      refusees: demandesDomiciliation.filter((d) => ["refusee", "resiliee"].includes(d.statut)).length,
+      revenuMensuel: demandesDomiciliation
+        .filter((d) => d.statut === "active")
+        .reduce((sum, d) => sum + (d.montantMensuel || 0), 0),
+    }),
+    [demandesDomiciliation]
+  );
 
   const urgences = useMemo(() => {
     const expiringIn30 = demandesDomiciliation.filter((d) => {
       if (d.statut !== "active" || !d.dateFinContrat) return false;
-      const days = differenceInDays(new Date(d.dateFinContrat), new Date());
+      const days = differenceInDays(new Date(d.dateFinContrat as string), new Date());
       return days >= 0 && days <= 30;
     });
     const stagnant = demandesDomiciliation.filter((d) => {
       if (["active", "refusee", "resiliee", "expiree"].includes(d.statut)) return false;
-      const age = Math.floor((Date.now() - new Date(d.dateCreation).getTime()) / (1000 * 60 * 60 * 24));
+      const age = Math.floor(
+        (Date.now() - new Date(d.dateCreation as string).getTime()) / (1000 * 60 * 60 * 24)
+      );
       return age > 30;
     });
     return { expiringIn30, stagnant };
@@ -178,80 +146,151 @@ const AdminDomiciliations = () => {
     setRefreshing(false);
   };
 
-  const openDetail = (d: DemandeDomiciliation) => {
-    navigate(`/app/admin/domiciliations/${d.id}`);
-  };
-
-  const exportCSV = () => {
-    const esc = (v: string) => (v.includes(";") || v.includes('"') || v.includes("\n")) ? `"${v.replace(/"/g, '""')}"` : v;
-    const formatOpts = (opts: Record<string, boolean> | undefined) => {
-      if (!opts) return "";
-      return Object.entries(opts).filter(([, v]) => v).map(([k]) => k).join(", ");
-    };
-    const headers = ["Raison Sociale", "Situation", "Type", "Forme Juridique", "NIF", "NIS", "Bureau", "Statut", "Representant", "Email", "Telephone", "Date Creation", "Date Debut Contrat", "Date Fin Contrat", "Montant Mensuel", "Ref. Contrat", "Options", "Anciennete (jours)"];
-    const rows = filtered.map((d) => {
-      const ageJours = Math.floor((Date.now() - new Date(d.dateCreation).getTime()) / (1000 * 60 * 60 * 24));
-      return [
-        esc(getDisplayName(d)),
-        esc(getSituationLabel(d.situationAdministrative)),
-        esc(getTypeLabel(d.typeStructure)),
-        esc(d.formeJuridique || ""),
-        esc(d.nif || ""),
-        esc(d.nis || ""),
-        d.numeroBureau?.toString() || "",
-        esc((DOMICILIATION_STATUT_LABELS as Record<string, string>)[d.statut] || d.statut),
-        esc(`${d.representantLegal?.prenom || ""} ${d.representantLegal?.nom || ""}`),
-        esc(d.representantLegal?.email || ""),
-        esc(d.representantLegal?.telephone || ""),
-        formatDate(d.dateCreation),
-        d.dateDebutContrat ? formatDate(d.dateDebutContrat) : "",
-        d.dateFinContrat ? formatDate(d.dateFinContrat) : "",
-        d.montantMensuel ? formatCurrency(d.montantMensuel) : "",
-        esc(d.referenceContratNotarie || ""),
-        esc(formatOpts(d.options as unknown as Record<string, boolean>)),
-        ageJours.toString(),
-      ];
-    });
-    const csv = "\uFEFF" + [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `domiciliations_${new Date().toISOString().split("T")[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success("Export CSV genere");
+  const handleExport = () => {
+    exportDomiciliationsCSV(filtered, formatDate, formatCurrency);
+    toast.success("Export CSV généré");
   };
 
   const SortIcon = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />;
-    return sortDir === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-amber-600" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-600" />;
+    return sortDir === "asc" ? (
+      <ArrowUp className="w-3.5 h-3.5 text-amber-600" />
+    ) : (
+      <ArrowDown className="w-3.5 h-3.5 text-amber-600" />
+    );
   };
+
+  const SortableHeader = ({
+    label,
+    col,
+  }: {
+    label: string;
+    col: SortKey;
+  }) => (
+    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+      <button
+        onClick={() => handleSort(col)}
+        className="flex items-center gap-1.5 hover:text-gray-900 transition-colors"
+      >
+        {label}
+        <SortIcon col={col} />
+      </button>
+    </th>
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestion des Domiciliations</h1>
-          <p className="text-gray-500 mt-1">{demandesDomiciliation.length} domiciliation{demandesDomiciliation.length !== 1 ? "s" : ""} au total</p>
+          <h1 className="text-3xl font-bold text-gray-900">Domiciliations</h1>
+          <p className="text-gray-500 mt-1">
+            {demandesDomiciliation.length} domiciliation
+            {demandesDomiciliation.length !== 1 ? "s" : ""}
+          </p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+            {refreshing ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4 mr-2" />
+            )}
             Actualiser
           </Button>
-          <Button variant="outline" onClick={exportCSV}>
+          <Button variant="outline" onClick={handleExport}>
             <Download className="w-4 h-4 mr-2" />
             Export CSV
           </Button>
           <Button onClick={() => setShowCreateModal(true)}>
             <Plus className="w-4 h-4 mr-2" />
-            Nouvelle domiciliation
+            Nouvelle
           </Button>
         </div>
       </div>
 
-      <StatsCards stats={stats} onFilter={setStatusFilter} />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {[
+          {
+            value: stats.preparatoires,
+            label: "Préparatoires",
+            gradient: "from-amber-50 to-orange-50",
+            border: "border-amber-200",
+            text: "text-amber-700",
+            icon: Clock,
+            iconBg: "bg-amber-100 text-amber-600",
+            filter: "dossier_preparatoire",
+          },
+          {
+            value: stats.enAttenteSignature,
+            label: "Att. signature",
+            gradient: "from-sky-50 to-cyan-50",
+            border: "border-sky-200",
+            text: "text-sky-700",
+            icon: Building,
+            iconBg: "bg-sky-100 text-sky-600",
+            filter: "en_attente_signature",
+          },
+          {
+            value: stats.actives,
+            label: "Actives",
+            gradient: "from-emerald-50 to-green-50",
+            border: "border-emerald-200",
+            text: "text-emerald-700",
+            icon: Building,
+            iconBg: "bg-emerald-100 text-emerald-600",
+            filter: "active",
+          },
+          {
+            value: stats.expirees,
+            label: "Expirées",
+            gradient: "from-gray-50 to-slate-50",
+            border: "border-gray-300",
+            text: "text-gray-700",
+            icon: Clock,
+            iconBg: "bg-gray-200 text-gray-600",
+            filter: "expiree",
+          },
+          {
+            value: stats.refusees,
+            label: "Refusées/Résiliées",
+            gradient: "from-red-50 to-rose-50",
+            border: "border-red-200",
+            text: "text-red-700",
+            icon: Building,
+            iconBg: "bg-red-100 text-red-600",
+            filter: "refusee",
+          },
+        ].map(({ value, label, gradient, border, text, icon: Icon, iconBg, filter }) => (
+          <Card
+            key={label}
+            className={`p-4 bg-gradient-to-br ${gradient} border ${border} cursor-pointer hover:shadow-md transition-shadow`}
+            onClick={() => setStatusFilter(filter)}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconBg}`}>
+                <Icon className="w-5 h-5" />
+              </div>
+              <div>
+                <p className={`text-2xl font-bold ${text}`}>{value}</p>
+                <p className={`text-xs ${text} opacity-80`}>{label}</p>
+              </div>
+            </div>
+          </Card>
+        ))}
+        <Card className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <Banknote className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-emerald-700">
+                {formatCurrency(stats.revenuMensuel)}
+              </p>
+              <p className="text-xs text-emerald-600">Rev. mensuel</p>
+            </div>
+          </div>
+        </Card>
+      </div>
 
       {(urgences.expiringIn30.length > 0 || urgences.stagnant.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -261,7 +300,8 @@ const AdminDomiciliations = () => {
                 <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="font-bold text-amber-900 mb-2">
-                    {urgences.expiringIn30.length} contrat{urgences.expiringIn30.length > 1 ? "s" : ""} expirant dans 30 jours
+                    {urgences.expiringIn30.length} contrat
+                    {urgences.expiringIn30.length > 1 ? "s" : ""} expirant dans 30 jours
                   </p>
                   <div className="space-y-1.5">
                     {urgences.expiringIn30.slice(0, 3).map((d) => {
@@ -272,15 +312,25 @@ const AdminDomiciliations = () => {
                           onClick={() => navigate(`/app/admin/domiciliations/${d.id}`)}
                           className="w-full flex items-center justify-between text-left hover:bg-amber-100 p-2 rounded-lg transition-colors"
                         >
-                          <span className="text-sm font-medium text-amber-900">{getDisplayName(d)}</span>
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${days <= 7 ? "bg-red-100 text-red-700" : "bg-amber-200 text-amber-800"}`}>
+                          <span className="text-sm font-medium text-amber-900">
+                            {getDisplayName(d)}
+                          </span>
+                          <span
+                            className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                              days <= 7
+                                ? "bg-red-100 text-red-700"
+                                : "bg-amber-200 text-amber-800"
+                            }`}
+                          >
                             {days}j restants
                           </span>
                         </button>
                       );
                     })}
                     {urgences.expiringIn30.length > 3 && (
-                      <p className="text-xs text-amber-600 pl-2">+{urgences.expiringIn30.length - 3} autre(s)...</p>
+                      <p className="text-xs text-amber-600 pl-2">
+                        +{urgences.expiringIn30.length - 3} autre(s)...
+                      </p>
                     )}
                   </div>
                 </div>
@@ -293,18 +343,24 @@ const AdminDomiciliations = () => {
                 <Clock className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="font-bold text-red-900 mb-2">
-                    {urgences.stagnant.length} dossier{urgences.stagnant.length > 1 ? "s" : ""} en attente depuis +30j
+                    {urgences.stagnant.length} dossier
+                    {urgences.stagnant.length > 1 ? "s" : ""} en attente depuis +30j
                   </p>
                   <div className="space-y-1.5">
                     {urgences.stagnant.slice(0, 3).map((d) => {
-                      const age = Math.floor((Date.now() - new Date(d.dateCreation).getTime()) / (1000 * 60 * 60 * 24));
+                      const age = Math.floor(
+                        (Date.now() - new Date(d.dateCreation as string).getTime()) /
+                          (1000 * 60 * 60 * 24)
+                      );
                       return (
                         <button
                           key={d.id}
                           onClick={() => navigate(`/app/admin/domiciliations/${d.id}`)}
                           className="w-full flex items-center justify-between text-left hover:bg-red-100 p-2 rounded-lg transition-colors"
                         >
-                          <span className="text-sm font-medium text-red-900">{getDisplayName(d)}</span>
+                          <span className="text-sm font-medium text-red-900">
+                            {getDisplayName(d)}
+                          </span>
                           <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
                             {age}j
                           </span>
@@ -312,7 +368,9 @@ const AdminDomiciliations = () => {
                       );
                     })}
                     {urgences.stagnant.length > 3 && (
-                      <p className="text-xs text-red-600 pl-2">+{urgences.stagnant.length - 3} autre(s)...</p>
+                      <p className="text-xs text-red-600 pl-2">
+                        +{urgences.stagnant.length - 3} autre(s)...
+                      </p>
                     )}
                   </div>
                 </div>
@@ -324,7 +382,7 @@ const AdminDomiciliations = () => {
 
       <Card className="p-4">
         <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 min-w-0">
+          <div className="flex-1">
             <Input
               placeholder="Rechercher par nom, NIF, email, bureau..."
               icon={<Search className="w-5 h-5" />}
@@ -360,13 +418,19 @@ const AdminDomiciliations = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <SortableHeader label="Entreprise" col="entreprise" onSort={handleSort}><SortIcon col="entreprise" /></SortableHeader>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Situation/Type</th>
-                <SortableHeader label="Bureau" col="bureau" onSort={handleSort}><SortIcon col="bureau" /></SortableHeader>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Représentant</th>
-                <SortableHeader label="Statut" col="statut" onSort={handleSort}><SortIcon col="statut" /></SortableHeader>
-                <SortableHeader label="Date" col="date" onSort={handleSort}><SortIcon col="date" /></SortableHeader>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                <SortableHeader label="Entreprise" col="entreprise" />
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  Situation
+                </th>
+                <SortableHeader label="Bureau" col="bureau" />
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  Représentant
+                </th>
+                <SortableHeader label="Statut" col="statut" />
+                <SortableHeader label="Date" col="date" />
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -376,9 +440,15 @@ const AdminDomiciliations = () => {
                     Aucune domiciliation trouvée
                   </td>
                 </tr>
-              ) : paginated.map((demande) => (
-                <DomiciliationRow key={demande.id} demande={demande} onDetail={openDetail} />
-              ))}
+              ) : (
+                paginated.map((d) => (
+                  <DomiciliationRow
+                    key={d.id}
+                    demande={d}
+                    onDetail={() => navigate(`/app/admin/domiciliations/${d.id}`)}
+                  />
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -386,7 +456,8 @@ const AdminDomiciliations = () => {
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
             <p className="text-sm text-gray-600">
-              {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, sorted.length)} sur {sorted.length}
+              {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sorted.length)} sur{" "}
+              {sorted.length}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -400,11 +471,15 @@ const AdminDomiciliations = () => {
                 .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
                 .map((p, idx, arr) => (
                   <React.Fragment key={p}>
-                    {idx > 0 && arr[idx - 1] !== p - 1 && <span className="text-gray-400">...</span>}
+                    {idx > 0 && arr[idx - 1] !== p - 1 && (
+                      <span className="text-gray-400">...</span>
+                    )}
                     <button
                       onClick={() => setPage(p)}
                       className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                        page === p ? "bg-amber-500 text-white" : "hover:bg-gray-200 text-gray-600"
+                        page === p
+                          ? "bg-amber-500 text-white"
+                          : "hover:bg-gray-200 text-gray-600"
                       }`}
                     >
                       {p}
@@ -432,37 +507,44 @@ const AdminDomiciliations = () => {
       />
     </div>
   );
-};
-
-function SortableHeader({ label, col, onSort, children }: { label: string; col: SortKey; onSort: (k: SortKey) => void; children: React.ReactNode }) {
-  return (
-    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-      <button onClick={() => onSort(col)} className="flex items-center gap-1.5 hover:text-gray-900 transition-colors">
-        {label}
-        {children}
-      </button>
-    </th>
-  );
 }
 
-function DomiciliationRow({ demande, onDetail }: { demande: DemandeDomiciliation; onDetail: (d: DemandeDomiciliation) => void }) {
-  const badge = STATUS_BADGES[demande.statut] || STATUS_BADGES.dossier_preparatoire;
+function DomiciliationRow({
+  demande,
+  onDetail,
+}: {
+  demande: DemandeDomiciliation;
+  onDetail: () => void;
+}) {
   const name = getDisplayName(demande);
-  const createdTs = demande.dateCreation ? new Date(demande.dateCreation).getTime() : Date.now();
+  const createdTs = demande.dateCreation ? new Date(demande.dateCreation as string).getTime() : Date.now();
   const ageJours = Math.floor((Date.now() - createdTs) / (1000 * 60 * 60 * 24));
-  const isStale = !["active", "refusee", "resiliee", "expiree"].includes(demande.statut) && ageJours > 7;
+  const isStale =
+    !["active", "refusee", "resiliee", "expiree"].includes(demande.statut) && ageJours > 7;
   const isVeryStale = isStale && ageJours > 30;
-  const daysUntilExpiry = demande.statut === "active" && demande.dateFinContrat
-    ? differenceInDays(new Date(demande.dateFinContrat), new Date())
-    : null;
-  const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
+  const daysUntilExpiry =
+    demande.statut === "active" && demande.dateFinContrat
+      ? differenceInDays(new Date(demande.dateFinContrat as string), new Date())
+      : null;
+  const isExpiringSoon =
+    daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
+
+  const cfg = STATUT_CONFIG[demande.statut];
 
   return (
     <motion.tr
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`hover:bg-gray-50 transition-colors cursor-pointer ${isVeryStale ? "bg-red-50/40" : isStale ? "bg-amber-50/40" : isExpiringSoon ? "bg-amber-50/30" : ""}`}
-      onClick={() => onDetail(demande)}
+      className={`hover:bg-gray-50 transition-colors cursor-pointer ${
+        isVeryStale
+          ? "bg-red-50/40"
+          : isStale
+          ? "bg-amber-50/40"
+          : isExpiringSoon
+          ? "bg-amber-50/30"
+          : ""
+      }`}
+      onClick={onDetail}
     >
       <td className="px-4 py-4">
         <div className="flex items-center gap-3">
@@ -476,109 +558,76 @@ function DomiciliationRow({ demande, onDetail }: { demande: DemandeDomiciliation
           <div className="min-w-0">
             <p className="font-medium text-gray-900 truncate">{name}</p>
             <p className="text-xs text-gray-500">
-              {demande.typeStructure === "auto_entrepreneur" ? "Auto-entrepreneur" : (demande.formeJuridique || "Societe")}
+              {demande.typeStructure === "auto_entrepreneur"
+                ? "Auto-entrepreneur"
+                : demande.formeJuridique || "Société"}
             </p>
           </div>
         </div>
       </td>
       <td className="px-4 py-4">
-        <div className="space-y-1">
-          <Badge variant={demande.situationAdministrative === "en_cours_creation" ? "warning" : "info"} size="sm">
-            {getSituationLabel(demande.situationAdministrative)}
-          </Badge>
-        </div>
+        <span
+          className={`text-xs font-medium px-2 py-1 rounded-lg ${
+            demande.situationAdministrative === "en_cours_creation"
+              ? "bg-amber-100 text-amber-700"
+              : "bg-sky-100 text-sky-700"
+          }`}
+        >
+          {getSituationLabel(demande.situationAdministrative)}
+        </span>
       </td>
       <td className="px-4 py-4">
         {demande.numeroBureau ? (
           <span className="inline-flex items-center px-3 py-1 bg-amber-100 text-amber-700 rounded-lg font-bold text-sm">
-            N{demande.numeroBureau}
+            N°{demande.numeroBureau}
           </span>
         ) : (
           <span className="text-gray-400 text-sm">-</span>
         )}
       </td>
       <td className="px-4 py-4">
-        <div>
-          <p className="font-medium text-gray-900 text-sm">
-            {demande.representantLegal?.prenom || ""} {demande.representantLegal?.nom || ""}
-          </p>
-          <p className="text-xs text-gray-500">{demande.representantLegal?.telephone || "-"}</p>
-        </div>
+        <p className="font-medium text-gray-900 text-sm">
+          {demande.representantLegal?.prenom || ""} {demande.representantLegal?.nom || ""}
+        </p>
+        <p className="text-xs text-gray-500">{demande.representantLegal?.telephone || "-"}</p>
       </td>
       <td className="px-4 py-4">
-        <Badge variant={badge.variant}>
-          {badge.icon}
-          {badge.label}
-        </Badge>
+        {cfg ? <StatutBadge statut={demande.statut} /> : <span>{demande.statut}</span>}
       </td>
       <td className="px-4 py-4">
-        <div className="text-sm text-gray-500">{formatDate(demande.dateCreation)}</div>
+        <div className="text-sm text-gray-500">{formatDate(demande.dateCreation as string)}</div>
         {isStale && (
-          <span className={`text-xs font-medium ${isVeryStale ? "text-red-600" : "text-amber-600"}`}>
+          <span
+            className={`text-xs font-medium ${
+              isVeryStale ? "text-red-600" : "text-amber-600"
+            }`}
+          >
             {ageJours}j {isVeryStale ? "(stagnant)" : "(en attente)"}
           </span>
         )}
         {isExpiringSoon && daysUntilExpiry !== null && (
-          <span className={`text-xs font-bold ${daysUntilExpiry <= 7 ? "text-red-600" : "text-amber-600"}`}>
+          <div
+            className={`text-xs font-bold ${
+              daysUntilExpiry <= 7 ? "text-red-600" : "text-amber-600"
+            }`}
+          >
             Expire dans {daysUntilExpiry}j
-          </span>
+          </div>
         )}
       </td>
       <td className="px-4 py-4 text-right">
         <Button
           size="sm"
           variant="outline"
-          onClick={(e) => { e.stopPropagation(); onDetail(demande); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDetail();
+          }}
         >
           <Eye className="w-4 h-4 mr-1" />
-          Details
+          Détails
         </Button>
       </td>
     </motion.tr>
   );
 }
-
-function StatsCards({ stats, onFilter }: { stats: Record<string, number>; onFilter: (v: string) => void }) {
-  const cards = [
-    { value: stats.preparatoires, label: "Préparatoires", icon: Clock, bg: "from-amber-50 to-orange-50", border: "border-amber-200", text: "text-amber-700", sub: "text-amber-600", iconBg: "bg-amber-100", iconColor: "text-amber-600", filter: "dossier_preparatoire" },
-    { value: stats.enAttenteSignature, label: "Att. signature", icon: Scale, bg: "from-sky-50 to-cyan-50", border: "border-sky-200", text: "text-sky-700", sub: "text-sky-600", iconBg: "bg-sky-100", iconColor: "text-sky-600", filter: "en_attente_signature" },
-    { value: stats.actives, label: "Actives", icon: PlayCircle, bg: "from-emerald-50 to-green-50", border: "border-emerald-200", text: "text-emerald-700", sub: "text-emerald-600", iconBg: "bg-emerald-100", iconColor: "text-emerald-600", filter: "active" },
-    { value: stats.expirees, label: "Expirées", icon: AlertCircle, bg: "from-gray-50 to-slate-50", border: "border-gray-300", text: "text-gray-700", sub: "text-gray-600", iconBg: "bg-gray-200", iconColor: "text-gray-600", filter: "expiree" },
-    { value: stats.refusees + stats.resiliees, label: "Refusées/Résiliées", icon: XCircle, bg: "from-red-50 to-rose-50", border: "border-red-200", text: "text-red-700", sub: "text-red-600", iconBg: "bg-red-100", iconColor: "text-red-600", filter: "refusee" },
-  ];
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      {cards.map(({ value, label, icon: Icon, bg, border, text, sub, iconBg, iconColor, filter }) => (
-        <Card
-          key={label}
-          className={`p-4 bg-gradient-to-br ${bg} ${border} cursor-pointer hover:shadow-md transition-shadow`}
-          onClick={() => onFilter(filter)}
-        >
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 ${iconBg} rounded-lg flex items-center justify-center`}>
-              <Icon className={`w-5 h-5 ${iconColor}`} />
-            </div>
-            <div>
-              <p className={`text-2xl font-bold ${text}`}>{value}</p>
-              <p className={`text-xs ${sub}`}>{label}</p>
-            </div>
-          </div>
-        </Card>
-      ))}
-      <Card className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-            <Banknote className="w-5 h-5 text-emerald-600" />
-          </div>
-          <div>
-            <p className="text-xl font-bold text-emerald-700">{formatCurrency(stats.revenuMensuel)}</p>
-            <p className="text-xs text-emerald-600">Rev. mensuel</p>
-          </div>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-export default AdminDomiciliations;

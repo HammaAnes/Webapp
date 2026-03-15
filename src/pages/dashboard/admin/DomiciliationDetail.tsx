@@ -1,1628 +1,268 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Building, User, FileText, Mail, Package, CheckCircle, XCircle, Scale,
-  Ban, PlayCircle, AlertCircle, Save, Plus, Loader2, StickyNote, Briefcase,
-  Pencil, X, FileCheck, Eye, Download, Upload, Trash2, File, RefreshCw,
-  ArrowLeft, Clock, Settings, MessageSquare,
-} from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { ArrowLeft, RefreshCw, Loader2, User, Building } from "lucide-react";
 import toast from "react-hot-toast";
-import Card from "../../../components/ui/Card";
-import Badge from "../../../components/ui/Badge";
 import Button from "../../../components/ui/Button";
-import Input from "../../../components/ui/Input";
-import Modal from "../../../components/ui/Modal";
-import { apiClient } from "../../../lib/api-client";
 import { useAppStore } from "../../../store/store";
-import { formatDate, formatCurrency } from "../../../utils/formatters";
-import { DOMICILIATION_STATUT_LABELS } from "../../../constants";
-import { emailService } from "../../../services/email-service";
-import type { DemandeDomiciliation } from "../../../types";
-import {
-  type DocumentRecord,
-  SOCIETE_DOCS,
-  AUTO_ENTREPRENEUR_DOCS,
-  COMMON_DOCS,
-  loadDocumentsFromApi,
-  triggerDocumentDownload,
-  openDocumentPreview,
-  formatFileSize,
-} from "../../../components/domiciliation/DocumentsEntreprise";
-import {
-  REQUIRED_DOCS_NEW_SOCIETE,
-  REQUIRED_DOCS_NEW_AUTO_ENTREPRENEUR,
-  REQUIRED_DOCS_EXISTING_SOCIETE,
-  REQUIRED_DOCS_EXISTING_AUTO_ENTREPRENEUR,
-} from "../../../components/domiciliation/constants";
+import { apiClient } from "../../../lib/api-client";
+import { formatDate } from "../../../utils/formatters";
+import { getDisplayName } from "../../../features/domiciliation/utils";
+import StatutBadge from "../../../features/domiciliation/components/StatutBadge";
+import InformationsTab from "../../../features/domiciliation/tabs/InformationsTab";
+import ContratTab from "../../../features/domiciliation/tabs/ContratTab";
+import CourrierTab from "../../../features/domiciliation/tabs/CourrierTab";
+import DocumentsTab from "../../../features/domiciliation/tabs/DocumentsTab";
+import NotesTab from "../../../features/domiciliation/tabs/NotesTab";
+import ActionsTab from "../../../features/domiciliation/tabs/ActionsTab";
+import type { DemandeDomiciliation } from "../../../features/domiciliation/types";
+import type { ActionKey, ActionData } from "../../../features/domiciliation/types";
 
-type TabId = "informations" | "contrat" | "courrier" | "documents" | "notes" | "actions";
+const TABS = [
+  { key: "infos", label: "Informations" },
+  { key: "contrat", label: "Contrat" },
+  { key: "courrier", label: "Courrier" },
+  { key: "documents", label: "Documents" },
+  { key: "notes", label: "Notes" },
+  { key: "actions", label: "Actions" },
+] as const;
 
-interface CourrierItem {
-  id: string;
-  type: string;
-  expediteur: string;
-  description: string;
-  statut: string;
-  date_reception?: string;
-  dateReception?: string;
-  date_retrait?: string;
-  dateRetrait?: string;
-  retire_par?: string;
-}
+type TabKey = typeof TABS[number]["key"];
 
-const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
-  { id: "informations", label: "Informations", icon: Building },
-  { id: "contrat", label: "Contrat", icon: FileCheck },
-  { id: "courrier", label: "Courrier", icon: Mail },
-  { id: "documents", label: "Documents", icon: FileText },
-  { id: "notes", label: "Notes", icon: StickyNote },
-  { id: "actions", label: "Actions", icon: Scale },
-];
-
-const STATUS_BADGES: Record<string, { variant: "warning" | "success" | "danger" | "default" | "info" | "teal"; label: string }> = {
-  dossier_preparatoire: { variant: "warning", label: "Dossier preparatoire" },
-  en_attente_signature: { variant: "info", label: "Attente signature" },
-  domiciliation_creee: { variant: "teal", label: "Domiciliation creee" },
-  en_attente_complements: { variant: "warning", label: "Attente complements" },
-  active: { variant: "success", label: "Active" },
-  refusee: { variant: "danger", label: "Refusee" },
-  expiree: { variant: "default", label: "Expiree" },
-  resiliee: { variant: "danger", label: "Resiliee" },
-};
-
-const Field = ({ label, value }: { label: string; value?: string }) => (
-  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-    <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">{label}</p>
-    <p className="font-medium text-gray-900 text-sm">{value || "-"}</p>
-  </div>
-);
-
-const SectionHeader = ({ icon: Icon, title, color }: { icon: React.ElementType; title: string; color: string }) => (
-  <div className="flex items-center gap-3 mb-4">
-    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center`}>
-      <Icon className="w-6 h-6 text-white" />
-    </div>
-    <h4 className="font-bold text-gray-900 text-base">{title}</h4>
-  </div>
-);
-
-export default function DomiciliationDetail() {
+export default function AdminDomiciliationDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { demandesDomiciliation, loadDemandesDomiciliation } = useAppStore();
-  const [demande, setDemande] = useState<DemandeDomiciliation | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabId>("informations");
-  const [courrierCount, setCourrierCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<TabKey>("infos");
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadDemande = useCallback(async () => {
-    if (!id) return;
-    setLoading(true);
-    await loadDemandesDomiciliation();
-    const fresh = useAppStore.getState().demandesDomiciliation;
-    const found = fresh.find((d) => d.id === id);
-    if (found) setDemande(found);
-    else toast.error("Domiciliation introuvable");
-    setLoading(false);
-  }, [id, loadDemandesDomiciliation]);
-
-  useEffect(() => { loadDemande(); }, [loadDemande]);
+  const demande: DemandeDomiciliation | undefined = demandesDomiciliation.find(
+    (d) => d.id === id
+  );
 
   useEffect(() => {
-    if (demande?.id) {
-      apiClient.getUserCourrier(demande.id).then((r) => {
-        const data = r.data as Record<string, unknown> | undefined;
-        const courriers = ((data?.courriers || []) as CourrierItem[]);
-        setCourrierCount(courriers.filter((c) => !["retire", "envoye", "archive"].includes(c.statut)).length);
-      }).catch(() => setCourrierCount(0));
+    if (!demande) {
+      loadDemandesDomiciliation();
     }
-  }, [demande?.id]);
+  }, [id]);
 
-  const handleAction = async (action: string, data?: Record<string, unknown>) => {
-    if (!demande) return;
-    setActionLoading(true);
-    try {
-      let response;
-      const motif = (data?.motif as string) || "";
-      switch (action) {
-        case "valider":
-          response = await apiClient.validateDomiciliation(demande.id, motif || undefined);
-          break;
-        case "rejeter":
-          response = await apiClient.rejectDomiciliation(demande.id, motif);
-          break;
-        case "signer":
-          response = await apiClient.updateDemandeDomiciliation(demande.id, {
-            statut: "domiciliation_creee",
-            numeroBureau: data?.numeroBureau as number,
-            referenceContratNotarie: data?.referenceContratNotarie as string,
-            dateDebutContrat: data?.dateDebutContrat as string,
-            dateFinContrat: data?.dateFinContrat as string,
-            montantMensuel: data?.montantMensuel as number,
-          });
-          break;
-        case "completer":
-        case "activer":
-          response = await apiClient.activateDomiciliation(
-            demande.id,
-            data?.numeroBureau as number | undefined
-          );
-          break;
-        case "complements":
-          response = await apiClient.updateDemandeDomiciliation(demande.id, {
-            statut: "en_attente_complements",
-            notesAdmin: motif,
-          });
-          break;
-        case "resilier":
-          response = await apiClient.updateDemandeDomiciliation(demande.id, {
-            statut: "resiliee",
-            commentaireAdmin: motif,
-          });
-          break;
-        case "renouveler":
-          response = await apiClient.updateDemandeDomiciliation(demande.id, {
-            statut: "active",
-            commentaireAdmin: motif || "Renouvellement effectué",
-            dateFinContrat: data?.dateFinContrat as string,
-          });
-          break;
-        default:
-          return;
-      }
-      if (response?.success) {
-        const msgs: Record<string, string> = {
-          valider: "Dossier validé — en attente de signature notariale",
-          rejeter: "Demande refusée",
-          complements: "Compléments demandés — notification envoyée",
-          signer: "Domiciliation créée — contrat enregistré",
-          completer: "Domiciliation activée",
-          activer: "Domiciliation activée",
-          resilier: "Domiciliation résiliée",
-          renouveler: "Domiciliation renouvelée",
-        };
-        toast.success(msgs[action] || "Action effectuée");
-        const email = demande.representantLegal?.email;
-        if (email) {
-          const statusMap: Record<string, string> = {
-            valider: "en_attente_signature", rejeter: "refusee",
-            complements: "en_attente_complements",
-            signer: "domiciliation_creee", completer: "active",
-            activer: "active", resilier: "resiliee",
-          };
-          const newStatut = statusMap[action];
-          emailService.onDomiciliationStatusUpdate(email, {
-            prenom: demande.representantLegal?.prenom || "",
-            raisonSociale: demande.raisonSociale || "",
-            formeJuridique: demande.formeJuridique,
-            statut: newStatut,
-            statutLabel: (DOMICILIATION_STATUT_LABELS as Record<string, string>)[newStatut] || newStatut,
-            montantMensuel: action === "signer" ? (data?.montantMensuel as number) : demande.montantMensuel,
-            commentaire: motif || undefined,
-            dateDebut: action === "signer" ? (data?.dateDebutContrat as string) : undefined,
-            dateFin: action === "signer" ? (data?.dateFinContrat as string) : undefined,
-          });
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadDemandesDomiciliation();
+    setRefreshing(false);
+  }, [loadDemandesDomiciliation]);
+
+  const handleUpdate = useCallback(
+    async (data: Record<string, unknown>) => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const res = await apiClient.updateDemandeDomiciliation(id, data);
+        if ((res as { success: boolean }).success) {
+          toast.success("Informations mises à jour");
+          await loadDemandesDomiciliation();
+        } else {
+          const errMsg = (res as { error?: string }).error || "Erreur lors de la mise à jour";
+          toast.error(errMsg);
+          throw new Error(errMsg);
         }
-        await loadDemandesDomiciliation();
-        const fresh = useAppStore.getState().demandesDomiciliation;
-        const updated = fresh.find((d) => d.id === demande.id);
-        if (updated) setDemande(updated);
-      } else {
-        toast.error(response?.error || "Une erreur est survenue");
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erreur lors du traitement");
-    } finally {
-      setActionLoading(false);
-    }
-  };
+    },
+    [id, loadDemandesDomiciliation]
+  );
 
-  const handleUpdate = async (data: Record<string, unknown>) => {
-    if (!demande) return;
-    setActionLoading(true);
-    try {
-      const response = await apiClient.updateDemandeDomiciliation(demande.id, data);
-      if (response?.success) {
-        toast.success("Domiciliation mise a jour");
-        await loadDemandesDomiciliation();
-        const fresh = useAppStore.getState().demandesDomiciliation;
-        const updated = fresh.find((d) => d.id === demande.id);
-        if (updated) setDemande(updated);
-      } else {
-        const msg = response?.error || "Erreur lors de la mise a jour";
-        toast.error(msg);
-        throw new Error(msg);
-      }
-    } catch (err) {
-      if (!(err instanceof Error && err.message.includes("Erreur"))) {
-        toast.error(err instanceof Error ? err.message : "Erreur lors de la mise a jour");
-      }
-      throw err;
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  const handleAction = useCallback(
+    async (action: ActionKey, data?: ActionData) => {
+      if (!id || !demande) return;
+      setLoading(true);
+      try {
+        let res: { success?: boolean; error?: string; message?: string };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-32">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-      </div>
-    );
-  }
+        switch (action) {
+          case "valider":
+            res = await apiClient.validateDomiciliation(id);
+            break;
+          case "complements":
+            res = await apiClient.updateDemandeDomiciliation(id, {
+              statut: "en_attente_complements",
+              commentaireAdmin: data?.motif,
+            });
+            break;
+          case "rejeter":
+            res = await apiClient.rejectDomiciliation(id, data?.motif || "");
+            break;
+          case "signer":
+            res = await apiClient.updateDemandeDomiciliation(id, {
+              statut: "domiciliation_creee",
+              referenceContratNotarie: data?.referenceContratNotarie,
+              numeroBureau: data?.numeroBureau,
+              dateDebutContrat: data?.dateDebutContrat,
+              dateFinContrat: data?.dateFinContrat,
+              montantMensuel: data?.montantMensuel,
+            });
+            break;
+          case "activer":
+            res = await apiClient.activateDomiciliation(id, data?.numeroBureau);
+            break;
+          case "renouveler":
+            res = await apiClient.updateDemandeDomiciliation(id, {
+              statut: "active",
+              dateDebutContrat: data?.dateDebutContrat,
+              dateFinContrat: data?.dateFinContrat,
+              montantMensuel: data?.montantMensuel,
+            });
+            break;
+          case "resilier":
+            res = await apiClient.updateDemandeDomiciliation(id, {
+              statut: "resiliee",
+              commentaireAdmin: data?.motif,
+            });
+            break;
+          default:
+            setLoading(false);
+            return;
+        }
+
+        if (res.success) {
+          const msgs: Record<ActionKey, string> = {
+            valider: "Dossier validé — en attente de signature notariale",
+            complements: "Demande de compléments envoyée",
+            rejeter: "Demande refusée",
+            signer: "Signature notariale enregistrée",
+            activer: "Domiciliation activée",
+            renouveler: "Contrat renouvelé",
+            resilier: "Domiciliation résiliée",
+          };
+          toast.success(msgs[action]);
+          await loadDemandesDomiciliation();
+        } else {
+          toast.error(res.error || res.message || "Erreur lors de l'action");
+        }
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Erreur inattendue");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [id, demande, loadDemandesDomiciliation]
+  );
 
   if (!demande) {
     return (
-      <div className="text-center py-32">
-        <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-        <p className="text-gray-500 font-medium">Domiciliation introuvable</p>
-        <Button variant="outline" className="mt-4" onClick={() => navigate("/app/admin/domiciliations")}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Retour a la liste
-        </Button>
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+        <p className="text-gray-500">Chargement de la domiciliation...</p>
       </div>
     );
   }
 
-  const badge = STATUS_BADGES[demande.statut] || STATUS_BADGES.dossier_preparatoire;
-  const displayName = demande.raisonSociale || `${demande.representantLegal?.prenom || ""} ${demande.representantLegal?.nom || ""}`.trim() || "Non renseigne";
   const rep = demande.representantLegal;
-
-  const expirationAlert = (() => {
-    if (!demande.dateFinContrat || !["active", "domiciliation_creee"].includes(demande.statut)) return null;
-    const fin = new Date(demande.dateFinContrat);
-    const now = new Date();
-    const daysLeft = Math.ceil((fin.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    if (daysLeft < 0) return { type: "expired", daysLeft, date: fin };
-    if (daysLeft <= 30) return { type: "warning", daysLeft, date: fin };
-    return null;
-  })();
+  const displayName = getDisplayName(demande);
 
   return (
-    <div className="space-y-6">
-      {expirationAlert && (
-        <div className={`flex items-start gap-3 p-4 rounded-xl border ${
-          expirationAlert.type === "expired"
-            ? "bg-red-50 border-red-200"
-            : "bg-amber-50 border-amber-200"
-        }`}>
-          <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${expirationAlert.type === "expired" ? "text-red-600" : "text-amber-600"}`} />
-          <div className="flex-1">
-            {expirationAlert.type === "expired" ? (
-              <p className="font-semibold text-red-800">Contrat expiré</p>
-            ) : (
-              <p className="font-semibold text-amber-800">
-                Expiration dans {expirationAlert.daysLeft} jour{expirationAlert.daysLeft > 1 ? "s" : ""}
-              </p>
-            )}
-            <p className={`text-sm mt-0.5 ${expirationAlert.type === "expired" ? "text-red-600" : "text-amber-600"}`}>
-              {expirationAlert.type === "expired"
-                ? `Le contrat a expiré le ${format(expirationAlert.date, "d MMMM yyyy", { locale: fr })}. Pensez à renouveler ou résilier.`
-                : `Le contrat expire le ${format(expirationAlert.date, "d MMMM yyyy", { locale: fr })}. Contactez le client pour le renouvellement.`
-              }
-            </p>
-          </div>
-          <button
-            onClick={() => setActiveTab("actions")}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex-shrink-0 ${
-              expirationAlert.type === "expired"
-                ? "bg-red-100 text-red-700 hover:bg-red-200"
-                : "bg-amber-100 text-amber-700 hover:bg-amber-200"
-            }`}
-          >
-            Renouveler
-          </button>
-        </div>
-      )}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => navigate("/app/admin/domiciliations")} className="flex-shrink-0">
+    <div className="max-w-5xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => navigate("/app/admin/domiciliations")}
+          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
+        >
           <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium">Retour aux domiciliations</span>
+        </button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={refresh}
+          disabled={refreshing}
+        >
+          {refreshing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4" />
+          )}
+          Actualiser
         </Button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Building className="w-6 h-6 text-amber-600" />
+      </div>
+
+      <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border-2 border-amber-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-400 rounded-2xl flex items-center justify-center shadow-md">
+              {demande.typeStructure === "auto_entrepreneur" ? (
+                <User className="w-8 h-8 text-white" />
+              ) : (
+                <Building className="w-8 h-8 text-white" />
+              )}
             </div>
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900 truncate">{displayName}</h1>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <Badge variant={badge.variant}>{badge.label}</Badge>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{displayName}</h1>
+              <div className="flex items-center gap-3 mt-1">
+                <p className="text-sm text-gray-600">
+                  {demande.typeStructure === "auto_entrepreneur"
+                    ? "Auto-entrepreneur"
+                    : demande.formeJuridique || "Société"}
+                </p>
                 {demande.numeroBureau && (
-                  <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
-                    Bureau N{demande.numeroBureau}
-                  </span>
-                )}
-                {demande.typeStructure === "auto_entrepreneur" ? (
-                  <Badge variant="default" size="sm">Auto-entrepreneur</Badge>
-                ) : (
-                  <Badge variant="default" size="sm">{demande.formeJuridique || "Societe"}</Badge>
+                  <>
+                    <span className="text-gray-300">•</span>
+                    <span className="text-sm font-bold text-amber-700">
+                      Bureau {demande.numeroBureau}
+                    </span>
+                  </>
                 )}
               </div>
+              {rep && (
+                <p className="text-sm text-gray-500 mt-1">
+                  {rep.prenom} {rep.nom}
+                  {rep.email && ` · ${rep.email}`}
+                </p>
+              )}
             </div>
           </div>
-        </div>
-        <div className="text-right text-sm text-gray-500 flex-shrink-0 hidden md:block">
-          {rep?.email && <p>{rep.email}</p>}
-          {rep?.telephone && <p>{rep.telephone}</p>}
-          {demande.dateCreation && <p className="mt-1 text-xs">Cree le {formatDate(demande.dateCreation)}</p>}
+          <div className="flex flex-col items-end gap-2">
+            <StatutBadge statut={demande.statut} />
+            <p className="text-xs text-gray-500">
+              Créée le {formatDate(demande.dateCreation)}
+            </p>
+          </div>
         </div>
       </div>
 
       <div className="border-b border-gray-200">
-        <nav className="flex space-x-1 overflow-x-auto" role="tablist">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${
-                  isActive
-                    ? "border-amber-500 text-amber-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-                {tab.id === "courrier" && courrierCount > 0 && (
-                  <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    {courrierCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        <nav className="flex gap-1 overflow-x-auto">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-all border-b-2 ${
+                activeTab === tab.key
+                  ? "border-amber-500 text-amber-700 bg-amber-50/50"
+                  : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </nav>
       </div>
 
-      <div className="min-h-[50vh]">
-        {activeTab === "informations" && <InformationsTab key={`info-${demande.id}`} demande={demande} onUpdate={handleUpdate} loading={actionLoading} />}
-        {activeTab === "contrat" && <ContratTab key={`contrat-${demande.id}-${demande.numeroBureau}-${demande.montantMensuel}`} demande={demande} onUpdate={handleUpdate} loading={actionLoading} />}
-        {activeTab === "courrier" && <CourrierTab key={`courrier-${demande.id}`} demande={demande} />}
-        {activeTab === "documents" && <DocumentsTab key={`docs-${demande.id}`} demande={demande} />}
-        {activeTab === "notes" && <NotesTab key={`notes-${demande.id}`} demande={demande} onUpdate={handleUpdate} loading={actionLoading} />}
-        {activeTab === "actions" && <ActionsTab key={`actions-${demande.id}`} demande={demande} onAction={handleAction} loading={actionLoading} />}
-      </div>
-    </div>
-  );
-}
-
-function InformationsTab({ demande, onUpdate, loading }: { demande: DemandeDomiciliation; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
-  const [editing, setEditing] = useState(false);
-  const rep = demande.representantLegal || {};
-  const initForm = useCallback(() => ({
-    raisonSociale: demande.raisonSociale || "",
-    formeJuridique: demande.formeJuridique || "",
-    nif: demande.nif || "",
-    nis: demande.nis || "",
-    registreCommerce: demande.registreCommerce || "",
-    articleImposition: demande.articleImposition || "",
-    codeNae: demande.codeNae || "",
-    activiteExercee: demande.activiteExercee || "",
-    numeroAutoEntrepreneur: demande.numeroAutoEntrepreneur || "",
-    repNom: rep.nom || "",
-    repPrenom: rep.prenom || "",
-    repTel: rep.telephone || "",
-    repEmail: rep.email || "",
-    repVille: rep.ville || "",
-    repAdresse: rep.adresseResidence || "",
-  }), [demande, rep]);
-  const [form, setForm] = useState(initForm);
-  useEffect(() => { setForm(initForm()); }, [initForm]);
-  const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
-
-  const handleSave = async () => {
-    try {
-      await onUpdate({
-        raisonSociale: form.raisonSociale,
-        formeJuridique: form.formeJuridique,
-        nif: form.nif,
-        nis: form.nis,
-        registreCommerce: form.registreCommerce,
-        articleImposition: form.articleImposition,
-        codeNae: form.codeNae,
-        activiteExercee: form.activiteExercee,
-        numeroAutoEntrepreneur: form.numeroAutoEntrepreneur,
-        representantLegal: {
-          nom: form.repNom,
-          prenom: form.repPrenom,
-          telephone: form.repTel,
-          email: form.repEmail,
-          ville: form.repVille,
-          adresseResidence: form.repAdresse,
-        },
-      });
-      setEditing(false);
-    } catch {
-      /* error already toasted */
-    }
-  };
-
-  const isSociete = demande.typeStructure === "societe";
-  const isAE = demande.typeStructure === "auto_entrepreneur";
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button size="sm" variant={editing ? "danger" : "outline"} onClick={() => setEditing(!editing)}>
-          {editing ? <><X className="w-4 h-4" /> Annuler</> : <><Pencil className="w-4 h-4" /> Modifier</>}
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-          <p className="text-xs text-amber-700 uppercase tracking-wide font-semibold">Situation</p>
-          <p className="font-semibold text-amber-900 text-sm mt-1">
-            {demande.situationAdministrative === "en_cours_creation" ? "En cours de creation" : "Deja creee"}
-          </p>
-        </div>
-        <div className="bg-sky-50 rounded-xl p-4 border border-sky-200">
-          <p className="text-xs text-sky-700 uppercase tracking-wide font-semibold">Type</p>
-          <p className="font-semibold text-sky-900 text-sm mt-1">{isAE ? "Auto-entrepreneur" : "Societe"}</p>
-        </div>
-      </div>
-
-      <div>
-        <SectionHeader icon={Briefcase} title="Entreprise" color="from-amber-500 to-orange-500" />
-        {editing ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input label="Raison sociale" value={form.raisonSociale} onChange={(e) => set("raisonSociale", e.target.value)} />
-            <Input label="Forme juridique" value={form.formeJuridique} onChange={(e) => set("formeJuridique", e.target.value)} />
-            <Input label="NIF" value={form.nif} onChange={(e) => set("nif", e.target.value)} maxLength={20} />
-            <Input label="NIS" value={form.nis} onChange={(e) => set("nis", e.target.value)} maxLength={15} />
-            <Input label="Registre Commerce" value={form.registreCommerce} onChange={(e) => set("registreCommerce", e.target.value)} />
-            <Input label="Article Imposition" value={form.articleImposition} onChange={(e) => set("articleImposition", e.target.value)} />
-            {isAE && (
-              <>
-                <Input label="Activite exercee" value={form.activiteExercee} onChange={(e) => set("activiteExercee", e.target.value)} />
-                <Input label="N. Auto-entrepreneur" value={form.numeroAutoEntrepreneur} onChange={(e) => set("numeroAutoEntrepreneur", e.target.value)} />
-              </>
-            )}
-            {isSociete && <Input label="Code NAE" value={form.codeNae} onChange={(e) => set("codeNae", e.target.value)} />}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <Field label="Raison sociale" value={demande.raisonSociale} />
-            <Field label="Forme juridique" value={demande.formeJuridique} />
-            {isSociete && (
-              <>
-                <Field label="NIF" value={demande.nif || ""} />
-                <Field label="NIS" value={demande.nis || ""} />
-                <Field label="Registre Commerce" value={demande.registreCommerce || ""} />
-                <Field label="Article Imposition" value={demande.articleImposition || ""} />
-                <Field label="Code NAE" value={demande.codeNae || ""} />
-              </>
-            )}
-            {isAE && (
-              <>
-                <Field label="Activite exercee" value={demande.activiteExercee || ""} />
-                <Field label="N. Auto-entrepreneur" value={demande.numeroAutoEntrepreneur || ""} />
-              </>
-            )}
-          </div>
+      <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+        {activeTab === "infos" && (
+          <InformationsTab demande={demande} onUpdate={handleUpdate} loading={loading} />
         )}
-      </div>
-
-      <div>
-        <SectionHeader icon={User} title="Representant Legal" color="from-sky-500 to-cyan-500" />
-        {editing ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input label="Prenom" value={form.repPrenom} onChange={(e) => set("repPrenom", e.target.value)} />
-            <Input label="Nom" value={form.repNom} onChange={(e) => set("repNom", e.target.value)} />
-            <Input label="Telephone" value={form.repTel} onChange={(e) => set("repTel", e.target.value)} />
-            <Input label="Email" value={form.repEmail} onChange={(e) => set("repEmail", e.target.value)} />
-            <Input label="Ville" value={form.repVille} onChange={(e) => set("repVille", e.target.value)} />
-            <div className="sm:col-span-2">
-              <Input label="Adresse" value={form.repAdresse} onChange={(e) => set("repAdresse", e.target.value)} />
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <Field label="Nom complet" value={`${rep.prenom || ""} ${rep.nom || ""}`} />
-            <Field label="Telephone" value={rep.telephone || ""} />
-            <Field label="Email" value={rep.email || ""} />
-            <Field label="Ville" value={rep.ville || ""} />
-            {rep.adresseResidence && <Field label="Adresse" value={rep.adresseResidence} />}
-          </div>
+        {activeTab === "contrat" && (
+          <ContratTab demande={demande} onUpdate={handleUpdate} loading={loading} />
         )}
-      </div>
-
-      {demande.options && (
-        <div>
-          <SectionHeader icon={CheckCircle} title="Options selectionnees" color="from-teal-500 to-emerald-500" />
-          <div className="flex flex-wrap gap-2">
-            {demande.options.domiciliationSimple && <Badge variant="success">Domiciliation simple</Badge>}
-            {demande.options.receptionCourrier && <Badge variant="info">Reception courrier</Badge>}
-            {demande.options.scanNotificationEmail && <Badge variant="info">Scan email</Badge>}
-            {demande.options.reexpeditionCourrier && <Badge variant="info">Reexpedition</Badge>}
-            {demande.options.accesPonctuelEspaces && <Badge variant="teal">Acces espaces</Badge>}
-          </div>
-        </div>
-      )}
-
-      {editing && (
-        <div className="flex justify-end pt-2">
-          <Button onClick={handleSave} loading={loading}>
-            <Save className="w-4 h-4" /> Enregistrer
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ContratTab({ demande, onUpdate, loading }: { demande: DemandeDomiciliation; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [occupiedBureaux, setOccupiedBureaux] = useState<number[]>([]);
-
-  const [formData, setFormData] = useState({
-    numeroBureau: "",
-    referenceContratNotarie: "",
-    dateDebutContrat: "",
-    dateFinContrat: "",
-    montantMensuel: "",
-    visibleSurSite: false,
-  });
-
-  useEffect(() => {
-    apiClient.getDomiciliations().then((res) => {
-      if (res.success && res.data) {
-        const all = (Array.isArray(res.data) ? res.data : (res.data as Record<string, unknown>).data as unknown[] || []) as Record<string, unknown>[];
-        const occupied = all
-          .filter((d) =>
-            ["active", "domiciliation_creee", "en_attente_complements", "en_attente_signature"].includes(String(d.statut || "")) &&
-            d.numero_bureau &&
-            String(d.id) !== demande.id
-          )
-          .map((d) => Number(d.numero_bureau));
-        setOccupiedBureaux(occupied);
-      }
-    }).catch(() => {});
-  }, [demande.id]);
-
-  useEffect(() => {
-    setFormData({
-      numeroBureau: demande.numeroBureau?.toString() || "",
-      referenceContratNotarie: demande.referenceContratNotarie || "",
-      dateDebutContrat: demande.dateDebutContrat ? String(demande.dateDebutContrat).split("T")[0] : "",
-      dateFinContrat: demande.dateFinContrat ? String(demande.dateFinContrat).split("T")[0] : "",
-      montantMensuel: demande.montantMensuel?.toString() || "",
-      visibleSurSite: demande.visibleSurSite ?? false,
-    });
-    setIsEditing(false);
-  }, [demande]);
-
-  const handleFieldChange = (field: string, value: string | boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleCancel = () => {
-    setFormData({
-      numeroBureau: demande.numeroBureau?.toString() || "",
-      referenceContratNotarie: demande.referenceContratNotarie || "",
-      dateDebutContrat: demande.dateDebutContrat ? String(demande.dateDebutContrat).split("T")[0] : "",
-      dateFinContrat: demande.dateFinContrat ? String(demande.dateFinContrat).split("T")[0] : "",
-      montantMensuel: demande.montantMensuel?.toString() || "",
-      visibleSurSite: demande.visibleSurSite ?? false,
-    });
-    setIsEditing(false);
-  };
-
-  const validateForm = (): boolean => {
-    if (formData.numeroBureau && occupiedBureaux.includes(Number(formData.numeroBureau))) {
-      toast.error(`Le bureau ${formData.numeroBureau} est deja attribue a une autre domiciliation`);
-      return false;
-    }
-
-    if (formData.dateDebutContrat && formData.dateFinContrat) {
-      const debut = new Date(formData.dateDebutContrat);
-      const fin = new Date(formData.dateFinContrat);
-      if (fin <= debut) {
-        toast.error("La date de fin doit etre posterieure a la date de debut");
-        return false;
-      }
-    }
-
-    if (formData.montantMensuel && Number(formData.montantMensuel) < 0) {
-      toast.error("Le montant mensuel ne peut pas etre negatif");
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleSave = async () => {
-    if (!validateForm()) return;
-
-    setIsSaving(true);
-    try {
-      const updateData: Record<string, unknown> = {
-        numeroBureau: formData.numeroBureau ? Number(formData.numeroBureau) : null,
-        referenceContratNotarie: formData.referenceContratNotarie || null,
-        dateDebutContrat: formData.dateDebutContrat || null,
-        dateFinContrat: formData.dateFinContrat || null,
-        montantMensuel: formData.montantMensuel ? Number(formData.montantMensuel) : null,
-        visibleSurSite: formData.visibleSurSite,
-      };
-
-      await onUpdate(updateData);
-      setIsEditing(false);
-    } catch (error) {
-      console.error("Erreur mise a jour contrat:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const calculateDuration = (): number => {
-    if (!formData.dateDebutContrat || !formData.dateFinContrat) return 0;
-    const debut = new Date(formData.dateDebutContrat);
-    const fin = new Date(formData.dateFinContrat);
-    const diffMs = fin.getTime() - debut.getTime();
-    const diffMonths = Math.round(diffMs / (30.44 * 24 * 60 * 60 * 1000));
-    return Math.max(0, diffMonths);
-  };
-
-  const calculateTotal = (): number => {
-    const months = calculateDuration();
-    const monthly = formData.montantMensuel ? Number(formData.montantMensuel) : 0;
-    return months * monthly;
-  };
-
-  const duration = calculateDuration();
-  const total = calculateTotal();
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <SectionHeader icon={FileCheck} title="Details du contrat" color="from-emerald-500 to-teal-500" />
-        {!isEditing ? (
-          <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
-            <Pencil className="w-4 h-4" /> Modifier
-          </Button>
-        ) : (
-          <Button size="sm" variant="danger" onClick={handleCancel}>
-            <X className="w-4 h-4" /> Annuler
-          </Button>
+        {activeTab === "courrier" && <CourrierTab demande={demande} />}
+        {activeTab === "documents" && <DocumentsTab demande={demande} />}
+        {activeTab === "notes" && (
+          <NotesTab demande={demande} onUpdate={handleUpdate} loading={loading} />
         )}
-      </div>
-
-      <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-6 border border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Numero de bureau
-            </label>
-            {isEditing ? (
-              <select
-                value={formData.numeroBureau}
-                onChange={(e) => handleFieldChange("numeroBureau", e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-all"
-              >
-                <option value="">Non attribue</option>
-                {Array.from({ length: 60 }, (_, i) => i + 1).map((n) => {
-                  const isOccupied = occupiedBureaux.includes(n);
-                  return (
-                    <option key={n} value={n} disabled={isOccupied} className={isOccupied ? "text-red-500" : ""}>
-                      Bureau {n}{isOccupied ? " (occupe)" : ""}
-                    </option>
-                  );
-                })}
-              </select>
-            ) : (
-              <div className="px-4 py-3 bg-white border border-gray-200 rounded-xl">
-                <p className="font-medium text-gray-900">
-                  {demande.numeroBureau ? `Bureau ${demande.numeroBureau}` : "Non attribue"}
-                </p>
-              </div>
-            )}
-            {isEditing && formData.numeroBureau && occupiedBureaux.includes(Number(formData.numeroBureau)) && (
-              <p className="text-xs text-red-600 mt-1 font-medium flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
-                Ce bureau est deja attribue
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Reference contrat notarie
-            </label>
-            {isEditing ? (
-              <input
-                type="text"
-                value={formData.referenceContratNotarie}
-                onChange={(e) => handleFieldChange("referenceContratNotarie", e.target.value)}
-                placeholder="Ex: CONT-2026-001"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-              />
-            ) : (
-              <div className="px-4 py-3 bg-white border border-gray-200 rounded-xl">
-                <p className="font-medium text-gray-900">
-                  {demande.referenceContratNotarie || "-"}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Date debut
-            </label>
-            {isEditing ? (
-              <input
-                type="date"
-                value={formData.dateDebutContrat}
-                onChange={(e) => handleFieldChange("dateDebutContrat", e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-              />
-            ) : (
-              <div className="px-4 py-3 bg-white border border-gray-200 rounded-xl">
-                <p className="font-medium text-gray-900">
-                  {demande.dateDebutContrat ? formatDate(demande.dateDebutContrat) : "-"}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Date fin
-            </label>
-            {isEditing ? (
-              <input
-                type="date"
-                value={formData.dateFinContrat}
-                onChange={(e) => handleFieldChange("dateFinContrat", e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-              />
-            ) : (
-              <div className="px-4 py-3 bg-white border border-gray-200 rounded-xl">
-                <p className="font-medium text-gray-900">
-                  {demande.dateFinContrat ? formatDate(demande.dateFinContrat) : "-"}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Montant mensuel (DA)
-            </label>
-            {isEditing ? (
-              <input
-                type="number"
-                value={formData.montantMensuel}
-                onChange={(e) => handleFieldChange("montantMensuel", e.target.value)}
-                placeholder="15000"
-                min="0"
-                step="1000"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-              />
-            ) : (
-              <div className="px-4 py-3 bg-white border border-gray-200 rounded-xl">
-                <p className="font-medium text-gray-900">
-                  {demande.montantMensuel ? formatCurrency(demande.montantMensuel) : "-"}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {duration > 0 && total > 0 && (
-        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-5 border-2 border-emerald-200">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-emerald-900">Montant total du contrat</p>
-              <p className="text-xs text-emerald-700">
-                {duration} mois × {formatCurrency(Number(formData.montantMensuel) || 0)}
-              </p>
-              <p className="text-xs text-emerald-600 mt-1">Paiement unique lors de la signature notariale</p>
-            </div>
-            <div className="text-right">
-              <p className="text-3xl font-bold text-emerald-900">{formatCurrency(total)}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-5 border border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <p className="font-semibold text-gray-900">Visible sur le site</p>
-              {formData.visibleSurSite && (
-                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
-                  Publique
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-gray-600 mt-1">
-              Afficher cette domiciliation dans la liste publique des entreprises domiciliees
-            </p>
-          </div>
-          <button
-            onClick={() => handleFieldChange("visibleSurSite", !formData.visibleSurSite)}
-            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors shadow-sm ${
-              formData.visibleSurSite ? "bg-emerald-500" : "bg-gray-300"
-            }`}
-            disabled={!isEditing}
-          >
-            <span
-              className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform ${
-                formData.visibleSurSite ? "translate-x-7" : "translate-x-1"
-              }`}
-            />
-          </button>
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-        {isEditing && (
-          <>
-            <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
-              Annuler
-            </Button>
-            <Button onClick={handleSave} loading={isSaving || loading}>
-              <Save className="w-4 h-4" /> Enregistrer les modifications
-            </Button>
-          </>
+        {activeTab === "actions" && (
+          <ActionsTab demande={demande} onAction={handleAction} loading={loading} />
         )}
-      </div>
-    </div>
-  );
-}
-
-function CourrierTab({ demande }: { demande: DemandeDomiciliation }) {
-  const [courriers, setCourriers] = useState<CourrierItem[]>([]);
-  const [loadingList, setLoadingList] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [nc, setNc] = useState({ type: "lettre", expediteur: "", description: "" });
-  const [retireModal, setRetireModal] = useState<string | null>(null);
-  const [retirePar, setRetirePar] = useState("");
-
-  const load = useCallback(async () => {
-    setLoadingList(true);
-    try {
-      const r = await apiClient.getUserCourrier(demande.id);
-      const data = r.data as Record<string, unknown> | undefined;
-      setCourriers(((data?.courriers || []) as CourrierItem[]));
-    } catch { setCourriers([]); }
-    finally { setLoadingList(false); }
-  }, [demande.id]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const handleCreate = async () => {
-    if (!nc.expediteur.trim()) { toast.error("Expediteur requis"); return; }
-    setSubmitting(true);
-    try {
-      const response = await apiClient.createCourrier({ domiciliationId: demande.id, ...nc });
-      if (response.success) {
-        toast.success("Courrier ajoute");
-        setNc({ type: "lettre", expediteur: "", description: "" });
-        setShowForm(false);
-        await load();
-      } else {
-        toast.error(response.error || "Erreur lors de la creation");
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erreur lors de la creation");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const markRetire = async () => {
-    if (!retireModal) return;
-    try {
-      const response = await apiClient.updateCourrier(retireModal, { action: "marquer_retire", retire_par: retirePar });
-      if (response.success) {
-        toast.success("Courrier marque comme retire");
-        setRetireModal(null);
-        setRetirePar("");
-        await load();
-      } else {
-        toast.error(response.error || "Erreur lors de la mise a jour");
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erreur lors de la mise a jour");
-    }
-  };
-
-  const markEnvoye = async (id: string) => {
-    try {
-      const response = await apiClient.updateCourrier(id, { action: "marquer_envoye" });
-      if (response.success) {
-        toast.success("Courrier marque comme envoye");
-        await load();
-      } else {
-        toast.error(response.error || "Erreur");
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erreur");
-    }
-  };
-
-  const archiver = async (id: string) => {
-    try {
-      const response = await apiClient.updateCourrier(id, { action: "archiver" });
-      if (response.success) {
-        toast.success("Courrier archive");
-        await load();
-      } else {
-        toast.error(response.error || "Erreur");
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erreur");
-    }
-  };
-
-  const tc: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-    lettre: { label: "Lettre", icon: Mail, color: "bg-blue-50 text-blue-600" },
-    colis: { label: "Colis", icon: Package, color: "bg-teal-50 text-teal-600" },
-    recommande: { label: "Recommande", icon: FileText, color: "bg-red-50 text-red-600" },
-    autre: { label: "Autre", icon: Mail, color: "bg-gray-50 text-gray-600" },
-  };
-
-  const sc: Record<string, { label: string; variant: "warning" | "success" | "info" | "danger" | "default" }> = {
-    recu: { label: "Recu", variant: "warning" },
-    notifie: { label: "Notifie", variant: "info" },
-    en_attente_instruction: { label: "Att. instruction", variant: "warning" },
-    retire: { label: "Retire", variant: "success" },
-    envoye: { label: "Envoye", variant: "info" },
-    archive: { label: "Archive", variant: "default" },
-  };
-
-  const nonTraites = courriers.filter((c) => !["retire", "envoye", "archive"].includes(c.statut)).length;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <SectionHeader icon={Mail} title="Courrier" color="from-sky-500 to-blue-500" />
-          {nonTraites > 0 && <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{nonTraites}</span>}
-        </div>
-        <Button size="sm" onClick={() => setShowForm(!showForm)}>
-          {showForm ? <><X className="w-4 h-4" /> Fermer</> : <><Plus className="w-4 h-4" /> Ajouter</>}
-        </Button>
-      </div>
-
-      {showForm && (
-        <Card className="p-4 border-2 border-amber-200 bg-amber-50/30">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-              <select value={nc.type} onChange={(e) => setNc({ ...nc, type: e.target.value })} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500">
-                <option value="lettre">Lettre</option>
-                <option value="colis">Colis</option>
-                <option value="recommande">Recommande</option>
-                <option value="autre">Autre</option>
-              </select>
-            </div>
-            <Input label="Expediteur" value={nc.expediteur} onChange={(e) => setNc({ ...nc, expediteur: e.target.value })} required />
-            <Input label="Description" value={nc.description} onChange={(e) => setNc({ ...nc, description: e.target.value })} />
-          </div>
-          <div className="flex justify-end mt-3">
-            <Button size="sm" onClick={handleCreate} loading={submitting}>
-              <Plus className="w-4 h-4" /> Creer
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {loadingList ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-        </div>
-      ) : courriers.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">Aucun courrier enregistre</div>
-      ) : (
-        <div className="space-y-2">
-          {courriers.map((c) => {
-            const t = tc[c.type] || tc.autre;
-            const s = sc[c.statut] || sc.recu;
-            const TI = t.icon;
-            const dateStr = c.date_reception || c.dateReception;
-            return (
-              <div key={c.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${t.color}`}>
-                  <TI className="w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-gray-900 text-sm">{t.label}</p>
-                    <Badge variant={s.variant} size="sm">{s.label}</Badge>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {c.expediteur}{dateStr && ` - ${format(new Date(dateStr), "d MMM yyyy", { locale: fr })}`}
-                  </p>
-                  {c.description && <p className="text-xs text-gray-400 mt-0.5">{c.description}</p>}
-                  {c.retire_par && <p className="text-xs text-emerald-600 mt-0.5">Retire par: {c.retire_par}</p>}
-                </div>
-                <div className="flex gap-1 flex-shrink-0">
-                  {!["retire", "envoye", "archive"].includes(c.statut) && (
-                    <>
-                      <Button size="sm" variant="ghost" onClick={() => { setRetireModal(c.id); setRetirePar(""); }} title="Marquer retire">
-                        <CheckCircle className="w-4 h-4 text-emerald-600" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => markEnvoye(c.id)} title="Marquer envoye">
-                        <Mail className="w-4 h-4 text-sky-600" />
-                      </Button>
-                    </>
-                  )}
-                  {c.statut !== "archive" && (
-                    <Button size="sm" variant="ghost" onClick={() => archiver(c.id)} title="Archiver">
-                      <Ban className="w-4 h-4 text-gray-400" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <Modal isOpen={!!retireModal} onClose={() => setRetireModal(null)} title="Marquer le courrier comme retire">
-        <div className="space-y-4">
-          <Input label="Retire par (nom de la personne)" value={retirePar} onChange={(e) => setRetirePar(e.target.value)} placeholder="Nom de la personne" />
-          <div className="flex gap-3 justify-end">
-            <Button variant="outline" onClick={() => setRetireModal(null)}>Annuler</Button>
-            <Button onClick={markRetire}>Confirmer le retrait</Button>
-          </div>
-        </div>
-      </Modal>
-    </div>
-  );
-}
-
-function DocumentsTab({ demande }: { demande: DemandeDomiciliation }) {
-  const [docs, setDocs] = useState<DocumentRecord[]>([]);
-  const [loadingDocs, setLoadingDocs] = useState(true);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState<string | null>(null);
-  const [uploadTarget, setUploadTarget] = useState("");
-  const [rejectModal, setRejectModal] = useState<DocumentRecord | null>(null);
-  const [rejectComment, setRejectComment] = useState("");
-  const [showManageDocs, setShowManageDocs] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const apiSlots = demande.typeStructure === "auto_entrepreneur" ? AUTO_ENTREPRENEUR_DOCS : SOCIETE_DOCS;
-  const allApiSlots = [...apiSlots, ...COMMON_DOCS];
-
-  const wizardDocs = getWizardDocSlots(demande.situationAdministrative, demande.typeStructure);
-  const allSlots = mergeDocSlots(allApiSlots, wizardDocs);
-
-  const getDoc = (type: string) => docs.find((d) => d.document_type === type);
-
-  const loadDocs = useCallback(async () => {
-    setLoadingDocs(true);
-    try {
-      const documents = await loadDocumentsFromApi("domiciliation", demande.id);
-      setDocs(documents);
-    } catch { setDocs([]); }
-    finally { setLoadingDocs(false); }
-  }, [demande.id]);
-
-  useEffect(() => { loadDocs(); }, [loadDocs]);
-
-  const handleUploadClick = (docType: string) => { setUploadTarget(docType); fileRef.current?.click(); };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !uploadTarget) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("Fichier trop volumineux (max 5 Mo)"); return; }
-    try {
-      setUploading(uploadTarget);
-      const res = await apiClient.uploadDocument(file, "domiciliation", demande.id, uploadTarget);
-      if (res.success) { toast.success("Document uploade"); await loadDocs(); }
-      else toast.error(res.error || "Erreur d'upload");
-    } catch { toast.error("Erreur d'upload"); }
-    finally { setUploading(null); setUploadTarget(""); if (fileRef.current) fileRef.current.value = ""; }
-  };
-
-  const handleDownload = async (doc: DocumentRecord) => {
-    try { await triggerDocumentDownload(doc); }
-    catch { toast.error("Erreur de telechargement"); }
-  };
-
-  const handlePreview = async (doc: DocumentRecord) => {
-    try {
-      const url = await openDocumentPreview(doc);
-      if (url) setPreviewUrl(url);
-      else await handleDownload(doc);
-    } catch { await handleDownload(doc); }
-  };
-
-  const handleValidate = async (doc: DocumentRecord) => {
-    try {
-      const res = await apiClient.updateDocumentStatus(doc.id, "valide");
-      if (res.success) { toast.success("Document valide"); await loadDocs(); }
-      else toast.error(res.error || "Erreur");
-    } catch { toast.error("Erreur"); }
-  };
-
-  const handleReject = async () => {
-    if (!rejectModal) return;
-    try {
-      const res = await apiClient.updateDocumentStatus(rejectModal.id, "rejete", rejectComment || undefined);
-      if (res.success) { toast.success("Document rejete"); setRejectModal(null); setRejectComment(""); await loadDocs(); }
-      else toast.error(res.error || "Erreur");
-    } catch { toast.error("Erreur"); }
-  };
-
-  const handleDelete = async (doc: DocumentRecord) => {
-    try {
-      const res = await apiClient.deleteDocument(doc.id);
-      if (res.success) { toast.success("Document supprime"); await loadDocs(); }
-      else toast.error(res.error || "Erreur");
-    } catch { toast.error("Erreur"); }
-  };
-
-  const requiredSlots = allSlots.filter((s) => s.required);
-  const uploadedRequired = requiredSlots.filter((s) => getDoc(s.type)).length;
-  const pct = requiredSlots.length > 0 ? Math.round((uploadedRequired / requiredSlots.length) * 100) : 0;
-
-  const stMap: Record<string, { label: string; variant: "warning" | "success" | "danger" }> = {
-    en_attente: { label: "En attente", variant: "warning" },
-    valide: { label: "Valide", variant: "success" },
-    rejete: { label: "Rejete", variant: "danger" },
-  };
-
-  if (loadingDocs) {
-    return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;
-  }
-
-  return (
-    <div className="space-y-4">
-      <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleFileChange} />
-
-      <div className="flex items-center justify-between">
-        <SectionHeader icon={FileText} title={`Documents (${docs.length})`} color="from-teal-500 to-emerald-500" />
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowManageDocs(true)}
-            className="text-xs bg-gray-800 text-white hover:bg-gray-900 flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
-            title="Configurer les documents requis"
-          >
-            <Settings className="w-3 h-3" />
-            Configurer
-          </button>
-          <span className={`text-lg font-bold ${pct === 100 ? "text-emerald-600" : "text-amber-600"}`}>{pct}%</span>
-          <span className="text-xs text-gray-500">{uploadedRequired}/{requiredSlots.length} requis</span>
-        </div>
-      </div>
-
-      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-amber-500"}`} style={{ width: `${pct}%` }} />
-      </div>
-
-      <div className="space-y-2">
-        {allSlots.map((slot) => {
-          const doc = getDoc(slot.type);
-          const isUpl = uploading === slot.type;
-          const st = doc?.status ? stMap[doc.status] : null;
-          return (
-            <div
-              key={slot.type}
-              className={`flex items-center gap-3 p-3 rounded-xl border ${
-                doc
-                  ? doc.status === "rejete"
-                    ? "bg-red-50/50 border-red-200"
-                    : doc.status === "valide"
-                    ? "bg-emerald-50/50 border-emerald-200"
-                    : "bg-gray-50 border-gray-200"
-                  : slot.required
-                  ? "bg-amber-50/30 border-amber-200 border-dashed"
-                  : "bg-gray-50/50 border-gray-200 border-dashed"
-              }`}
-            >
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                doc
-                  ? doc.status === "valide" ? "bg-emerald-100" : doc.status === "rejete" ? "bg-red-100" : "bg-teal-100"
-                  : "bg-gray-100"
-              }`}>
-                {doc ? (
-                  <File className={`w-4 h-4 ${doc.status === "valide" ? "text-emerald-600" : doc.status === "rejete" ? "text-red-600" : "text-teal-600"}`} />
-                ) : (
-                  <FileText className="w-4 h-4 text-gray-400" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-medium text-gray-900 text-sm">{slot.label}</p>
-                  {slot.required && !doc && <Badge variant="warning" size="sm">Requis</Badge>}
-                  {st && <Badge variant={st.variant} size="sm">{st.label}</Badge>}
-                </div>
-                {doc && (
-                  <p className="text-xs text-gray-500 truncate">
-                    {doc.file_name} {doc.file_size ? `(${formatFileSize(doc.file_size)})` : ""}
-                  </p>
-                )}
-                {doc?.status === "rejete" && doc.commentaire_rejet && (
-                  <p className="text-xs text-red-600 mt-0.5">{doc.commentaire_rejet}</p>
-                )}
-              </div>
-              <div className="flex gap-1 flex-shrink-0">
-                {doc ? (
-                  <>
-                    <button onClick={() => handlePreview(doc)} className="p-1.5 rounded-lg hover:bg-gray-100 text-teal-600" title="Apercu"><Eye className="w-4 h-4" /></button>
-                    <button onClick={() => handleDownload(doc)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600" title="Telecharger"><Download className="w-4 h-4" /></button>
-                    {doc.status !== "valide" && <button onClick={() => handleValidate(doc)} className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600" title="Valider"><CheckCircle className="w-4 h-4" /></button>}
-                    {doc.status !== "rejete" && <button onClick={() => { setRejectModal(doc); setRejectComment(""); }} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="Rejeter"><XCircle className="w-4 h-4" /></button>}
-                    <button onClick={() => handleUploadClick(slot.type)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500" title="Remplacer"><RefreshCw className="w-4 h-4" /></button>
-                    <button onClick={() => handleDelete(doc)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400" title="Supprimer"><Trash2 className="w-4 h-4" /></button>
-                  </>
-                ) : (
-                  <button onClick={() => handleUploadClick(slot.type)} disabled={isUpl} className="text-xs bg-gray-800 text-white hover:bg-gray-900 flex items-center gap-1.5 px-3 py-1.5 rounded-lg disabled:opacity-50">
-                    {isUpl ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                    {isUpl ? "Envoi..." : "Uploader"}
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {docs.filter((d) => !allSlots.some((s) => s.type === d.document_type)).length > 0 && (
-        <>
-          <div className="border-t border-gray-200 pt-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">Autres documents telecharges</h4>
-          </div>
-          {docs
-            .filter((d) => !allSlots.some((s) => s.type === d.document_type))
-            .map((doc) => {
-              const st = doc.status ? stMap[doc.status] : null;
-              return (
-                <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border bg-gray-50 border-gray-200">
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-teal-100">
-                    <File className="w-4 h-4 text-teal-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900 text-sm">{doc.document_type}</p>
-                      {st && <Badge variant={st.variant} size="sm">{st.label}</Badge>}
-                    </div>
-                    <p className="text-xs text-gray-500 truncate">{doc.file_name} {doc.file_size ? `(${formatFileSize(doc.file_size)})` : ""}</p>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => handlePreview(doc)} className="p-1.5 rounded-lg hover:bg-gray-100 text-teal-600"><Eye className="w-4 h-4" /></button>
-                    <button onClick={() => handleDownload(doc)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600"><Download className="w-4 h-4" /></button>
-                    {doc.status !== "valide" && <button onClick={() => handleValidate(doc)} className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600"><CheckCircle className="w-4 h-4" /></button>}
-                    <button onClick={() => handleDelete(doc)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </div>
-              );
-            })}
-        </>
-      )}
-
-      <Modal isOpen={!!rejectModal} onClose={() => setRejectModal(null)} title="Rejeter le document">
-        <div className="space-y-4">
-          <p className="text-gray-700 text-sm">Rejeter le document : <strong>{rejectModal?.file_name}</strong></p>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Motif du rejet</label>
-            <textarea
-              value={rejectComment}
-              onChange={(e) => setRejectComment(e.target.value)}
-              rows={3}
-              placeholder="Ex: Document illisible, veuillez renvoyer une copie plus nette..."
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-            />
-          </div>
-          <div className="flex gap-3 justify-end">
-            <Button variant="outline" onClick={() => setRejectModal(null)}>Annuler</Button>
-            <Button variant="danger" onClick={handleReject}>Rejeter</Button>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal isOpen={!!previewUrl} onClose={() => { if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }} title="Apercu du document" size="lg">
-        {previewUrl && <iframe src={previewUrl} className="w-full h-[60vh] rounded-lg border border-gray-200" title="Apercu" />}
-      </Modal>
-
-      <Modal isOpen={showManageDocs} onClose={() => setShowManageDocs(false)} title="Configurer les documents requis" size="lg">
-        <div className="space-y-6">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <p className="text-sm text-amber-800">
-              <strong>Note:</strong> Cette configuration affecte uniquement cette domiciliation. Les modifications ne s'appliquent pas aux autres dossiers.
-            </p>
-          </div>
-
-          <div className="text-sm text-gray-600">
-            <p><strong>Situation:</strong> {demande.situationAdministrative === "en_cours_creation" ? "En cours de création" : "Déjà créée"}</p>
-            <p><strong>Type:</strong> {demande.typeStructure === "auto_entrepreneur" ? "Auto-entrepreneur" : "Société"}</p>
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="font-semibold text-gray-900">Documents actuellement configurés</h4>
-            {allSlots.map((slot) => (
-              <div key={slot.type} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">{slot.label}</p>
-                  <p className="text-xs text-gray-500">ID: {slot.type}</p>
-                </div>
-                <span className={`text-xs px-2 py-0.5 rounded ${slot.required ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-700"}`}>
-                  {slot.required ? "Requis" : "Optionnel"}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-sky-50 border border-sky-200 rounded-lg p-4">
-            <p className="text-sm text-sky-800">
-              Pour modifier la liste des documents requis, veuillez contacter le développeur ou modifier le fichier de configuration.
-            </p>
-          </div>
-
-          <div className="flex justify-end">
-            <Button variant="outline" onClick={() => setShowManageDocs(false)}>
-              Fermer
-            </Button>
-          </div>
-        </div>
-      </Modal>
-    </div>
-  );
-}
-
-function getWizardDocSlots(
-  situation: string,
-  typeStructure: string
-): { type: string; label: string; required: boolean }[] {
-  if (situation === "en_cours_creation") {
-    if (typeStructure === "societe") {
-      return REQUIRED_DOCS_NEW_SOCIETE.map((d) => ({ type: d.id, label: d.name, required: d.required }));
-    }
-    return REQUIRED_DOCS_NEW_AUTO_ENTREPRENEUR.map((d) => ({ type: d.id, label: d.name, required: d.required }));
-  }
-  if (typeStructure === "societe") {
-    return REQUIRED_DOCS_EXISTING_SOCIETE.map((d) => ({ type: d.id, label: d.name, required: d.required }));
-  }
-  return REQUIRED_DOCS_EXISTING_AUTO_ENTREPRENEUR.map((d) => ({ type: d.id, label: d.name, required: d.required }));
-}
-
-function mergeDocSlots(
-  apiSlots: { type: string; label: string; required: boolean }[],
-  wizardSlots: { type: string; label: string; required: boolean }[]
-): { type: string; label: string; required: boolean }[] {
-  const merged = [...apiSlots];
-  for (const ws of wizardSlots) {
-    if (!merged.some((s) => s.type === ws.type)) {
-      merged.push(ws);
-    }
-  }
-  return merged;
-}
-
-function NotesTab({ demande, onUpdate, loading }: { demande: DemandeDomiciliation; onUpdate: (d: Record<string, unknown>) => Promise<void>; loading: boolean }) {
-  const [notes, setNotes] = useState(demande.commentaireAdmin || "");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => { setNotes(demande.commentaireAdmin || ""); }, [demande.commentaireAdmin]);
-
-  const handleSave = async () => {
-    setSaving(true);
-    try { await onUpdate({ commentaireAdmin: notes }); }
-    catch { /* error already toasted */ }
-    finally { setSaving(false); }
-  };
-
-  return (
-    <div className="space-y-4">
-      <SectionHeader icon={StickyNote} title="Notes administratives" color="from-amber-500 to-yellow-500" />
-      <textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        rows={10}
-        placeholder="Ajoutez vos notes internes ici..."
-        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-y"
-      />
-      <div className="flex justify-end">
-        <Button onClick={handleSave} loading={saving || loading}>
-          <Save className="w-4 h-4" /> Enregistrer
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliation; onAction: (action: string, data?: Record<string, unknown>) => Promise<void>; loading: boolean }) {
-  const [activeAction, setActiveAction] = useState<string | null>(null);
-  const [confirmAction, setConfirmAction] = useState<string | null>(null);
-  const [motif, setMotif] = useState("");
-  const [sd, setSd] = useState({
-    numeroBureau: demande.numeroBureau || 1,
-    referenceContratNotarie: demande.referenceContratNotarie || "",
-    dateDebutContrat: demande.dateDebutContrat ? String(demande.dateDebutContrat).split("T")[0] : new Date().toISOString().split("T")[0],
-    dateFinContrat: demande.dateFinContrat ? String(demande.dateFinContrat).split("T")[0] : new Date(Date.now() + 183 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-    montantMensuel: demande.montantMensuel || 12000,
-  });
-  const [occupiedBureaux, setOccupiedBureaux] = useState<number[]>([]);
-
-  useEffect(() => {
-    apiClient.getDomiciliations().then((res) => {
-      if (res.success && res.data) {
-        const all = (Array.isArray(res.data) ? res.data : (res.data as Record<string, unknown>).data as unknown[] || []) as Record<string, unknown>[];
-        const occupied = all
-          .filter((d) =>
-            ["active", "domiciliation_creee", "en_attente_complements", "en_attente_signature"].includes(String(d.statut || "")) &&
-            d.numero_bureau &&
-            String(d.id) !== demande.id
-          )
-          .map((d) => Number(d.numero_bureau));
-        setOccupiedBureaux(occupied);
-      }
-    }).catch(() => {});
-  }, [demande.id]);
-
-  const mois = Math.max(1, Math.round((new Date(sd.dateFinContrat).getTime() - new Date(sd.dateDebutContrat).getTime()) / (30.44 * 24 * 60 * 60 * 1000)));
-  const montantTotal = sd.montantMensuel * mois;
-
-  const defs: { key: string; label: string; icon: React.ElementType; variant: string; statuts: string[]; destructive?: boolean }[] = [
-    { key: "valider", label: "Valider le dossier", icon: CheckCircle, variant: "success", statuts: ["dossier_preparatoire"] },
-    { key: "complements", label: "Demander des complements", icon: MessageSquare, variant: "primary", statuts: ["dossier_preparatoire", "domiciliation_creee"] },
-    { key: "rejeter", label: "Refuser la demande", icon: XCircle, variant: "danger", statuts: ["dossier_preparatoire", "en_attente_complements", "en_attente_signature", "domiciliation_creee"], destructive: true },
-    { key: "signer", label: "Enregistrer signature notaire", icon: Scale, variant: "primary", statuts: ["en_attente_signature"] },
-    { key: "activer", label: "Activer la domiciliation", icon: PlayCircle, variant: "success", statuts: ["domiciliation_creee", "en_attente_complements"] },
-    { key: "renouveler", label: "Renouveler le contrat", icon: RefreshCw, variant: "primary", statuts: ["expiree", "active"] },
-    { key: "resilier", label: "Resilier la domiciliation", icon: Ban, variant: "danger", statuts: ["active"], destructive: true },
-  ];
-  const available = defs.filter((a) => a.statuts.includes(demande.statut));
-
-  const handleSubmit = async (key: string) => {
-    if (key === "rejeter" && !motif.trim()) { toast.error("Veuillez preciser le motif du refus"); return; }
-    if (key === "resilier" && !motif.trim()) { toast.error("Veuillez preciser le motif de la resiliation"); return; }
-    if (key === "complements" && !motif.trim()) { toast.error("Veuillez preciser les informations manquantes"); return; }
-    if (key === "signer" && !sd.referenceContratNotarie.trim()) { toast.error("Reference du contrat requise"); return; }
-    if (key === "signer" && occupiedBureaux.includes(sd.numeroBureau)) { toast.error(`Le bureau ${sd.numeroBureau} est deja attribue`); return; }
-    const data: Record<string, unknown> = {};
-    if (key === "rejeter" || key === "resilier" || key === "complements") data.motif = motif;
-    if (key === "signer") Object.assign(data, sd);
-    if (key === "renouveler") Object.assign(data, sd);
-    if (key === "activer") data.numeroBureau = sd.numeroBureau;
-    await onAction(key, data);
-    setActiveAction(null);
-    setConfirmAction(null);
-    setMotif("");
-  };
-
-  if (available.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <AlertCircle className="w-8 h-8 text-gray-400" />
-        </div>
-        <p className="text-gray-500 font-medium">Aucune action disponible pour le statut actuel</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <SectionHeader icon={Scale} title="Actions disponibles" color="from-sky-500 to-blue-500" />
-      <div className="space-y-3">
-        {available.map((a) => {
-          const Icon = a.icon;
-          const isAct = activeAction === a.key;
-          return (
-            <div key={a.key} className="border border-gray-200 rounded-xl overflow-hidden">
-              <button
-                onClick={() => setActiveAction(isAct ? null : a.key)}
-                className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-left"
-              >
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                  a.variant === "danger" ? "bg-red-100 text-red-600" :
-                  a.variant === "success" ? "bg-emerald-100 text-emerald-600" :
-                  "bg-sky-100 text-sky-600"
-                }`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <span className="font-medium text-gray-900">{a.label}</span>
-                {a.destructive && <Badge variant="danger" size="sm">Irreversible</Badge>}
-              </button>
-              {isAct && (
-                <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
-                  {(a.key === "signer" || a.key === "renouveler") && (
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Numero de bureau (1-60)</label>
-                        <select
-                          value={sd.numeroBureau}
-                          onChange={(e) => setSd({ ...sd, numeroBureau: parseInt(e.target.value) })}
-                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg"
-                        >
-                          {Array.from({ length: 60 }, (_, i) => i + 1).map((n) => {
-                            const isOccupied = occupiedBureaux.includes(n);
-                            return (
-                              <option key={n} value={n} className={isOccupied ? "text-red-500 bg-red-50" : ""}>
-                                Bureau {n}{isOccupied ? " (occupe)" : ""}
-                              </option>
-                            );
-                          })}
-                        </select>
-                        {occupiedBureaux.includes(sd.numeroBureau) && (
-                          <p className="text-xs text-red-600 mt-1 font-medium">Ce bureau est deja attribue</p>
-                        )}
-                      </div>
-                      <Input label="Reference contrat notarie" value={sd.referenceContratNotarie} onChange={(e) => setSd({ ...sd, referenceContratNotarie: e.target.value })} required />
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <Input label="Date debut" type="date" value={sd.dateDebutContrat} onChange={(e) => setSd({ ...sd, dateDebutContrat: e.target.value })} />
-                        <Input label="Date fin" type="date" value={sd.dateFinContrat} onChange={(e) => setSd({ ...sd, dateFinContrat: e.target.value })} />
-                      </div>
-                      <Input label="Montant mensuel (DA)" type="number" value={sd.montantMensuel.toString()} onChange={(e) => setSd({ ...sd, montantMensuel: parseInt(e.target.value) || 0 })} />
-                      <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
-                        <p className="text-sm font-medium text-emerald-800">Total: {formatCurrency(montantTotal)} ({mois} mois)</p>
-                      </div>
-                    </div>
-                  )}
-                  {(a.key === "completer" || a.key === "activer") && (
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Numero de bureau (1-60) — optionnel</label>
-                        <select
-                          value={sd.numeroBureau}
-                          onChange={(e) => setSd({ ...sd, numeroBureau: parseInt(e.target.value) })}
-                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg"
-                        >
-                          {Array.from({ length: 60 }, (_, i) => i + 1).map((n) => {
-                            const isOccupied = occupiedBureaux.includes(n);
-                            return (
-                              <option key={n} value={n} className={isOccupied ? "text-red-500 bg-red-50" : ""}>
-                                Bureau {n}{isOccupied ? " (occupe)" : ""}
-                              </option>
-                            );
-                          })}
-                        </select>
-                        {occupiedBureaux.includes(sd.numeroBureau) && (
-                          <p className="text-xs text-amber-600 mt-1 font-medium">Ce bureau est deja attribue a une autre domiciliation</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {(a.key === "rejeter" || a.key === "resilier" || a.key === "complements") && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {a.key === "complements" ? "Informations manquantes" : "Motif"} <span className="text-red-500">*</span>
-                      </label>
-                      <textarea
-                        value={motif}
-                        onChange={(e) => setMotif(e.target.value)}
-                        rows={3}
-                        placeholder={a.key === "rejeter" ? "Raison du refus..." : a.key === "resilier" ? "Raison de la resiliation..." : "Preciser les informations ou documents manquants..."}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                      />
-                    </div>
-                  )}
-                  {a.destructive ? (
-                    confirmAction === a.key ? (
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setConfirmAction(null)} className="flex-1">Annuler</Button>
-                        <Button variant="danger" size="sm" onClick={() => handleSubmit(a.key)} loading={loading} className="flex-1">Confirmer</Button>
-                      </div>
-                    ) : (
-                      <Button variant="danger" size="sm" onClick={() => setConfirmAction(a.key)} className="w-full">{a.label}</Button>
-                    )
-                  ) : (
-                    <Button variant={a.variant as "primary" | "success"} size="sm" onClick={() => handleSubmit(a.key)} loading={loading} className="w-full">{a.label}</Button>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
       </div>
     </div>
   );
