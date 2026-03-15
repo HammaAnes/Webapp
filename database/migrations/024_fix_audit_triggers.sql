@@ -2,22 +2,24 @@
   # Fix audit_logs triggers
 
   ## Problem
-  Triggers `audit_users_update` and `audit_users_delete` reference columns
-  that may not exist in the deployed `audit_logs` table.
+  Triggers `audit_users_update` et `audit_users_delete` peuvent référencer
+  des colonnes absentes dans la table `audit_logs` déployée.
 
   ## Fix
-  - Add missing columns to audit_logs if they don't exist
-  - Recreate triggers using correct column names
+  - Ajouter les colonnes manquantes dans audit_logs
+  - Recréer les triggers avec les bons noms de colonnes
 
-  ## Tables Modified
-  - `audit_logs`: Ensure all needed columns exist (action, entity_type, entity_id, old_values, new_values)
+  ## Tables modifiées
+  - `audit_logs` : ajout colonnes action, entity_type, entity_id, old_values, new_values
 
-  ## Notes
-  - Safe to run multiple times (uses IF NOT EXISTS / IF EXISTS guards)
-  - Uses NULL for ip_address in triggers (not available in trigger context)
+  ## IMPORTANT - Instructions d'exécution dans phpMyAdmin
+  Exécuter les blocs ci-dessous UN PAR UN dans des onglets séparés de phpMyAdmin,
+  ou via le CLI MySQL avec la commande : mysql -u user -p dbname < 024_fix_audit_triggers.sql
+
+  Les triggers nécessitent une exécution séparée de chaque CREATE TRIGGER.
 */
 
--- Ensure all required columns exist in audit_logs
+-- Étape 1 : Ajouter les colonnes manquantes dans audit_logs
 ALTER TABLE audit_logs
   ADD COLUMN IF NOT EXISTS action VARCHAR(50) NULL,
   ADD COLUMN IF NOT EXISTS entity_type VARCHAR(50) NULL,
@@ -25,12 +27,12 @@ ALTER TABLE audit_logs
   ADD COLUMN IF NOT EXISTS old_values JSON NULL,
   ADD COLUMN IF NOT EXISTS new_values JSON NULL;
 
--- Drop existing triggers to recreate cleanly
+-- Étape 2 : Supprimer les anciens triggers
 DROP TRIGGER IF EXISTS audit_users_update;
 DROP TRIGGER IF EXISTS audit_users_delete;
 
-DELIMITER $$
-
+-- Étape 3a : Créer le trigger de mise à jour
+-- EXÉCUTER CE BLOC SEUL dans phpMyAdmin (coller uniquement ce qui suit jusqu'à END)
 CREATE TRIGGER audit_users_update
 AFTER UPDATE ON users
 FOR EACH ROW
@@ -65,8 +67,10 @@ BEGIN
             NOW()
         );
     END IF;
-END$$
+END;
 
+-- Étape 3b : Créer le trigger de suppression
+-- EXÉCUTER CE BLOC SEUL dans phpMyAdmin (coller uniquement ce qui suit jusqu'à END)
 CREATE TRIGGER audit_users_delete
 AFTER DELETE ON users
 FOR EACH ROW
@@ -88,6 +92,4 @@ BEGIN
         NULL,
         NOW()
     );
-END$$
-
-DELIMITER ;
+END;
