@@ -37,16 +37,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 
         EmailQueue::ensureUserPreferences($userId);
 
-        $allowed = ['email_transactionnel', 'email_rappels', 'email_marketing', 'email_systeme'];
+        $allowed = ['email_rappels', 'email_marketing', 'email_systeme'];
         $updates = [];
-        $params = [];
+        $params  = [];
 
         foreach ($allowed as $field) {
             if (isset($input[$field])) {
                 $updates[] = "$field = ?";
-                $params[] = (int)(bool)$input[$field];
+                $params[]  = (int)(bool)$input[$field];
             }
         }
+
+        $updates[] = 'email_transactionnel = 1';
 
         if (empty($updates)) {
             Response::error('Aucune préférence à mettre à jour', 400);

@@ -75,7 +75,7 @@ if (!$template || !in_array($template, $validTemplates)) {
 }
 
 try {
-    $data = $fixturesByTemplate[$template];
+    $tplData      = $fixturesByTemplate[$template];
     $templatePath = __DIR__ . '/../templates/emails/' . $template . '.php';
 
     if (!file_exists($templatePath)) {
@@ -84,8 +84,10 @@ try {
     }
 
     ob_start();
-    extract($data);
-    require $templatePath;
+    (static function (array $tplData, string $_templatePath) {
+        extract($tplData, EXTR_SKIP);
+        include $_templatePath;
+    })($tplData, $templatePath);
     $html = ob_get_clean();
 
     header('Content-Type: text/html; charset=UTF-8');

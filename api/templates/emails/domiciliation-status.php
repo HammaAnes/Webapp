@@ -2,8 +2,8 @@
 $nomEntreprise = htmlspecialchars($domiciliation['nom_entreprise'] ?? $domiciliation['raison_sociale'] ?? 'N/A');
 $appUrl = env('APP_URL', 'https://coffice.dz');
 
-$isSuccess = in_array($status, ['validee', 'active', 'domiciliation_creee']);
-$isDanger = in_array($status, ['rejetee', 'refusee', 'resiliee']);
+$isSuccess = in_array($status, ['domiciliation_creee', 'active']);
+$isDanger  = in_array($status, ['refusee', 'resiliee']);
 $variant = $isSuccess ? 'success' : ($isDanger ? 'danger' : 'warning');
 
 $infoRows = ['Raison sociale' => $nomEntreprise, 'Statut' => htmlspecialchars($status_label)];
@@ -16,8 +16,10 @@ if (!empty($domiciliation['duree_mois'])) {
 }
 
 if ($isSuccess) {
-    $title = 'Domiciliation ' . ($status === 'active' ? 'activée' : 'validée') . ' !';
-    $intro = 'Bonjour, bonne nouvelle ! Votre domiciliation commerciale a été ' . ($status === 'active' ? 'activée' : 'validée') . '.';
+    $title = $status === 'active' ? 'Domiciliation activée !' : 'Domiciliation créée !';
+    $intro = $status === 'active'
+        ? 'Bonjour, bonne nouvelle ! Votre domiciliation commerciale est maintenant active.'
+        : 'Bonjour, bonne nouvelle ! Votre domiciliation commerciale a été créée avec succès.';
     $infoRows['Adresse'] = 'Mohammadia Mall, 4ème ét., Bureau 1178, Alger';
     $outro = '<p style="font-size:15px;line-height:1.7;color:#4b5563;margin:16px 0 4px;">Vous pouvez d&eacute;sormais utiliser l\'adresse de Coffice comme si&egrave;ge social de votre entreprise.</p>';
 } elseif ($isDanger) {

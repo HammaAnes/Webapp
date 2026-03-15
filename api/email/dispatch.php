@@ -343,7 +343,7 @@ function sendMail(string $to, string $subject, string $html, string $type = 'cus
     }
 }
 
-function sendTemplateEmail(string $template, array $data, string $to, string $subject, string $type, ?string $userId = null): array
+function sendTemplateEmail(string $template, array $tplData, string $to, string $subject, string $type, ?string $userId = null): array
 {
     $templatePath = __DIR__ . '/../templates/emails/' . $template . '.php';
 
@@ -353,8 +353,10 @@ function sendTemplateEmail(string $template, array $data, string $to, string $su
     }
 
     ob_start();
-    extract($data);
-    require $templatePath;
+    (static function (array $tplData, string $_templatePath) {
+        extract($tplData, EXTR_SKIP);
+        include $_templatePath;
+    })($tplData, $templatePath);
     $html = ob_get_clean();
 
     return sendMail($to, $subject, $html, $type, $userId);

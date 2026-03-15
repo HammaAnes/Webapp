@@ -100,18 +100,15 @@ class EmailQueue
             $payload = json_decode($item['payload'], true) ?: [];
 
             try {
-                $sent = Mailer::send(
-                    $item['to_email'],
-                    $item['subject'],
-                    self::renderTemplate($item['template'], $payload)
-                );
+                $html = self::renderTemplate($item['template'], $payload);
+                $sent = Mailer::sendRaw($item['to_email'], $item['subject'], $html);
 
                 if ($sent) {
                     $db->prepare("UPDATE email_queue SET status = 'sent' WHERE id = ?")->execute([$item['id']]);
                     EmailLogger::logSent($item['type'], $item['to_email'], $item['subject'], $item['user_id'] ?: null);
                     $results['sent']++;
                 } else {
-                    self::handleFailure($item, 'Mailer::send returned false');
+                    self::handleFailure($item, 'Mailer::sendRaw returned false');
                     $results['failed']++;
                 }
             } catch (Exception $e) {
@@ -120,7 +117,6 @@ class EmailQueue
             }
 
             $results['processed']++;
-            usleep(200000);
         }
 
         return $results;
@@ -194,17 +190,22 @@ class EmailQueue
         return (bool) $prefs[$column];
     }
 
-    private static function renderTemplate(string $template, array $payload): string
+    private static function renderTemplate(string $template, array $tplData): string
     {
         $templatePath = __DIR__ . '/../templates/emails/' . $template . '.php';
 
         if (!file_exists($templatePath)) {
-            return Mailer::wrapInLayout('Notification Coffice', '<p>' . htmlspecialchars(json_encode($payload, JSON_UNESCAPED_UNICODE)) . '</p>');
+            return Mailer::wrapInLayout(
+                'Notification Coffice',
+                '<p>' . htmlspecialchars(json_encode($tplData, JSON_UNESCAPED_UNICODE)) . '</p>'
+            );
         }
 
         ob_start();
-        extract($payload);
-        require $templatePath;
+        (static function (array $tplData, string $_templatePath) {
+            extract($tplData, EXTR_SKIP);
+            include $_templatePath;
+        })($tplData, $templatePath);
         return ob_get_clean();
     }
 
