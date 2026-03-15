@@ -13,19 +13,19 @@ require_once '../utils/Response.php';
 try {
     $data = json_decode(file_get_contents("php://input"));
 
-    if (empty($data->refreshToken)) {
+    $refreshToken = $data->refresh_token ?? $data->refreshToken ?? null;
+
+    if (empty($refreshToken)) {
         Response::error("Refresh token manquant", 400);
     }
 
-    // Valider le refresh token
-    $userData = Auth::validateToken($data->refreshToken);
+    $userData = Auth::validateToken($refreshToken);
 
     if (!$userData) {
         Response::error("Refresh token invalide ou expiré", 401);
     }
 
-    // Vérifier que c'est bien un refresh token
-    $decoded = json_decode(base64_decode(str_replace('_', '/', str_replace('-', '+', explode('.', $data->refreshToken)[1]))));
+    $decoded = json_decode(base64_decode(str_replace('_', '/', str_replace('-', '+', explode('.', $refreshToken)[1]))));
 
     if (!isset($decoded->type) || $decoded->type !== 'refresh') {
         Response::error("Token invalide", 401);

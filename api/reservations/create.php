@@ -35,7 +35,9 @@ try {
     $participants = isset($data['participants']) ? intval($data['participants']) : 1;
     $notes = isset($data['notes']) ? trim($data['notes']) : '';
     $codePromo = $data['code_promo'] ?? null;
+    $statutDemande = $data['statut'] ?? null;
 
+    $allowedStatuts = ['en_attente', 'confirmee', 'en_cours', 'terminee', 'annulee'];
     if ($authUser['role'] === 'admin') {
         if ($targetUserId && $targetContactId) {
             Response::error("Une reservation ne peut etre liee qu'a un utilisateur OU un contact, pas les deux", 400);
@@ -45,9 +47,11 @@ try {
         }
         $userId = $targetUserId;
         $contactId = $targetContactId;
+        $statutInitial = ($statutDemande && in_array($statutDemande, $allowedStatuts)) ? $statutDemande : 'en_attente';
     } else {
         $userId = $authUserId;
         $contactId = null;
+        $statutInitial = 'en_attente';
 
         if (empty($authUser['carte_identite_url'])) {
             Response::error("Vous devez télécharger votre carte d'identité avant d'effectuer une réservation.", 403);
@@ -234,7 +238,7 @@ try {
     $stmt = $db->prepare("
         INSERT INTO reservations
         (id, user_id, contact_id, espace_id, date_debut, date_fin, statut, type_reservation, montant_total, montant_paye, participants, notes, code_promo_id, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, 'en_attente', ?, ?, 0, ?, ?, ?, NOW())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, NOW())
     ");
 
     $result = $stmt->execute([
@@ -244,6 +248,7 @@ try {
         $espaceId,
         $debutMysql,
         $finMysql,
+        $statutInitial,
         $type,
         $montant,
         $participants,

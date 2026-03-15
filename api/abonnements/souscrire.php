@@ -32,6 +32,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Response::error('Vous avez déjà un abonnement actif', 400);
         }
 
+        $commentaire = isset($data['commentaire']) ? trim($data['commentaire']) : null;
+        $dateDebutSouhaitee = isset($data['date_debut_souhaitee']) ? $data['date_debut_souhaitee'] : null;
+        $entreprise = isset($data['entreprise']) ? trim($data['entreprise']) : null;
+
         $dateDebut = date('Y-m-d');
         $interval = '+' . $abonnement['duree_mois'] . ' months';
         $dateFin = date('Y-m-d', strtotime($interval, strtotime($dateDebut)));
@@ -39,8 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = UuidHelper::generate();
         $insertStmt = $db->prepare("
             INSERT INTO abonnements_utilisateurs
-            (id, user_id, abonnement_id, date_debut, date_fin, montant_paye, statut, credits_restants)
-            VALUES (?, ?, ?, ?, ?, ?, 'actif', ?)
+            (id, user_id, abonnement_id, date_debut, date_fin, montant_paye, statut, credits_restants, commentaire, date_debut_souhaitee, entreprise)
+            VALUES (?, ?, ?, ?, ?, ?, 'actif', ?, ?, ?, ?)
         ");
 
         $creditsRestants = $abonnement['credits_mensuels'] ?? 0;
@@ -55,7 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $dateDebut,
             $dateFin,
             $prixAbonnement,
-            $creditsRestants
+            $creditsRestants,
+            $commentaire,
+            $dateDebutSouhaitee,
+            $entreprise
         ]);
 
         $transactionId = UuidHelper::generate();
