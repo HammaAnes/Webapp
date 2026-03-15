@@ -15,7 +15,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, isAdmin, isInitialized, isLoading } = useAuthStore();
   const location = useLocation();
 
-  if (!isInitialized || isLoading) {
+  if (!isInitialized || (isLoading && !user)) {
     return <LoadingScreen />;
   }
 

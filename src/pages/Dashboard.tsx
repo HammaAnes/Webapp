@@ -33,21 +33,18 @@ const ContactDetail = lazy(() => import("./dashboard/admin/ContactDetail"));
 const ContactCreate = lazy(() => import("./dashboard/admin/ContactCreate"));
 const AdminEmail = lazy(() => import("./dashboard/admin/Email"));
 
-const AdminGuard = () => {
-  const { user } = useAuthStore();
-  if (user?.role !== "admin") {
+const AdminGuard = React.memo(() => {
+  const { isAdmin } = useAuthStore();
+  if (!isAdmin) {
     return <Navigate to="/app" replace />;
   }
   return <Outlet />;
-};
+});
+
+AdminGuard.displayName = "AdminGuard";
 
 const Dashboard = () => {
   useSEO({ noIndex: true });
-  const { user } = useAuthStore();
-
-  if (!user) {
-    return <Navigate to="/connexion" replace />;
-  }
 
   return (
     <DashboardLayout>

@@ -1,11 +1,12 @@
-import { useState, useCallback, ChangeEvent } from "react";
+import React, { useState, useCallback } from "react";
+import { logger } from "../utils/logger";
 
 interface ValidationRule {
   required?: boolean | string;
   minLength?: { value: number; message: string };
   maxLength?: { value: number; message: string };
   pattern?: { value: RegExp; message: string };
-  validate?: (value: any) => string | undefined;
+  validate?: (value: unknown) => string | boolean | undefined;
 }
 
 interface FormConfig<T> {
@@ -21,7 +22,7 @@ interface FormState<T> {
   isSubmitting: boolean;
 }
 
-export function useForm<T extends Record<string, any>>({
+export function useForm<T extends Record<string, unknown>>({
   initialValues,
   validationRules = {},
   onSubmit,
@@ -34,7 +35,7 @@ export function useForm<T extends Record<string, any>>({
   });
 
   const validateField = useCallback(
-    (name: keyof T, value: any): string | undefined => {
+    (name: keyof T, value: unknown): string | undefined => {
       const rules = validationRules[name];
       if (!rules) return undefined;
 
@@ -67,7 +68,9 @@ export function useForm<T extends Record<string, any>>({
       }
 
       if (rules.validate) {
-        return rules.validate(value);
+        const result = rules.validate(value);
+        if (typeof result === "string") return result;
+        return undefined;
       }
 
       return undefined;
@@ -95,11 +98,9 @@ export function useForm<T extends Record<string, any>>({
   const handleChange = useCallback(
     (name: keyof T) =>
       (
-        e:
-          | ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-          | any
+        e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> | unknown
       ) => {
-        const value = e?.target?.value ?? e;
+        const value = (e as React.ChangeEvent<HTMLInputElement>)?.target?.value ?? e;
 
         setFormState((prev) => ({
           ...prev,
@@ -144,7 +145,7 @@ export function useForm<T extends Record<string, any>>({
       try {
         await onSubmit(formState.values);
       } catch (error) {
-        console.error("Form submission error:", error);
+        logger.error("Form submission error:", error instanceof Error ? error.message : String(error));
       } finally {
         setFormState((prev) => ({ ...prev, isSubmitting: false }));
       }
@@ -152,7 +153,7 @@ export function useForm<T extends Record<string, any>>({
     [formState.values, onSubmit, validateForm]
   );
 
-  const setFieldValue = useCallback((name: keyof T, value: any) => {
+  const setFieldValue = useCallback((name: keyof T, value: unknown) => {
     setFormState((prev) => ({
       ...prev,
       values: { ...prev.values, [name]: value },

@@ -74,9 +74,9 @@ const Parrainage = () => {
       const response = await apiClient.getParrainages(user.id);
 
       if (response.success && response.data) {
-        const rd = response.data as Record<string, any>;
+        const rd = response.data as Record<string, unknown>;
         const parrainages: ParrainageDetail[] = Array.isArray(rd.data)
-          ? rd.data
+          ? (rd.data as ParrainageDetail[])
           : Array.isArray(response.data)
           ? (response.data as ParrainageDetail[])
           : [];

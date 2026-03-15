@@ -1,19 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import {
-  Calendar,
-  Clock,
-  MapPin,
-  User,
-  FileText,
-  Banknote,
-  XCircle,
-  ArrowLeft,
-  Check,
-  X,
-  Tag,
-  Edit2,
-} from "lucide-react";
+import { Calendar, Clock, MapPin, User, FileText, Banknote, XCircle, ArrowLeft, Check, X, Tag, FileEdit as Edit2 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { apiClient } from "../../lib/api-client";
 import Button from "../../components/ui/Button";
@@ -83,7 +70,7 @@ const getSpaceImage = (nom: string, type: string): string => {
 const ReservationDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, isAdmin } = useAuthStore();
   const [reservation, setReservation] = useState<ReservationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -236,7 +223,6 @@ const ReservationDetail: React.FC = () => {
     );
   }
 
-  const isAdmin = user?.role === "admin";
 
   return (
     <div className="space-y-6">

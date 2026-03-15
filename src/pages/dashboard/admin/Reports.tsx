@@ -55,7 +55,7 @@ const PERIOD_LABELS: Record<Period, string> = {
   day: "Aujourd'hui",
   week: "Cette semaine",
   month: "Ce mois",
-  year: "Cette annee",
+  year: "Cette année",
 };
 
 export default function Reports() {
@@ -144,7 +144,7 @@ export default function Reports() {
     doc.setFontSize(18);
     doc.text("Coffice - Rapport " + PERIOD_LABELS[period], 14, 22);
     doc.setFontSize(10);
-    doc.text(`Genere le ${new Date().toLocaleDateString("fr-FR")}`, 14, 30);
+    doc.text(`Généré le ${new Date().toLocaleDateString("fr-FR")}`, 14, 30);
 
     autoTable(doc, {
       startY: 38,
@@ -247,7 +247,7 @@ export default function Reports() {
       >
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Rapports & Statistiques</h1>
-          <p className="text-gray-500 mt-1">Analyse detaillee de l'activite Coffice</p>
+          <p className="text-gray-500 mt-1">Analyse détaillée de l'activité Coffice</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {(["day", "week", "month", "year"] as Period[]).map((p) => (

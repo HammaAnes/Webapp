@@ -82,16 +82,15 @@ export interface IdentificationEntreprise {
 export interface User {
   id: string;
   email: string;
-  password?: string;
   nom: string;
   prenom: string;
   telephone?: string;
   role: "admin" | "user";
   statut?: "actif" | "inactif" | "suspendu";
-  dateCreation?: Date;
   createdAt?: string;
-  derniereConnexion?: Date;
   updatedAt?: string;
+  derniereConnexion?: Date;
+  dateCreation?: Date;
   avatar?: string | null;
   profession?: string;
   entreprise?: string;
@@ -150,8 +149,8 @@ export interface Reservation {
   utilisateur?: User;
   contact?: Contact;
   espace?: Espace | { id: string; nom: string; type: EspaceType };
-  dateDebut: Date | string;
-  dateFin: Date | string;
+  dateDebut: Date;
+  dateFin: Date;
   statut: ReservationStatut;
   typeReservation?: TypeReservation;
   montantTotal: number;
@@ -163,8 +162,8 @@ export interface Reservation {
   participants?: number;
   checkinId?: string;
   dateCreation?: Date;
-  createdAt?: Date | string;
-  updatedAt?: Date | string;
+  createdAt?: string;
+  updatedAt?: string;
   isActive?: boolean;
 }
 
@@ -259,7 +258,7 @@ export interface DemandeDomiciliation {
   adresseActuelle?: string;
   activitePrincipale?: string;
   visibleSurSite?: boolean;
-  documents?: Array<{ type: string; name: string }> | string;
+  documents?: Array<{ type: string; name: string }>;
   dateDebutSouhaitee?: Date | string;
 }
 
@@ -407,12 +406,12 @@ export interface AbonnementUtilisateur {
   abonnementId: string;
   utilisateur?: User;
   abonnement?: Abonnement;
-  dateDebut: Date | string;
-  dateFin: Date | string;
+  dateDebut: string;
+  dateFin: string;
   statut: "actif" | "expire" | "suspendu" | "annule";
   autoRenouvellement: boolean;
-  createdAt?: Date | string;
-  updatedAt?: Date | string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface NotificationSettings {

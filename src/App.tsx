@@ -28,20 +28,20 @@ import { BLOG_ENABLED } from "./data/blogArticles";
 //
 function App() {
   useScrollAnimation();
-  const authStore = useAuthStore();
-  const initRef = React.useRef(false);
+  const { isInitialized } = useAuthStore();
 
   React.useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
-
     const initApp = async () => {
-      await authStore.initialize();
-      const { user } = useAuthStore.getState();
-      if (user) {
-        await useAppStore.getState().initializeData();
-      } else {
-        await useAppStore.getState().loadEspaces();
+      try {
+        await useAuthStore.getState().initialize();
+        const { user } = useAuthStore.getState();
+        if (user) {
+          await useAppStore.getState().initializeData();
+        } else {
+          await useAppStore.getState().loadEspaces();
+        }
+      } catch {
+        // Errors are handled inside initialize() and initializeData()
       }
     };
 
@@ -49,7 +49,7 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!authStore.isInitialized) {
+  if (!isInitialized) {
     return <LoadingScreen />;
   }
 

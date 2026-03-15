@@ -55,7 +55,7 @@ const Users = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [loadUsers, loadReservations]);
 
   const handleRefresh = async () => {
     setIsLoading(true);

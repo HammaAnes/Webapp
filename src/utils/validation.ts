@@ -181,7 +181,7 @@ export const asyncValidators = {
       const exists = await apiCheck(email);
       return !exists || "Cet email est déjà utilisé";
     } catch {
-      return true;
+      return "Impossible de vérifier l'email. Réessayez.";
     }
   },
 
@@ -196,7 +196,7 @@ export const asyncValidators = {
   },
 };
 
-export function combineValidations(...rules: any[]) {
-  return rules.reduce((acc, rule) => ({ ...acc, ...rule }), {});
+export function combineValidations(...rules: Record<string, unknown>[]) {
+  return rules.reduce((acc, rule) => ({ ...acc, ...rule }), {} as Record<string, unknown>);
 }
 

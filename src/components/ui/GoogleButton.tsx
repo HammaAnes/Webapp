@@ -1,5 +1,6 @@
 import React from "react";
 import Button from "./Button";
+import { logger } from "../../utils/logger";
 
 interface GoogleButtonProps {
   onSuccess: (credential: string) => void;
@@ -121,7 +122,7 @@ export const GoogleButton: React.FC<GoogleButtonProps> = ({
         shape: "rectangular",
       });
     } catch (error) {
-      console.error("Error initializing Google Sign-In:", error);
+      logger.error("Error initializing Google Sign-In:", error instanceof Error ? error.message : String(error));
       setScriptError(true);
     }
   }, [isScriptLoaded, onSuccess, onError, disabled, hasClientId]);

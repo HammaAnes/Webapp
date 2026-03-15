@@ -69,57 +69,47 @@ class ApiClient {
 
   getToken(): string | null {
     if (typeof window !== "undefined") {
-      this.token = this.storage.getItem("auth_token") || localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
+      this.token = this.storage.getItem("auth_token") || null;
     }
     return this.token;
   }
 
   getRefreshToken(): string | null {
     if (typeof window !== "undefined") {
-      this.refreshToken = this.storage.getItem("refresh_token") || localStorage.getItem("refresh_token") || sessionStorage.getItem("refresh_token");
+      this.refreshToken = this.storage.getItem("refresh_token") || null;
     }
     return this.refreshToken;
+  }
+
+  private parseTokenPayload(token: string): { exp?: number } | null {
+    try {
+      const parts = token.split(".");
+      if (parts.length !== 3) return null;
+      const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, "=");
+      const payload = JSON.parse(atob(padded));
+      if (typeof payload !== "object" || payload === null) return null;
+      return payload as { exp?: number };
+    } catch {
+      return null;
+    }
   }
 
   private isTokenExpired(): boolean {
     const token = this.getToken();
     if (!token) return true;
-
-    try {
-      const parts = token.split(".");
-      if (parts.length !== 3) return true;
-
-      const payload = JSON.parse(
-        atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")),
-      );
-      const exp = payload.exp * 1000;
-      const now = Date.now();
-
-      return now >= exp;
-    } catch {
-      return true;
-    }
+    const payload = this.parseTokenPayload(token);
+    if (!payload || typeof payload.exp !== "number") return true;
+    return Date.now() >= payload.exp * 1000;
   }
 
   private isTokenExpiringSoon(): boolean {
     const token = this.getToken();
     if (!token) return false;
-
-    try {
-      const parts = token.split(".");
-      if (parts.length !== 3) return false;
-
-      const payload = JSON.parse(
-        atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")),
-      );
-      const exp = payload.exp * 1000;
-      const now = Date.now();
-      const timeLeft = exp - now;
-
-      return timeLeft < 5 * 60 * 1000;
-    } catch {
-      return false;
-    }
+    const payload = this.parseTokenPayload(token);
+    if (!payload || typeof payload.exp !== "number") return false;
+    const timeLeft = payload.exp * 1000 - Date.now();
+    return timeLeft > 0 && timeLeft < 5 * 60 * 1000;
   }
 
   private async refreshAccessToken(): Promise<string> {
@@ -263,20 +253,6 @@ class ApiClient {
           }
         }
       } else {
-        if (response.status === 401) {
-          if (retryWithRefresh && !isPublicEndpoint) {
-            try {
-              await this.refreshAccessToken();
-              return this.request<T>(endpoint, options, false, retryCount);
-            } catch {
-              this.handleAuthError();
-              return { success: false, error: ERROR_MESSAGES.SESSION_EXPIRED };
-            }
-          }
-          this.handleAuthError();
-          return { success: false, error: ERROR_MESSAGES.SESSION_EXPIRED };
-        }
-
         const text = await response.text();
         logger.error("[API] Non-JSON response:", {
           url,
@@ -285,24 +261,15 @@ class ApiClient {
           preview: text.substring(0, 200),
         });
 
-        if (response.status >= 500 && retryCount < MAX_RETRIES) {
-          logger.debug(
-            `Server error, retrying... (${retryCount + 1}/${MAX_RETRIES})`,
-          );
-          await new Promise((resolve) =>
-            setTimeout(resolve, 1000 * (retryCount + 1)),
-          );
-          return this.request<T>(
-            endpoint,
-            options,
-            retryWithRefresh,
-            retryCount + 1,
-          );
+        if (response.status === 401) {
+          data = { success: false, error: ERROR_MESSAGES.SESSION_EXPIRED };
+        } else if (response.status >= 500 && retryCount < MAX_RETRIES) {
+          logger.debug(`Server error, retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+          await new Promise((resolve) => setTimeout(resolve, 1000 * (retryCount + 1)));
+          return this.request<T>(endpoint, options, retryWithRefresh, retryCount + 1);
+        } else {
+          throw new Error(`Erreur serveur (${response.status}): Le serveur n'a pas renvoyé de réponse JSON valide`);
         }
-
-        throw new Error(
-          `Erreur serveur (${response.status}): Le serveur n'a pas renvoyé de réponse JSON valide`,
-        );
       }
 
       if (response.status === 401) {
@@ -312,16 +279,16 @@ class ApiClient {
           logger.debug("Attempting token refresh after 401");
           try {
             await this.refreshAccessToken();
-            logger.debug("Token refreshed successfully, retrying request");
+            logger.debug("Token refreshed, retrying request");
             return this.request<T>(endpoint, options, false, retryCount);
           } catch (refreshError) {
             logger.error("Refresh failed after 401:", refreshError instanceof Error ? refreshError.message : String(refreshError));
             this.handleAuthError();
-            throw new Error((data.error as string) || ERROR_MESSAGES.SESSION_EXPIRED);
+            return { success: false, error: (data?.error as string) || ERROR_MESSAGES.SESSION_EXPIRED };
           }
         } else {
           this.handleAuthError();
-          throw new Error((data.error as string) || ERROR_MESSAGES.SESSION_EXPIRED);
+          return { success: false, error: (data?.error as string) || ERROR_MESSAGES.SESSION_EXPIRED };
         }
       }
 
@@ -913,23 +880,22 @@ class ApiClient {
 
   // ============= CODES PROMO =============
   async validateCodePromo(code: string, montant: number, type: string) {
-    return this.request("/codes-promo/validate.php", {
+    const response = await this.request("/codes-promo/validate.php", {
       method: "POST",
       body: JSON.stringify({ code, montant, type }),
-    }).then((response) => {
-      if (response.success && response.data) {
-        const data = response.data as { id?: string; code?: string; reduction?: number };
-        return {
-          valid: true,
-          codePromoId: data.id || data.code,
-          reduction: data.reduction || 0,
-        };
-      }
-      return {
-        valid: false,
-        error: response.error || "Code invalide",
-      };
     });
+    if (response.success && response.data) {
+      const data = response.data as { id?: string; reduction?: number };
+      return {
+        valid: true,
+        codePromoId: data.id || "",
+        reduction: data.reduction || 0,
+      };
+    }
+    return {
+      valid: false,
+      error: response.error || "Code invalide",
+    };
   }
 
   async getCodesPromo() {

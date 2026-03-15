@@ -3,6 +3,7 @@ import { apiClient } from "../lib/api-client";
 import toast from "react-hot-toast";
 import type { User } from "../types";
 import { logger } from "../utils/logger";
+import { userAdapter } from "../adapters";
 
 interface AuthState {
   user: User | null;
@@ -30,24 +31,10 @@ interface RegisterData {
   codeParrainage?: string;
 }
 
-// Add this helper function at the top of the file (outside the store)
-function adaptUser(rawUser: Record<string, unknown>): User {
-  return {
-    ...rawUser,
-    id: String(rawUser.id),
-    raisonSociale: rawUser.raison_sociale || rawUser.raisonSociale,
-    formeJuridique: rawUser.forme_juridique || rawUser.formeJuridique,
-    nif: rawUser.nif,
-    nis: rawUser.nis,
-    registreCommerce: rawUser.registre_commerce || rawUser.registreCommerce,
-    articleImposition: rawUser.article_imposition || rawUser.articleImposition,
-    activitePrincipale: rawUser.activite_principale || rawUser.activitePrincipale,
-    numeroAutoEntrepreneur: rawUser.numero_auto_entrepreneur || rawUser.numeroAutoEntrepreneur,
-    siegeSocial: rawUser.siege_social || rawUser.siegeSocial,
-    capital: rawUser.capital,
-    dateCreationEntreprise: rawUser.date_creation_entreprise || rawUser.dateCreationEntreprise,
-    carteIdentiteUrl: rawUser.carte_identite_url || rawUser.carteIdentiteUrl || null,
-  } as User;
+interface AuthResponseData {
+  token: string;
+  refreshToken?: string;
+  user: Record<string, unknown>;
 }
 
 export const useAuthStore = create<AuthState>()((set, get) => ({
@@ -57,17 +44,15 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   isAdmin: false,
 
   initialize: async () => {
+    const current = get();
+    if (current.isInitialized) return;
+
     try {
       set({ isLoading: true });
       const token = apiClient.getToken();
 
       if (!token) {
-        set({
-          user: null,
-          isAdmin: false,
-          isInitialized: true,
-          isLoading: false,
-        });
+        set({ user: null, isAdmin: false, isInitialized: true, isLoading: false });
         return;
       }
 
@@ -75,93 +60,62 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
       if (!response.success || !response.data) {
         apiClient.setToken(null);
-        set({
-          user: null,
-          isAdmin: false,
-          isInitialized: true,
-          isLoading: false,
-        });
+        set({ user: null, isAdmin: false, isInitialized: true, isLoading: false });
         return;
       }
 
-      const userData = adaptUser(response.data as Record<string, unknown>); // ← was: response.data as User
+      const userData = userAdapter.fromAPI(response.data as Record<string, unknown>);
       set({ user: userData, isAdmin: userData.role === "admin", isInitialized: true, isLoading: false });
-    } catch {
+    } catch (error) {
+      logger.warn("Auth initialization failed:", error instanceof Error ? error.message : String(error));
       apiClient.setToken(null);
-      set({
-        user: null,
-        isAdmin: false,
-        isInitialized: true,
-        isLoading: false,
-      });
+      set({ user: null, isAdmin: false, isInitialized: true, isLoading: false });
     }
   },
 
-login: async (email: string, password: string) => {
-  try {
-    set({ isLoading: true });
-    const response = await apiClient.login(email, password);
+  login: async (email: string, password: string) => {
+    try {
+      set({ isLoading: true });
+      const response = await apiClient.login(email, password);
 
-    if (!response.success || !response.data) {
-      throw new Error(response.error || "Erreur de connexion");
+      if (!response.success || !response.data) {
+        throw new Error(response.error || "Erreur de connexion");
+      }
+
+      const responseData = response.data as AuthResponseData;
+      apiClient.setToken(responseData.token, responseData.refreshToken);
+      const adaptedUser = userAdapter.fromAPI(responseData.user);
+
+      set({ user: adaptedUser, isAdmin: adaptedUser.role === "admin", isLoading: false });
+      toast.success("Connexion réussie");
+    } catch (error) {
+      set({ isLoading: false });
+      toast.error(error instanceof Error ? error.message : "Erreur de connexion");
+      throw error;
     }
+  },
 
-    const responseData = response.data as {
-      token: string;
-      refreshToken?: string;
-      user: any; // Use any temporarily to handle the transformation
-    };
+  loginWithGoogle: async (credential: string) => {
+    try {
+      set({ isLoading: true });
+      const response = await apiClient.loginWithGoogle(credential);
 
-    apiClient.setToken(responseData.token, responseData.refreshToken);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || "Erreur de connexion Google");
+      }
 
-    const adaptedUser = adaptUser(responseData.user);
+      const responseData = response.data as AuthResponseData;
+      apiClient.setToken(responseData.token, responseData.refreshToken);
+      const adaptedUser = userAdapter.fromAPI(responseData.user);
 
-    set({
-      user: adaptedUser,
-      isAdmin: adaptedUser.role === "admin",
-      isLoading: false,
-    });
-
-    toast.success("Connexion réussie");
-  } catch (error) {
-    set({ isLoading: false });
-    toast.error(error instanceof Error ? error.message : "Erreur de connexion");
-    throw error;
-  }
-},
-
-loginWithGoogle: async (credential: string) => {
-  try {
-    set({ isLoading: true });
-    const response = await apiClient.loginWithGoogle(credential);
-
-    if (!response.success || !response.data) {
-      throw new Error(response.error || "Erreur de connexion Google");
+      set({ user: adaptedUser, isAdmin: adaptedUser.role === "admin", isLoading: false });
+      toast.success("Connexion Google réussie");
+    } catch (error) {
+      set({ isLoading: false });
+      toast.error(error instanceof Error ? error.message : "Erreur de connexion Google");
+      throw error;
     }
-
-    const responseData = response.data as {
-      token: string;
-      refreshToken?: string;
-      user: any;
-    };
-
-    apiClient.setToken(responseData.token, responseData.refreshToken);
-
-    const adaptedUser = adaptUser(responseData.user);
-
-    set({
-      user: adaptedUser,
-      isAdmin: adaptedUser.role === "admin",
-      isLoading: false,
-    });
-
-    toast.success("Connexion Google réussie");
-  } catch (error) {
-    set({ isLoading: false });
-    toast.error(error instanceof Error ? error.message : "Erreur de connexion Google");
-    throw error;
-  }
-},
+  },
 
   register: async (data: RegisterData) => {
     try {
@@ -173,32 +127,20 @@ loginWithGoogle: async (credential: string) => {
         throw new Error(response.error || "Erreur lors de l'inscription");
       }
 
-      const responseData = response.data as {
-        token: string;
-        refreshToken?: string;
-        user: any;
-      };
+      const responseData = response.data as AuthResponseData;
       apiClient.setToken(responseData.token, responseData.refreshToken);
+      const adaptedUser = userAdapter.fromAPI(responseData.user);
 
-      const adaptedUser = adaptUser(responseData.user as Record<string, unknown>);
-      set({
-        user: adaptedUser,
-        isAdmin: adaptedUser.role === "admin",
-        isLoading: false,
-      });
+      set({ user: adaptedUser, isAdmin: adaptedUser.role === "admin", isLoading: false });
 
       if (data.codeParrainage) {
-        toast.success("Inscription r\u00e9ussie ! Bonus parrainage appliqu\u00e9");
+        toast.success("Inscription réussie ! Bonus parrainage appliqué");
       } else {
-        toast.success("Inscription r\u00e9ussie !");
+        toast.success("Inscription réussie !");
       }
     } catch (error) {
       set({ isLoading: false });
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de l'inscription",
-      );
+      toast.error(error instanceof Error ? error.message : "Erreur lors de l'inscription");
       throw error;
     }
   },
@@ -206,23 +148,16 @@ loginWithGoogle: async (credential: string) => {
   logout: async () => {
     try {
       await apiClient.logout();
+    } catch (error) {
+      logger.warn("Logout API call failed:", error instanceof Error ? error.message : String(error));
+    } finally {
       apiClient.setToken(null, null);
-
       if (typeof window !== "undefined") {
         localStorage.removeItem("coffice-auth");
       }
-
-      set({ user: null, isAdmin: false, isInitialized: true, isLoading: false });
-      toast.success("Déconnexion réussie");
-    } catch {
-      apiClient.setToken(null, null);
-
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("coffice-auth");
-      }
-
       set({ user: null, isAdmin: false, isInitialized: true, isLoading: false });
     }
+    toast.success("Déconnexion réussie");
   },
 
   updateProfile: async (data: Partial<User>) => {
@@ -234,31 +169,21 @@ loginWithGoogle: async (credential: string) => {
         throw new Error("Utilisateur non connecté");
       }
 
-      const response = await apiClient.updateUser(currentUser.id, data);
+      const response = await apiClient.updateUser(currentUser.id, data as Record<string, unknown>);
 
       if (!response.success) {
         throw new Error(response.error || "Erreur lors de la mise à jour");
       }
 
-      const updatedUser =
-        response.data && typeof response.data === "object"
-          ? adaptUser(response.data as Record<string, unknown>)
-          : { ...currentUser, ...data };
+      const updatedUser = response.data && typeof response.data === "object"
+        ? userAdapter.fromAPI(response.data as Record<string, unknown>)
+        : { ...currentUser, ...data };
 
-      set({
-        user: updatedUser,
-        isAdmin: updatedUser.role === "admin",
-        isLoading: false,
-      });
-
+      set({ user: updatedUser, isAdmin: updatedUser.role === "admin", isLoading: false });
       toast.success("Profil mis à jour");
     } catch (error) {
       set({ isLoading: false });
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de la mise à jour",
-      );
+      toast.error(error instanceof Error ? error.message : "Erreur lors de la mise à jour");
       throw error;
     }
   },
@@ -267,7 +192,7 @@ loginWithGoogle: async (credential: string) => {
     try {
       const response = await apiClient.me();
       if (response.success && response.data) {
-        const userData = adaptUser(response.data as Record<string, unknown>);
+        const userData = userAdapter.fromAPI(response.data as Record<string, unknown>);
         set({ user: userData, isAdmin: userData.role === "admin" });
       }
     } catch (error) {

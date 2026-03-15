@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '../utils/logger';
 
 interface UseFormPersistenceOptions<T> {
   key: string;
@@ -7,7 +8,7 @@ interface UseFormPersistenceOptions<T> {
   debounceMs?: number;
 }
 
-export function useFormPersistence<T extends Record<string, any>>({
+export function useFormPersistence<T extends Record<string, unknown>>({
   key,
   defaultValues,
   enabled = true,
@@ -17,14 +18,13 @@ export function useFormPersistence<T extends Record<string, any>>({
 
   const loadFromStorage = useCallback((): T | null => {
     if (!enabled) return null;
-
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         return JSON.parse(stored) as T;
       }
     } catch (error) {
-      console.error('Error loading form draft:', error);
+      logger.warn('Error loading form draft:', error instanceof Error ? error.message : String(error));
     }
     return null;
   }, [storageKey, enabled]);
@@ -41,7 +41,7 @@ export function useFormPersistence<T extends Record<string, any>>({
       try {
         localStorage.setItem(storageKey, JSON.stringify(formData));
       } catch (error) {
-        console.error('Error saving form draft:', error);
+        logger.warn('Error saving form draft:', error instanceof Error ? error.message : String(error));
       }
     }, debounceMs);
 
@@ -52,7 +52,7 @@ export function useFormPersistence<T extends Record<string, any>>({
     try {
       localStorage.removeItem(storageKey);
     } catch (error) {
-      console.error('Error clearing form draft:', error);
+      logger.warn('Error clearing form draft:', error instanceof Error ? error.message : String(error));
     }
   }, [storageKey]);
 

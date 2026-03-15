@@ -49,13 +49,23 @@ export const espaceAdapter = {
   },
 };
 
+function parseDate(value: unknown): Date {
+  if (value instanceof Date) return value;
+  if (typeof value === "string" && value) {
+    const normalized = value.replace(" ", "T");
+    const d = new Date(normalized);
+    if (!isNaN(d.getTime())) return d;
+  }
+  return new Date();
+}
+
 export const reservationAdapter = {
   fromAPI: (apiData: ApiRecord): Reservation => ({
     id: String(apiData.id || ""),
     userId: String(apiData.user_id || ""),
     espaceId: String(apiData.espace_id || ""),
-    dateDebut: apiData.date_debut ? new Date(String(apiData.date_debut)) : new Date(),
-    dateFin: apiData.date_fin ? new Date(String(apiData.date_fin)) : new Date(),
+    dateDebut: parseDate(apiData.date_debut),
+    dateFin: parseDate(apiData.date_fin),
     statut: String(apiData.statut || "en_attente") as Reservation["statut"],
     typeReservation: apiData.type_reservation as TypeReservation | undefined,
     montantTotal: parseFloat(String(apiData.montant_total || 0)),
@@ -66,7 +76,7 @@ export const reservationAdapter = {
     notes: apiData.notes as string | undefined,
     codePromo: (apiData.code_promo_id || apiData.code_promo) as string | undefined,
     checkinId: apiData.checkin_id ? String(apiData.checkin_id) : undefined,
-    dateCreation: apiData.created_at ? new Date(String(apiData.created_at)) : undefined,
+    dateCreation: apiData.created_at ? parseDate(apiData.created_at) : undefined,
     createdAt: apiData.created_at ? String(apiData.created_at) : undefined,
     updatedAt: apiData.updated_at ? String(apiData.updated_at) : undefined,
     espace: apiData.espace_nom
@@ -82,7 +92,7 @@ export const reservationAdapter = {
           nom: String(apiData.user_nom || ""),
           prenom: String(apiData.user_prenom || ""),
           email: String(apiData.user_email || ""),
-          role: "user" as const,
+          role: (String(apiData.user_role || "user")) as "admin" | "user",
         }
       : undefined,
   }),
@@ -94,12 +104,12 @@ export const reservationAdapter = {
     if (reservation.dateDebut !== undefined) {
       data.date_debut = reservation.dateDebut instanceof Date
         ? reservation.dateDebut.toISOString()
-        : String(reservation.dateDebut);
+        : new Date(reservation.dateDebut as string).toISOString();
     }
     if (reservation.dateFin !== undefined) {
       data.date_fin = reservation.dateFin instanceof Date
         ? reservation.dateFin.toISOString()
-        : String(reservation.dateFin);
+        : new Date(reservation.dateFin as string).toISOString();
     }
     if (reservation.statut !== undefined) data.statut = reservation.statut;
     if (reservation.notes !== undefined) data.notes = reservation.notes;
@@ -115,24 +125,33 @@ export const reservationAdapter = {
 };
 
 export const abonnementAdapter = {
-  fromAPI: (apiData: ApiRecord): Abonnement => ({
-    id: String(apiData.id || ""),
-    nom: String(apiData.nom || ""),
-    type: String(apiData.type || ""),
-    prix: Number(apiData.prix || 0),
-    prixAvecDomiciliation: Number(apiData.prix_avec_domiciliation || 0),
-    creditsMensuels: Number(apiData.credits_mensuels || 0),
-    dureeMois: Number(apiData.duree_mois || 1),
-    dureeJours: (Number(apiData.duree_mois) || 1) * 30,
-    description: String(apiData.description || ""),
-    avantages: (apiData.avantages as string[]) || [],
-    statut: (apiData.statut as string) || "actif",
-    actif: apiData.actif !== false && apiData.actif !== 0 && apiData.actif !== "0",
-    couleur: String(apiData.couleur || "#3B82F6"),
-    ordre: Number(apiData.ordre || 0),
-    createdAt: apiData.created_at as string | undefined,
-    updatedAt: (apiData.updated_at || apiData.created_at) as string | undefined,
-  }),
+  fromAPI: (apiData: ApiRecord): Abonnement => {
+    const avantagesRaw = apiData.avantages;
+    let avantages: string[] = [];
+    if (Array.isArray(avantagesRaw)) {
+      avantages = avantagesRaw as string[];
+    } else if (typeof avantagesRaw === "string" && avantagesRaw) {
+      try { avantages = JSON.parse(avantagesRaw); } catch { avantages = []; }
+    }
+    return {
+      id: String(apiData.id || ""),
+      nom: String(apiData.nom || ""),
+      type: String(apiData.type || ""),
+      prix: Number(apiData.prix || 0),
+      prixAvecDomiciliation: Number(apiData.prix_avec_domiciliation || 0),
+      creditsMensuels: Number(apiData.credits_mensuels || 0),
+      dureeMois: Number(apiData.duree_mois || 1),
+      dureeJours: (Number(apiData.duree_mois) || 1) * 30,
+      description: String(apiData.description || ""),
+      avantages,
+      statut: (apiData.statut as string) || "actif",
+      actif: apiData.actif !== false && apiData.actif !== 0 && apiData.actif !== "0",
+      couleur: String(apiData.couleur || "#3B82F6"),
+      ordre: Number(apiData.ordre || 0),
+      createdAt: apiData.created_at ? String(apiData.created_at) : undefined,
+      updatedAt: apiData.updated_at ? String(apiData.updated_at) : (apiData.created_at ? String(apiData.created_at) : undefined),
+    };
+  },
 
   toAPI: (abonnement: Partial<Abonnement>): ApiRecord => {
     const data: ApiRecord = {};
@@ -274,15 +293,18 @@ export const domiciliationAdapter = {
       try { options = JSON.parse(String(apiData.options)); } catch { options = defaultOptions; }
     }
 
-    let documents: DemandeDomiciliation["documents"];
-    if (!apiData.documents) {
-      documents = [];
-    } else if (Array.isArray(apiData.documents)) {
-      documents = apiData.documents as DemandeDomiciliation["documents"];
-    } else if (typeof apiData.documents === "string") {
-      try { documents = JSON.parse(apiData.documents); } catch { documents = []; }
-    } else {
-      documents = [];
+    let documents: Array<{ type: string; name: string }> = [];
+    if (apiData.documents) {
+      if (Array.isArray(apiData.documents)) {
+        documents = apiData.documents as Array<{ type: string; name: string }>;
+      } else if (typeof apiData.documents === "string") {
+        try {
+          const parsed = JSON.parse(apiData.documents);
+          documents = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          documents = [];
+        }
+      }
     }
 
     let utilisateur: User | undefined;

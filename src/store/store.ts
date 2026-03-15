@@ -124,49 +124,45 @@ export const useAppStore = create<AppState>()(
       loading: false,
 
       initializeData: async () => {
-      const state = get();
-      if (state.loading || state.initialized) return;
-      set({ loading: true });
+        const state = get();
+        if (state.loading || state.initialized) return;
+        set({ loading: true });
 
-      try {
-        await get().loadEspaces();
+        try {
+          await get().loadEspaces();
 
-        const { useAuthStore: authRef } = await import("./authStore");
-        const { user } = authRef.getState();
-        const isAdmin = user?.role === "admin";
+          const { useAuthStore: authRef } = await import("./authStore");
+          const { user } = authRef.getState();
+          const isAdmin = user?.role === "admin";
 
-        await Promise.all([
-          get().loadReservations(),
-          get().loadDemandesDomiciliation(),
-          get().loadAbonnements(),
-          isAdmin ? get().loadUsers() : Promise.resolve(),      // admin only
-          isAdmin ? get().loadCodesPromo() : Promise.resolve(), // admin only
-        ]);
+          await Promise.all([
+            get().loadReservations(),
+            get().loadDemandesDomiciliation(),
+            get().loadAbonnements(),
+            isAdmin ? get().loadUsers() : Promise.resolve(),
+            isAdmin ? get().loadCodesPromo() : Promise.resolve(),
+          ]);
 
-        set({ initialized: true });
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        logger.error("Erreur initialisation:", msg);
-        if (msg.includes("Failed to fetch") || msg.includes("Impossible de contacter")) {
-          toast.error("Impossible de contacter le serveur. Verifiez votre connexion.");
-        } else {
-          toast.error("Erreur lors du chargement des donnees");
+          set({ initialized: true, loading: false });
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : String(error);
+          logger.error("Erreur initialisation:", msg);
+          set({ initialized: true, loading: false });
+          if (msg.includes("Failed to fetch") || msg.includes("Impossible de contacter")) {
+            toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.");
+          } else {
+            toast.error("Erreur lors du chargement des données");
+          }
         }
-      } finally {
-        set({ loading: false });
-      }
-    },
+      },
 
       loadEspaces: async () => {
         try {
           const response = await apiClient.getEspaces();
           if (response.success && response.data) {
-            const raw = response.data;
-            const dataArray = Array.isArray(raw) ? raw : (raw as Record<string, unknown>)?.espaces || (raw as Record<string, unknown>)?.data;
-            if (Array.isArray(dataArray)) {
-              const espaces = dataArray.map((e: Record<string, unknown>) =>
-                espaceAdapter.fromAPI(e),
-              );
+            const dataArray = extractArray(response.data);
+            if (dataArray.length > 0 || Array.isArray(response.data)) {
+              const espaces = dataArray.map((e) => espaceAdapter.fromAPI(e));
               set({ espaces });
             }
           }
@@ -535,42 +531,31 @@ export const useAppStore = create<AppState>()(
 
       getAdminStats: () => {
         const state = get();
-        const today = new Date();
-        const thisMonth = today.getMonth();
-        const thisYear = today.getFullYear();
-
         const now = new Date();
+        const thisMonth = now.getMonth();
+        const thisYear = now.getFullYear();
+
         const activeReservations = state.reservations.filter((r) => {
-          const start = new Date(r.dateDebut);
-          const end = new Date(r.dateFin);
+          const start = r.dateDebut instanceof Date ? r.dateDebut : new Date(r.dateDebut as unknown as string);
+          const end = r.dateFin instanceof Date ? r.dateFin : new Date(r.dateFin as unknown as string);
           return r.statut === "confirmee" && start <= now && end >= now;
         });
 
         const reservationsCeMois = state.reservations.filter((r) => {
-          const date = new Date(r.dateDebut || r.dateCreation || r.createdAt || new Date());
-          return (
-            date.getMonth() === thisMonth && date.getFullYear() === thisYear
-          );
+          const date = r.dateDebut instanceof Date ? r.dateDebut : new Date(r.dateDebut as unknown as string);
+          return !isNaN(date.getTime()) && date.getMonth() === thisMonth && date.getFullYear() === thisYear;
         });
 
-        const caMois = reservationsCeMois.reduce(
-          (sum, r) => sum + (r.montantTotal || 0),
-          0,
-        );
+        const caMois = reservationsCeMois.reduce((sum, r) => sum + (r.montantTotal || 0), 0);
 
         const totalCapacity = state.espaces.reduce((sum, e) => sum + (e.capacite || 1), 0);
-        const occupiedCapacity = activeReservations.reduce((sum, r) => {
-          return sum + (r.participants || 1);
-        }, 0);
+        const occupiedCapacity = activeReservations.reduce((sum, r) => sum + (r.participants || 1), 0);
         const tauxOccupation = totalCapacity > 0
           ? Math.round((occupiedCapacity / totalCapacity) * 100)
           : 0;
 
         return {
-          totalRevenue: state.reservations.reduce(
-            (sum, r) => sum + (r.montantTotal || 0),
-            0,
-          ),
+          totalRevenue: state.reservations.reduce((sum, r) => sum + (r.montantTotal || 0), 0),
           totalReservations: state.reservations.length,
           totalUsers: state.users.length,
           activeUsers: state.users.filter((u) => u.statut === "actif").length,
@@ -584,15 +569,15 @@ export const useAppStore = create<AppState>()(
           recentActivity: state.reservations
             .slice()
             .sort((a, b) => {
-              const da = new Date(a.dateCreation || a.createdAt || 0).getTime();
-              const db = new Date(b.dateCreation || b.createdAt || 0).getTime();
+              const da = a.dateCreation ? a.dateCreation.getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+              const db = b.dateCreation ? b.dateCreation.getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
               return db - da;
             })
             .slice(0, 10)
             .map((r) => ({
               type: "reservation",
-              description: `R\u00e9servation ${r.espace?.nom || "Espace"}`,
-              date: new Date(r.dateCreation || r.createdAt || new Date()),
+              description: `Réservation ${r.espace?.nom || "Espace"}`,
+              date: r.dateCreation ?? (r.createdAt ? new Date(r.createdAt) : now),
             })),
         };
       },

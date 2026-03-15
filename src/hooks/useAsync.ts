@@ -118,7 +118,9 @@ export function useAsync<T, Args extends unknown[] = []>(
     if (immediate) {
       execute();
     }
-  }, []);
+    // execute is stable (useCallback with asyncFunction), intentionally run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [immediate]);
 
   return {
     execute,

@@ -44,11 +44,11 @@ interface TransactionsResponse {
 }
 
 const MODE_PAIEMENT_LABELS: Record<string, string> = {
-  cash: "Especes",
+  cash: "Espèces",
   virement: "Virement",
-  cheque: "Cheque",
+  cheque: "Chèque",
   tpe: "TPE",
-  credit: "Credit",
+  credit: "Crédit",
 };
 
 const MODE_PAIEMENT_ICONS: Record<string, React.FC<{ className?: string }>> = {
@@ -60,7 +60,7 @@ const MODE_PAIEMENT_ICONS: Record<string, React.FC<{ className?: string }>> = {
 };
 
 const TYPE_TRANSACTION_OPTIONS = [
-  { value: "reservation", label: "Reservation" },
+  { value: "reservation", label: "Réservation" },
   { value: "abonnement", label: "Abonnement" },
   { value: "domiciliation", label: "Domiciliation" },
   { value: "impression", label: "Impression" },
@@ -69,9 +69,9 @@ const TYPE_TRANSACTION_OPTIONS = [
 ];
 
 const MODE_PAIEMENT_OPTIONS = [
-  { value: "cash", label: "Especes" },
+  { value: "cash", label: "Espèces" },
   { value: "virement", label: "Virement" },
-  { value: "cheque", label: "Cheque" },
+  { value: "cheque", label: "Chèque" },
   { value: "tpe", label: "TPE" },
 ];
 
@@ -172,7 +172,7 @@ export default function Caisse() {
         toast.error(response.error || "Erreur lors de l'enregistrement");
       }
     } catch (error) {
-      console.error("Erreur création transaction:", error);
+      logger.error("Erreur création transaction:", error instanceof Error ? error.message : String(error));
       toast.error("Erreur lors de l'enregistrement");
     } finally {
       setSubmitting(false);
