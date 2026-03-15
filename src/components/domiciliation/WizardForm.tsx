@@ -381,7 +381,27 @@ const WizardForm: React.FC<WizardFormProps> = ({ isOpen, onClose, user, onSubmit
           {currentStep === 1 && (
             <Step1Situation
               situation={situation}
-              onSelect={(s) => { setSituation(s); setTypeStructure(null); }}
+              onSelect={(s) => {
+                setSituation(s);
+                setTypeStructure(null);
+                setFormData(prev => ({
+                  ...prev,
+                  denominationSociale: "",
+                  formeJuridique: "",
+                  nif: "",
+                  nis: "",
+                  registreCommerce: "",
+                  articleImposition: "",
+                  codeNae: "",
+                  activiteExercee: "",
+                  descriptionActivite: "",
+                  numeroAutoEntrepreneur: "",
+                  dateCreationEntreprise: null,
+                  villeImmatriculation: "",
+                  dateInscriptionAutoEntrepreneur: null,
+                }));
+                setErrors({});
+              }}
             />
           )}
 
@@ -389,7 +409,31 @@ const WizardForm: React.FC<WizardFormProps> = ({ isOpen, onClose, user, onSubmit
             <Step2Structure
               situation={situation}
               typeStructure={typeStructure}
-              onSelect={setTypeStructure}
+              onSelect={(t) => {
+                setTypeStructure(t);
+                if (t === "auto_entrepreneur") {
+                  setFormData(prev => ({
+                    ...prev,
+                    denominationSociale: "",
+                    formeJuridique: "",
+                    nif: "",
+                    nis: "",
+                    registreCommerce: "",
+                    articleImposition: "",
+                    codeNae: "",
+                    dateCreationEntreprise: null,
+                    villeImmatriculation: "",
+                  }));
+                } else if (t === "societe") {
+                  setFormData(prev => ({
+                    ...prev,
+                    numeroAutoEntrepreneur: "",
+                    descriptionActivite: "",
+                    dateInscriptionAutoEntrepreneur: null,
+                  }));
+                }
+                setErrors({});
+              }}
               casLabel={casLabel}
             />
           )}

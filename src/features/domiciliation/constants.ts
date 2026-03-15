@@ -163,17 +163,16 @@ export const COURRIER_STATUT_CONFIG: Record<
 export const COURRIER_INACTIVE_STATUTS = ["retire", "envoye", "archive"];
 
 export const SOCIETE_DOCS = [
-  { type: "rc", label: "Registre de Commerce", required: true },
-  { type: "nif", label: "NIF", required: true },
-  { type: "nis", label: "NIS", required: true },
+  { type: "registre_commerce", label: "Registre de Commerce (RC)", required: true },
   { type: "c20", label: "Extrait C20", required: true },
-  { type: "statuts", label: "Statuts de la société", required: false },
-  { type: "cni", label: "CNI du gérant", required: true },
+  { type: "statuts", label: "Statuts de la société", required: true },
+  { type: "cni_gerant", label: "CNI du gérant", required: true },
+  { type: "extrait_naissance_gerant", label: "Extrait de naissance du gérant", required: true },
 ];
 
 export const AUTO_ENTREPRENEUR_DOCS = [
   { type: "carte_ae", label: "Carte Auto-Entrepreneur", required: true },
-  { type: "cni", label: "CNI", required: true },
+  { type: "cni", label: "Carte Nationale d'Identité", required: true },
 ];
 
 export const COMMON_DOCS = [{ type: "autre", label: "Autre document", required: false }];
@@ -189,10 +188,11 @@ export const REQUIRED_DOCS_NEW_AUTO_ENTREPRENEUR = [
 ];
 
 export const REQUIRED_DOCS_EXISTING_SOCIETE = [
-  { type: "rc", label: "Registre de Commerce", required: true },
+  { type: "registre_commerce", label: "Registre de Commerce (RC)", required: true },
+  { type: "c20", label: "Extrait C20", required: true },
   { type: "statuts", label: "Statuts de la société", required: true },
-  { type: "cni", label: "CNI du gérant", required: true },
-  { type: "extrait_naissance", label: "Extrait de naissance du gérant", required: true },
+  { type: "cni_gerant", label: "CNI du gérant", required: true },
+  { type: "extrait_naissance_gerant", label: "Extrait de naissance du gérant", required: true },
 ];
 
 export const REQUIRED_DOCS_EXISTING_AUTO_ENTREPRENEUR = [

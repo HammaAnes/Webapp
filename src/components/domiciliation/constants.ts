@@ -86,7 +86,8 @@ export const REQUIRED_DOCS_NEW_AUTO_ENTREPRENEUR: RequiredDocument[] = [
 ];
 
 export const REQUIRED_DOCS_EXISTING_SOCIETE: RequiredDocument[] = [
-  { id: "registre_commerce", name: "Registre de commerce", required: true },
+  { id: "registre_commerce", name: "Registre de commerce (RC)", required: true },
+  { id: "c20", name: "Extrait C20", description: "Extrait du Registre de Commerce format C20", required: true },
   { id: "statuts", name: "Statuts de la société", required: true },
   { id: "cni_gerant", name: "Carte Nationale d'Identité du gérant", required: true },
   { id: "extrait_naissance_gerant", name: "Extrait de naissance du gérant", required: true },

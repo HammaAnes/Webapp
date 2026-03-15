@@ -15,9 +15,11 @@ interface CompletionItem {
 }
 
 function getCompletionItems(demande: DemandeDomiciliation, docs: DocumentRecord[]): CompletionItem[] {
+  const isSociete = demande.typeStructure === "societe";
+  const isAE = demande.typeStructure === "auto_entrepreneur";
+  const isDejaCreee = demande.situationAdministrative === "deja_creee";
+
   const items: CompletionItem[] = [
-    { label: "Raison sociale", done: Boolean(demande.raisonSociale?.trim()) },
-    { label: "Forme juridique", done: Boolean(demande.formeJuridique?.trim()) },
     {
       label: "Représentant (nom & prénom)",
       done: Boolean(demande.representantLegal?.nom?.trim() && demande.representantLegal?.prenom?.trim()),
@@ -28,13 +30,19 @@ function getCompletionItems(demande: DemandeDomiciliation, docs: DocumentRecord[
     },
   ];
 
-  if (demande.typeStructure === "societe" && demande.situationAdministrative === "deja_creee") {
+  if (isSociete) {
+    items.push({ label: "Raison sociale", done: Boolean(demande.raisonSociale?.trim()) });
+    items.push({ label: "Forme juridique", done: Boolean(demande.formeJuridique?.trim()) });
+  }
+
+  if (isSociete && isDejaCreee) {
     items.push({ label: "NIF", done: Boolean(demande.nif?.trim()) });
     items.push({ label: "NIS", done: Boolean(demande.nis?.trim()) });
     items.push({ label: "Registre de commerce", done: Boolean(demande.registreCommerce?.trim()) });
+    items.push({ label: "Article d'imposition", done: Boolean(demande.articleImposition?.trim()) });
   }
 
-  if (demande.typeStructure === "auto_entrepreneur") {
+  if (isAE && isDejaCreee) {
     items.push({ label: "N° auto-entrepreneur", done: Boolean(demande.numeroAutoEntrepreneur?.trim()) });
   }
 

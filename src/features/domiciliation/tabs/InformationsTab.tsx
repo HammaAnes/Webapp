@@ -144,6 +144,8 @@ export default function InformationsTab({ demande, onUpdate, loading }: Props) {
 
   const isSociete = demande.typeStructure === "societe";
   const isAE = demande.typeStructure === "auto_entrepreneur";
+  const isDejaCreee = demande.situationAdministrative === "deja_creee";
+  const isEnCoursCreation = demande.situationAdministrative === "en_cours_creation";
   const rep = demande.representantLegal || {};
   const selectedOptions = OPTIONS_DOMICILIATION.filter(
     (o) => demande.options?.[o.key]
@@ -198,28 +200,46 @@ export default function InformationsTab({ demande, onUpdate, loading }: Props) {
           )}
         </div>
 
+        {isEnCoursCreation && (
+          <div className="mb-4 px-3 py-2 bg-sky-50 border border-sky-100 rounded-lg">
+            <p className="text-xs text-sky-700">
+              Structure en cours de création — les numéros d'immatriculation seront renseignés après création officielle.
+            </p>
+          </div>
+        )}
         {editingEntreprise ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input
-              label="Raison sociale"
-              value={entrepriseForm.raisonSociale}
-              onChange={(e) => setE("raisonSociale", e.target.value)}
-            />
-            <Input
-              label="Forme juridique"
-              value={entrepriseForm.formeJuridique}
-              onChange={(e) => setE("formeJuridique", e.target.value)}
-            />
             {isSociete && (
+              <Input
+                label="Raison sociale"
+                value={entrepriseForm.raisonSociale}
+                onChange={(e) => setE("raisonSociale", e.target.value)}
+              />
+            )}
+            {isSociete && (
+              <Input
+                label="Forme juridique"
+                value={entrepriseForm.formeJuridique}
+                onChange={(e) => setE("formeJuridique", e.target.value)}
+              />
+            )}
+            {isSociete && (
+              <Input
+                label="Code NAE"
+                value={entrepriseForm.codeNae}
+                onChange={(e) => setE("codeNae", e.target.value)}
+              />
+            )}
+            {isSociete && isDejaCreee && (
               <>
                 <Input
-                  label="NIF"
+                  label="NIF (20 chiffres)"
                   value={entrepriseForm.nif}
                   onChange={(e) => setE("nif", e.target.value)}
                   maxLength={20}
                 />
                 <Input
-                  label="NIS"
+                  label="NIS (15 chiffres)"
                   value={entrepriseForm.nis}
                   onChange={(e) => setE("nis", e.target.value)}
                   maxLength={15}
@@ -235,51 +255,53 @@ export default function InformationsTab({ demande, onUpdate, loading }: Props) {
                   onChange={(e) => setE("articleImposition", e.target.value)}
                 />
                 <Input
-                  label="Code NAE"
-                  value={entrepriseForm.codeNae}
-                  onChange={(e) => setE("codeNae", e.target.value)}
-                />
-                <Input
                   label="Activité exercée"
                   value={entrepriseForm.activiteExercee}
                   onChange={(e) => setE("activiteExercee", e.target.value)}
                 />
               </>
             )}
+            {isAE && isDejaCreee && (
+              <Input
+                label="N° Auto-entrepreneur"
+                value={entrepriseForm.numeroAutoEntrepreneur}
+                onChange={(e) => setE("numeroAutoEntrepreneur", e.target.value)}
+              />
+            )}
             {isAE && (
-              <>
-                <Input
-                  label="N° Auto-entrepreneur"
-                  value={entrepriseForm.numeroAutoEntrepreneur}
-                  onChange={(e) => setE("numeroAutoEntrepreneur", e.target.value)}
-                />
-                <Input
-                  label="Activité exercée"
-                  value={entrepriseForm.activiteExercee}
-                  onChange={(e) => setE("activiteExercee", e.target.value)}
-                />
-              </>
+              <Input
+                label="Activité exercée"
+                value={entrepriseForm.activiteExercee}
+                onChange={(e) => setE("activiteExercee", e.target.value)}
+              />
             )}
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
-            <InfoField label="Raison sociale" value={demande.raisonSociale} />
-            <InfoField label="Forme juridique" value={demande.formeJuridique} />
             {isSociete && (
+              <>
+                <InfoField label="Raison sociale" value={demande.raisonSociale} />
+                <InfoField label="Forme juridique" value={demande.formeJuridique} />
+                {demande.codeNae && <InfoField label="Code NAE" value={demande.codeNae} />}
+              </>
+            )}
+            {isSociete && isDejaCreee && (
               <>
                 <InfoField label="NIF" value={demande.nif} />
                 <InfoField label="NIS" value={demande.nis} />
                 <InfoField label="RC" value={demande.registreCommerce} />
                 <InfoField label="Art. d'imposition" value={demande.articleImposition} />
-                <InfoField label="Code NAE" value={demande.codeNae} />
                 <InfoField label="Activité" value={demande.activiteExercee} />
               </>
             )}
+            {isSociete && isEnCoursCreation && demande.activiteExercee && (
+              <InfoField label="Activité prévue" value={demande.activiteExercee} />
+            )}
+            {isAE && isDejaCreee && (
+              <InfoField label="N° Auto-entrepreneur" value={demande.numeroAutoEntrepreneur} />
+            )}
             {isAE && (
-              <>
-                <InfoField label="N° Auto-entrepreneur" value={demande.numeroAutoEntrepreneur} />
-                <InfoField label="Activité" value={demande.activiteExercee} />
-              </>
+              <InfoField label="Activité" value={demande.activiteExercee} />
             )}
           </div>
         )}
