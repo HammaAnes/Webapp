@@ -146,56 +146,31 @@ const Settings = () => {
       .catch(() => setApiStatus("disconnected"));
   }, []);
 
-  const handleSaveGeneral = async () => {
+  const saveSection = async (section: string, data: Record<string, unknown>, label: string) => {
     setLoading(true);
     try {
-      const response = await apiClient.post('/admin/settings.php', { section: 'general', data: settings.general } as unknown as Record<string, unknown>);
+      const response = await apiClient.post('/admin/settings.php', { section, ...data } as Record<string, unknown>);
       if (response.success) {
-        toast.success("Parametres generaux enregistres");
+        toast.success(label);
       } else {
         toast.error(response.error || "Erreur lors de la sauvegarde");
       }
     } catch (error) {
       logger.error("Erreur sauvegarde paramètres:", error as Error);
-      toast.error("Erreur lors de la sauvegarde des paramètres");
+      toast.error("Erreur lors de la sauvegarde");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveNotifications = async () => {
-    setLoading(true);
-    try {
-      const response = await apiClient.post('/admin/settings.php', { section: 'notifications', data: settings.notifications } as unknown as Record<string, unknown>);
-      if (response.success) {
-        toast.success("Preferences de notification enregistrees");
-      } else {
-        toast.error(response.error || "Erreur lors de la sauvegarde");
-      }
-    } catch (error) {
-      logger.error("Erreur sauvegarde notifications:", error as Error);
-      toast.error("Erreur lors de la sauvegarde des notifications");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleSaveGeneral = () =>
+    saveSection('general', settings.general as unknown as Record<string, unknown>, "Paramètres généraux enregistrés");
 
-  const handleSaveMailing = async () => {
-    setLoading(true);
-    try {
-      const response = await apiClient.post('/admin/settings.php', { section: 'mailing', data: settings.mailing } as unknown as Record<string, unknown>);
-      if (response.success) {
-        toast.success("Parametres mailing enregistres");
-      } else {
-        toast.error(response.error || "Erreur lors de la sauvegarde");
-      }
-    } catch (error) {
-      logger.error("Erreur sauvegarde mailing:", error as Error);
-      toast.error("Erreur lors de la sauvegarde des paramètres mailing");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleSaveNotifications = () =>
+    saveSection('notifications', settings.notifications as unknown as Record<string, unknown>, "Préférences de notification enregistrées");
+
+  const handleSaveMailing = () =>
+    saveSection('mailing', settings.mailing as unknown as Record<string, unknown>, "Paramètres mailing enregistrés");
 
   const handleClearCache = () => {
     if (!window.confirm("Êtes-vous sûr de vouloir effacer le cache ? Vous allez être déconnecté.")) {

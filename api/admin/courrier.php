@@ -188,6 +188,31 @@ try {
             $updateStmt->execute([$courrierId]);
             Response::success(['message' => 'Courrier archivé']);
 
+        } elseif ($action === 'recuperer') {
+            $updateStmt = $db->prepare("
+                UPDATE courriers
+                SET statut = 'recupere', date_retrait = NOW(), retire_par = ?
+                WHERE id = ?
+            ");
+            $updateStmt->execute([$data['retire_par'] ?? '', $courrierId]);
+            Response::success(['message' => 'Courrier marqué comme récupéré']);
+
+        } elseif ($action === 'scanner') {
+            $updateStmt = $db->prepare("
+                UPDATE courriers SET statut = 'scanne' WHERE id = ?
+            ");
+            $updateStmt->execute([$courrierId]);
+            Response::success(['message' => 'Courrier marqué comme scanné']);
+
+        } elseif ($action === 'reexpedier') {
+            $updateStmt = $db->prepare("
+                UPDATE courriers
+                SET statut = 'reexpedier', adresse_envoi = ?, updated_at = NOW()
+                WHERE id = ?
+            ");
+            $updateStmt->execute([$data['adresse_envoi'] ?? '', $courrierId]);
+            Response::success(['message' => 'Réexpédition demandée']);
+
         } elseif (isset($data['instruction_client'])) {
             $updateStmt = $db->prepare("
                 UPDATE courriers
@@ -198,7 +223,7 @@ try {
             Response::success(['message' => 'Instruction enregistrée']);
 
         } elseif (isset($data['statut'])) {
-            $allowedStatuts = ['recu', 'notifie', 'retire', 'envoye', 'archive'];
+            $allowedStatuts = ['recu', 'notifie', 'retire', 'envoye', 'archive', 'en_attente_instruction', 'recupere', 'scanne', 'reexpedier', 'traite'];
             if (!in_array($data['statut'], $allowedStatuts)) {
                 Response::error('Statut invalide', 400);
             }

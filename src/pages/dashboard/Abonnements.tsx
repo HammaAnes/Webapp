@@ -32,7 +32,7 @@ import { logger } from "../../utils/logger";
 import { useAuthStore } from "../../store/authStore";
 import DatePicker, { registerLocale } from "react-datepicker";
 import { fr } from "date-fns/locale";
-import { format, addDays } from "date-fns";
+import { format, addMonths } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
 
 registerLocale("fr", fr);
@@ -42,7 +42,7 @@ interface Abonnement {
   nom: string;
   description: string;
   prix: number;
-  duree: number;
+  dureeMois: number;
   typeAbonnement: string;
   avantages: string[];
   actif: boolean;
@@ -104,7 +104,7 @@ const Abonnements = () => {
           nom: a.nom as string,
           description: (a.description as string) || "",
           prix: parseFloat(a.prix as string) || 0,
-          duree: parseInt(a.duree as string) || 30,
+          dureeMois: parseInt(a.duree_mois as string) || 1,
           typeAbonnement: (a.type_abonnement as string) || "standard",
           avantages: Array.isArray(a.avantages) ? (a.avantages as string[]) : [],
           actif: a.actif === 1 || a.actif === true,
@@ -218,15 +218,14 @@ const Abonnements = () => {
     }));
   };
 
-  const getDureeText = (duree: number) => {
-    if (duree >= 365) return `${Math.floor(duree / 365)} an${Math.floor(duree / 365) > 1 ? "s" : ""}`;
-    if (duree >= 30) return `${Math.floor(duree / 30)} mois`;
-    return `${duree} jours`;
+  const getDureeText = (dureeMois: number) => {
+    if (dureeMois >= 12 && dureeMois % 12 === 0) return `${dureeMois / 12} an${dureeMois / 12 > 1 ? "s" : ""}`;
+    return `${dureeMois} mois`;
   };
 
   const getEndDate = () => {
     if (!formData.dateDebutSouhaitee || !selectedAbonnement) return null;
-    return addDays(formData.dateDebutSouhaitee, selectedAbonnement.duree);
+    return addMonths(formData.dateDebutSouhaitee, selectedAbonnement.dureeMois);
   };
 
   if (loading) {
@@ -291,14 +290,14 @@ const Abonnements = () => {
                   </div>
                   <div className="flex items-center justify-center gap-2 mt-2 text-sm text-gray-600">
                     <Calendar className="w-4 h-4" />
-                    <span>{getDureeText(abonnement.duree)}</span>
+                    <span>{getDureeText(abonnement.dureeMois)}</span>
                   </div>
                 </div>
 
                 <div className="flex-1 space-y-4 mb-6">
                   <div className="flex items-start gap-2 text-sm text-gray-700">
                     <Clock className="w-4 h-4 text-amber-500 mt-0.5" />
-                    <span>Durée : {getDureeText(abonnement.duree)}</span>
+                    <span>Durée : {getDureeText(abonnement.dureeMois)}</span>
                   </div>
 
                   {abonnement.avantages.length > 0 && (
@@ -421,7 +420,7 @@ const Abonnements = () => {
                         </span>
                         <span className="text-gray-600">DA</span>
                         <span className="text-sm text-gray-500">
-                          / {getDureeText(selectedAbonnement.duree)}
+                          / {getDureeText(selectedAbonnement.dureeMois)}
                         </span>
                       </div>
                     </div>
@@ -591,7 +590,7 @@ const Abonnements = () => {
                         </span>
                       </div>
                       <p className="text-sm text-gray-500 mt-1">
-                        Durée : {getDureeText(selectedAbonnement.duree)}
+                        Durée : {getDureeText(selectedAbonnement.dureeMois)}
                       </p>
                     </div>
 

@@ -1,22 +1,64 @@
 <?php
 
 /**
- * API: Liste des abonnements
- * GET /api/abonnements/index.php
+ * API: Liste des abonnements (plans) et souscriptions utilisateurs
+ * GET /api/abonnements/index.php                  — liste des plans
+ * GET /api/abonnements/index.php?souscriptions=1  — souscriptions de l'utilisateur courant (admin: toutes)
  */
 
 require_once '../config/cors.php';
 require_once '../config/database.php';
+require_once '../utils/Auth.php';
 require_once '../utils/Response.php';
 
 try {
     $db = Database::getInstance()->getConnection();
 
-    // Paramètres de filtrage
+    if (isset($_GET['souscriptions'])) {
+        $auth = Auth::verifyAuth();
+        $isAdmin = $auth['role'] === 'admin';
+
+        if ($isAdmin) {
+            $query = "
+                SELECT au.*,
+                       a.nom AS abonnement_nom, a.prix AS abonnement_prix, a.type AS abonnement_type,
+                       u.nom AS user_nom, u.prenom AS user_prenom, u.email AS user_email
+                FROM abonnements_utilisateurs au
+                LEFT JOIN abonnements a ON au.abonnement_id = a.id
+                LEFT JOIN users u ON au.user_id = u.id
+                ORDER BY au.created_at DESC
+            ";
+            $stmt = $db->prepare($query);
+            $stmt->execute();
+        } else {
+            $query = "
+                SELECT au.*,
+                       a.nom AS abonnement_nom, a.prix AS abonnement_prix, a.type AS abonnement_type,
+                       a.duree_mois AS abonnement_duree_mois, a.avantages AS abonnement_avantages
+                FROM abonnements_utilisateurs au
+                LEFT JOIN abonnements a ON au.abonnement_id = a.id
+                WHERE au.user_id = :user_id
+                ORDER BY au.created_at DESC
+            ";
+            $stmt = $db->prepare($query);
+            $stmt->execute([':user_id' => $auth['id']]);
+        }
+
+        $souscriptions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($souscriptions as &$s) {
+            if (!empty($s['abonnement_avantages'])) {
+                $s['abonnement_avantages'] = json_decode($s['abonnement_avantages'], true);
+            }
+        }
+
+        Response::success($souscriptions);
+        exit;
+    }
+
     $actif = isset($_GET['actif']) ? (int)$_GET['actif'] : null;
     $statut = isset($_GET['statut']) ? $_GET['statut'] : null;
 
-    // Construction de la requête
     $where = [];
     $params = [];
 
@@ -38,7 +80,6 @@ try {
     $stmt->execute($params);
     $abonnements = $stmt->fetchAll();
 
-    // Décoder les JSON
     foreach ($abonnements as &$abonnement) {
         if (!empty($abonnement['avantages'])) {
             $abonnement['avantages'] = json_decode($abonnement['avantages'], true);

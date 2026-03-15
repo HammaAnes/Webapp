@@ -1128,6 +1128,17 @@ class ApiClient {
     });
   }
 
+  async actionCourrier(courrierId: string, action: string, extra?: Record<string, string>) {
+    return this.request("/admin/courrier.php", {
+      method: "PUT",
+      body: JSON.stringify({
+        courrier_id: courrierId,
+        action,
+        ...extra,
+      }),
+    });
+  }
+
   async getBlocages() {
     return this.request("/reservations/index.php?blocages=1");
   }

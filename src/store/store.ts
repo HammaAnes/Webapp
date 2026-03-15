@@ -48,6 +48,7 @@ interface AppState {
   initializeData: () => Promise<void>;
 
   loadAbonnements: () => Promise<void>;
+  loadAbonnementsUtilisateurs: () => Promise<void>;
   addAbonnement: (
     data: Partial<Abonnement>,
   ) => Promise<{ success: boolean; error?: string }>;
@@ -143,6 +144,7 @@ export const useAppStore = create<AppState>()(
             get().loadReservations(),
             get().loadDemandesDomiciliation(),
             get().loadAbonnements(),
+            get().loadAbonnementsUtilisateurs(),
             isAdmin ? get().loadUsers() : Promise.resolve(),
             isAdmin ? get().loadCodesPromo() : Promise.resolve(),
           ]);
@@ -228,6 +230,32 @@ export const useAppStore = create<AppState>()(
           }
         } catch (error) {
           logger.error("Erreur chargement abonnements:", error instanceof Error ? error.message : String(error));
+        }
+      },
+
+      loadAbonnementsUtilisateurs: async () => {
+        try {
+          const response = await apiClient.getAbonnementsUtilisateurs();
+          if (response.success && response.data) {
+            const rawData = extractArray(response.data);
+            const abonnementsUtilisateurs = rawData.map((a: Record<string, unknown>) => ({
+              id: String(a.id || ""),
+              userId: String(a.user_id || ""),
+              abonnementId: String(a.abonnement_id || ""),
+              dateDebut: String(a.date_debut || ""),
+              dateFin: String(a.date_fin || ""),
+              statut: String(a.statut || "en_attente") as AbonnementUtilisateur["statut"],
+              autoRenouvellement: Boolean(a.auto_renouvellement),
+              commentaire: a.commentaire as string | undefined,
+              dateDebutSouhaitee: a.date_debut_souhaitee as string | undefined,
+              entreprise: a.entreprise as string | undefined,
+              createdAt: a.created_at as string | undefined,
+              updatedAt: a.updated_at as string | undefined,
+            }));
+            set({ abonnementsUtilisateurs });
+          }
+        } catch (error) {
+          logger.error("Erreur chargement souscriptions:", error instanceof Error ? error.message : String(error));
         }
       },
 
@@ -377,7 +405,9 @@ export const useAppStore = create<AppState>()(
                   startDate,
                   endDate,
                   status: (d.statut === "active" ? "active" : "pending") as DomiciliationService["status"],
-                  address: "Mohammadia Mall, 4\u00e8me \u00e9tage, Bureau 1178, Alger",
+                  address: d.numeroBureau
+                    ? `Bureau ${d.numeroBureau}, Mohammadia Mall, 4ème étage, Alger`
+                    : "Mohammadia Mall, 4ème étage, Alger",
                   services: [
                     "Domiciliation",
                     "Courrier",

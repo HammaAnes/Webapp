@@ -105,8 +105,12 @@ export default function Aujourdhui() {
   }, [reservations]);
 
   const pendingReservations = useMemo(() => {
-    return reservations.filter(r => r.statut === 'en_attente');
-  }, [reservations]);
+    return reservations.filter(r => {
+      if (r.statut !== 'en_attente') return false;
+      const start = new Date(r.dateDebut);
+      return start >= startOfDay(now);
+    });
+  }, [reservations, now]);
 
   const categorizedReservations = useMemo(() => {
     const activeNow: Reservation[] = [];

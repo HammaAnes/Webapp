@@ -49,6 +49,26 @@ try {
         Response::notFound('Domiciliation introuvable ou ne peut pas être activée depuis son statut actuel (statut requis: en_attente_signature ou domiciliation_creee)');
     }
 
+    // Validation des dates
+    $dateDebut = new DateTime($data['date_debut']);
+    $dateFin = new DateTime($data['date_fin']);
+    if ($dateFin <= $dateDebut) {
+        Response::badRequest('La date de fin doit être postérieure à la date de début');
+    }
+
+    // Validation du numéro de bureau
+    if (isset($data['numero_bureau']) && $data['numero_bureau'] > 0) {
+        $bureauNum = intval($data['numero_bureau']);
+        if ($bureauNum < 1 || $bureauNum > 60) {
+            Response::badRequest('Le numéro de bureau doit être compris entre 1 et 60');
+        }
+        $bureauCheckStmt = $db->prepare("SELECT id FROM domiciliations WHERE numero_bureau = ? AND statut IN ('active', 'domiciliation_creee') AND id != ?");
+        $bureauCheckStmt->execute([$bureauNum, $data['domiciliation_id']]);
+        if ($bureauCheckStmt->fetch()) {
+            Response::error('Ce numéro de bureau est déjà attribué à une domiciliation active', 409);
+        }
+    }
+
     // Activer la domiciliation
     $numeroBureau = isset($data['numero_bureau']) && $data['numero_bureau'] > 0 ? intval($data['numero_bureau']) : null;
     $bureauSet = $numeroBureau !== null ? ", numero_bureau = :numero_bureau, date_debut_contrat = :date_debut_contrat, date_fin_contrat = :date_fin_contrat" : "";
