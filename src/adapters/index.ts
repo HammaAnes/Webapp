@@ -4,6 +4,10 @@ import type {
   User,
   Abonnement,
   DemandeDomiciliation,
+  Contact,
+  CodePromo,
+  ContactSource,
+  ContactStatut,
   EspaceType,
   TypeReservation,
 } from "../types";
@@ -50,13 +54,21 @@ export const espaceAdapter = {
 };
 
 function parseDate(value: unknown): Date {
-  if (value instanceof Date) return value;
-  if (typeof value === "string" && value) {
+  if (value instanceof Date && !isNaN(value.getTime())) return value;
+  if (typeof value === "string" && value.trim()) {
     const normalized = value.replace(" ", "T");
     const d = new Date(normalized);
     if (!isNaN(d.getTime())) return d;
   }
-  return new Date();
+  throw new Error(`parseDate: valeur invalide "${value}"`);
+}
+
+function parseDateSafe(value: unknown, fallback: Date = new Date()): Date {
+  try {
+    return parseDate(value);
+  } catch {
+    return fallback;
+  }
 }
 
 export const reservationAdapter = {
@@ -64,8 +76,8 @@ export const reservationAdapter = {
     id: String(apiData.id || ""),
     userId: String(apiData.user_id || ""),
     espaceId: String(apiData.espace_id || ""),
-    dateDebut: parseDate(apiData.date_debut),
-    dateFin: parseDate(apiData.date_fin),
+    dateDebut: parseDateSafe(apiData.date_debut),
+    dateFin: parseDateSafe(apiData.date_fin),
     statut: String(apiData.statut || "en_attente") as Reservation["statut"],
     typeReservation: apiData.type_reservation as TypeReservation | undefined,
     montantTotal: parseFloat(String(apiData.montant_total || 0)),
@@ -87,13 +99,13 @@ export const reservationAdapter = {
         }
       : undefined,
     utilisateur: apiData.user_nom
-      ? {
+      ? ({
           id: String(apiData.user_id || ""),
           nom: String(apiData.user_nom || ""),
           prenom: String(apiData.user_prenom || ""),
           email: String(apiData.user_email || ""),
           role: (String(apiData.user_role || "user")) as "admin" | "user",
-        }
+        } as User)
       : undefined,
   }),
 
@@ -415,6 +427,76 @@ export const domiciliationAdapter = {
     if (domiciliation.visibleSurSite !== undefined) data.visible_sur_site = domiciliation.visibleSurSite;
     if (domiciliation.userId !== undefined) data.user_id = domiciliation.userId;
 
+    return data;
+  },
+};
+
+export const contactAdapter = {
+  fromAPI: (apiData: ApiRecord): Contact => ({
+    id: String(apiData.id || ""),
+    nom: String(apiData.nom || ""),
+    prenom: String(apiData.prenom || ""),
+    email: apiData.email as string | undefined,
+    telephone: apiData.telephone as string | undefined,
+    entreprise: apiData.entreprise as string | undefined,
+    source: (String(apiData.source || "autre")) as ContactSource,
+    statut: (String(apiData.statut || "prospect")) as ContactStatut,
+    notes: apiData.notes as string | undefined,
+    userId: apiData.user_id ? String(apiData.user_id) : undefined,
+    createdBy: String(apiData.created_by || ""),
+    createdAt: String(apiData.created_at || ""),
+    updatedAt: String(apiData.updated_at || ""),
+  }),
+
+  toAPI: (contact: Partial<Contact>): ApiRecord => {
+    const data: ApiRecord = {};
+    if (contact.nom !== undefined) data.nom = contact.nom;
+    if (contact.prenom !== undefined) data.prenom = contact.prenom;
+    if (contact.email !== undefined) data.email = contact.email;
+    if (contact.telephone !== undefined) data.telephone = contact.telephone;
+    if (contact.entreprise !== undefined) data.entreprise = contact.entreprise;
+    if (contact.source !== undefined) data.source = contact.source;
+    if (contact.statut !== undefined) data.statut = contact.statut;
+    if (contact.notes !== undefined) data.notes = contact.notes;
+    if (contact.userId !== undefined) data.user_id = contact.userId;
+    return data;
+  },
+};
+
+export const codePromoAdapter = {
+  fromAPI: (apiData: ApiRecord): CodePromo => ({
+    id: String(apiData.id || ""),
+    code: String(apiData.code || ""),
+    type: String(apiData.type || "pourcentage") as CodePromo["type"],
+    valeur: Number(apiData.valeur || 0),
+    dateDebut: parseDateSafe(apiData.date_debut),
+    dateFin: parseDateSafe(apiData.date_fin),
+    utilisationsMax: Number(apiData.utilisations_max || 0),
+    utilisationsActuelles: Number(apiData.utilisations_actuelles || 0),
+    actif: Boolean(apiData.actif),
+    description: apiData.description as string | undefined,
+    conditions: apiData.conditions as string | undefined,
+    montantMin: apiData.montant_min != null ? Number(apiData.montant_min) : undefined,
+    montantMaxReduction: apiData.montant_max_reduction != null ? Number(apiData.montant_max_reduction) : undefined,
+    utilisationsParUser: apiData.utilisations_par_user != null ? Number(apiData.utilisations_par_user) : undefined,
+    createdAt: apiData.created_at ? String(apiData.created_at) : undefined,
+    updatedAt: apiData.updated_at ? String(apiData.updated_at) : undefined,
+  }),
+
+  toAPI: (code: Partial<CodePromo>): ApiRecord => {
+    const data: ApiRecord = {};
+    if (code.code !== undefined) data.code = code.code;
+    if (code.type !== undefined) data.type = code.type;
+    if (code.valeur !== undefined) data.valeur = code.valeur;
+    if (code.dateDebut !== undefined) data.date_debut = code.dateDebut instanceof Date ? code.dateDebut.toISOString().split("T")[0] : code.dateDebut;
+    if (code.dateFin !== undefined) data.date_fin = code.dateFin instanceof Date ? code.dateFin.toISOString().split("T")[0] : code.dateFin;
+    if (code.utilisationsMax !== undefined) data.utilisations_max = code.utilisationsMax;
+    if (code.actif !== undefined) data.actif = code.actif;
+    if (code.description !== undefined) data.description = code.description;
+    if (code.conditions !== undefined) data.conditions = code.conditions;
+    if (code.montantMin !== undefined) data.montant_min = code.montantMin;
+    if (code.montantMaxReduction !== undefined) data.montant_max_reduction = code.montantMaxReduction;
+    if (code.utilisationsParUser !== undefined) data.utilisations_par_user = code.utilisationsParUser;
     return data;
   },
 };

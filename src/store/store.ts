@@ -9,6 +9,7 @@ import {
   abonnementAdapter,
   userAdapter,
   domiciliationAdapter,
+  codePromoAdapter,
 } from "../adapters/index";
 import type {
   User,
@@ -131,8 +132,13 @@ export const useAppStore = create<AppState>()(
         try {
           await get().loadEspaces();
 
-          const { useAuthStore: authRef } = await import("./authStore");
-          const { user } = authRef.getState();
+          let user: import("../types").User | null = null;
+          try {
+            const { useAuthStore: authRef } = await import("./authStore");
+            user = authRef.getState().user;
+          } catch (authImportError) {
+            logger.warn("Could not import authStore:", authImportError instanceof Error ? authImportError.message : String(authImportError));
+          }
           const isAdmin = user?.role === "admin";
 
           await Promise.all([
@@ -314,24 +320,7 @@ export const useAppStore = create<AppState>()(
           const response = await apiClient.getCodesPromo();
           if (response.success && response.data) {
             const rawData = extractArray(response.data);
-            const codesPromo = rawData.map((c) => ({
-              id: String(c.id || ""),
-              code: String(c.code || ""),
-              type: String(c.type || "pourcentage") as CodePromo["type"],
-              valeur: Number(c.valeur || 0),
-              dateDebut: c.date_debut ? new Date(String(c.date_debut)) : new Date(),
-              dateFin: c.date_fin ? new Date(String(c.date_fin)) : new Date(),
-              utilisationsMax: Number(c.utilisations_max || 0),
-              utilisationsActuelles: Number(c.utilisations_actuelles || 0),
-              actif: Boolean(c.actif),
-              description: c.description as string | undefined,
-              conditions: c.conditions as string | undefined,
-              montantMin: c.montant_min != null ? Number(c.montant_min) : undefined,
-              montantMaxReduction: c.montant_max_reduction != null ? Number(c.montant_max_reduction) : undefined,
-              utilisationsParUser: c.utilisations_par_user != null ? Number(c.utilisations_par_user) : undefined,
-              createdAt: c.created_at ? new Date(String(c.created_at)) : new Date(),
-              updatedAt: c.updated_at ? new Date(String(c.updated_at)) : new Date(),
-            })) as CodePromo[];
+            const codesPromo = rawData.map((c) => codePromoAdapter.fromAPI(c));
             set({ codesPromo });
           }
         } catch (error) {
@@ -496,8 +485,18 @@ export const useAppStore = create<AppState>()(
             return { success: false, error: errorMsg };
           }
 
-          const { useAuthStore: authStoreRef } = await import("./authStore");
-          const { user, loadUser } = authStoreRef.getState();
+          let authUser: import("../types").User | null = null;
+          let authLoadUser: (() => Promise<void>) | undefined;
+          try {
+            const { useAuthStore: authStoreRef } = await import("./authStore");
+            const authState = authStoreRef.getState();
+            authUser = authState.user;
+            authLoadUser = authState.loadUser;
+          } catch (authImportError) {
+            logger.warn("Could not import authStore:", authImportError instanceof Error ? authImportError.message : String(authImportError));
+          }
+          const user = authUser;
+          const loadUser = authLoadUser;
 
           if (user?.id === userId) {
             await loadUser();

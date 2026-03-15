@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { apiClient } from "../lib/api-client";
 import toast from "react-hot-toast";
-import type { User } from "../types";
+import type { User, RegisterData } from "../types";
 import { logger } from "../utils/logger";
 import { userAdapter } from "../adapters";
 
@@ -18,17 +18,6 @@ interface AuthState {
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   loadUser: () => Promise<void>;
-}
-
-interface RegisterData {
-  email: string;
-  password: string;
-  nom: string;
-  prenom: string;
-  telephone?: string;
-  profession?: string;
-  entreprise?: string;
-  codeParrainage?: string;
 }
 
 interface AuthResponseData {

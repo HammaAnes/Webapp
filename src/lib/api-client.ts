@@ -14,6 +14,7 @@ interface ApiResponse<T = unknown> {
   data?: T;
   message?: string;
   error?: string;
+  _networkError?: boolean;
 }
 
 class ApiClient {
@@ -333,7 +334,7 @@ class ApiClient {
             ? "Serveur inaccessible"
             : `Impossible de contacter l'API (${API_URL}). Vérifiez que le serveur est accessible.`,
           _networkError: true,
-        } as ApiResponse<T> & { _networkError: boolean };
+        } as ApiResponse<T>;
       }
 
       return {
@@ -945,7 +946,7 @@ class ApiClient {
 
   async updateParrainageStatut(id: string, statut: string) {
     return this.request("/parrainages/update.php", {
-      method: "PATCH",
+      method: "PUT",
       body: JSON.stringify({ id, statut }),
     });
   }
@@ -1086,7 +1087,7 @@ class ApiClient {
   }
 
   async getClotures() {
-    return this.request("/caisse/cloture.php");
+    return this.request("/caisse/transactions.php?type=clotures");
   }
 
   // ============= COURRIER =============

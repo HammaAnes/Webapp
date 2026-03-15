@@ -87,6 +87,7 @@ export interface User {
   telephone?: string;
   role: "admin" | "user";
   statut?: "actif" | "inactif" | "suspendu";
+  password?: string;
   createdAt?: string;
   updatedAt?: string;
   derniereConnexion?: Date;
@@ -222,9 +223,9 @@ export interface DemandeDomiciliation {
   activiteExercee?: string;
   descriptionActivite?: string;
   numeroAutoEntrepreneur?: string;
-  dateCreationEntreprise?: Date | string;
+  dateCreationEntreprise?: string;
   villeImmatriculation?: string;
-  dateInscriptionAutoEntrepreneur?: Date | string;
+  dateInscriptionAutoEntrepreneur?: string;
   representantLegal: {
     nom: string;
     prenom: string;
@@ -239,19 +240,19 @@ export interface DemandeDomiciliation {
   capital?: number;
   numeroBureau?: number;
   referenceContratNotarie?: string;
-  dateDebutContrat?: Date | string;
-  dateFinContrat?: Date | string;
+  dateDebutContrat?: string;
+  dateFinContrat?: string;
   options?: DomiciliationOptions;
   cguAcceptees: boolean;
-  dateCguAcceptation?: Date | string;
+  dateCguAcceptation?: string;
   statut: "dossier_preparatoire" | "en_attente_signature" | "domiciliation_creee" | "en_attente_complements" | "active" | "refusee" | "expiree" | "resiliee";
   commentaireAdmin?: string;
-  dateValidation?: Date | string;
-  dateCreation: Date | string;
-  updatedAt: Date | string;
+  dateValidation?: string;
+  dateCreation: string;
+  updatedAt: string;
   montantMensuel?: number;
-  dateDebut?: Date | string;
-  dateFin?: Date | string;
+  dateDebut?: string;
+  dateFin?: string;
   modePaiement?: string;
   wilaya?: string;
   commune?: string;
@@ -259,7 +260,7 @@ export interface DemandeDomiciliation {
   activitePrincipale?: string;
   visibleSurSite?: boolean;
   documents?: Array<{ type: string; name: string }>;
-  dateDebutSouhaitee?: Date | string;
+  dateDebutSouhaitee?: string;
 }
 
 export interface DomiciliationService {
@@ -297,8 +298,8 @@ export interface CodePromo {
   code: string;
   type: "pourcentage" | "montant_fixe";
   valeur: number;
-  dateDebut: Date;
-  dateFin: Date;
+  dateDebut: Date | string;
+  dateFin: Date | string;
   utilisationsMax: number;
   utilisationsActuelles: number;
   actif: boolean;
@@ -310,8 +311,8 @@ export interface CodePromo {
   typesApplication?: ("reservation" | "domiciliation")[];
   premiereCommandeSeulement?: boolean;
   codeParrainageRequis?: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface UserForm {
@@ -324,6 +325,8 @@ export interface UserForm {
   entreprise?: string;
   codeParrainage?: string;
 }
+
+export type RegisterData = UserForm;
 
 export interface CreateReservationData {
   userId?: string;
@@ -396,8 +399,8 @@ export interface Abonnement {
   statut?: string;
   couleur?: string;
   ordre: number;
-  createdAt?: Date | string;
-  updatedAt?: Date | string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AbonnementUtilisateur {

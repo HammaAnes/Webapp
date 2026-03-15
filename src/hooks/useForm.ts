@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, type ChangeEvent } from "react";
 import { logger } from "../utils/logger";
 
 interface ValidationRule {
