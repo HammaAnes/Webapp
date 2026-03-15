@@ -67,7 +67,7 @@ function KanbanCard({
   onAction,
 }: {
   demande: DemandeDomiciliation;
-  primaryAction: typeof KANBAN_COLUMNS[0]["primaryAction"];
+  primaryAction: typeof KANBAN_COLUMNS[number]["primaryAction"];
   onClick: () => void;
   onAction: (action: string) => void;
 }) {
@@ -138,7 +138,7 @@ export default function DomiciliationKanban({ demandes, onAction }: Props) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 min-h-[400px]">
       {KANBAN_COLUMNS.map((col) => {
-        const colDemandes = demandes.filter((d) => col.statuts.includes(d.statut as (typeof col.statuts)[number]));
+        const colDemandes = demandes.filter((d) => (col.statuts as readonly string[]).includes(d.statut));
 
         return (
           <div key={col.key} className="flex-shrink-0 w-64">

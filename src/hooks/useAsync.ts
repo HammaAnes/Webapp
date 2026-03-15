@@ -116,7 +116,7 @@ export function useAsync<T, Args extends unknown[] = []>(
 
   useEffect(() => {
     if (immediate) {
-      execute();
+      execute(...([] as unknown as Args));
     }
     // execute is stable (useCallback with asyncFunction), intentionally run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps

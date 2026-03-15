@@ -309,10 +309,10 @@ export default function Aujourdhui() {
         }
         return <Badge variant="success">En cours</Badge>;
       }
-      if (reservation.statut === 'terminee') return <Badge variant="default">Terminée</Badge>;
+      if (reservation.statut === 'terminee') return <Badge variant="neutral">Terminée</Badge>;
       if (minutesUntilStart > 0 && minutesUntilStart <= 60) return <Badge variant="warning">Dans {minutesUntilStart}min</Badge>;
       if (reservation.statut === 'en_attente') return <Badge variant="warning">En attente</Badge>;
-      if (isPast) return <Badge variant="default">Terminée</Badge>;
+      if (isPast) return <Badge variant="neutral">Terminée</Badge>;
       return <Badge variant="info">À venir</Badge>;
     };
 
@@ -825,7 +825,7 @@ export default function Aujourdhui() {
           <div className="flex items-center gap-2 mb-4">
             <CheckCircle className="w-5 h-5 text-gray-500" />
             <h2 className="text-lg font-bold text-gray-900">Terminées</h2>
-            <Badge variant="default">{categorizedReservations.completed.length}</Badge>
+            <Badge variant="neutral">{categorizedReservations.completed.length}</Badge>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {categorizedReservations.completed.slice(0, 4).map((res) => (

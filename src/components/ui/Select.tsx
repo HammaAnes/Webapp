@@ -20,7 +20,6 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, placeholder, onChange, className = '', icon, required, ...props }, ref) => {
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
       onChange?.(e.target.value);
-      props.onChange?.(e);
     };
 
     return (

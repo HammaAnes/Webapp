@@ -411,11 +411,12 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
         const response = await apiClient.request(
           `/reservations/availability.php?espace_id=${currentEspace.id}&date_debut=${dateStr}&date_fin=${dateStr}`
         );
-        if (response.success && response.data?.days?.length > 0) {
-          const dayData = response.data.days[0];
+        const availability = response.data as { days?: Array<{ seats_available?: number; seats_taken?: number }>; capacity?: number } | undefined;
+        if (response.success && availability?.days?.length && availability.days.length > 0) {
+          const dayData = availability.days[0];
           setSlotSeatsAvailable(dayData.seats_available ?? null);
           setSlotSeatsTaken(dayData.seats_taken ?? null);
-          setSlotCapacity(response.data.capacity ?? null);
+          setSlotCapacity(availability.capacity ?? null);
         } else {
           setSlotSeatsAvailable(null);
           setSlotSeatsTaken(null);

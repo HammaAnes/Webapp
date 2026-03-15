@@ -346,7 +346,7 @@ export default function Caisse() {
                     {transaction.type_transaction}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    <Badge variant="teal">
+                    <Badge variant="info">
                       {MODE_PAIEMENT_LABELS[transaction.mode_paiement] || transaction.mode_paiement}
                     </Badge>
                   </td>

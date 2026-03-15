@@ -276,11 +276,11 @@ const AdminAbonnements = () => {
   const getStatutBadge = (statut: string) => {
     const badges: Record<
       string,
-      { variant: "success" | "warning" | "danger" | "default"; label: string }
+      { variant: "success" | "warning" | "danger" | "neutral"; label: string }
     > = {
       actif: { variant: "success", label: "Actif" },
       inactif: { variant: "warning", label: "Inactif" },
-      archive: { variant: "default", label: "Archivé" },
+      archive: { variant: "neutral", label: "Archivé" },
     };
     const badge = badges[statut] || badges.actif;
     return <Badge variant={badge.variant}>{badge.label}</Badge>;
@@ -438,7 +438,7 @@ const AdminAbonnements = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <Badge variant="default">{abonnement.type}</Badge>
+                      <Badge variant="neutral">{abonnement.type}</Badge>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm">

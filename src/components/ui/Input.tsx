@@ -70,8 +70,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               inputVariants.base,
               inputVariants.variants[resolvedVariant],
               inputVariants.sizes[inputSize],
-              icon && "pl-10",
-              (rightElement || error) && "pr-10",
+              !!icon && "pl-10",
+              !!(rightElement || error) && "pr-10",
               className
             )}
             {...props}

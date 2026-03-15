@@ -84,6 +84,11 @@ export default function ContactDetail() {
 
   const contact = currentContact;
   const history: ContactHistory[] = (currentContact as (Contact & { history?: ContactHistory[] })).history || [];
+  const computedStats = {
+    nbReservations: history.filter((h) => h.type === 'reservation').length,
+    nbDomiciliations: history.filter((h) => h.type === 'domiciliation').length,
+    totalRevenue: history.reduce((sum, h) => sum + (h.montant || 0), 0),
+  };
 
   return (
     <div className="space-y-6">
@@ -296,7 +301,7 @@ export default function ContactDetail() {
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <Badge variant={item.type === 'reservation' ? 'default' : 'secondary'}>
+                        <Badge variant={item.type === 'reservation' ? 'info' : 'neutral'}>
                           {item.type === 'reservation' ? 'Réservation' : 'Domiciliation'}
                         </Badge>
                         <Badge>{item.statut}</Badge>
@@ -330,19 +335,19 @@ export default function ContactDetail() {
               <div>
                 <p className="text-sm text-muted mb-1">Réservations</p>
                 <p className="text-2xl font-bold text-primary">
-                  {contact.stats?.nbReservations || 0}
+                  {computedStats.nbReservations}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted mb-1">Domiciliations</p>
                 <p className="text-2xl font-bold text-primary">
-                  {contact.stats?.nbDomiciliations || 0}
+                  {computedStats.nbDomiciliations}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted mb-1">Revenu total</p>
                 <p className="text-2xl font-bold text-accent">
-                  {formatCurrency(contact.stats?.totalRevenue || 0)}
+                  {formatCurrency(computedStats.totalRevenue)}
                 </p>
               </div>
             </div>

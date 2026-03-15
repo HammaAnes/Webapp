@@ -48,7 +48,7 @@ const SpacesAndPricing = () => {
     [espaces]
   );
   const espaceBooths = useMemo(
-    () => espaces.filter((e) => e.type === "bureau_prive" || e.nom.toLowerCase().includes("booth") || e.nom.toLowerCase().includes("aurès") || e.nom.toLowerCase().includes("atlas") || e.nom.toLowerCase().includes("hoogar")),
+    () => espaces.filter((e) => e.type === "box_4" || e.type === "box_3" || e.nom.toLowerCase().includes("booth") || e.nom.toLowerCase().includes("aurès") || e.nom.toLowerCase().includes("atlas") || e.nom.toLowerCase().includes("hoogar")),
     [espaces]
   );
 

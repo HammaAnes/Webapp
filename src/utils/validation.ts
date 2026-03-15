@@ -36,7 +36,7 @@ export const validationRules = {
 
   passwordConfirm: (password: string) => ({
     required: "Confirmation du mot de passe requise",
-    validate: (value: string) =>
+    validate: (value: string | undefined) =>
       value === password || "Les mots de passe ne correspondent pas",
   }),
 

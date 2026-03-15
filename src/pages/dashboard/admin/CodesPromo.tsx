@@ -50,11 +50,11 @@ function isValidDateString(dateStr: string | null | undefined): boolean {
 
 function getCodeStatus(code: CodePromo): {
   label: string;
-  variant: "success" | "danger" | "warning" | "default";
+  variant: "success" | "danger" | "warning" | "neutral";
   key: StatusFilter;
 } {
   if (!code.actif)
-    return { label: "D\u00e9sactiv\u00e9", variant: "default", key: "disabled" };
+    return { label: "D\u00e9sactiv\u00e9", variant: "neutral", key: "disabled" };
   if (isValidDateString(code.date_fin) && isPast(parseISO(code.date_fin)))
     return { label: "Expir\u00e9", variant: "danger", key: "expired" };
   if (

@@ -160,7 +160,7 @@ export function DataTable<T extends { id: string }>({
       )}
 
       {filteredData.length === 0 ? (
-        <EmptyState message={emptyMessage} icon={emptyIcon} />
+        <EmptyState message={emptyMessage} />
       ) : (
         <>
           <div className="overflow-x-auto border border-border rounded-lg">

@@ -40,15 +40,12 @@ export function FilterBar({
             {filter.type === "select" && filter.options ? (
               <Select
                 value={values[filter.key] || ""}
-                onChange={(e) => onChange(filter.key, e.target.value)}
-              >
-                <option value="">{filter.placeholder || "Tous"}</option>
-                {filter.options.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => onChange(filter.key, value)}
+                options={[
+                  { value: "", label: filter.placeholder || "Tous" },
+                  ...filter.options,
+                ]}
+              />
             ) : filter.type === "date" ? (
               <Input
                 type="date"

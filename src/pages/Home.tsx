@@ -40,7 +40,7 @@ const Home = () => {
 
   const prixBooth = useMemo(() => {
     const booths = espaces.filter((e) =>
-      e.type === "bureau_prive" || e.nom.toLowerCase().includes("booth") || e.nom.toLowerCase().includes("box") || e.nom.toLowerCase().includes("bureau privé")
+      e.type === "box_4" || e.type === "box_3" || e.nom.toLowerCase().includes("booth") || e.nom.toLowerCase().includes("box") || e.nom.toLowerCase().includes("bureau privé")
     );
     if (booths.length === 0) return null;
     const minPrix = Math.min(...booths.map((e) => e.prixJour || Infinity).filter(isFinite));
