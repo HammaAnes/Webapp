@@ -1,29 +1,12 @@
 <?php
 require_once __DIR__ . '/../bootstrap.php';
 
-header('Content-Type: application/json');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
-
-$auth = new Auth();
-$userId = $auth->authenticate();
-
-if (!$userId) {
-    Response::error('Non autorisé', 401);
-}
-
-$user = $auth->getUserById($userId);
-if ($user['role'] !== 'admin') {
-    Response::error('Accès refusé - Administrateur uniquement', 403);
-}
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     Response::error('Méthode non autorisée', 405);
 }
+
+$authData = Auth::requireAdmin();
+$userId = $authData['id'];
 
 try {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -116,7 +99,8 @@ try {
             'Bienvenue sur Coffice',
             'welcome',
             [
-                'nom' => $contact['prenom'],
+                'prenom' => $contact['prenom'],
+                'nom' => $contact['nom'],
                 'email' => $contact['email'],
                 'password' => $tempPassword,
                 'loginUrl' => 'https://coffice.dz/connexion'

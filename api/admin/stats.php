@@ -29,14 +29,14 @@ try {
             (SELECT COUNT(*) FROM reservations WHERE DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) as yesterday_reservations,
             (SELECT COUNT(*) FROM reservations WHERE MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW())) as month_reservations,
 
-            -- Revenus
-            (SELECT COALESCE(SUM(montant_total - COALESCE(reduction, 0)), 0)
+            -- Revenus (montant_total est deja net apres reduction appliquee)
+            (SELECT COALESCE(SUM(montant_total), 0)
              FROM reservations
              WHERE MONTH(created_at) = MONTH(NOW())
              AND YEAR(created_at) = YEAR(NOW())
              AND statut IN ('confirmee', 'terminee')) as month_revenue,
 
-            (SELECT COALESCE(SUM(montant_total - COALESCE(reduction, 0)), 0)
+            (SELECT COALESCE(SUM(montant_total), 0)
              FROM reservations
              WHERE MONTH(created_at) = MONTH(DATE_SUB(NOW(), INTERVAL 1 MONTH))
              AND YEAR(created_at) = YEAR(DATE_SUB(NOW(), INTERVAL 1 MONTH))
@@ -45,8 +45,8 @@ try {
             -- Abonnements
             (SELECT COUNT(*) FROM abonnements_utilisateurs WHERE statut = 'actif' AND date_fin > NOW()) as active_subscriptions,
 
-            -- Domiciliations
-            (SELECT COUNT(*) FROM domiciliations WHERE statut = 'en_attente') as pending_domiciliations,
+            -- Domiciliations attendant une action admin (dossier soumis ou complements demandes)
+            (SELECT COUNT(*) FROM domiciliations WHERE statut IN ('dossier_preparatoire', 'en_attente_complements')) as pending_domiciliations,
 
             -- Espaces et occupation
             (SELECT COUNT(*) FROM espaces) as total_spaces,
@@ -56,8 +56,8 @@ try {
              AND statut IN ('confirmee', 'en_cours')) as occupied_spaces,
 
             (SELECT COUNT(DISTINCT espace_id) FROM reservations
-             WHERE DATE(date_debut) <= LAST_DAY(DATE_SUB(NOW(), INTERVAL 1 MONTH))
-             AND DATE(date_fin) >= DATE_SUB(NOW(), INTERVAL 1 MONTH)
+             WHERE MONTH(date_debut) = MONTH(DATE_SUB(NOW(), INTERVAL 1 MONTH))
+             AND YEAR(date_debut) = YEAR(DATE_SUB(NOW(), INTERVAL 1 MONTH))
              AND statut IN ('confirmee', 'en_cours', 'terminee')) as last_month_occupied_spaces
     ";
 

@@ -135,7 +135,7 @@ export default function AdminDomiciliations() {
       return days >= 0 && days <= 30;
     });
     const stagnant = demandesDomiciliation.filter((d) => {
-      if (["active", "refusee", "resiliee", "expiree"].includes(d.statut)) return false;
+      if (["active", "domiciliation_creee", "refusee", "resiliee", "expiree"].includes(d.statut)) return false;
       const age = Math.floor(
         (Date.now() - new Date(d.dateCreation as string).getTime()) / (1000 * 60 * 60 * 24)
       );
@@ -588,7 +588,7 @@ function DomiciliationRow({
   const createdTs = demande.dateCreation ? new Date(demande.dateCreation as string).getTime() : Date.now();
   const ageJours = Math.floor((Date.now() - createdTs) / (1000 * 60 * 60 * 24));
   const isStale =
-    !["active", "refusee", "resiliee", "expiree"].includes(demande.statut) && ageJours > 7;
+    !["active", "domiciliation_creee", "refusee", "resiliee", "expiree"].includes(demande.statut) && ageJours > 7;
   const isVeryStale = isStale && ageJours > 30;
   const daysUntilExpiry =
     demande.statut === "active" && demande.dateFinContrat

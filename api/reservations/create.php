@@ -229,7 +229,7 @@ try {
 
     if (!empty($codePromo)) {
         $stmt = $db->prepare("
-            SELECT id, type, valeur, montant_min, utilisations_max, utilisations_actuelles, date_fin, actif
+            SELECT id, type, valeur, montant_min, utilisations_max, utilisations_actuelles, utilisations_par_user, date_fin, actif
             FROM codes_promo
             WHERE code = ? AND actif = 1
             FOR UPDATE
@@ -250,6 +250,18 @@ try {
 
             if ($promo['montant_min'] > 0 && $montant < $promo['montant_min']) {
                 $isValid = false;
+            }
+
+            if ($isValid && $userId && !empty($promo['utilisations_par_user']) && intval($promo['utilisations_par_user']) > 0) {
+                $userUsageStmt = $db->prepare("
+                    SELECT COUNT(*) as cnt FROM utilisations_codes_promo
+                    WHERE code_promo_id = ? AND user_id = ?
+                ");
+                $userUsageStmt->execute([$promo['id'], $userId]);
+                $userUsageRow = $userUsageStmt->fetch(PDO::FETCH_ASSOC);
+                if (intval($userUsageRow['cnt']) >= intval($promo['utilisations_par_user'])) {
+                    $isValid = false;
+                }
             }
 
             if ($isValid) {

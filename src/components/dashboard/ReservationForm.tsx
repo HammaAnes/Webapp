@@ -115,8 +115,7 @@ const CLOSING_MINUTE = WORKING_HOURS.CLOSING_MINUTE;
 const OPEN_SPACE_CAPACITY = 12;
 
 const isOpenSpace = (espace: EspaceAPI): boolean => {
-  const lower = (espace.nom + " " + espace.type).toLowerCase();
-  return lower.includes("open") || lower.includes("coworking") || espace.type === "open_space";
+  return espace.type === "open_space";
 };
 
 const getAvailableSeats = (espace: EspaceAPI, seatsFromAvailability?: number): number => {

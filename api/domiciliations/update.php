@@ -103,8 +103,40 @@ try {
     $updates[] = "updated_at = NOW()";
     $query = "UPDATE domiciliations SET " . implode(', ', $updates) . " WHERE id = :id";
 
+    $db->beginTransaction();
+
     $stmt = $db->prepare($query);
     $stmt->execute($params);
+
+    if (isset($data->statut) && $auth['role'] === 'admin' && !empty($demande['user_id'])) {
+        $notifId = UuidHelper::generate();
+        $notifStmt = $db->prepare("INSERT INTO notifications (id, user_id, type, titre, message, lue, created_at) VALUES (?, ?, 'domiciliation', ?, ?, 0, NOW())");
+        $statusLabels = [
+            'en_attente_signature' => 'Dossier validé — signature requise',
+            'domiciliation_creee' => 'Domiciliation créée',
+            'active' => 'Domiciliation activée',
+            'refusee' => 'Demande refusée',
+            'resiliee' => 'Domiciliation résiliée',
+            'en_attente_complements' => 'Compléments requis',
+        ];
+        $titre = $statusLabels[$data->statut] ?? 'Mise à jour de votre domiciliation';
+        $message = 'Le statut de votre domiciliation a été mis à jour : ' . ($statusLabels[$data->statut] ?? $data->statut);
+        $notifStmt->execute([$notifId, $demande['user_id'], $titre, $message]);
+
+        if ($data->statut === 'domiciliation_creee' && isset($data->montant_mensuel)) {
+            $transactionId = UuidHelper::generate();
+            $domForTx = $db->prepare("SELECT raison_sociale FROM domiciliations WHERE id = ?");
+            $domForTx->execute([$data->id]);
+            $domRow = $domForTx->fetch(PDO::FETCH_ASSOC);
+            $reference = 'DOM-' . date('YmdHis') . '-' . substr($transactionId, 0, 8);
+            $description = 'Signature domiciliation - ' . ($domRow['raison_sociale'] ?? '');
+            $modePaiement = $data->mode_paiement ?? 'cash';
+            $txStmt = $db->prepare("INSERT INTO transactions (id, user_id, type, montant, statut, mode_paiement, reference, description, date_paiement, created_at) VALUES (?, ?, 'domiciliation', ?, 'en_attente', ?, ?, ?, NOW(), NOW())");
+            $txStmt->execute([$transactionId, $demande['user_id'], $data->montant_mensuel, $modePaiement, $reference, $description]);
+        }
+    }
+
+    $db->commit();
 
     if (isset($data->statut) && $auth['role'] === 'admin' && !empty($demande['user_id'])) {
         try {
@@ -118,30 +150,6 @@ try {
                 if ($updatedDom) {
                     Mailer::sendDomiciliationStatus($userRow['email'], $data->statut, $updatedDom);
                 }
-                $notifId = UuidHelper::generate();
-                $notifStmt = $db->prepare("INSERT INTO notifications (id, user_id, type, titre, message, lue, created_at) VALUES (?, ?, 'domiciliation', ?, ?, 0, NOW())");
-                $statusLabels = [
-                    'en_attente_signature' => 'Dossier validé — signature requise',
-                    'domiciliation_creee' => 'Domiciliation créée',
-                    'active' => 'Domiciliation activée',
-                    'refusee' => 'Demande refusée',
-                    'resiliee' => 'Domiciliation résiliée',
-                    'en_attente_complements' => 'Compléments requis',
-                ];
-                $titre = $statusLabels[$data->statut] ?? 'Mise à jour de votre domiciliation';
-                $message = 'Le statut de votre domiciliation a été mis à jour : ' . ($statusLabels[$data->statut] ?? $data->statut);
-                $notifStmt->execute([$notifId, $demande['user_id'], $titre, $message]);
-            }
-
-            if ($data->statut === 'domiciliation_creee' && isset($data->montant_mensuel) && $demande['user_id']) {
-                $transactionId = UuidHelper::generate();
-                $domForTx = $db->prepare("SELECT raison_sociale FROM domiciliations WHERE id = ?");
-                $domForTx->execute([$data->id]);
-                $domRow = $domForTx->fetch(PDO::FETCH_ASSOC);
-                $reference = 'DOM-' . date('YmdHis') . '-' . substr($transactionId, 0, 8);
-                $description = 'Signature domiciliation - ' . ($domRow['raison_sociale'] ?? '');
-                $txStmt = $db->prepare("INSERT INTO transactions (id, user_id, type, montant, statut, mode_paiement, reference, description, date_paiement, created_at) VALUES (?, ?, 'domiciliation', ?, 'en_attente', 'cash', ?, ?, NOW(), NOW())");
-                $txStmt->execute([$transactionId, $demande['user_id'], $data->montant_mensuel, $reference, $description]);
             }
         } catch (Exception $notifErr) {
             error_log("Email notification error on domiciliation update: " . $notifErr->getMessage());
@@ -151,6 +159,9 @@ try {
     Response::success(null, "Demande mise à jour avec succès");
 
 } catch (Exception $e) {
+    if (isset($db) && $db->inTransaction()) {
+        $db->rollBack();
+    }
     error_log("Update domiciliation error: " . $e->getMessage());
     Response::serverError();
 }

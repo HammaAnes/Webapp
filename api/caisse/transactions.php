@@ -50,18 +50,37 @@ try {
             Response::error('Données manquantes: type_transaction, montant, mode_paiement requis', 400);
         }
 
+        $montant = floatval($data['montant']);
+        if ($montant <= 0) {
+            Response::error('Le montant doit être supérieur à 0', 400);
+        }
+
+        $typesValides = ['reservation', 'domiciliation', 'abonnement', 'autre', 'remboursement'];
+        if (!in_array($data['type_transaction'], $typesValides)) {
+            Response::error('Type de transaction invalide', 400);
+        }
+
+        $modesValides = ['cash', 'virement', 'cheque', 'tpe', 'autre'];
+        if (!in_array($data['mode_paiement'], $modesValides)) {
+            Response::error('Mode de paiement invalide', 400);
+        }
+
+        $id = UuidHelper::generate();
         $annee = date('Y');
+
+        $db->beginTransaction();
+
         $countStmt = $db->prepare("
             SELECT COUNT(*) as count
             FROM transactions_caisse
             WHERE YEAR(created_at) = ?
+            FOR UPDATE
         ");
         $countStmt->execute([$annee]);
         $count = $countStmt->fetch(PDO::FETCH_ASSOC);
         $numero = str_pad($count['count'] + 1, 4, '0', STR_PAD_LEFT);
         $numeroRecu = "REC-{$annee}-{$numero}";
 
-        $id = UuidHelper::generate();
         $insertStmt = $db->prepare("
             INSERT INTO transactions_caisse
             (id, reservation_id, domiciliation_id, abonnement_utilisateur_id,
@@ -76,13 +95,15 @@ try {
             $data['domiciliation_id'] ?? null,
             $data['abonnement_utilisateur_id'] ?? null,
             $data['type_transaction'],
-            $data['montant'],
+            $montant,
             $data['mode_paiement'],
             $data['reference_paiement'] ?? null,
             $numeroRecu,
             $userId,
-            $data['notes'] ?? null
+            isset($data['notes']) ? trim($data['notes']) : null
         ]);
+
+        $db->commit();
 
         Response::success([
             'id' => $id,
@@ -94,5 +115,8 @@ try {
         Response::error('Méthode non autorisée', 405);
     }
 } catch (Exception $e) {
+    if (isset($db) && $db->inTransaction()) {
+        $db->rollBack();
+    }
     Response::error($e->getMessage());
 }

@@ -11,9 +11,12 @@ try {
         $data = json_decode(file_get_contents('php://input'), true);
         $dateCloture = $data['date_cloture'] ?? date('Y-m-d');
 
-        $checkStmt = $db->prepare("SELECT id FROM clotures_caisse WHERE date_cloture = ?");
+        $db->beginTransaction();
+
+        $checkStmt = $db->prepare("SELECT id FROM clotures_caisse WHERE date_cloture = ? FOR UPDATE");
         $checkStmt->execute([$dateCloture]);
         if ($checkStmt->fetch()) {
+            $db->rollBack();
             Response::error('Une clôture existe déjà pour cette date', 400);
         }
 
@@ -30,8 +33,6 @@ try {
         ");
         $totauxStmt->execute([$dateCloture]);
         $totaux = $totauxStmt->fetch(PDO::FETCH_ASSOC);
-
-        $db->beginTransaction();
 
         $clotureId = UuidHelper::generate();
         $insertStmt = $db->prepare("
