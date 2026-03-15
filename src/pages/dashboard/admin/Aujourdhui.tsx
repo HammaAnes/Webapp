@@ -219,13 +219,12 @@ export default function Aujourdhui() {
   const handleNoShow = async (reservation: Reservation) => {
     setActionLoading(`noshow-${reservation.id}`);
     try {
-      const response = await apiClient.updateReservation(reservation.id, { statut: 'no_show' });
-      if (response.success) {
-        toast.success('Réservation marquée comme no-show');
-        await initializeData();
-        setLastRefresh(new Date());
+      const result = await updateReservation(reservation.id, { statut: 'no_show' });
+      if (result?.success === false) {
+        toast.error(result.error || 'Erreur');
       } else {
-        toast.error(response.error || 'Erreur');
+        toast.success('Réservation marquée comme no-show');
+        setLastRefresh(new Date());
       }
     } catch {
       toast.error('Erreur lors du marquage no-show');

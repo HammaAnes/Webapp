@@ -9,6 +9,9 @@ import {
   Calendar,
   Plus,
   X,
+  History,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { apiClient } from "../../../lib/api-client";
 import toast from "react-hot-toast";
@@ -41,6 +44,16 @@ interface TransactionsResponse {
   transactions: Transaction[];
   totaux: Totaux[];
   total_general: number;
+}
+
+interface Cloture {
+  id: string;
+  date_cloture: string;
+  total_general: number;
+  notes?: string;
+  admin_nom?: string;
+  admin_prenom?: string;
+  created_at: string;
 }
 
 const MODE_PAIEMENT_LABELS: Record<string, string> = {
@@ -94,6 +107,9 @@ export default function Caisse() {
     description: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [clotures, setClotures] = useState<Cloture[]>([]);
+  const [showClotures, setShowClotures] = useState(false);
+  const [loadingClotures, setLoadingClotures] = useState(false);
 
   useEffect(() => {
     loadTransactions();
@@ -119,6 +135,32 @@ export default function Caisse() {
     }
   };
 
+  const loadClotures = async () => {
+    setLoadingClotures(true);
+    try {
+      const response = await apiClient.getClotures();
+      if (response.success && response.data) {
+        const data = response.data as { clotures?: Cloture[] } | Cloture[];
+        if (Array.isArray(data)) {
+          setClotures(data);
+        } else {
+          setClotures((data as { clotures?: Cloture[] }).clotures || []);
+        }
+      }
+    } catch (error) {
+      logger.error("Erreur chargement clôtures:", error as Error);
+    } finally {
+      setLoadingClotures(false);
+    }
+  };
+
+  const handleToggleClotures = () => {
+    if (!showClotures && clotures.length === 0) {
+      loadClotures();
+    }
+    setShowClotures(!showClotures);
+  };
+
   const handleCloture = async () => {
     if (!window.confirm(`Êtes-vous sûr de vouloir clôturer la caisse pour le ${new Date(selectedDate + "T00:00:00").toLocaleDateString("fr-FR")} ?`)) {
       return;
@@ -131,6 +173,7 @@ export default function Caisse() {
         setShowClotureModal(false);
         setClotureNotes("");
         loadTransactions();
+        if (showClotures) loadClotures();
       } else {
         toast.error(response.error || "Erreur lors de la cloture");
       }
@@ -334,6 +377,68 @@ export default function Caisse() {
             </div>
           )}
         </div>
+      </Card>
+
+      <Card className="overflow-hidden">
+        <button
+          onClick={handleToggleClotures}
+          className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <History className="w-5 h-5 text-gray-500" />
+            <span className="font-semibold text-gray-900">Historique des clôtures</span>
+            {clotures.length > 0 && (
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
+                {clotures.length}
+              </span>
+            )}
+          </div>
+          {showClotures ? (
+            <ChevronUp className="w-4 h-4 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-gray-400" />
+          )}
+        </button>
+        {showClotures && (
+          <div className="border-t border-gray-100">
+            {loadingClotures ? (
+              <div className="text-center py-8 text-gray-500 text-sm">Chargement...</div>
+            ) : clotures.length === 0 ? (
+              <div className="text-center py-8 text-gray-400 text-sm">Aucune clôture enregistrée</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-100">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Admin</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {clotures.map((c) => (
+                      <tr key={c.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-3 text-sm text-gray-900">
+                          {new Date(c.date_cloture).toLocaleDateString("fr-FR")}
+                        </td>
+                        <td className="px-6 py-3 text-sm text-gray-600">
+                          {c.admin_prenom && c.admin_nom ? `${c.admin_prenom} ${c.admin_nom}` : "—"}
+                        </td>
+                        <td className="px-6 py-3 text-sm text-gray-500 max-w-xs truncate">
+                          {c.notes || "—"}
+                        </td>
+                        <td className="px-6 py-3 text-sm font-semibold text-right text-gray-900">
+                          {formatMontant(c.total_general)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
       {showPaymentModal && (

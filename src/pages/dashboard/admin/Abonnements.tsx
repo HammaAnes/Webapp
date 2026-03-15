@@ -60,7 +60,7 @@ const AdminAbonnements = () => {
   const loadAbonnements = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get("/abonnements/index.php");
+      const response = await apiClient.getAbonnements();
       if (response.success) {
         setAbonnements((response.data || []) as Abonnement[]);
       }
@@ -157,10 +157,7 @@ const AdminAbonnements = () => {
       };
 
       if (isEditing && selectedAbonnement) {
-        const response = await apiClient.put("/abonnements/update.php", {
-          id: selectedAbonnement.id,
-          ...payload,
-        });
+        const response = await apiClient.updateAbonnement(selectedAbonnement.id, payload);
         if (response.success) {
           toast.success("Abonnement modifie avec succes");
           handleCloseModal();
@@ -169,10 +166,7 @@ const AdminAbonnements = () => {
           toast.error(response.error || "Erreur lors de la modification");
         }
       } else {
-        const response = await apiClient.post(
-          "/abonnements/create.php",
-          payload,
-        );
+        const response = await apiClient.createAbonnement(payload);
         if (response.success) {
           toast.success("Abonnement cree avec succes");
           handleCloseModal();
@@ -191,8 +185,7 @@ const AdminAbonnements = () => {
 
   const handleToggleActif = async (abonnement: Abonnement) => {
     try {
-      const response = await apiClient.put("/abonnements/update.php", {
-        id: abonnement.id,
+      const response = await apiClient.updateAbonnement(abonnement.id, {
         actif: !abonnement.actif,
       });
       if (response.success) {
