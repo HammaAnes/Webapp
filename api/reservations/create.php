@@ -93,6 +93,15 @@ try {
         Response::error("La date de fin doit etre apres la date de debut", 400);
     }
 
+    $debutDow = (int)date('N', $debut);
+    $finDow = (int)date('N', $fin);
+    if ($debutDow == 5 || $debutDow == 6) {
+        Response::error("Coffice est fermé le vendredi et le samedi", 400);
+    }
+    if ($finDow == 5 || $finDow == 6) {
+        Response::error("La date de fin tombe un jour de fermeture (vendredi ou samedi)", 400);
+    }
+
     $debutMysql = date('Y-m-d H:i:s', $debut);
     $finMysql = date('Y-m-d H:i:s', $fin);
 
@@ -165,6 +174,19 @@ try {
         if ($stmt->fetch()) {
             Response::error("Ce creneau est deja reserve", 409);
         }
+    }
+
+    $stmtBlocage = $db->prepare("
+        SELECT id FROM blocages_espaces
+        WHERE espace_id = ?
+        AND statut NOT IN ('annule', 'termine')
+        AND date_debut < ?
+        AND date_fin > ?
+        LIMIT 1
+    ");
+    $stmtBlocage->execute([$espaceId, $finMysql, $debutMysql]);
+    if ($stmtBlocage->fetch()) {
+        Response::error("Ce créneau est bloqué par l'administration", 409);
     }
 
     $rules = require __DIR__ . '/../config/business-rules.php';

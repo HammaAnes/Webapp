@@ -33,6 +33,7 @@ import { fr } from "date-fns/locale";
 import toast from "react-hot-toast";
 import { emailService } from "../../services/email-service";
 import { useAuthStore } from "../../store/authStore";
+import { useAvailabilityStore } from "../../store/availabilityStore";
 
 interface Reservation {
   id: string;
@@ -163,6 +164,7 @@ const Reservations = () => {
   const [filter, setFilter] = useState<FilterType>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const { user } = useAuthStore();
+  const invalidateAll = useAvailabilityStore((s) => s.invalidateAll);
   const navigate = useNavigate();
 
   const loadReservations = useCallback(async (showRefresh = false) => {
@@ -206,6 +208,7 @@ const Reservations = () => {
 
       if (response.success) {
         toast.success("Réservation annulée avec succès");
+        invalidateAll();
         const cancelledRes = reservations.find((r) => r.id === cancelId);
         const currentUser = useAuthStore.getState().user;
         if (currentUser?.email && cancelledRes) {

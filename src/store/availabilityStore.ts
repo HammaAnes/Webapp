@@ -28,6 +28,7 @@ interface AvailabilityState {
   invalidateSpace: (espaceId: string) => void;
   invalidateAll: () => void;
   touchGlobalRefresh: () => void;
+  refreshAfterMutation: (espaceId: string, month: Date) => Promise<void>;
 }
 
 const CACHE_TTL_MS = 30_000;
@@ -120,6 +121,12 @@ export const useAvailabilityStore = create<AvailabilityState>((set, get) => ({
   },
 
   touchGlobalRefresh() {
+    set({ lastGlobalRefresh: Date.now() });
+  },
+
+  async refreshAfterMutation(espaceId, month) {
+    get().invalidateSpace(espaceId);
+    await get().fetchMonth(espaceId, month, true);
     set({ lastGlobalRefresh: Date.now() });
   },
 }));

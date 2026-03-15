@@ -127,10 +127,11 @@ export function computeDayAvailability(
     if (freeSeats <= 0) {
       return { date: day, totalSlots: TOTAL_SLOTS, freeSlots: 0, status: "full", reservedSeats, totalCapacity: spaceCapacity };
     }
+    const freeSeatsValue = spaceCapacity - reservedSeats;
     if (reservedSeats > 0) {
-      return { date: day, totalSlots: TOTAL_SLOTS, freeSlots: TOTAL_SLOTS, status: "partial", reservedSeats, totalCapacity: spaceCapacity };
+      return { date: day, totalSlots: TOTAL_SLOTS, freeSlots: freeSeatsValue, status: "partial", reservedSeats, totalCapacity: spaceCapacity };
     }
-    return { date: day, totalSlots: TOTAL_SLOTS, freeSlots: TOTAL_SLOTS, status: "available", reservedSeats: 0, totalCapacity: spaceCapacity };
+    return { date: day, totalSlots: TOTAL_SLOTS, freeSlots: spaceCapacity, status: "available", reservedSeats: 0, totalCapacity: spaceCapacity };
   }
 
   const slots = buildSlotTimes(dayStr);

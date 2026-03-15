@@ -82,7 +82,7 @@ try {
         $dayStr = date('Y-m-d', $current);
         $dayOfWeek = (int)date('N', $current);
 
-        if ($dayOfWeek >= 5) {
+        if ($dayOfWeek == 5 || $dayOfWeek == 6) {
             $current += 86400;
             continue;
         }

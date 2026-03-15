@@ -4,7 +4,7 @@ import { useAvailabilityStore } from "../store/availabilityStore";
 import { computeDayAvailability, type DayAvailability } from "../services/availability.service";
 
 const POLLING_INTERVAL_MS = 30_000;
-const DEGRADED_POLLING_INTERVAL_MS = 30_000;
+const DEGRADED_POLLING_INTERVAL_MS = 60_000;
 
 interface UseAvailabilityOptions {
   espaceId: string;
@@ -31,13 +31,14 @@ export function useAvailability({
   enabled = true,
 }: UseAvailabilityOptions): UseAvailabilityResult {
   const store = useAvailabilityStore();
+  const lastGlobalRefresh = useAvailabilityStore((s) => s.lastGlobalRefresh);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMountedRef = useRef(true);
 
   const monthData = store.getMonthData(espaceId, currentMonth);
   const isLoading = monthData?.loading ?? false;
   const hasError = monthData?.error ?? false;
-  const isStale = !monthData || (Date.now() - (monthData.fetchedAt ?? 0) > POLLING_INTERVAL_MS * 2);
+  const isStale = !monthData || (Date.now() - (monthData.fetchedAt ?? 0) > POLLING_INTERVAL_MS * 2) || (lastGlobalRefresh > 0 && (monthData?.fetchedAt ?? 0) < lastGlobalRefresh);
 
   const doFetch = useCallback(
     (force = false) => {
@@ -79,6 +80,12 @@ export function useAvailability({
       }
     };
   }, [espaceId, currentMonth, enabled, hasError, doFetch]);
+
+  useEffect(() => {
+    if (lastGlobalRefresh > 0 && enabled && espaceId) {
+      doFetch(true);
+    }
+  }, [lastGlobalRefresh]);
 
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);

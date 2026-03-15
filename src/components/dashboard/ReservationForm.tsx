@@ -257,7 +257,6 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
   initialData,
 }) => {
   const { loadReservations } = useAppStore();
-  const invalidateAvailability = useAvailabilityStore((s) => s.invalidateSpace);
   const [liveReservations, setLiveReservations] = useState<Array<{ espaceId: string; dateDebut: string; dateFin: string; statut: string; id?: string }>>([]);
   const { user } = useAuthStore();
   const [step, setStep] = useState(1);
@@ -443,24 +442,37 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     const dateStart = watchDateDebut ? format(startOfDay(new Date(watchDateDebut)), "yyyy-MM-dd") : format(startOfDay(new Date()), "yyyy-MM-dd");
     const dateEnd = watchDateFin ? format(addDays(new Date(watchDateFin), 30), "yyyy-MM-dd") : format(addDays(new Date(), 60), "yyyy-MM-dd");
 
-    apiClient.request(
-      `/reservations/index.php?espace_id=${currentEspace.id}&date_debut=${dateStart}&date_fin=${dateEnd}`
-    ).then((response) => {
-      if (response.success && response.data) {
-        const raw = Array.isArray(response.data) ? response.data : (response.data as { reservations?: unknown[] }).reservations ?? [];
-        setLiveReservations(
-          (raw as Array<Record<string, string>>)
-            .filter((r) => r.statut !== "annulee" && r.statut !== "terminee")
-            .map((r) => ({
-              id: r.id,
-              espaceId: String(r.espace_id || r.espaceId || ""),
-              dateDebut: r.date_debut || r.dateDebut || "",
-              dateFin: r.date_fin || r.dateFin || "",
-              statut: r.statut,
-            }))
-        );
-      }
-    }).catch(() => {});
+    const controller = new AbortController();
+    let cancelled = false;
+
+    const timer = setTimeout(() => {
+      apiClient.request(
+        `/reservations/index.php?espace_id=${currentEspace.id}&date_debut=${dateStart}&date_fin=${dateEnd}`,
+        { signal: controller.signal }
+      ).then((response) => {
+        if (cancelled) return;
+        if (response.success && response.data) {
+          const raw = Array.isArray(response.data) ? response.data : (response.data as { reservations?: unknown[] }).reservations ?? [];
+          setLiveReservations(
+            (raw as Array<Record<string, string>>)
+              .filter((r) => r.statut !== "annulee" && r.statut !== "terminee")
+              .map((r) => ({
+                id: r.id,
+                espaceId: String(r.espace_id || r.espaceId || ""),
+                dateDebut: r.date_debut || r.dateDebut || "",
+                dateFin: r.date_fin || r.dateFin || "",
+                statut: r.statut,
+              }))
+          );
+        }
+      }).catch(() => {});
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [currentEspace, watchDateDebut]);
 
   const loadEspaces = async () => {
@@ -645,7 +657,8 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
           notes: data.notes || "",
         });
         if (response.success) {
-          invalidateAvailability(data.espace_id);
+          const availStore = useAvailabilityStore.getState();
+          await availStore.refreshAfterMutation(data.espace_id, new Date(data.date_debut));
           toast.success("Réservation modifiée avec succès !");
           handleClose();
         } else {
@@ -661,7 +674,8 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
           ...(promoResult?.valid && promoCode ? { codePromo: promoCode.toUpperCase() } : {}),
         });
         if (response.success) {
-          invalidateAvailability(data.espace_id);
+          const availStore = useAvailabilityStore.getState();
+          await availStore.refreshAfterMutation(data.espace_id, new Date(data.date_debut));
           toast.success("Réservation confirmée avec succès !");
           const user = useAuthStore.getState().user;
           if (user?.email && currentEspace) {
