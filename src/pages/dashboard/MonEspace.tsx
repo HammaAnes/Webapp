@@ -215,7 +215,6 @@ const MonEspace = () => {
       if (data.registreCommerce) updateData.registreCommerce = data.registreCommerce;
       if (data.articleImposition) updateData.articleImposition = data.articleImposition;
       if (data.numeroAutoEntrepreneur) updateData.numeroAutoEntrepreneur = data.numeroAutoEntrepreneur;
-      updateData.statut = "en_attente_complements";
 
       const response = await apiClient.updateDemandeDomiciliation(demande.id, updateData);
       if (response.success) {
@@ -230,22 +229,9 @@ const MonEspace = () => {
         } catch {
           // best-effort
         }
-        try {
-          emailService.onDomiciliationStatusUpdate(
-            demande.representantLegal?.email || user.email,
-            {
-              prenom: demande.representantLegal?.prenom || user.prenom || "",
-              raisonSociale: demande.raisonSociale || "",
-              formeJuridique: demande.formeJuridique || "",
-              statut: "en_attente_complements",
-              statutLabel: "En attente de compléments",
-            }
-          );
-        } catch {
-          // best-effort
-        }
-        toast.success("Informations soumises avec succès.");
+        toast.success("Informations soumises avec succès. L'équipe Coffice va procéder à la validation finale.");
         await loadDemandesDomiciliation();
+        await new Promise(r => setTimeout(r, 100));
       } else {
         toast.error(response.error || "Erreur lors de la mise à jour");
       }
@@ -340,7 +326,7 @@ const MonEspace = () => {
           </div>
           {userExpirationAlert.type === "warning" && (
             <button
-              onClick={handleRenewRequest}
+              onClick={handleRenewalRequest}
               disabled={domLoading}
               className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors flex-shrink-0"
             >

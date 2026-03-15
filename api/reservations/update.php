@@ -4,6 +4,7 @@ require_once '../config/cors.php';
 require_once '../config/database.php';
 require_once '../utils/Auth.php';
 require_once '../utils/Response.php';
+require_once '../utils/UuidHelper.php';
 
 header('Content-Type: application/json');
 
@@ -48,11 +49,25 @@ try {
     $params = [];
 
     if ($isAdmin && isset($data['statut'])) {
-        $validStatuts = ['en_attente', 'confirmee', 'en_cours', 'terminee', 'annulee'];
-        if (in_array($data['statut'], $validStatuts)) {
-            $updates[] = "statut = ?";
-            $params[] = $data['statut'];
+        $validStatuts = ['en_attente', 'confirmee', 'en_cours', 'terminee', 'annulee', 'no_show'];
+        if (!in_array($data['statut'], $validStatuts)) {
+            Response::error("Statut invalide", 400);
         }
+        $validTransitions = [
+            'en_attente' => ['confirmee', 'annulee'],
+            'confirmee'  => ['en_cours', 'annulee', 'no_show'],
+            'en_cours'   => ['terminee', 'annulee'],
+            'terminee'   => [],
+            'annulee'    => [],
+            'no_show'    => [],
+        ];
+        $currentStatut = $reservation['statut'] ?? '';
+        $allowed = $validTransitions[$currentStatut] ?? [];
+        if (!in_array($data['statut'], $allowed)) {
+            Response::error("Transition invalide : impossible de passer de '$currentStatut' à '{$data['statut']}'", 400);
+        }
+        $updates[] = "statut = ?";
+        $params[] = $data['statut'];
     }
 
     if ($isAdmin && isset($data['montant_paye'])) {
@@ -97,6 +112,24 @@ try {
     ");
     $stmt->execute([$id]);
     $updated = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($isAdmin && isset($data['statut']) && !empty($reservation['user_id'])) {
+        try {
+            $notifId = UuidHelper::generate();
+            $statusMessages = [
+                'confirmee'  => 'Votre réservation a été confirmée.',
+                'annulee'    => 'Votre réservation a été annulée.',
+                'en_cours'   => 'Votre réservation est en cours.',
+                'terminee'   => 'Votre réservation est terminée.',
+                'no_show'    => 'Vous avez été marqué absent pour votre réservation.',
+            ];
+            $message = $statusMessages[$data['statut']] ?? 'Le statut de votre réservation a été mis à jour.';
+            $notifStmt = $db->prepare("INSERT INTO notifications (id, user_id, type, titre, message, lue, created_at) VALUES (?, ?, 'reservation', 'Mise à jour réservation', ?, 0, NOW())");
+            $notifStmt->execute([$notifId, $reservation['user_id'], $message]);
+        } catch (Exception $notifErr) {
+            error_log("Notification error on reservation update: " . $notifErr->getMessage());
+        }
+    }
 
     Response::success($updated, "Reservation mise a jour");
 

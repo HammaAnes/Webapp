@@ -219,13 +219,13 @@ try {
         $montant_total = $montant_mensuel * $mois;
 
         $transaction_id = UuidHelper::generate();
-        $query = "INSERT INTO transactions
+        $transQuery = "INSERT INTO transactions
                   (id, user_id, type, montant, statut, mode_paiement, reference, description, date_paiement)
                   VALUES
                   (:id, :user_id, 'domiciliation', :montant, 'completee', :mode_paiement, :reference, :description, NOW())";
 
-        $stmt = $db->prepare($query);
-        $stmt->execute([
+        $transStmt = $db->prepare($transQuery);
+        $transStmt->execute([
             ':id' => $transaction_id,
             ':user_id' => $target_user_id,
             ':montant' => $montant_total,
@@ -235,21 +235,27 @@ try {
         ]);
     }
 
-    if (!$is_admin_creation) {
-        try {
-            $userStmt = $db->prepare("SELECT prenom, nom, email FROM users WHERE id = ?");
-            $userStmt->execute([$target_user_id]);
-            $user = $userStmt->fetch(PDO::FETCH_ASSOC);
-            if ($user) {
+    try {
+        $userStmt = $db->prepare("SELECT prenom, nom, email FROM users WHERE id = ?");
+        $userStmt->execute([$target_user_id]);
+        $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
+        if ($userRow) {
+            if (!$is_admin_creation) {
                 AdminNotifier::newDomiciliation(
                     $data->raison_sociale ?? '',
-                    $user['prenom'] . ' ' . $user['nom'],
-                    $user['email']
+                    $userRow['prenom'] . ' ' . $userRow['nom'],
+                    $userRow['email']
                 );
+                Mailer::sendDomiciliationStatus($userRow['email'], 'dossier_preparatoire', [
+                    'raison_sociale' => $data->raison_sociale ?? '',
+                    'id' => $id,
+                    'prenom' => $userRow['prenom'],
+                    'nom' => $userRow['nom'],
+                ]);
             }
-        } catch (Exception $notifErr) {
-            error_log("Admin notification error: " . $notifErr->getMessage());
         }
+    } catch (Exception $notifErr) {
+        error_log("Notification error: " . $notifErr->getMessage());
     }
 
     Response::success(['id' => $id], "Demande de domiciliation créée avec succès", 201);

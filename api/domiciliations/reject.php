@@ -5,13 +5,7 @@
  * POST /api/domiciliations/reject.php
  */
 
-require_once '../config/cors.php';
-require_once '../config/database.php';
-require_once '../utils/Auth.php';
-require_once '../utils/Response.php';
-require_once '../utils/Validator.php';
-require_once '../utils/UuidHelper.php';
-require_once '../utils/Mailer.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     Response::methodNotAllowed();
@@ -48,6 +42,11 @@ try {
 
     if (!$domiciliation) {
         Response::notFound('Demande de domiciliation introuvable');
+    }
+
+    $allowedFromStatuts = ['dossier_preparatoire', 'en_attente_complements', 'en_attente_signature', 'domiciliation_creee'];
+    if (!in_array($domiciliation['statut'], $allowedFromStatuts)) {
+        Response::error("Cette demande ne peut pas être refusée depuis son statut actuel ('" . $domiciliation['statut'] . "')", 400);
     }
 
     // Mettre à jour le statut

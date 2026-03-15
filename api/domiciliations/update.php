@@ -9,6 +9,8 @@ require_once '../config/cors.php';
 require_once '../config/database.php';
 require_once '../utils/Auth.php';
 require_once '../utils/Response.php';
+require_once '../utils/Mailer.php';
+require_once '../utils/UuidHelper.php';
 
 try {
     $auth = Auth::verifyAuth();
@@ -103,6 +105,37 @@ try {
 
     $stmt = $db->prepare($query);
     $stmt->execute($params);
+
+    if (isset($data->statut) && $auth['role'] === 'admin' && !empty($demande['user_id'])) {
+        try {
+            $userStmt = $db->prepare("SELECT email, prenom, nom FROM users WHERE id = ?");
+            $userStmt->execute([$demande['user_id']]);
+            $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
+            if ($userRow) {
+                $domStmt = $db->prepare("SELECT * FROM domiciliations WHERE id = ?");
+                $domStmt->execute([$data->id]);
+                $updatedDom = $domStmt->fetch(PDO::FETCH_ASSOC);
+                if ($updatedDom) {
+                    Mailer::sendDomiciliationStatus($userRow['email'], $data->statut, $updatedDom);
+                }
+                $notifId = UuidHelper::generate();
+                $notifStmt = $db->prepare("INSERT INTO notifications (id, user_id, type, titre, message, lue, created_at) VALUES (?, ?, 'domiciliation', ?, ?, 0, NOW())");
+                $statusLabels = [
+                    'en_attente_signature' => 'Dossier validé — signature requise',
+                    'domiciliation_creee' => 'Domiciliation créée',
+                    'active' => 'Domiciliation activée',
+                    'refusee' => 'Demande refusée',
+                    'resiliee' => 'Domiciliation résiliée',
+                    'en_attente_complements' => 'Compléments requis',
+                ];
+                $titre = $statusLabels[$data->statut] ?? 'Mise à jour de votre domiciliation';
+                $message = 'Le statut de votre domiciliation a été mis à jour : ' . ($statusLabels[$data->statut] ?? $data->statut);
+                $notifStmt->execute([$notifId, $demande['user_id'], $titre, $message]);
+            }
+        } catch (Exception $notifErr) {
+            error_log("Email notification error on domiciliation update: " . $notifErr->getMessage());
+        }
+    }
 
     Response::success(null, "Demande mise à jour avec succès");
 

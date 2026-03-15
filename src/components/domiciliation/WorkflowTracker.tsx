@@ -67,7 +67,7 @@ const WorkflowTracker: React.FC<WorkflowTrackerProps> = ({ statut }) => {
     : (STEP_ORDER[statut] ?? 0);
 
   const progressPct = isTerminal
-    ? (statut === "refusee" ? 5 : 100)
+    ? (statut === "refusee" ? 5 : statut === "expiree" ? 95 : 100)
     : Math.round(((currentIdx + 1) / STEPS.length) * 100);
 
   if (currentIdx === undefined && !isTerminal) return null;

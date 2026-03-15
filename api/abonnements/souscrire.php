@@ -99,9 +99,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
             }
         } catch (Exception $notifErr) {
-            if ($db->inTransaction()) {
-                $db->rollBack();
-            }
             error_log("Admin notification error: " . $notifErr->getMessage());
         }
 

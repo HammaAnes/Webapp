@@ -170,15 +170,17 @@ try {
     } elseif ($heures <= $seuilJour) {
         $montant = $prixDemiJour > 0 ? $prixDemiJour : ($prixJour / 2);
         $type = 'demi_journee';
-    } elseif ($heures <= 24) {
+    } elseif ($jours <= 1) {
         $montant = $prixJour;
         $type = 'jour';
-    } elseif ($semaines >= 4 && $prixMois > 0) {
-        $mois = ceil($semaines / 4);
+    } elseif ($jours >= 28 && $prixMois > 0) {
+        $mois = ceil($jours / 30);
         $montant = $mois * $prixMois;
         $type = 'mois';
-    } elseif ($semaines >= 1 && $prixSemaine > 0) {
-        $montant = ceil($semaines) * $prixSemaine;
+    } elseif ($jours >= 7 && $prixSemaine > 0) {
+        $semaines_completes = floor($jours / 7);
+        $joursRestants = $jours - ($semaines_completes * 7);
+        $montant = $semaines_completes * $prixSemaine + ($joursRestants > 0 ? ceil($joursRestants) * $prixJour : 0);
         $type = 'semaine';
     } else {
         $montant = ceil($jours) * $prixJour;
@@ -187,11 +189,15 @@ try {
 
     $reduction = 0;
     $codePromoId = null;
+
+    $db->beginTransaction();
+
     if (!empty($codePromo)) {
         $stmt = $db->prepare("
             SELECT id, type_reduction, valeur, montant_minimum, utilisations_max, utilisations_actuelles, date_expiration, actif
             FROM codes_promo
             WHERE code = ? AND actif = 1
+            FOR UPDATE
         ");
         $stmt->execute([$codePromo]);
         $promo = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -246,6 +252,7 @@ try {
     ]);
 
     if (!$result) {
+        $db->rollBack();
         $errorInfo = $stmt->errorInfo();
         error_log("Reservation INSERT error: " . json_encode($errorInfo));
         error_log("Reservation data: " . json_encode([
@@ -266,6 +273,8 @@ try {
     if ($codePromoId) {
         $db->prepare("UPDATE codes_promo SET utilisations_actuelles = utilisations_actuelles + 1 WHERE id = ?")->execute([$codePromoId]);
     }
+
+    $db->commit();
 
     $stmt = $db->prepare("
         SELECT r.*, e.nom as espace_nom, e.type as espace_type,

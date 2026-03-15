@@ -666,10 +666,10 @@ function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliat
 
   const defs: { key: string; label: string; icon: React.ElementType; variant: string; statuts: string[]; destructive?: boolean }[] = [
     { key: "valider", label: "Valider le dossier", icon: CheckCircle, variant: "success", statuts: ["dossier_preparatoire"] },
-    { key: "rejeter", label: "Refuser la demande", icon: XCircle, variant: "danger", statuts: ["dossier_preparatoire", "en_attente_signature"], destructive: true },
+    { key: "complements", label: "Demander des complements", icon: MessageSquare, variant: "primary", statuts: ["dossier_preparatoire", "domiciliation_creee"] },
+    { key: "rejeter", label: "Refuser la demande", icon: XCircle, variant: "danger", statuts: ["dossier_preparatoire", "en_attente_complements", "en_attente_signature", "domiciliation_creee"], destructive: true },
     { key: "signer", label: "Enregistrer signature notaire", icon: Scale, variant: "primary", statuts: ["en_attente_signature"] },
-    { key: "completer", label: "Completer et activer", icon: FileCheck, variant: "success", statuts: ["domiciliation_creee", "en_attente_complements"] },
-    { key: "activer", label: "Activer", icon: PlayCircle, variant: "success", statuts: ["domiciliation_creee", "en_attente_complements"] },
+    { key: "activer", label: "Activer la domiciliation", icon: PlayCircle, variant: "success", statuts: ["domiciliation_creee", "en_attente_complements"] },
     { key: "renouveler", label: "Renouveler le contrat", icon: RefreshCw, variant: "primary", statuts: ["expiree", "active"] },
     { key: "resilier", label: "Resilier la domiciliation", icon: Ban, variant: "danger", statuts: ["active"], destructive: true },
   ];
@@ -678,10 +678,11 @@ function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliat
   const handleSubmit = async (key: string) => {
     if (key === "rejeter" && !motif.trim()) { toast.error("Veuillez preciser le motif du refus"); return; }
     if (key === "resilier" && !motif.trim()) { toast.error("Veuillez preciser le motif de la resiliation"); return; }
+    if (key === "complements" && !motif.trim()) { toast.error("Veuillez preciser les informations manquantes"); return; }
     if (key === "signer" && !sd.referenceContratNotarie.trim()) { toast.error("Reference du contrat requise"); return; }
     if (key === "signer" && occupiedBureaux.includes(sd.numeroBureau)) { toast.error(`Le bureau ${sd.numeroBureau} est deja attribue`); return; }
     const data: Record<string, unknown> = {};
-    if (key === "rejeter" || key === "resilier") data.motif = motif;
+    if (key === "rejeter" || key === "resilier" || key === "complements") data.motif = motif;
     if (key === "signer") Object.assign(data, sd);
     if (key === "renouveler") Object.assign(data, sd);
     await onAction(key, data);
@@ -711,9 +712,9 @@ function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliat
                 {(a.key === "signer" || a.key === "renouveler") && (
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Numero de bureau (1-36)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Numero de bureau (1-60)</label>
                       <select value={sd.numeroBureau} onChange={(e) => setSd({ ...sd, numeroBureau: parseInt(e.target.value) })} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg">
-                        {Array.from({ length: 36 }, (_, i) => i + 1).map((n) => {
+                        {Array.from({ length: 60 }, (_, i) => i + 1).map((n) => {
                           const isOccupied = occupiedBureaux.includes(n);
                           return <option key={n} value={n} className={isOccupied ? "text-red-500 bg-red-50" : ""}>Bureau {n}{isOccupied ? " (occupe)" : ""}</option>;
                         })}
@@ -733,10 +734,12 @@ function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliat
                     </div>
                   </div>
                 )}
-                {(a.key === "rejeter" || a.key === "resilier") && (
+                {(a.key === "rejeter" || a.key === "resilier" || a.key === "complements") && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Motif <span className="text-red-500">*</span></label>
-                    <textarea value={motif} onChange={(e) => setMotif(e.target.value)} rows={3} placeholder={a.key === "rejeter" ? "Raison du refus..." : "Raison de la resiliation..."} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {a.key === "complements" ? "Informations manquantes" : "Motif"} <span className="text-red-500">*</span>
+                    </label>
+                    <textarea value={motif} onChange={(e) => setMotif(e.target.value)} rows={3} placeholder={a.key === "rejeter" ? "Raison du refus..." : a.key === "resilier" ? "Raison de la resiliation..." : "Preciser les informations ou documents manquants..."} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500" />
                   </div>
                 )}
                 {a.destructive ? (confirmAction === a.key ? (

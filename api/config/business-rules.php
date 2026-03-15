@@ -45,7 +45,7 @@ return [
             'dossier_preparatoire'   => ['en_attente_complements', 'en_attente_signature', 'refusee'],
             'en_attente_complements' => ['en_attente_signature', 'refusee'],
             'en_attente_signature'   => ['domiciliation_creee', 'refusee'],
-            'domiciliation_creee'    => ['active', 'refusee'],
+            'domiciliation_creee'    => ['active', 'en_attente_complements', 'refusee'],
             'active'                 => ['resiliee', 'expiree'],
             'refusee'                => [],
             'expiree'                => [],

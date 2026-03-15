@@ -4,7 +4,7 @@ import {
   Building, User, FileText, Mail, Package, CheckCircle, XCircle, Scale,
   Ban, PlayCircle, AlertCircle, Save, Plus, Loader2, StickyNote, Briefcase,
   Pencil, X, FileCheck, Eye, Download, Upload, Trash2, File, RefreshCw,
-  ArrowLeft, Clock, Settings,
+  ArrowLeft, Clock, Settings, MessageSquare,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -151,6 +151,12 @@ export default function DomiciliationDetail() {
             data?.numeroBureau as number | undefined
           );
           break;
+        case "complements":
+          response = await apiClient.updateDemandeDomiciliation(demande.id, {
+            statut: "en_attente_complements",
+            notesAdmin: motif,
+          });
+          break;
         case "resilier":
           response = await apiClient.updateDemandeDomiciliation(demande.id, {
             statut: "resiliee",
@@ -171,6 +177,7 @@ export default function DomiciliationDetail() {
         const msgs: Record<string, string> = {
           valider: "Dossier validé — en attente de signature notariale",
           rejeter: "Demande refusée",
+          complements: "Compléments demandés — notification envoyée",
           signer: "Domiciliation créée — contrat enregistré",
           completer: "Domiciliation activée",
           activer: "Domiciliation activée",
@@ -182,6 +189,7 @@ export default function DomiciliationDetail() {
         if (email) {
           const statusMap: Record<string, string> = {
             valider: "en_attente_signature", rejeter: "refusee",
+            complements: "en_attente_complements",
             signer: "domiciliation_creee", completer: "active",
             activer: "active", resilier: "resiliee",
           };
@@ -1465,10 +1473,10 @@ function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliat
 
   const defs: { key: string; label: string; icon: React.ElementType; variant: string; statuts: string[]; destructive?: boolean }[] = [
     { key: "valider", label: "Valider le dossier", icon: CheckCircle, variant: "success", statuts: ["dossier_preparatoire"] },
-    { key: "rejeter", label: "Refuser la demande", icon: XCircle, variant: "danger", statuts: ["dossier_preparatoire", "en_attente_signature"], destructive: true },
+    { key: "complements", label: "Demander des complements", icon: MessageSquare, variant: "primary", statuts: ["dossier_preparatoire", "domiciliation_creee"] },
+    { key: "rejeter", label: "Refuser la demande", icon: XCircle, variant: "danger", statuts: ["dossier_preparatoire", "en_attente_complements", "en_attente_signature", "domiciliation_creee"], destructive: true },
     { key: "signer", label: "Enregistrer signature notaire", icon: Scale, variant: "primary", statuts: ["en_attente_signature"] },
-    { key: "completer", label: "Completer et activer", icon: FileCheck, variant: "success", statuts: ["domiciliation_creee", "en_attente_complements"] },
-    { key: "activer", label: "Activer", icon: PlayCircle, variant: "success", statuts: ["domiciliation_creee", "en_attente_complements"] },
+    { key: "activer", label: "Activer la domiciliation", icon: PlayCircle, variant: "success", statuts: ["domiciliation_creee", "en_attente_complements"] },
     { key: "renouveler", label: "Renouveler le contrat", icon: RefreshCw, variant: "primary", statuts: ["expiree", "active"] },
     { key: "resilier", label: "Resilier la domiciliation", icon: Ban, variant: "danger", statuts: ["active"], destructive: true },
   ];
@@ -1477,13 +1485,14 @@ function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliat
   const handleSubmit = async (key: string) => {
     if (key === "rejeter" && !motif.trim()) { toast.error("Veuillez preciser le motif du refus"); return; }
     if (key === "resilier" && !motif.trim()) { toast.error("Veuillez preciser le motif de la resiliation"); return; }
+    if (key === "complements" && !motif.trim()) { toast.error("Veuillez preciser les informations manquantes"); return; }
     if (key === "signer" && !sd.referenceContratNotarie.trim()) { toast.error("Reference du contrat requise"); return; }
     if (key === "signer" && occupiedBureaux.includes(sd.numeroBureau)) { toast.error(`Le bureau ${sd.numeroBureau} est deja attribue`); return; }
     const data: Record<string, unknown> = {};
-    if (key === "rejeter" || key === "resilier") data.motif = motif;
+    if (key === "rejeter" || key === "resilier" || key === "complements") data.motif = motif;
     if (key === "signer") Object.assign(data, sd);
     if (key === "renouveler") Object.assign(data, sd);
-    if (key === "completer" || key === "activer") data.numeroBureau = sd.numeroBureau;
+    if (key === "activer") data.numeroBureau = sd.numeroBureau;
     await onAction(key, data);
     setActiveAction(null);
     setConfirmAction(null);
@@ -1583,16 +1592,16 @@ function ActionsTab({ demande, onAction, loading }: { demande: DemandeDomiciliat
                       </div>
                     </div>
                   )}
-                  {(a.key === "rejeter" || a.key === "resilier") && (
+                  {(a.key === "rejeter" || a.key === "resilier" || a.key === "complements") && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Motif <span className="text-red-500">*</span>
+                        {a.key === "complements" ? "Informations manquantes" : "Motif"} <span className="text-red-500">*</span>
                       </label>
                       <textarea
                         value={motif}
                         onChange={(e) => setMotif(e.target.value)}
                         rows={3}
-                        placeholder={a.key === "rejeter" ? "Raison du refus..." : "Raison de la resiliation..."}
+                        placeholder={a.key === "rejeter" ? "Raison du refus..." : a.key === "resilier" ? "Raison de la resiliation..." : "Preciser les informations ou documents manquants..."}
                         className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                       />
                     </div>

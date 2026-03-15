@@ -159,9 +159,12 @@ const DemandeSummary: React.FC<DemandeSummaryProps> = ({
 
   const isTerminal = demande.statut === "refusee" || demande.statut === "expiree" || demande.statut === "resiliee";
   const showContract = (demande.statut === "active" || demande.statut === "domiciliation_creee" || demande.statut === "en_attente_complements") && demande.montantMensuel;
+  const needsFiscalIds = demande.typeStructure === "societe"
+    ? !demande.nif || !demande.nis || !demande.registreCommerce
+    : !demande.numeroAutoEntrepreneur;
   const showPostCreation =
     (demande.statut === "domiciliation_creee" || demande.statut === "en_attente_complements") &&
-    demande.situationAdministrative === "en_cours_creation";
+    needsFiscalIds;
 
   const docs = parseDocuments(demande.documents);
 

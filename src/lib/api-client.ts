@@ -632,25 +632,20 @@ class ApiClient {
   }
 
   async validateDomiciliation(id: string, commentaire?: string) {
-    const data: Record<string, unknown> = {
-      id,
-      statut: "en_attente_signature",
-      date_validation: new Date().toISOString(),
-    };
-    if (commentaire) data.commentaire_admin = commentaire;
-    return this.request("/domiciliations/update.php", {
-      method: "PUT",
+    const data: Record<string, unknown> = { domiciliation_id: id };
+    if (commentaire) data.commentaire = commentaire;
+    return this.request("/domiciliations/validate.php", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async rejectDomiciliation(id: string, motif: string) {
-    return this.request("/domiciliations/update.php", {
-      method: "PUT",
+    return this.request("/domiciliations/reject.php", {
+      method: "POST",
       body: JSON.stringify({
-        id,
-        statut: "refusee",
-        commentaire_admin: motif,
+        domiciliation_id: id,
+        commentaire: motif,
       }),
     });
   }
