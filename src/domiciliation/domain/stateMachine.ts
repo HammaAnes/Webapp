@@ -92,9 +92,11 @@ export function getStepOrder(statut: DomiciliationStatut): number {
 
 export function getProgressPercent(statut: DomiciliationStatut): number {
   if (isTerminal(statut) && statut !== 'expiree') return 0;
+  if (statut === 'en_attente_complements') return 15;
   const order = getStepOrder(statut);
   if (order < 0) return 0;
-  return Math.round(((order + 1) / WORKFLOW_STEPS.length) * 100);
+  const nonTerminalSteps = WORKFLOW_STEPS.length - 1;
+  return Math.round(((order + 1) / nonTerminalSteps) * 100);
 }
 
 export interface StatutMeta {

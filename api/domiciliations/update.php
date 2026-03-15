@@ -132,6 +132,17 @@ try {
                 $message = 'Le statut de votre domiciliation a été mis à jour : ' . ($statusLabels[$data->statut] ?? $data->statut);
                 $notifStmt->execute([$notifId, $demande['user_id'], $titre, $message]);
             }
+
+            if ($data->statut === 'domiciliation_creee' && isset($data->montant_mensuel) && $demande['user_id']) {
+                $transactionId = UuidHelper::generate();
+                $domForTx = $db->prepare("SELECT raison_sociale FROM domiciliations WHERE id = ?");
+                $domForTx->execute([$data->id]);
+                $domRow = $domForTx->fetch(PDO::FETCH_ASSOC);
+                $reference = 'DOM-' . date('YmdHis') . '-' . substr($transactionId, 0, 8);
+                $description = 'Signature domiciliation - ' . ($domRow['raison_sociale'] ?? '');
+                $txStmt = $db->prepare("INSERT INTO transactions (id, user_id, type, montant, statut, mode_paiement, reference, description, date_paiement, created_at) VALUES (?, ?, 'domiciliation', ?, 'en_attente', 'cash', ?, ?, NOW(), NOW())");
+                $txStmt->execute([$transactionId, $demande['user_id'], $data->montant_mensuel, $reference, $description]);
+            }
         } catch (Exception $notifErr) {
             error_log("Email notification error on domiciliation update: " . $notifErr->getMessage());
         }

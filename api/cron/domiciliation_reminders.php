@@ -34,7 +34,7 @@ try {
             FROM domiciliations d
             INNER JOIN users u ON d.user_id = u.id
             WHERE d.statut = 'active'
-              AND DATE(d.date_fin) = ?
+              AND DATE(d.date_fin_contrat) = ?
         ");
         $stmt->execute([$targetDate]);
         $domiciliations = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -55,7 +55,7 @@ try {
                         'prenom'         => $dom['prenom'],
                         'nom'            => $dom['nom'],
                         'raison_sociale' => $dom['raison_sociale'] ?? $dom['nom_entreprise'] ?? '',
-                        'date_fin'       => date('d/m/Y', strtotime($dom['date_fin'])),
+                        'date_fin'       => date('d/m/Y', strtotime($dom['date_fin_contrat'])),
                         'jours_restants' => $window['days'],
                     ],
                     $dom['user_id'],

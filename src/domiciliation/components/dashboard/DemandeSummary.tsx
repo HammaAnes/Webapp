@@ -54,14 +54,15 @@ function getChecklist(demande: DemandeDomiciliation): ChecklistItem[] {
       items.push({ label: 'Renseigner vos identifiants dans l\'espace pro', done: false, note: 'Formulaire ci-dessous' });
       break;
     case 'en_attente_complements':
-      items.push({ label: 'Contrat signé chez le notaire', done: true });
+      items.push({ label: 'Dossier reçu par Coffice', done: true });
       items.push({
-        label: isAE ? 'Numéro d\'auto-entrepreneur renseigné' : 'NIF et NIS renseignés',
-        done: !!(isAE ? demande.numeroAutoEntrepreneur : demande.nif && demande.nis),
-        urgent: !(isAE ? demande.numeroAutoEntrepreneur : demande.nif && demande.nis),
+        label: 'Fournir les compléments demandés',
+        done: false,
+        urgent: true,
+        note: demande.commentaireAdmin || 'Consultez le message de l\'équipe Coffice ci-dessous',
       });
-      if (!isAE) items.push({ label: 'Registre de Commerce renseigné', done: !!demande.registreCommerce, urgent: !demande.registreCommerce });
-      items.push({ label: 'Validation finale par Coffice', done: false });
+      items.push({ label: 'Revalidation du dossier par Coffice', done: false });
+      items.push({ label: 'Signature du contrat chez le notaire', done: false });
       break;
     case 'active':
       items.push({ label: 'Domiciliation active', done: true });
@@ -343,6 +344,21 @@ export default function DemandeSummary({ demande, loading, onPostCreationSubmit,
                   <span>Référence : <span className="font-semibold">{demande.referenceContratNotarie}</span></span>
                 </div>
               )}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {demande.statut === 'en_attente_complements' && demande.commentaireAdmin && (
+        <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-6 h-6 text-amber-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-amber-900 mb-2 text-lg">Message de l'équipe Coffice</h3>
+              <p className="text-amber-800">{demande.commentaireAdmin}</p>
+              <p className="text-xs text-amber-600 mt-2">Merci de fournir les compléments demandés pour que votre dossier puisse avancer.</p>
             </div>
           </div>
         </Card>

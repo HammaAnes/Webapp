@@ -160,7 +160,7 @@ export function useDomiciliation(userId: string) {
           break;
         case 'signer':
           res = await apiClient.updateDemandeDomiciliation(id, {
-            statut: 'en_attente_signature',
+            statut: 'domiciliation_creee',
             numero_bureau: data?.numeroBureau,
             reference_contrat_notarie: data?.referenceContratNotarie,
             date_debut_contrat: data?.dateDebutContrat,
