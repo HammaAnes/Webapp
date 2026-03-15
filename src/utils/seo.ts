@@ -89,8 +89,8 @@ export const structuredData = {
     },
     geo: {
       "@type": "GeoCoordinates",
-      latitude: 36.7538,
-      longitude: 3.0588,
+      latitude: 36.73521173961758,
+      longitude: 3.1756563230735653,
     },
     openingHoursSpecification: [
       {
