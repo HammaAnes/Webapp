@@ -23,7 +23,6 @@ import type {
   CodePromo,
   CreateReservationData,
   CreateDomiciliationData,
-  AdminStats,
   Abonnement,
   AbonnementUtilisateur,
   NotificationSettings,
@@ -91,7 +90,6 @@ interface AppState {
   updateUser: (userId: string, data: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>;
   deleteUser: (userId: string) => Promise<{ success: boolean; error?: string }>;
 
-  getAdminStats: () => AdminStats;
   getNotificationSettings: () => NotificationSettings;
   updateNotificationSettings: (settings: Partial<NotificationSettings>) => void;
 }
@@ -546,59 +544,6 @@ export const useAppStore = create<AppState>()(
         } catch (error) {
           return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
-      },
-
-      getAdminStats: () => {
-        const state = get();
-        const now = new Date();
-        const thisMonth = now.getMonth();
-        const thisYear = now.getFullYear();
-
-        const activeReservations = state.reservations.filter((r) => {
-          const start = r.dateDebut instanceof Date ? r.dateDebut : new Date(r.dateDebut as unknown as string);
-          const end = r.dateFin instanceof Date ? r.dateFin : new Date(r.dateFin as unknown as string);
-          return r.statut === "confirmee" && start <= now && end >= now;
-        });
-
-        const reservationsCeMois = state.reservations.filter((r) => {
-          const date = r.dateDebut instanceof Date ? r.dateDebut : new Date(r.dateDebut as unknown as string);
-          return !isNaN(date.getTime()) && date.getMonth() === thisMonth && date.getFullYear() === thisYear;
-        });
-
-        const caMois = reservationsCeMois.reduce((sum, r) => sum + (r.montantTotal || 0), 0);
-
-        const totalCapacity = state.espaces.reduce((sum, e) => sum + (e.capacite || 1), 0);
-        const occupiedCapacity = activeReservations.reduce((sum, r) => sum + (r.participants || 1), 0);
-        const tauxOccupation = totalCapacity > 0
-          ? Math.round((occupiedCapacity / totalCapacity) * 100)
-          : 0;
-
-        return {
-          totalRevenue: state.reservations.reduce((sum, r) => sum + (r.montantTotal || 0), 0),
-          totalReservations: state.reservations.length,
-          totalUsers: state.users.length,
-          activeUsers: state.users.filter((u) => u.statut === "actif").length,
-          occupancyRate: Math.min(tauxOccupation, 100),
-          monthlyRevenue: caMois,
-          reservationsCeMois: reservationsCeMois.length,
-          popularSpaces: state.espaces.map((e) => ({
-            name: e.nom,
-            count: state.reservations.filter((r) => r.espaceId === e.id).length,
-          })).sort((a, b) => b.count - a.count).slice(0, 5),
-          recentActivity: state.reservations
-            .slice()
-            .sort((a, b) => {
-              const da = a.dateCreation ? a.dateCreation.getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-              const db = b.dateCreation ? b.dateCreation.getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-              return db - da;
-            })
-            .slice(0, 10)
-            .map((r) => ({
-              type: "reservation",
-              description: `Réservation ${r.espace?.nom || "Espace"}`,
-              date: r.dateCreation ?? (r.createdAt ? new Date(r.createdAt) : now),
-            })),
-        };
       },
 
       getNotificationSettings: () => {

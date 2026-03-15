@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   Calendar,
   Clock,
@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { apiClient } from "../../lib/api-client";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
@@ -31,23 +30,11 @@ import ReservationForm from "../../components/dashboard/ReservationForm";
 import { format, isPast, isFuture, isToday, differenceInDays, differenceInHours } from "date-fns";
 import { fr } from "date-fns/locale";
 import toast from "react-hot-toast";
-import { emailService } from "../../services/email-service";
 import { useAuthStore } from "../../store/authStore";
 import { useAvailabilityStore } from "../../store/availabilityStore";
-
-interface Reservation {
-  id: string;
-  user_id: string;
-  espace_id: string;
-  espace_nom?: string;
-  espace_type?: string;
-  date_debut: string;
-  date_fin: string;
-  statut: string;
-  montant_total: number | string;
-  participants: number;
-  notes?: string;
-}
+import { useAppStore } from "../../store/store";
+import { apiClient } from "../../lib/api-client";
+import type { Reservation } from "../../types";
 
 type FilterType = "all" | "upcoming" | "past" | "cancelled";
 type ViewMode = "cards" | "list";
@@ -90,43 +77,40 @@ const statusConfig: Record<string, { label: string; bg: string; text: string; do
   },
 };
 
-const formatMontant = (value: number | string | null | undefined): string => {
-  if (value == null) return "0";
-  const num = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(num)) return "0";
-  return num.toLocaleString("fr-DZ");
+const formatMontant = (value: number | null | undefined): string => {
+  if (value == null || isNaN(value)) return "0";
+  return value.toLocaleString("fr-DZ");
 };
 
-const formatDateDisplay = (dateStr: string): string => {
+const formatDateDisplay = (date: Date | null | undefined): string => {
   try {
-    if (!dateStr) return "-";
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    return format(date, "EEE d MMM yyyy", { locale: fr });
+    if (!date) return "-";
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return "-";
+    return format(d, "EEE d MMM yyyy", { locale: fr });
   } catch {
-    return dateStr || "-";
+    return "-";
   }
 };
 
-const formatTimeDisplay = (dateStr: string): string => {
+const formatTimeDisplay = (date: Date | null | undefined): string => {
   try {
-    if (!dateStr) return "-";
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return "";
-    return format(date, "HH:mm", { locale: fr });
+    if (!date) return "-";
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return "";
+    return format(d, "HH:mm", { locale: fr });
   } catch {
     return "";
   }
 };
 
-const getTimeLabel = (dateDebut: string): { text: string; color: string; urgent: boolean } => {
+const getTimeLabel = (dateDebut: Date): { text: string; color: string; urgent: boolean } => {
   try {
-    const date = new Date(dateDebut);
-    if (isToday(date)) return { text: "Aujourd'hui", color: "bg-emerald-500 text-white", urgent: true };
-    if (isFuture(date)) {
-      const days = differenceInDays(date, new Date());
+    if (isToday(dateDebut)) return { text: "Aujourd'hui", color: "bg-emerald-500 text-white", urgent: true };
+    if (isFuture(dateDebut)) {
+      const days = differenceInDays(dateDebut, new Date());
       if (days === 0) {
-        const hours = differenceInHours(date, new Date());
+        const hours = differenceInHours(dateDebut, new Date());
         if (hours < 1) return { text: "Imminent", color: "bg-emerald-500 text-white", urgent: true };
         return { text: `Dans ${hours}h`, color: "bg-emerald-500 text-white", urgent: true };
       }
@@ -140,11 +124,9 @@ const getTimeLabel = (dateDebut: string): { text: string; color: string; urgent:
   }
 };
 
-const getDuration = (dateDebut: string, dateFin: string): string => {
+const getDuration = (dateDebut: Date, dateFin: Date): string => {
   try {
-    const start = new Date(dateDebut);
-    const end = new Date(dateFin);
-    const hours = differenceInHours(end, start);
+    const hours = differenceInHours(dateFin, dateDebut);
     if (hours < 24) return `${hours}h`;
     const days = Math.ceil(hours / 24);
     return `${days}j`;
@@ -154,85 +136,45 @@ const getDuration = (dateDebut: string, dateFin: string): string => {
 };
 
 const Reservations = () => {
-  const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [filter, setFilter] = useState<FilterType>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
+
   const { user } = useAuthStore();
   const invalidateAll = useAvailabilityStore((s) => s.invalidateAll);
   const navigate = useNavigate();
 
-  const loadReservations = useCallback(async (showRefresh = false) => {
+  const reservations = useAppStore((s) => s.reservations);
+  const loadReservations = useAppStore((s) => s.loadReservations);
+
+  const refresh = useCallback(async (silent = false) => {
     try {
-      if (showRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+      if (!silent) setLoading(true);
       setError(null);
-
-      const response = await apiClient.getReservations();
-
-      if (response.success) {
-        let data = response.data;
-        if (!Array.isArray(data)) data = [];
-        setReservations(data as Reservation[]);
-      } else {
-        setError(response.error || response.message || "Erreur lors du chargement");
-        setReservations([]);
-      }
+      await loadReservations();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de connexion");
-      setReservations([]);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  }, []);
-
-  useEffect(() => {
-    loadReservations();
   }, [loadReservations]);
 
   const handleCancelReservation = async () => {
     if (!cancelId || cancelling) return;
-
     try {
       setCancelling(true);
       const response = await apiClient.cancelReservation(cancelId);
-
       if (response.success) {
         toast.success("Réservation annulée avec succès");
         invalidateAll();
-        const cancelledRes = reservations.find((r) => r.id === cancelId);
-        const currentUser = useAuthStore.getState().user;
-        if (currentUser?.email && cancelledRes) {
-          const start = new Date(cancelledRes.date_debut);
-          const end = new Date(cancelledRes.date_fin);
-          const diffH = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60));
-          const dureeStr = diffH < 24 ? `${diffH}h` : `${Math.ceil(diffH / 24)} jour${Math.ceil(diffH / 24) > 1 ? "s" : ""}`;
-          emailService.onReservationCancelled(currentUser.email, {
-            prenom: currentUser.prenom || currentUser.nom || "",
-            espaceName: cancelledRes.espace_nom || "",
-            espaceType: cancelledRes.espace_type || "",
-            dateDebut: format(start, "EEEE d MMMM yyyy", { locale: fr }),
-            dateFin: format(end, "EEEE d MMMM yyyy", { locale: fr }),
-            heureDebut: format(start, "HH:mm"),
-            heureFin: format(end, "HH:mm"),
-            duree: dureeStr,
-            participants: cancelledRes.participants || 1,
-            montant: parseFloat(String(cancelledRes.montant_total) || "0"),
-          });
-        }
         setCancelId(null);
-        await loadReservations(true);
+        await loadReservations();
       } else {
-        toast.error(response.error || response.message || "Erreur lors de l'annulation");
+        toast.error(response.error || "Erreur lors de l'annulation");
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erreur lors de l'annulation");
@@ -247,58 +189,53 @@ const Reservations = () => {
 
   const handleFormClose = () => {
     setShowForm(false);
-    loadReservations(true);
+    loadReservations();
   };
 
   const filteredReservations = useMemo(() => {
     return reservations.filter((r) => {
+      const dateDebut = r.dateDebut instanceof Date ? r.dateDebut : new Date(r.dateDebut as unknown as string);
       if (filter === "all") return true;
       if (filter === "cancelled") return r.statut === "annulee";
       if (filter === "upcoming") {
         return (
           r.statut !== "annulee" &&
           r.statut !== "terminee" &&
-          (isFuture(new Date(r.date_debut)) || isToday(new Date(r.date_debut)))
+          (isFuture(dateDebut) || isToday(dateDebut))
         );
       }
       if (filter === "past") {
-        return r.statut === "terminee" || isPast(new Date(r.date_fin));
+        const dateFin = r.dateFin instanceof Date ? r.dateFin : new Date(r.dateFin as unknown as string);
+        return r.statut === "terminee" || isPast(dateFin);
       }
       return true;
     });
   }, [reservations, filter]);
 
   const stats = useMemo(() => {
-    const upcoming = reservations.filter(
-      (r) =>
-        r.statut !== "annulee" &&
-        r.statut !== "terminee" &&
-        (isFuture(new Date(r.date_debut)) || isToday(new Date(r.date_debut)))
-    ).length;
-
+    const upcoming = reservations.filter((r) => {
+      const dateDebut = r.dateDebut instanceof Date ? r.dateDebut : new Date(r.dateDebut as unknown as string);
+      return r.statut !== "annulee" && r.statut !== "terminee" && (isFuture(dateDebut) || isToday(dateDebut));
+    }).length;
     const completed = reservations.filter((r) => r.statut === "terminee").length;
     const cancelled = reservations.filter((r) => r.statut === "annulee").length;
-
     const totalSpent = reservations
       .filter((r) => r.statut === "terminee" || r.statut === "confirmee")
-      .reduce((sum, r) => {
-        const amount = typeof r.montant_total === "string" ? parseFloat(r.montant_total) : r.montant_total;
-        return sum + (isNaN(amount) ? 0 : amount);
-      }, 0);
-
-    return {
-      total: reservations.length,
-      upcoming,
-      completed,
-      cancelled,
-      totalSpent,
-    };
+      .reduce((sum, r) => sum + (r.montantTotal || 0), 0);
+    return { total: reservations.length, upcoming, completed, cancelled, totalSpent };
   }, [reservations]);
 
   const nextReservation = useMemo(() => {
     return reservations
-      .filter((r) => r.statut !== "annulee" && r.statut !== "terminee" && isFuture(new Date(r.date_debut)))
-      .sort((a, b) => new Date(a.date_debut).getTime() - new Date(b.date_debut).getTime())[0];
+      .filter((r) => {
+        const dateDebut = r.dateDebut instanceof Date ? r.dateDebut : new Date(r.dateDebut as unknown as string);
+        return r.statut !== "annulee" && r.statut !== "terminee" && isFuture(dateDebut);
+      })
+      .sort((a, b) => {
+        const da = a.dateDebut instanceof Date ? a.dateDebut : new Date(a.dateDebut as unknown as string);
+        const db = b.dateDebut instanceof Date ? b.dateDebut : new Date(b.dateDebut as unknown as string);
+        return da.getTime() - db.getTime();
+      })[0];
   }, [reservations]);
 
   if (loading) {
@@ -326,7 +263,7 @@ const Reservations = () => {
             Impossible de charger les réservations
           </h2>
           <p className="text-gray-500 mb-6">{error}</p>
-          <Button onClick={() => loadReservations()} className="bg-amber-500 hover:bg-amber-600">
+          <Button onClick={() => refresh()} className="bg-amber-500 hover:bg-amber-600">
             <RefreshCw className="w-4 h-4 mr-2" />
             Réessayer
           </Button>
@@ -364,12 +301,11 @@ const Reservations = () => {
         <div className="flex items-center gap-3">
           {reservations.length > 0 && (
             <button
-              onClick={() => loadReservations(true)}
-              disabled={refreshing}
+              onClick={() => refresh(true)}
               className="p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all"
               title="Actualiser"
             >
-              <RefreshCw className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`} />
+              <RefreshCw className="w-5 h-5" />
             </button>
           )}
           <Button
@@ -401,16 +337,16 @@ const Reservations = () => {
                       Prochaine réservation
                     </p>
                     <h3 className="text-2xl font-bold text-white mb-2">
-                      {nextReservation.espace_nom || "Espace"}
+                      {nextReservation.espace?.nom || "Espace"}
                     </h3>
                     <div className="flex flex-wrap items-center gap-3 text-white/90">
                       <span className="flex items-center gap-1.5">
                         <CalendarDays className="w-4 h-4" />
-                        {formatDateDisplay(nextReservation.date_debut)}
+                        {formatDateDisplay(nextReservation.dateDebut)}
                       </span>
                       <span className="flex items-center gap-1.5">
                         <Clock className="w-4 h-4" />
-                        {formatTimeDisplay(nextReservation.date_debut)} - {formatTimeDisplay(nextReservation.date_fin)}
+                        {formatTimeDisplay(nextReservation.dateDebut)} - {formatTimeDisplay(nextReservation.dateFin)}
                       </span>
                     </div>
                   </div>
@@ -418,7 +354,7 @@ const Reservations = () => {
                 <div className="flex items-center gap-3">
                   <div className="text-right hidden md:block">
                     <p className="text-white/70 text-sm">Montant</p>
-                    <p className="text-2xl font-bold text-white">{formatMontant(nextReservation.montant_total)} DA</p>
+                    <p className="text-2xl font-bold text-white">{formatMontant(nextReservation.montantTotal)} DA</p>
                   </div>
                   <Link to={`/app/reservations/${nextReservation.id}`}>
                     <Button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 shadow-none">
@@ -435,73 +371,30 @@ const Reservations = () => {
 
       {reservations.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card className="p-5 bg-gradient-to-br from-blue-50 to-white border-blue-100 hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <CalendarDays className="w-5 h-5 text-blue-600" />
+          {[
+            { icon: CalendarDays, color: "blue", label: "Réservations", value: stats.total, badge: "Total" },
+            { icon: Sparkles, color: "emerald", label: "À venir", value: stats.upcoming, badge: "Actif" },
+            { icon: CheckCircle2, color: "gray", label: "Terminées", value: stats.completed, badge: "Passé" },
+            { icon: TrendingUp, color: "amber", label: "DA dépensées", value: formatMontant(stats.totalSpent), badge: "Total", isAmount: true },
+          ].map((item, index) => (
+            <motion.div
+              key={item.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: (index + 1) * 0.1 }}
+            >
+              <Card className={`p-5 bg-gradient-to-br from-${item.color}-50 to-white border-${item.color}-100 hover:shadow-lg transition-shadow`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className={`w-10 h-10 bg-${item.color}-100 rounded-xl flex items-center justify-center`}>
+                    <item.icon className={`w-5 h-5 text-${item.color}-600`} />
+                  </div>
+                  <span className={`text-xs font-medium text-${item.color}-600 bg-${item.color}-100 px-2 py-1 rounded-full`}>{item.badge}</span>
                 </div>
-                <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">Total</span>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
-              <p className="text-sm text-gray-500 mt-1">Réservations</p>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card className="p-5 bg-gradient-to-br from-emerald-50 to-white border-emerald-100 hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-emerald-600" />
-                </div>
-                <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-1 rounded-full">Actif</span>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">{stats.upcoming}</p>
-              <p className="text-sm text-gray-500 mt-1">À venir</p>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card className="p-5 bg-gradient-to-br from-gray-50 to-white border-gray-200 hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-gray-600" />
-                </div>
-                <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-full">Passé</span>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">{stats.completed}</p>
-              <p className="text-sm text-gray-500 mt-1">Terminées</p>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Card className="p-5 bg-gradient-to-br from-amber-50 to-white border-amber-100 hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-amber-600" />
-                </div>
-                <span className="text-xs font-medium text-amber-600 bg-amber-100 px-2 py-1 rounded-full">Total</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{formatMontant(stats.totalSpent)}</p>
-              <p className="text-sm text-gray-500 mt-1">DA dépensées</p>
-            </Card>
-          </motion.div>
+                <p className={`${item.isAmount ? "text-2xl" : "text-3xl"} font-bold text-gray-900`}>{item.value}</p>
+                <p className="text-sm text-gray-500 mt-1">{item.label}</p>
+              </Card>
+            </motion.div>
+          ))}
         </div>
       )}
 
@@ -519,19 +412,15 @@ const Reservations = () => {
                 onClick={() => setFilter(item.key as FilterType)}
                 className={`
                   flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap
-                  ${
-                    filter === item.key
-                      ? "bg-amber-500 text-white shadow-lg shadow-amber-500/25"
-                      : "text-gray-600 hover:bg-gray-100"
+                  ${filter === item.key
+                    ? "bg-amber-500 text-white shadow-lg shadow-amber-500/25"
+                    : "text-gray-600 hover:bg-gray-100"
                   }
                 `}
               >
                 <Filter className="w-4 h-4" />
                 {item.label}
-                <span className={`
-                  px-2 py-0.5 rounded-full text-xs font-bold
-                  ${filter === item.key ? "bg-white/20" : "bg-gray-200"}
-                `}>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${filter === item.key ? "bg-white/20" : "bg-gray-200"}`}>
                   {item.count}
                 </span>
               </button>
@@ -562,13 +451,7 @@ const Reservations = () => {
           title={
             filter === "all"
               ? "Aucune réservation"
-              : `Aucune réservation ${
-                  filter === "upcoming"
-                    ? "à venir"
-                    : filter === "past"
-                    ? "passée"
-                    : "annulée"
-                }`
+              : `Aucune réservation ${filter === "upcoming" ? "à venir" : filter === "past" ? "passée" : "annulée"}`
           }
           description={
             filter === "all"
@@ -577,10 +460,7 @@ const Reservations = () => {
           }
           action={
             filter === "all"
-              ? {
-                  label: "Réserver maintenant",
-                  onClick: () => setShowForm(true),
-                }
+              ? { label: "Réserver maintenant", onClick: () => setShowForm(true) }
               : undefined
           }
         />
@@ -589,7 +469,9 @@ const Reservations = () => {
           <AnimatePresence mode="popLayout">
             {filteredReservations.map((reservation, index) => {
               const status = statusConfig[reservation.statut] || statusConfig.en_attente;
-              const timeLabel = getTimeLabel(reservation.date_debut);
+              const dateDebut = reservation.dateDebut instanceof Date ? reservation.dateDebut : new Date(reservation.dateDebut as unknown as string);
+              const dateFin = reservation.dateFin instanceof Date ? reservation.dateFin : new Date(reservation.dateFin as unknown as string);
+              const timeLabel = getTimeLabel(dateDebut);
               const StatusIcon = status.icon;
 
               return (
@@ -615,7 +497,7 @@ const Reservations = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-2">
                             <h3 className="text-lg font-bold text-gray-900 truncate">
-                              {reservation.espace_nom || "Espace"}
+                              {reservation.espace?.nom || "Espace"}
                             </h3>
                             {timeLabel.text && (
                               <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${timeLabel.color}`}>
@@ -623,10 +505,10 @@ const Reservations = () => {
                               </span>
                             )}
                           </div>
-                          {reservation.espace_type && (
+                          {reservation.espace?.type && (
                             <p className="text-sm text-gray-500 flex items-center gap-1.5">
                               <MapPin className="w-3.5 h-3.5" />
-                              {reservation.espace_type}
+                              {reservation.espace.type}
                             </p>
                           )}
                         </div>
@@ -643,7 +525,7 @@ const Reservations = () => {
                             <span className="text-xs font-medium">Date</span>
                           </div>
                           <p className="text-sm font-semibold text-gray-900 truncate">
-                            {formatDateDisplay(reservation.date_debut)}
+                            {formatDateDisplay(dateDebut)}
                           </p>
                         </div>
                         <div className="bg-gray-50 rounded-xl p-3">
@@ -652,7 +534,7 @@ const Reservations = () => {
                             <span className="text-xs font-medium">Horaire</span>
                           </div>
                           <p className="text-sm font-semibold text-gray-900">
-                            {formatTimeDisplay(reservation.date_debut)} - {formatTimeDisplay(reservation.date_fin)}
+                            {formatTimeDisplay(dateDebut)} - {formatTimeDisplay(dateFin)}
                           </p>
                         </div>
                         <div className="bg-amber-50 rounded-xl p-3">
@@ -661,14 +543,14 @@ const Reservations = () => {
                             <span className="text-xs font-medium">Total</span>
                           </div>
                           <p className="text-sm font-bold text-amber-700">
-                            {formatMontant(reservation.montant_total)} DA
+                            {formatMontant(reservation.montantTotal)} DA
                           </p>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                         <div className="flex items-center gap-4 text-sm text-gray-500">
-                          {reservation.participants > 1 && (
+                          {(reservation.participants ?? 1) > 1 && (
                             <span className="flex items-center gap-1.5">
                               <Users className="w-4 h-4" />
                               {reservation.participants} pers.
@@ -676,7 +558,7 @@ const Reservations = () => {
                           )}
                           <span className="flex items-center gap-1.5">
                             <Timer className="w-4 h-4" />
-                            {getDuration(reservation.date_debut, reservation.date_fin)}
+                            {getDuration(dateDebut, dateFin)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -724,7 +606,9 @@ const Reservations = () => {
                 <AnimatePresence mode="popLayout">
                   {filteredReservations.map((reservation) => {
                     const status = statusConfig[reservation.statut] || statusConfig.en_attente;
-                    const timeLabel = getTimeLabel(reservation.date_debut);
+                    const dateDebut = reservation.dateDebut instanceof Date ? reservation.dateDebut : new Date(reservation.dateDebut as unknown as string);
+                    const dateFin = reservation.dateFin instanceof Date ? reservation.dateFin : new Date(reservation.dateFin as unknown as string);
+                    const timeLabel = getTimeLabel(dateDebut);
 
                     return (
                       <motion.tr
@@ -740,14 +624,14 @@ const Reservations = () => {
                               <MapPin className="w-5 h-5 text-amber-600" />
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-900">{reservation.espace_nom || "Espace"}</p>
-                              <p className="text-xs text-gray-500">{reservation.espace_type}</p>
+                              <p className="font-semibold text-gray-900">{reservation.espace?.nom || "Espace"}</p>
+                              <p className="text-xs text-gray-500">{reservation.espace?.type}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-900">{formatDateDisplay(reservation.date_debut)}</span>
+                            <span className="text-sm text-gray-900">{formatDateDisplay(dateDebut)}</span>
                             {timeLabel.text && (
                               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${timeLabel.color}`}>
                                 {timeLabel.text}
@@ -756,7 +640,7 @@ const Reservations = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
-                          {formatTimeDisplay(reservation.date_debut)} - {formatTimeDisplay(reservation.date_fin)}
+                          {formatTimeDisplay(dateDebut)} - {formatTimeDisplay(dateFin)}
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
@@ -765,7 +649,7 @@ const Reservations = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 font-semibold text-gray-900">
-                          {formatMontant(reservation.montant_total)} DA
+                          {formatMontant(reservation.montantTotal)} DA
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-2">

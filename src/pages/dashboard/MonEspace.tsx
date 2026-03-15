@@ -108,16 +108,6 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
       }
 
       toast.success('Demande de domiciliation envoyée avec succès !');
-      const recipientEmail = formData.dirigeant.email || user?.email;
-      if (recipientEmail) {
-        emailService.onDomiciliationSubmitted(recipientEmail, {
-          prenom: formData.dirigeant.prenom || user?.prenom || '',
-          raisonSociale: raisonSociale || '',
-          formeJuridique: isAutoEntrepreneur ? 'Auto-entrepreneur' : ((formData.entreprise as unknown as Record<string, unknown>)?.formeJuridique as string || ''),
-          statut: 'dossier_preparatoire',
-          statutLabel: 'Dossier préparatoire',
-        });
-      }
       setShowWizard(false);
     } else {
       toast.error(result.error || 'Erreur lors de l\'envoi de la demande');

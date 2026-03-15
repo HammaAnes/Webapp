@@ -16,14 +16,7 @@ try {
     $input = file_get_contents("php://input");
     $data = json_decode($input, true);
 
-    error_log("=== RESERVATION CREATE REQUEST ===");
-    error_log("Raw input: " . $input);
-    error_log("Decoded data: " . json_encode($data));
-    error_log("Auth User ID: " . $authUserId);
-    error_log("Auth User Role: " . $authUser['role']);
-
     if (!$data || json_last_error() !== JSON_ERROR_NONE) {
-        error_log("JSON decode error: " . json_last_error_msg());
         Response::error("Donnees JSON invalides", 400);
     }
 
@@ -53,17 +46,17 @@ try {
         $contactId = null;
         $statutInitial = 'en_attente';
 
-        if (empty($authUser['carte_identite_url'])) {
-            Response::error("Vous devez télécharger votre carte d'identité avant d'effectuer une réservation.", 403);
+        $stmtCni = $db->prepare("SELECT id FROM documents_uploads WHERE user_id = ? AND type_document = 'carte_identite' LIMIT 1");
+        $stmtCni->execute([$authUserId]);
+        $hasCarteIdentite = $stmtCni->fetch() !== false;
+        if (!$hasCarteIdentite && empty($authUser['carte_identite_url'])) {
+            Response::error("Veuillez télécharger votre carte d'identité avant d'effectuer une réservation. Rendez-vous dans votre profil.", 403);
         }
     }
 
     if (empty($espaceId)) {
-        error_log("ERROR: espace_id is empty");
         Response::error("L'espace est requis", 400);
     }
-
-    error_log("Checking espace with ID: " . $espaceId);
 
     if (empty($dateDebut)) {
         Response::error("La date de debut est requise", 400);
@@ -121,14 +114,8 @@ try {
     $espace = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$espace) {
-        error_log("ERROR: Espace not found with ID: " . $espaceId);
-        $stmtAll = $db->query("SELECT id, nom FROM espaces LIMIT 10");
-        $allEspaces = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
-        error_log("Available espaces: " . json_encode($allEspaces));
-        Response::error("Espace introuvable avec l'ID: " . $espaceId, 404);
+        Response::error("Espace introuvable", 404);
     }
-
-    error_log("Espace found: " . $espace['nom'] . " (" . $espace['id'] . ")");
 
     if (!$espace['disponible']) {
         Response::error("Cet espace n'est pas disponible", 400);
@@ -239,20 +226,6 @@ try {
         }
     }
 
-    $stmtBlocage = $db->prepare("
-        SELECT id FROM blocages_espaces
-        WHERE espace_id = ?
-        AND statut NOT IN ('annule', 'termine')
-        AND date_debut < ?
-        AND date_fin > ?
-        LIMIT 1
-    ");
-    $stmtBlocage->execute([$espaceId, $finMysql, $debutMysql]);
-    if ($stmtBlocage->fetch()) {
-        $db->rollBack();
-        Response::error("Ce creneau est bloque par l'administration", 409);
-    }
-
     if (!empty($codePromo)) {
         $stmt = $db->prepare("
             SELECT id, type, valeur, montant_min, utilisations_max, utilisations_actuelles, date_fin, actif
@@ -316,20 +289,8 @@ try {
     if (!$result) {
         $db->rollBack();
         $errorInfo = $stmt->errorInfo();
-        error_log("Reservation INSERT error: " . json_encode($errorInfo));
-        error_log("Reservation data: " . json_encode([
-            'id' => $id,
-            'user_id' => $userId,
-            'espace_id' => $espaceId,
-            'date_debut' => $debutMysql,
-            'date_fin' => $finMysql,
-            'type' => $type,
-            'montant' => $montant,
-            'participants' => $participants,
-            'notes' => $notes,
-            'code_promo_id' => $codePromoId
-        ]));
-        Response::error("Erreur lors de la creation de la reservation: " . ($errorInfo[2] ?? 'inconnue'), 500);
+        Logger::error('Reservation INSERT error', ['sql_error' => $errorInfo[2] ?? 'unknown']);
+        Response::error("Erreur lors de la creation de la reservation", 500);
     }
 
     if ($codePromoId) {
@@ -372,17 +333,15 @@ try {
             AdminNotifier::newReservation($reservation, $clientName, $clientEmail);
         }
     } catch (Exception $notifErr) {
-        error_log("Admin notification error: " . $notifErr->getMessage());
+        Logger::warn('Admin notification error', ['error' => $notifErr->getMessage()]);
     }
 
     Response::success($reservation, "Reservation creee avec succes", 201);
 
 } catch (PDOException $e) {
-    error_log("Reservation create PDO error: " . $e->getMessage());
-    error_log("PDO Stack trace: " . $e->getTraceAsString());
-    Response::error("Erreur base de donnees: " . $e->getMessage(), 500);
+    Logger::error('Reservation create PDO error', ['error' => $e->getMessage()]);
+    Response::error("Erreur base de donnees", 500);
 } catch (Exception $e) {
-    error_log("Reservation create error: " . $e->getMessage());
-    error_log("Stack trace: " . $e->getTraceAsString());
-    Response::error("Erreur lors de la creation de la reservation: " . $e->getMessage(), 500);
+    Logger::error('Reservation create error', ['error' => $e->getMessage()]);
+    Response::error("Erreur lors de la creation de la reservation", 500);
 }

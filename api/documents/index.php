@@ -42,7 +42,7 @@ try {
         $params[] = $entityId;
     }
 
-    $query .= ' ORDER BY created_at DESC';
+    $query .= ' ORDER BY COALESCE(created_at, uploaded_at) DESC';
 
     $stmt = $db->prepare($query);
     $stmt->execute($params);

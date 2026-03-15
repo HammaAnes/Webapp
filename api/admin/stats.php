@@ -9,6 +9,7 @@ require_once '../config/cors.php';
 require_once '../config/database.php';
 require_once '../utils/Auth.php';
 require_once '../utils/Response.php';
+require_once '../utils/Logger.php';
 
 try {
     $auth = Auth::requireAdmin();
@@ -117,6 +118,6 @@ try {
     ]);
 
 } catch (Exception $e) {
-    error_log("Get admin stats error: " . $e->getMessage());
+    Logger::error('Admin stats error', ['error' => $e->getMessage()]);
     Response::serverError();
 }
