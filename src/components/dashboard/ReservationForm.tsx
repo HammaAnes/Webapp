@@ -402,14 +402,15 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     const reqEnd = new Date(watchDateFin);
     if (reqStart >= reqEnd) return;
 
-    const dateStr = format(reqStart, "yyyy-MM-dd");
+    const startStr = format(reqStart, "yyyy-MM-dd HH:mm:ss");
+    const endStr = format(reqEnd, "yyyy-MM-dd HH:mm:ss");
     const controller = new AbortController();
 
     const fetchSeats = async () => {
       setCheckingAvailability(true);
       try {
         const response = await apiClient.request(
-          `/reservations/availability.php?espace_id=${currentEspace.id}&date_debut=${dateStr}&date_fin=${dateStr}`
+          `/reservations/availability.php?espace_id=${currentEspace.id}&date_debut=${encodeURIComponent(startStr)}&date_fin=${encodeURIComponent(endStr)}&slot_detail=true`
         );
         const availability = response.data as { days?: Array<{ seats_available?: number; seats_taken?: number }>; capacity?: number } | undefined;
         if (response.success && availability?.days?.length && availability.days.length > 0) {
@@ -652,8 +653,8 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
 
       if (editMode && reservationId) {
         const response = await apiClient.updateReservation(reservationId, {
-          dateDebut: data.date_debut.toISOString(),
-          dateFin: data.date_fin.toISOString(),
+          dateDebut: format(data.date_debut, "yyyy-MM-dd HH:mm:ss"),
+          dateFin: format(data.date_fin, "yyyy-MM-dd HH:mm:ss"),
           participants: data.participants || 1,
           notes: data.notes || "",
         });
@@ -668,8 +669,8 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
       } else {
         const response = await apiClient.createReservation({
           espaceId: data.espace_id,
-          dateDebut: data.date_debut.toISOString(),
-          dateFin: data.date_fin.toISOString(),
+          dateDebut: format(data.date_debut, "yyyy-MM-dd HH:mm:ss"),
+          dateFin: format(data.date_fin, "yyyy-MM-dd HH:mm:ss"),
           participants: data.participants || 1,
           notes: data.notes || "",
           ...(promoResult?.valid && promoCode ? { codePromo: promoCode.toUpperCase() } : {}),

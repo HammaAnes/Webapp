@@ -2,18 +2,15 @@ import { create } from "zustand";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import {
   fetchMonthAvailability,
-  type ReservationSlot,
+  type DayAvailability,
   type BlocageSlot,
 } from "../services/availability.service";
 
-interface SpaceMonthKey {
-  espaceId: string;
-  monthKey: string;
-}
-
 interface MonthData {
-  reservations: ReservationSlot[];
+  days: DayAvailability[];
   blocages: BlocageSlot[];
+  isOpenSpace: boolean;
+  capacity: number;
   fetchedAt: number;
   loading: boolean;
   error: boolean;
@@ -62,8 +59,10 @@ export const useAvailabilityStore = create<AvailabilityState>((set, get) => ({
       cache: {
         ...state.cache,
         [key]: {
-          reservations: existing?.reservations ?? [],
+          days: existing?.days ?? [],
           blocages: existing?.blocages ?? [],
+          isOpenSpace: existing?.isOpenSpace ?? false,
+          capacity: existing?.capacity ?? 1,
           fetchedAt: existing?.fetchedAt ?? 0,
           loading: true,
           error: false,
@@ -80,8 +79,10 @@ export const useAvailabilityStore = create<AvailabilityState>((set, get) => ({
         cache: {
           ...state.cache,
           [key]: {
-            reservations: data.reservations,
+            days: data.days,
             blocages: data.blocages,
+            isOpenSpace: data.isOpenSpace,
+            capacity: data.capacity,
             fetchedAt: Date.now(),
             loading: false,
             error: false,
@@ -93,8 +94,10 @@ export const useAvailabilityStore = create<AvailabilityState>((set, get) => ({
         cache: {
           ...state.cache,
           [key]: {
-            reservations: existing?.reservations ?? [],
+            days: existing?.days ?? [],
             blocages: existing?.blocages ?? [],
+            isOpenSpace: existing?.isOpenSpace ?? false,
+            capacity: existing?.capacity ?? 1,
             fetchedAt: existing?.fetchedAt ?? 0,
             loading: false,
             error: true,
@@ -131,4 +134,4 @@ export const useAvailabilityStore = create<AvailabilityState>((set, get) => ({
   },
 }));
 
-export type { MonthData, SpaceMonthKey };
+export type { MonthData };

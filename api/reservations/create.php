@@ -32,7 +32,7 @@ try {
     $espaceId = $data['espace_id'] ?? null;
     $dateDebut = $data['date_debut'] ?? null;
     $dateFin = $data['date_fin'] ?? null;
-    $participants = isset($data['participants']) ? intval($data['participants']) : 1;
+    $participants = max(1, isset($data['participants']) ? intval($data['participants']) : 1);
     $notes = isset($data['notes']) ? trim($data['notes']) : '';
     $codePromo = $data['code_promo'] ?? null;
     $statutDemande = $data['statut'] ?? null;
@@ -73,10 +73,19 @@ try {
         Response::error("La date de fin est requise", 400);
     }
 
-    $dateDebut = str_replace(['T', 'Z'], [' ', ''], $dateDebut);
-    $dateDebut = preg_replace('/\.\d{3}$/', '', $dateDebut);
-    $dateFin = str_replace(['T', 'Z'], [' ', ''], $dateFin);
-    $dateFin = preg_replace('/\.\d{3}$/', '', $dateFin);
+    function parseInputDate(string $input): string {
+        if (preg_match('/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/', $input)) {
+            $dt = new DateTime($input);
+            $dt->setTimezone(new DateTimeZone('Africa/Algiers'));
+            return $dt->format('Y-m-d H:i:s');
+        }
+        $clean = str_replace(['T', 'Z'], [' ', ''], $input);
+        $clean = preg_replace('/\.\d{3}$/', '', $clean);
+        return trim($clean);
+    }
+
+    $dateDebut = parseInputDate($dateDebut);
+    $dateFin   = parseInputDate($dateFin);
 
     $debut = strtotime($dateDebut);
     $fin = strtotime($dateFin);
@@ -113,12 +122,9 @@ try {
 
     if (!$espace) {
         error_log("ERROR: Espace not found with ID: " . $espaceId);
-
-        // List available espaces for debugging
         $stmtAll = $db->query("SELECT id, nom FROM espaces LIMIT 10");
         $allEspaces = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
         error_log("Available espaces: " . json_encode($allEspaces));
-
         Response::error("Espace introuvable avec l'ID: " . $espaceId, 404);
     }
 
@@ -128,66 +134,21 @@ try {
         Response::error("Cet espace n'est pas disponible", 400);
     }
 
-    if ($participants < 1) {
-        $participants = 1;
-    }
-
     $capacite = intval($espace['capacite']);
     if ($participants > $capacite) {
         Response::error("Le nombre de participants ($participants) depasse la capacite maximale de l'espace ($capacite places)", 400);
     }
 
+    // Bug 10 — Reject reservations in the past (except for admins)
+    if (!($authUser['role'] === 'admin')) {
+        $now = new DateTime('now', new DateTimeZone('Africa/Algiers'));
+        $debutDt = new DateTime($debutMysql, new DateTimeZone('Africa/Algiers'));
+        if ($debutDt < $now) {
+            Response::error("La date de debut ne peut pas etre dans le passe", 400);
+        }
+    }
+
     $isOpenSpace = strtolower($espace['type']) === 'open_space' || stripos($espace['nom'], 'open') !== false || stripos($espace['nom'], 'coworking') !== false;
-
-    if ($isOpenSpace) {
-        $stmt = $db->prepare("
-            SELECT COALESCE(SUM(participants), 0) as seats_taken
-            FROM reservations
-            WHERE espace_id = ?
-            AND statut NOT IN ('annulee', 'terminee')
-            AND date_debut < ?
-            AND date_fin > ?
-        ");
-        $stmt->execute([$espaceId, $finMysql, $debutMysql]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $seatsTaken = intval($row['seats_taken'] ?? 0);
-
-        if ($seatsTaken + $participants > $capacite) {
-            $seatsLeft = max(0, $capacite - $seatsTaken);
-            if ($seatsLeft === 0) {
-                Response::error("L'Open Space est complet sur ce creneau (0 place disponible)", 409);
-            } else {
-                Response::error("Seulement $seatsLeft place(s) disponible(s) sur ce creneau (vous en demandez $participants)", 409);
-            }
-        }
-    } else {
-        $stmt = $db->prepare("
-            SELECT id FROM reservations
-            WHERE espace_id = ?
-            AND statut NOT IN ('annulee', 'terminee')
-            AND date_debut < ?
-            AND date_fin > ?
-            LIMIT 1
-        ");
-        $stmt->execute([$espaceId, $finMysql, $debutMysql]);
-
-        if ($stmt->fetch()) {
-            Response::error("Ce creneau est deja reserve", 409);
-        }
-    }
-
-    $stmtBlocage = $db->prepare("
-        SELECT id FROM blocages_espaces
-        WHERE espace_id = ?
-        AND statut NOT IN ('annule', 'termine')
-        AND date_debut < ?
-        AND date_fin > ?
-        LIMIT 1
-    ");
-    $stmtBlocage->execute([$espaceId, $finMysql, $debutMysql]);
-    if ($stmtBlocage->fetch()) {
-        Response::error("Ce créneau est bloqué par l'administration", 409);
-    }
 
     $rules = require __DIR__ . '/../config/business-rules.php';
     $seuilDemiJ = $rules['reservation']['seuil_heure_demi_journee'];
@@ -234,7 +195,63 @@ try {
     $reduction = 0;
     $codePromoId = null;
 
+    // Bug 6 — Begin transaction BEFORE availability check to prevent race conditions
     $db->beginTransaction();
+
+    // Availability check INSIDE the transaction with FOR UPDATE to lock rows
+    if ($isOpenSpace) {
+        $stmtAvail = $db->prepare("
+            SELECT COALESCE(SUM(GREATEST(COALESCE(participants, 1), 1)), 0) as seats_taken
+            FROM reservations
+            WHERE espace_id = ?
+            AND statut NOT IN ('annulee', 'terminee')
+            AND date_debut < ?
+            AND date_fin > ?
+            FOR UPDATE
+        ");
+        $stmtAvail->execute([$espaceId, $finMysql, $debutMysql]);
+        $rowAvail = $stmtAvail->fetch(PDO::FETCH_ASSOC);
+        $seatsTaken = intval($rowAvail['seats_taken'] ?? 0);
+
+        if ($seatsTaken + $participants > $capacite) {
+            $db->rollBack();
+            $seatsLeft = max(0, $capacite - $seatsTaken);
+            if ($seatsLeft === 0) {
+                Response::error("L'Open Space est complet sur ce creneau (0 place disponible)", 409);
+            } else {
+                Response::error("Seulement $seatsLeft place(s) disponible(s) sur ce creneau (vous en demandez $participants)", 409);
+            }
+        }
+    } else {
+        $stmtAvail = $db->prepare("
+            SELECT id FROM reservations
+            WHERE espace_id = ?
+            AND statut NOT IN ('annulee', 'terminee')
+            AND date_debut < ?
+            AND date_fin > ?
+            FOR UPDATE
+            LIMIT 1
+        ");
+        $stmtAvail->execute([$espaceId, $finMysql, $debutMysql]);
+        if ($stmtAvail->fetch()) {
+            $db->rollBack();
+            Response::error("Ce creneau est deja reserve", 409);
+        }
+    }
+
+    $stmtBlocage = $db->prepare("
+        SELECT id FROM blocages_espaces
+        WHERE espace_id = ?
+        AND statut NOT IN ('annule', 'termine')
+        AND date_debut < ?
+        AND date_fin > ?
+        LIMIT 1
+    ");
+    $stmtBlocage->execute([$espaceId, $finMysql, $debutMysql]);
+    if ($stmtBlocage->fetch()) {
+        $db->rollBack();
+        Response::error("Ce creneau est bloque par l'administration", 409);
+    }
 
     if (!empty($codePromo)) {
         $stmt = $db->prepare("

@@ -32,7 +32,7 @@ import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
 import { useAppStore } from '../../../store/store';
 import { useAvailabilityStore } from '../../../store/availabilityStore';
-import { computeDayAvailability } from '../../../services/availability.service';
+import { type DayAvailability } from '../../../services/availability.service';
 import { apiClient } from '../../../lib/api-client';
 import toast from 'react-hot-toast';
 import type { Reservation } from '../../../types';
@@ -184,14 +184,27 @@ export default function Aujourdhui() {
   const currentMonth = startOfMonth(today);
 
   const spaceAvailabilities = useMemo(() => {
+    const todayStr = format(todayStart, 'yyyy-MM-dd');
     return espaces.map((espace) => {
       const isOS = espace.type === 'open_space' || espace.nom?.toLowerCase().includes('open') || espace.nom?.toLowerCase().includes('coworking');
       const capacity = espace.capacite || 1;
       const monthKey = `${espace.id}::${format(currentMonth, 'yyyy-MM')}`;
       const monthData = availabilityCache[monthKey];
-      const reservations = monthData?.reservations ?? [];
-      const blocages = monthData?.blocages ?? [];
-      const dayInfo = computeDayAvailability(todayStart, todayStart, currentMonth, reservations, blocages, isOS, capacity);
+      const apiDays = monthData?.days ?? [];
+      const todayApiDay = apiDays.find((d) => format(d.date, 'yyyy-MM-dd') === todayStr);
+
+      const dayInfo: DayAvailability = todayApiDay ?? {
+        date: todayStart,
+        status: 'available',
+        seatsTaken: 0,
+        seatsAvailable: capacity,
+        capacity,
+        totalSlots: 20,
+        freeSlots: capacity,
+        reservedSeats: 0,
+        totalCapacity: capacity,
+      };
+
       return { espace, dayInfo, isOS, hasData: !!monthData };
     });
   }, [espaces, availabilityCache, todayStart, currentMonth]);

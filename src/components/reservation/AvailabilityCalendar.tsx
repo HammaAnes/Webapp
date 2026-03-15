@@ -167,14 +167,14 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
 
     if (
       isOpenSpace &&
-      dayInfo.reservedSeats != null &&
-      dayInfo.totalCapacity != null &&
+      dayInfo.seatsTaken != null &&
+      dayInfo.capacity != null &&
       dayInfo.status !== "past" &&
       dayInfo.status !== "closed" &&
       dayInfo.status !== "blocked"
     ) {
-      const reserved = dayInfo.reservedSeats;
-      const total = dayInfo.totalCapacity;
+      const reserved = dayInfo.seatsTaken;
+      const total = dayInfo.capacity;
       const color =
         reserved === 0
           ? "text-emerald-600"
@@ -295,12 +295,14 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                   layout
                   className={`aspect-square rounded-xl text-sm flex flex-col items-center justify-center ${getDayStyles(dayInfo)} ${isOpenSpace ? "pb-1" : ""}`}
                   title={
-                    isOpenSpace && dayInfo.reservedSeats != null
-                      ? `${dayInfo.reservedSeats}/${dayInfo.totalCapacity} places réservées`
+                    isOpenSpace
+                      ? dayInfo.seatsTaken != null
+                        ? `${dayInfo.seatsTaken}/${dayInfo.capacity} places réservées`
+                        : ""
                       : dayInfo.status === "available"
-                      ? `${dayInfo.freeSlots} créneaux libres`
+                      ? "Disponible"
                       : dayInfo.status === "partial"
-                      ? `${dayInfo.freeSlots}/${dayInfo.totalSlots} créneaux libres`
+                      ? "Partiellement disponible"
                       : dayInfo.status === "full"
                       ? "Complet"
                       : dayInfo.status === "closed"

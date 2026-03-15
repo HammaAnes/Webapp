@@ -51,6 +51,20 @@ try {
         Response::error("Erreur lors de l'annulation", 500);
     }
 
+    // Bug 9 — Release promo code when reservation is cancelled
+    if (!empty($reservation['code_promo_id'])) {
+        try {
+            $stmtPromo = $db->prepare("
+                UPDATE codes_promo
+                SET utilisations_actuelles = GREATEST(utilisations_actuelles - 1, 0)
+                WHERE id = ?
+            ");
+            $stmtPromo->execute([$reservation['code_promo_id']]);
+        } catch (Exception $promoErr) {
+            error_log("Promo release error on cancel: " . $promoErr->getMessage());
+        }
+    }
+
     $stmt = $db->prepare("
         SELECT r.*, e.nom as espace_nom, e.type as espace_type
         FROM reservations r
