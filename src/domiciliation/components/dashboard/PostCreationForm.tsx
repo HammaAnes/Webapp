@@ -1,54 +1,45 @@
-import React, { useState } from "react";
-import { Hash, FileCheck, Send, Loader2 } from "lucide-react";
-import Card from "../ui/Card";
-import Input from "../ui/Input";
-import Button from "../ui/Button";
-import toast from "react-hot-toast";
+import React, { useState } from 'react';
+import { Hash, FileCheck, Send, Loader2 } from 'lucide-react';
+import Card from '../../../components/ui/Card';
+import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button';
+import toast from 'react-hot-toast';
+import { validatePostCreation } from '../../domain/validators';
+import type { TypeStructure } from '../../domain/types';
 
 interface PostCreationFormProps {
-  demande: {
-    typeStructure: string;
+  typeStructure: TypeStructure;
+  initialData?: {
     nif?: string;
     nis?: string;
     registreCommerce?: string;
     articleImposition?: string;
     numeroAutoEntrepreneur?: string;
-    id: string;
   };
-  onSubmit: (data: Record<string, string>) => void;
   loading: boolean;
+  onSubmit: (data: Record<string, string>) => void;
 }
 
-const PostCreationForm: React.FC<PostCreationFormProps> = ({ demande, onSubmit, loading }) => {
-  const [formState, setFormState] = useState({
-    nif: demande.nif || "",
-    nis: demande.nis || "",
-    registreCommerce: demande.registreCommerce || "",
-    articleImposition: demande.articleImposition || "",
-    numeroAutoEntrepreneur: demande.numeroAutoEntrepreneur || "",
+export default function PostCreationForm({ typeStructure, initialData = {}, loading, onSubmit }: PostCreationFormProps) {
+  const [form, setForm] = useState({
+    nif: initialData.nif || '',
+    nis: initialData.nis || '',
+    registreCommerce: initialData.registreCommerce || '',
+    articleImposition: initialData.articleImposition || '',
+    numeroAutoEntrepreneur: initialData.numeroAutoEntrepreneur || '',
   });
 
+  const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(prev => ({ ...prev, [field]: e.target.value }));
+
   const handleSubmit = () => {
-    if (demande.typeStructure === "societe") {
-      if (!formState.registreCommerce.trim() || !formState.nif.trim() || !formState.nis.trim() || !formState.articleImposition.trim()) {
-        toast.error("Veuillez remplir tous les champs obligatoires");
-        return;
-      }
-      if (!/^[0-9]{20}$/.test(formState.nif.trim())) {
-        toast.error("Le NIF doit contenir exactement 20 chiffres");
-        return;
-      }
-      if (!/^[0-9]{15}$/.test(formState.nis.trim())) {
-        toast.error("Le NIS doit contenir exactement 15 chiffres");
-        return;
-      }
-    } else {
-      if (!formState.numeroAutoEntrepreneur.trim()) {
-        toast.error("Le numéro d'auto-entrepreneur est requis");
-        return;
-      }
+    const result = validatePostCreation(typeStructure, form);
+    if (!result.valid) {
+      const first = Object.values(result.errors)[0];
+      toast.error(first);
+      return;
     }
-    onSubmit(formState);
+    onSubmit(form);
   };
 
   return (
@@ -64,44 +55,44 @@ const PostCreationForm: React.FC<PostCreationFormProps> = ({ demande, onSubmit, 
       </div>
 
       <div className="space-y-4">
-        {demande.typeStructure === "societe" ? (
+        {typeStructure === 'societe' ? (
           <>
             <Input
               label="Registre de Commerce (RC)"
               icon={<Hash className="w-5 h-5" />}
-              value={formState.registreCommerce}
-              onChange={(e) => setFormState({ ...formState, registreCommerce: e.target.value })}
+              value={form.registreCommerce}
+              onChange={set('registreCommerce')}
               placeholder="Ex: 16/00-0123456B00"
             />
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="NIF (exactement 20 chiffres)"
                 icon={<Hash className="w-5 h-5" />}
-                value={formState.nif}
-                onChange={(e) => setFormState({ ...formState, nif: e.target.value })}
+                value={form.nif}
+                onChange={set('nif')}
                 maxLength={20}
               />
               <Input
                 label="NIS (exactement 15 chiffres)"
                 icon={<Hash className="w-5 h-5" />}
-                value={formState.nis}
-                onChange={(e) => setFormState({ ...formState, nis: e.target.value })}
+                value={form.nis}
+                onChange={set('nis')}
                 maxLength={15}
               />
             </div>
             <Input
               label="Article d'Imposition (AI)"
               icon={<Hash className="w-5 h-5" />}
-              value={formState.articleImposition}
-              onChange={(e) => setFormState({ ...formState, articleImposition: e.target.value })}
+              value={form.articleImposition}
+              onChange={set('articleImposition')}
             />
           </>
         ) : (
           <Input
             label="Numéro d'auto-entrepreneur"
             icon={<Hash className="w-5 h-5" />}
-            value={formState.numeroAutoEntrepreneur}
-            onChange={(e) => setFormState({ ...formState, numeroAutoEntrepreneur: e.target.value })}
+            value={form.numeroAutoEntrepreneur}
+            onChange={set('numeroAutoEntrepreneur')}
             placeholder="Ex: AE-2024-123456"
           />
         )}
@@ -129,6 +120,4 @@ const PostCreationForm: React.FC<PostCreationFormProps> = ({ demande, onSubmit, 
       </div>
     </Card>
   );
-};
-
-export default PostCreationForm;
+}

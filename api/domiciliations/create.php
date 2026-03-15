@@ -28,12 +28,18 @@ try {
         Response::error("La raison sociale ne peut pas dépasser " . $reglesIds['raison_sociale_longueur_max'] . " caractères", 400);
     }
 
-    if (!empty($data->nif) && strlen($data->nif) !== $reglesIds['nif_longueur']) {
-        Response::error("Le NIF doit contenir exactement " . $reglesIds['nif_longueur'] . " caractères", 400);
+    if (!empty($data->nif)) {
+        $nif = trim($data->nif);
+        if (strlen($nif) !== $reglesIds['nif_longueur'] || !ctype_digit($nif)) {
+            Response::error("Le NIF doit contenir exactement " . $reglesIds['nif_longueur'] . " chiffres", 400);
+        }
     }
 
-    if (!empty($data->nis) && strlen($data->nis) !== $reglesIds['nis_longueur']) {
-        Response::error("Le NIS doit contenir exactement " . $reglesIds['nis_longueur'] . " caractères", 400);
+    if (!empty($data->nis)) {
+        $nis = trim($data->nis);
+        if (strlen($nis) !== $reglesIds['nis_longueur'] || !ctype_digit($nis)) {
+            Response::error("Le NIS doit contenir exactement " . $reglesIds['nis_longueur'] . " chiffres", 400);
+        }
     }
 
     if (!empty($data->registre_commerce) && strlen($data->registre_commerce) > $reglesIds['registre_longueur_max']) {
@@ -207,7 +213,7 @@ try {
         ':commentaire_admin' => $data->commentaire_admin ?? null
     ]);
 
-    if ($is_admin_creation && in_array($statut_initial, ['active', 'domiciliation_creee']) && !empty($data->montant_mensuel)) {
+    if ($is_admin_creation && $target_user_id && in_array($statut_initial, ['active', 'domiciliation_creee']) && !empty($data->montant_mensuel)) {
         $montant_mensuel = floatval($data->montant_mensuel);
         $mois = 6;
         if (!empty($data->date_debut_contrat) && !empty($data->date_fin_contrat)) {

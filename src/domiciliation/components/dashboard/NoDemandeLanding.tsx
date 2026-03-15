@@ -1,92 +1,44 @@
-import React from "react";
-import { motion } from "framer-motion";
+import React from 'react';
+import { motion } from 'framer-motion';
 import {
-  Globe,
-  Plus,
-  ArrowRight,
-  CheckCircle,
-  MapPin,
-  Mail,
-  ScanLine,
-  Send,
-  Briefcase,
-  Clock,
-  Shield,
-  Building2,
-  Star,
-  ChevronRight,
-} from "lucide-react";
-import Card from "../ui/Card";
-import Button from "../ui/Button";
-import { OPTIONS_PRICING, BASE_MONTHLY_PRICE } from "./constants";
+  Globe, Plus, ArrowRight, CheckCircle, MapPin, Mail, ScanLine,
+  Send, Briefcase, Clock, Shield, Building2, Star, ChevronRight,
+} from 'lucide-react';
+import Card from '../../../components/ui/Card';
+import Button from '../../../components/ui/Button';
+import { OPTIONS_CONFIG, BASE_MONTHLY_PRICE, formatPrice } from '../../domain/pricing';
 
 const PROCESS_STEPS = [
-  { step: "01", title: "Soumission du dossier", description: "Remplissez le formulaire en ligne avec les informations de votre entreprise", time: "10 min" },
-  { step: "02", title: "Validation par Coffice", description: "Notre équipe examine votre dossier et vous contacte si nécessaire", time: "24–48h" },
-  { step: "03", title: "Signature chez le notaire", description: "Rendez-vous au Mohammadia Mall pour signer le contrat officiel", time: "1 jour" },
-  { step: "04", title: "Domiciliation active", description: "Votre adresse est immédiatement utilisable pour tous vos documents officiels", time: "Immédiat" },
+  { step: '01', title: 'Soumission du dossier', description: 'Remplissez le formulaire en ligne avec les informations de votre entreprise', time: '10 min' },
+  { step: '02', title: 'Validation par Coffice', description: 'Notre équipe examine votre dossier et vous contacte si nécessaire', time: '24–48h' },
+  { step: '03', title: 'Signature chez le notaire', description: 'Rendez-vous au Mohammadia Mall pour signer le contrat officiel', time: '1 jour' },
+  { step: '04', title: 'Domiciliation active', description: "Votre adresse est immédiatement utilisable pour tous vos documents officiels", time: 'Immédiat' },
 ];
 
 const SERVICE_CARDS = [
-  {
-    icon: MapPin,
-    title: "Adresse légale officielle",
-    description: "Mohammadia Mall, 4ème étage, 16000 Alger. Une adresse de prestige pour votre siège social, valable pour tous vos documents administratifs et légaux.",
-    highlight: "Inclus dans l'offre de base",
-    color: "amber",
-  },
-  {
-    icon: Mail,
-    title: "Réception et gestion du courrier",
-    description: "Nous réceptionnons votre courrier professionnel et administratif, avec notification immédiate par email à chaque arrivée.",
-    highlight: "Option disponible",
-    color: "sky",
-  },
-  {
-    icon: ScanLine,
-    title: "Scan & notification digitale",
-    description: "Vos courriers sont scannés et envoyés par email, même si vous êtes absent. Ne manquez aucun document important.",
-    highlight: "Option disponible",
-    color: "teal",
-  },
-  {
-    icon: Send,
-    title: "Réexpédition postale",
-    description: "Nous réexpédions votre courrier à l'adresse de votre choix, en Algérie ou à l'étranger.",
-    highlight: "Option disponible",
-    color: "orange",
-  },
-  {
-    icon: Briefcase,
-    title: "Accès aux espaces Coffice",
-    description: "Profitez de 2 demi-journées par mois dans nos espaces de coworking modernes pour travailler ou recevoir vos clients.",
-    highlight: "Option disponible",
-    color: "emerald",
-  },
-  {
-    icon: Shield,
-    title: "Conformité juridique garantie",
-    description: "Contrat notarié conforme à la réglementation algérienne. Votre domiciliation est légalement reconnue par toutes les administrations.",
-    highlight: "Inclus dans l'offre de base",
-    color: "rose",
-  },
+  { icon: MapPin, title: 'Adresse légale officielle', description: 'Mohammadia Mall, 4ème étage, 16000 Alger. Une adresse de prestige pour votre siège social, valable pour tous vos documents administratifs et légaux.', highlight: "Inclus dans l'offre de base", color: 'amber' },
+  { icon: Mail, title: 'Réception et gestion du courrier', description: 'Nous réceptionnons votre courrier professionnel et administratif, avec notification immédiate par email à chaque arrivée.', highlight: 'Option disponible', color: 'sky' },
+  { icon: ScanLine, title: 'Scan & notification digitale', description: "Vos courriers sont scannés et envoyés par email, même si vous êtes absent. Ne manquez aucun document important.", highlight: 'Option disponible', color: 'teal' },
+  { icon: Send, title: 'Réexpédition postale', description: "Nous réexpédions votre courrier à l'adresse de votre choix, en Algérie ou à l'étranger.", highlight: 'Option disponible', color: 'orange' },
+  { icon: Briefcase, title: 'Accès aux espaces Coffice', description: 'Profitez de 2 demi-journées par mois dans nos espaces de coworking modernes pour travailler ou recevoir vos clients.', highlight: 'Option disponible', color: 'emerald' },
+  { icon: Shield, title: 'Conformité juridique garantie', description: "Contrat notarié conforme à la réglementation algérienne. Votre domiciliation est légalement reconnue par toutes les administrations.", highlight: "Inclus dans l'offre de base", color: 'rose' },
 ];
 
 const COLOR_MAP: Record<string, { icon: string; badge: string; bg: string; border: string }> = {
-  amber: { icon: "text-amber-600", badge: "bg-amber-100 text-amber-700", bg: "bg-amber-50", border: "border-amber-200" },
-  sky: { icon: "text-sky-600", badge: "bg-sky-100 text-sky-700", bg: "bg-sky-50", border: "border-sky-200" },
-  teal: { icon: "text-teal-600", badge: "bg-teal-100 text-teal-700", bg: "bg-teal-50", border: "border-teal-200" },
-  orange: { icon: "text-orange-600", badge: "bg-orange-100 text-orange-700", bg: "bg-orange-50", border: "border-orange-200" },
-  emerald: { icon: "text-emerald-600", badge: "bg-emerald-100 text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" },
-  rose: { icon: "text-rose-600", badge: "bg-rose-100 text-rose-700", bg: "bg-rose-50", border: "border-rose-200" },
+  amber: { icon: 'text-amber-600', badge: 'bg-amber-100 text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' },
+  sky: { icon: 'text-sky-600', badge: 'bg-sky-100 text-sky-700', bg: 'bg-sky-50', border: 'border-sky-200' },
+  teal: { icon: 'text-teal-600', badge: 'bg-teal-100 text-teal-700', bg: 'bg-teal-50', border: 'border-teal-200' },
+  orange: { icon: 'text-orange-600', badge: 'bg-orange-100 text-orange-700', bg: 'bg-orange-50', border: 'border-orange-200' },
+  emerald: { icon: 'text-emerald-600', badge: 'bg-emerald-100 text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+  rose: { icon: 'text-rose-600', badge: 'bg-rose-100 text-rose-700', bg: 'bg-rose-50', border: 'border-rose-200' },
 };
 
 interface NoDemandeLandingProps {
   onStartDemande: () => void;
 }
 
-const NoDemandeLanding: React.FC<NoDemandeLandingProps> = ({ onStartDemande }) => {
-  const addOnOptions = Object.entries(OPTIONS_PRICING).filter(([, v]) => !v.included);
+export default function NoDemandeLanding({ onStartDemande }: NoDemandeLandingProps) {
+  const addonOptions = OPTIONS_CONFIG.filter(o => !o.included);
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -130,7 +82,7 @@ const NoDemandeLanding: React.FC<NoDemandeLandingProps> = ({ onStartDemande }) =
                 </Button>
                 <div className="flex items-center gap-2 text-slate-400 text-sm">
                   <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                  <span>Dès <strong className="text-white">{BASE_MONTHLY_PRICE.toLocaleString()} DA/mois</strong></span>
+                  <span>Dès <strong className="text-white">{formatPrice(BASE_MONTHLY_PRICE)}/mois</strong></span>
                 </div>
               </div>
             </div>
@@ -214,14 +166,14 @@ const NoDemandeLanding: React.FC<NoDemandeLandingProps> = ({ onStartDemande }) =
                 <div className="bg-white rounded-2xl p-6 border border-amber-200 shadow-sm mb-4">
                   <p className="text-xs text-amber-600 font-semibold uppercase tracking-wider mb-2">Offre de base — inclus</p>
                   <div className="flex items-end gap-2 mb-1">
-                    <span className="text-4xl font-black text-gray-900">{BASE_MONTHLY_PRICE.toLocaleString()}</span>
+                    <span className="text-4xl font-black text-gray-900">{BASE_MONTHLY_PRICE.toLocaleString('fr-DZ')}</span>
                     <span className="text-xl font-semibold text-gray-500 mb-1">DA/mois</span>
                   </div>
                   <p className="text-xs text-gray-500">Engagement 6 mois minimum — contrat notarié</p>
                 </div>
 
                 <div className="space-y-2">
-                  {["Adresse légale et commerciale officielle", "Représentation au Registre de Commerce", "Adresse valable pour NIF, NIS, RC", "Conformité juridique totale"].map((item, i) => (
+                  {['Adresse légale et commerciale officielle', 'Représentation au Registre de Commerce', 'Adresse valable pour NIF, NIS, RC', 'Conformité juridique totale'].map((item, i) => (
                     <div key={i} className="flex items-center gap-2.5">
                       <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       <span className="text-sm text-gray-700">{item}</span>
@@ -233,14 +185,14 @@ const NoDemandeLanding: React.FC<NoDemandeLandingProps> = ({ onStartDemande }) =
               <div>
                 <h4 className="font-bold text-gray-900 mb-4 text-lg">Options additionnelles</h4>
                 <div className="space-y-3">
-                  {addOnOptions.map(([key, opt]) => (
-                    <div key={key} className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200 hover:border-amber-300 transition-colors">
+                  {addonOptions.map(opt => (
+                    <div key={opt.key} className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200 hover:border-amber-300 transition-colors">
                       <div>
                         <p className="font-semibold text-gray-900 text-sm">{opt.label}</p>
                         <p className="text-xs text-gray-500 mt-0.5">{opt.description}</p>
                       </div>
                       <span className="text-sm font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-lg whitespace-nowrap ml-3">
-                        +{opt.price.toLocaleString()} DA/mois
+                        +{opt.price.toLocaleString('fr-DZ')} DA/mois
                       </span>
                     </div>
                   ))}
@@ -267,6 +219,4 @@ const NoDemandeLanding: React.FC<NoDemandeLandingProps> = ({ onStartDemande }) =
       </div>
     </motion.div>
   );
-};
-
-export default NoDemandeLanding;
+}

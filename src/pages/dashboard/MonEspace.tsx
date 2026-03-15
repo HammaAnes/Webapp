@@ -14,15 +14,9 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useAppStore } from "../../store/store";
-import type { DemandeDomiciliation } from "../../types";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import { DemandeSummary, NoDemandeLanding, WizardForm } from "../../components/domiciliation";
-import CourrierUtilisateur from "../../components/domiciliation/CourrierUtilisateur";
-import DocumentsEntreprise from "../../components/domiciliation/DocumentsEntreprise";
-import EntrepriseTab from "../../components/domiciliation/EntrepriseTab";
-import type { DomiciliationFormData, UploadedDocument } from "../../components/domiciliation";
 import toast from "react-hot-toast";
 import { registerLocale } from "react-datepicker";
 import { emailService } from "../../services/email-service";
@@ -30,6 +24,14 @@ import { fr } from "date-fns/locale";
 import { DOMICILIATION_STATUT_LABELS } from "../../constants";
 import { apiClient } from "../../lib/api-client";
 import "react-datepicker/dist/react-datepicker.css";
+import { useDomiciliation } from "../../domiciliation/hooks/useDomiciliation";
+import WizardModal from "../../domiciliation/components/wizard/WizardModal";
+import DemandeSummary from "../../domiciliation/components/dashboard/DemandeSummary";
+import NoDemandeLanding from "../../domiciliation/components/dashboard/NoDemandeLanding";
+import EntrepriseTab from "../../domiciliation/components/dashboard/EntrepriseTab";
+import CourrierUtilisateur from "../../domiciliation/components/dashboard/CourrierUtilisateur";
+import DocumentsEntreprise from "../../domiciliation/components/dashboard/DocumentsEntreprise";
+import type { WizardFormData, UploadedDocument } from "../../domiciliation/domain/types";
 
 registerLocale("fr", fr);
 
@@ -48,30 +50,19 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 
   const { user } = useAuthStore();
-  const {
-    getUserDemandeDomiciliation,
-    createDemandeDomiciliation,
-    loadDemandesDomiciliation,
-    updateUser,
-  } = useAppStore();
+  const { updateUser } = useAppStore();
 
   const [showWizard, setShowWizard] = useState(false);
   const [domLoading, setDomLoading] = useState(false);
-  const [dataLoading, setDataLoading] = useState(true);
+
+  const { demande, loading: dataLoading, loadDemande, submitNewDemande, submitPostCreation } = useDomiciliation(user?.id ?? '');
 
   useEffect(() => {
-    if (user) {
-      loadDemandesDomiciliation().finally(() => {
-        const { demandesDomiciliation } = useAppStore.getState();
-        setDataLoading(false);
-      });
-    }
-  }, [user, loadDemandesDomiciliation]);
+    if (user?.id) loadDemande();
+  }, [user?.id, loadDemande]);
 
-  const demande = user ? getUserDemandeDomiciliation(user.id) : null;
-  const hasDemande = !!demande;
-  const isTerminal = demande && (demande.statut === "refusee" || demande.statut === "expiree" || demande.statut === "resiliee");
-  const hasActiveDomiciliation = hasDemande && !isTerminal;
+  const isTerminal = demande && ['refusee', 'expiree', 'resiliee'].includes(demande.statut);
+  const hasActiveDomiciliation = !!demande && !isTerminal;
 
   const handleTabChange = (tab: TabId) => {
     const tabConfig = ALL_TABS.find(t => t.id === tab);
@@ -88,120 +79,49 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
     }
   }, [hasActiveDomiciliation, activeTab, setSearchParams]);
 
-  const handleWizardSubmit = async (data: {
-    situation: "en_cours_creation" | "deja_creee";
-    typeStructure: "societe" | "auto_entrepreneur";
-    formData: DomiciliationFormData;
-    uploadedDocuments: UploadedDocument[];
-  }) => {
+  const handleWizardSubmit = async (formData: WizardFormData, uploadedDocuments: UploadedDocument[]) => {
     if (!user) return;
-    const { situation, typeStructure, formData: wizFormData, uploadedDocuments } = data;
-    const isAutoEntrepreneur = typeStructure === "auto_entrepreneur";
-    const raisonSociale = isAutoEntrepreneur
-      ? `${wizFormData.dirigeant.prenom} ${wizFormData.dirigeant.nom}`.trim()
-      : wizFormData.denominationSociale;
 
-    const submitData: Record<string, unknown> = {
-      userId: user.id,
-      situationAdministrative: situation,
-      typeStructure,
-      raisonSociale,
-      formeJuridique: isAutoEntrepreneur ? "Auto-entrepreneur" : wizFormData.formeJuridique,
-      representantLegal: {
-        nom: wizFormData.dirigeant.nom,
-        prenom: wizFormData.dirigeant.prenom,
-        telephone: wizFormData.dirigeant.telephone,
-        email: wizFormData.dirigeant.email,
-        fonction: isAutoEntrepreneur ? "Auto-entrepreneur" : "Gérant",
-        adresseResidence: wizFormData.dirigeant.adresseResidence,
-        ville: wizFormData.dirigeant.ville,
-      },
-      domaineActivite: isAutoEntrepreneur ? wizFormData.activiteExercee : wizFormData.codeNae,
-      options: wizFormData.options,
-      cguAcceptees: wizFormData.cguAcceptees,
-      dateCguAcceptation: new Date().toISOString(),
-      dateDebutSouhaitee: wizFormData.dateDebutSouhaitee?.toISOString(),
-    };
-
-    if (isAutoEntrepreneur) {
-      submitData.activiteExercee = wizFormData.activiteExercee;
-      submitData.descriptionActivite = wizFormData.descriptionActivite;
-      if (wizFormData.numeroAutoEntrepreneur) submitData.numeroAutoEntrepreneur = wizFormData.numeroAutoEntrepreneur;
-      if (wizFormData.dateInscriptionAutoEntrepreneur) {
-        submitData.dateInscriptionAutoEntrepreneur = wizFormData.dateInscriptionAutoEntrepreneur.toISOString();
-      }
-    } else {
-      submitData.codeNae = wizFormData.codeNae;
-      if (wizFormData.nif) submitData.nif = wizFormData.nif;
-      if (wizFormData.nis) submitData.nis = wizFormData.nis;
-      if (wizFormData.registreCommerce) submitData.registreCommerce = wizFormData.registreCommerce;
-      if (wizFormData.articleImposition) submitData.articleImposition = wizFormData.articleImposition;
-      if (wizFormData.dateCreationEntreprise) {
-        submitData.dateCreationEntreprise = wizFormData.dateCreationEntreprise.toISOString();
-      }
-      if (wizFormData.villeImmatriculation) submitData.villeImmatriculation = wizFormData.villeImmatriculation;
-    }
-
-    if (uploadedDocuments.length > 0) {
-      submitData.documents = JSON.stringify(
-        uploadedDocuments.map(d => ({ type: d.type, name: d.name }))
-      );
-    }
-
-    const result = await createDemandeDomiciliation(submitData as unknown as Parameters<typeof createDemandeDomiciliation>[0]);
+    const result = await submitNewDemande(formData, uploadedDocuments);
 
     if (result.success) {
-      const demandeId = result.id || "";
-      if (uploadedDocuments.length > 0 && demandeId) {
-        for (const doc of uploadedDocuments) {
-          try {
-            await apiClient.uploadDocument(doc.file, "domiciliation", demandeId, doc.type);
-          } catch {
-            toast.error(`Erreur lors de l'envoi du document : ${doc.name}`);
-          }
-        }
-      } else if (uploadedDocuments.length > 0 && !demandeId) {
-        toast.error("Les documents n'ont pas pu être liés à la demande. Utilisez l'onglet Documents pour les renvoyer.");
-      }
+      const isAutoEntrepreneur = formData.typeStructure === 'auto_entrepreneur';
+      const raisonSociale = isAutoEntrepreneur
+        ? `${formData.dirigeant.prenom} ${formData.dirigeant.nom}`.trim()
+        : (formData.entreprise as Record<string, unknown>)?.denominationSociale as string || '';
 
       try {
-        const companyData: Record<string, unknown> = {
-          activitePrincipale: isAutoEntrepreneur ? wizFormData.activiteExercee : wizFormData.codeNae,
-        };
+        const companyData: Record<string, unknown> = {};
         if (isAutoEntrepreneur) {
-          companyData.typeEntreprise = "auto_entrepreneur";
+          companyData.typeEntreprise = 'auto_entrepreneur';
           companyData.raisonSociale = raisonSociale;
-          companyData.formeJuridique = "auto_entrepreneur";
-          if (wizFormData.numeroAutoEntrepreneur) companyData.numeroAutoEntrepreneur = wizFormData.numeroAutoEntrepreneur;
+          companyData.formeJuridique = 'auto_entrepreneur';
         } else {
-          companyData.raisonSociale = wizFormData.denominationSociale;
-          companyData.formeJuridique = wizFormData.formeJuridique?.toLowerCase() || "";
-          companyData.typeEntreprise = wizFormData.formeJuridique?.toLowerCase() || "";
-          if (wizFormData.nif) companyData.nif = wizFormData.nif;
-          if (wizFormData.nis) companyData.nis = wizFormData.nis;
-          if (wizFormData.registreCommerce) companyData.registreCommerce = wizFormData.registreCommerce;
-          if (wizFormData.articleImposition) companyData.articleImposition = wizFormData.articleImposition;
+          const ent = formData.entreprise as Record<string, unknown>;
+          companyData.raisonSociale = ent?.denominationSociale;
+          companyData.formeJuridique = (ent?.formeJuridique as string)?.toLowerCase() || '';
+          companyData.typeEntreprise = (ent?.formeJuridique as string)?.toLowerCase() || '';
         }
         await updateUser(user.id, companyData);
       } catch {
         // best-effort
       }
 
-      toast.success("Demande de domiciliation envoyée avec succès !");
-      const recipientEmail = data.formData.dirigeant.email || user?.email;
+      toast.success('Demande de domiciliation envoyée avec succès !');
+      const recipientEmail = formData.dirigeant.email || user?.email;
       if (recipientEmail) {
         emailService.onDomiciliationSubmitted(recipientEmail, {
-          prenom: data.formData.dirigeant.prenom || user?.prenom || "",
-          raisonSociale: raisonSociale || "",
-          formeJuridique: isAutoEntrepreneur ? "Auto-entrepreneur" : (wizFormData.formeJuridique || ""),
-          statut: "dossier_preparatoire",
-          statutLabel: "Dossier préparatoire",
+          prenom: formData.dirigeant.prenom || user?.prenom || '',
+          raisonSociale: raisonSociale || '',
+          formeJuridique: isAutoEntrepreneur ? 'Auto-entrepreneur' : ((formData.entreprise as Record<string, unknown>)?.formeJuridique as string || ''),
+          statut: 'dossier_preparatoire',
+          statutLabel: 'Dossier préparatoire',
         });
       }
       setShowWizard(false);
     } else {
-      toast.error(result.error || "Erreur lors de l'envoi de la demande");
-      throw new Error(result.error || "Erreur");
+      toast.error(result.error || 'Erreur lors de l\'envoi de la demande');
+      throw new Error(result.error || 'Erreur');
     }
   };
 
@@ -209,15 +129,8 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
     if (!demande || !user) return;
     setDomLoading(true);
     try {
-      const updateData: Record<string, unknown> = {};
-      if (data.nif) updateData.nif = data.nif;
-      if (data.nis) updateData.nis = data.nis;
-      if (data.registreCommerce) updateData.registreCommerce = data.registreCommerce;
-      if (data.articleImposition) updateData.articleImposition = data.articleImposition;
-      if (data.numeroAutoEntrepreneur) updateData.numeroAutoEntrepreneur = data.numeroAutoEntrepreneur;
-
-      const response = await apiClient.updateDemandeDomiciliation(demande.id, updateData);
-      if (response.success) {
+      const result = await submitPostCreation(demande.typeStructure, data);
+      if (result.success) {
         try {
           const companySync: Record<string, unknown> = {};
           if (data.nif) companySync.nif = data.nif;
@@ -229,14 +142,12 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
         } catch {
           // best-effort
         }
-        toast.success("Informations soumises avec succès. L'équipe Coffice va procéder à la validation finale.");
-        await loadDemandesDomiciliation();
-        await new Promise(r => setTimeout(r, 100));
+        toast.success('Informations soumises avec succès. L\'équipe Coffice va procéder à la validation finale.');
       } else {
-        toast.error(response.error || "Erreur lors de la mise à jour");
+        toast.error(result.error || 'Erreur lors de la mise à jour');
       }
     } catch {
-      toast.error("Une erreur est survenue");
+      toast.error('Une erreur est survenue');
     } finally {
       setDomLoading(false);
     }
@@ -247,30 +158,30 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
     setDomLoading(true);
     try {
       const response = await apiClient.updateDemandeDomiciliation(demande.id, {
-        commentaireAdmin: `[RENOUVELLEMENT] Demande de renouvellement soumise le ${new Date().toLocaleDateString("fr-FR")}. ${demande.commentaireAdmin || ""}`,
+        commentaireAdmin: `[RENOUVELLEMENT] Demande de renouvellement soumise le ${new Date().toLocaleDateString('fr-FR')}. ${demande.commentaireAdmin || ''}`,
       });
       if (response.success) {
-        toast.success("Votre demande de renouvellement a été envoyée. L'équipe Coffice vous contactera.");
+        toast.success('Votre demande de renouvellement a été envoyée. L\'équipe Coffice vous contactera.');
         try {
           emailService.onDomiciliationStatusUpdate(
             demande.representantLegal?.email || user.email,
             {
-              prenom: demande.representantLegal?.prenom || user.prenom || "",
-              raisonSociale: demande.raisonSociale || "",
-              formeJuridique: demande.formeJuridique || "",
-              statut: "active",
-              statutLabel: "Demande de renouvellement",
+              prenom: demande.representantLegal?.prenom || user.prenom || '',
+              raisonSociale: demande.raisonSociale || '',
+              formeJuridique: demande.formeJuridique || '',
+              statut: 'active',
+              statutLabel: 'Demande de renouvellement',
             }
           );
         } catch {
           // best-effort
         }
-        await loadDemandesDomiciliation();
+        await loadDemande();
       } else {
-        toast.error("Erreur lors de la demande de renouvellement");
+        toast.error('Erreur lors de la demande de renouvellement');
       }
     } catch {
-      toast.error("Erreur lors de la demande de renouvellement");
+      toast.error('Erreur lors de la demande de renouvellement');
     } finally {
       setDomLoading(false);
     }
@@ -278,7 +189,7 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
 
   if (!user) return null;
 
-  if (dataLoading) {
+  if (dataLoading && !demande) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <LoadingSpinner size="lg" />
@@ -421,39 +332,40 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.2 }}
         >
-          {activeTab === "domiciliation" && (
-            <DomiciliationTab
-              demande={demande}
-              loading={domLoading}
-              isTerminal={!!isTerminal}
-              onOpenWizard={() => setShowWizard(true)}
-              onPostCreationSubmit={handlePostCreationSubmit}
-              onRenewalRequest={handleRenewalRequest}
-            />
+          {activeTab === 'domiciliation' && (
+            demande
+              ? <DemandeSummary
+                  demande={demande}
+                  loading={domLoading}
+                  onPostCreationSubmit={handlePostCreationSubmit}
+                  onNewDemande={() => setShowWizard(true)}
+                  onRenewalRequest={handleRenewalRequest}
+                />
+              : <NoDemandeLanding onStartDemande={() => setShowWizard(true)} />
           )}
 
-          {activeTab === "entreprise" && (
-            <EntrepriseTab user={user} demande={demande} loading = {dataLoading} />
+          {activeTab === 'entreprise' && (
+            <EntrepriseTab user={user} demande={demande} loading={dataLoading} />
           )}
 
-          {activeTab === "courrier" && demande && hasActiveDomiciliation && (
+          {activeTab === 'courrier' && demande && hasActiveDomiciliation && (
             <CourrierUtilisateur
               domiciliationId={demande.id}
-              options={demande.options as unknown as { scanNotificationEmail?: boolean; reexpeditionCourrier?: boolean; [key: string]: boolean | undefined }}
+              options={demande.options}
             />
           )}
 
-          {activeTab === "documents" && demande && hasActiveDomiciliation && (
+          {activeTab === 'documents' && demande && hasActiveDomiciliation && (
             <DocumentsEntreprise
               domiciliationId={demande.id}
-              typeStructure={demande.typeStructure as "societe" | "auto_entrepreneur"}
+              typeStructure={demande.typeStructure}
             />
           )}
         </motion.div>
       </AnimatePresence>
 
       {user && (
-        <WizardForm
+        <WizardModal
           isOpen={showWizard}
           onClose={() => setShowWizard(false)}
           user={user}
@@ -463,30 +375,5 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
     </div>
   );
 };
-
-interface DomiciliationTabProps {
-  demande: DemandeDomiciliation | null;
-  loading: boolean;
-  isTerminal: boolean;
-  onOpenWizard: () => void;
-  onPostCreationSubmit: (data: Record<string, string>) => void;
-  onRenewalRequest?: () => void;
-}
-
-function DomiciliationTab({ demande, loading, onOpenWizard, onPostCreationSubmit, onRenewalRequest }: DomiciliationTabProps) {
-  if (!demande) {
-    return <NoDemandeLanding onStartDemande={onOpenWizard} />;
-  }
-
-  return (
-    <DemandeSummary
-      demande={demande}
-      loading={loading}
-      onPostCreationSubmit={onPostCreationSubmit}
-      onNewDemande={onOpenWizard}
-      onRenewalRequest={onRenewalRequest}
-    />
-  );
-}
 
 export default MonEspace;
