@@ -136,7 +136,12 @@ export default function AdminDomiciliationDetail() {
             });
             break;
           case "activer":
-            res = await apiClient.activateDomiciliation(id, data?.numeroBureau);
+            res = await apiClient.activateDomiciliation(id, {
+              montantMensuel: data?.montantMensuel ?? demande.montantMensuel ?? 12000,
+              dateDebut: data?.dateDebutContrat ?? (demande.dateDebutContrat ? String(demande.dateDebutContrat) : new Date().toISOString().split("T")[0]),
+              dateFin: data?.dateFinContrat ?? (demande.dateFinContrat ? String(demande.dateFinContrat) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+              numeroBureau: data?.numeroBureau,
+            });
             break;
           case "renouveler":
             res = await apiClient.updateDemandeDomiciliation(id, {

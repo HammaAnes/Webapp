@@ -570,10 +570,6 @@ class ApiClient {
     return this.request("/domiciliations/index.php");
   }
 
-  async getDemandesDomiciliation() {
-    return this.request("/domiciliations/index.php");
-  }
-
   async createDemandeDomiciliation(data: Record<string, unknown> & {
     representantLegal?: {
       nom: string;
@@ -650,11 +646,17 @@ class ApiClient {
     });
   }
 
-  async activateDomiciliation(id: string, numeroBureau?: number) {
-    const payload: Record<string, unknown> = { id, statut: "active" };
-    if (numeroBureau !== undefined) payload.numero_bureau = numeroBureau;
-    return this.request("/domiciliations/update.php", {
-      method: "PUT",
+  async activateDomiciliation(id: string, data: { montantMensuel: number; dateDebut: string; dateFin: string; numeroBureau?: number; modePaiement?: string }) {
+    const payload: Record<string, unknown> = {
+      domiciliation_id: id,
+      montant_mensuel: data.montantMensuel,
+      date_debut: data.dateDebut,
+      date_fin: data.dateFin,
+    };
+    if (data.numeroBureau !== undefined) payload.numero_bureau = data.numeroBureau;
+    if (data.modePaiement) payload.mode_paiement = data.modePaiement;
+    return this.request("/domiciliations/activate.php", {
+      method: "POST",
       body: JSON.stringify(payload),
     });
   }
