@@ -2,53 +2,53 @@
   # Performance indexes
 
   ## Summary
-  Add missing indexes for frequently queried columns across all main tables.
+  Ajout des index manquants sur les colonnes fréquemment interrogées.
 
   ## New Indexes
 
   ### documents_uploads
-  - `idx_entity`: (entity_type, entity_id) - for fetching documents by entity
-  - `idx_user_type`: (user_id, type_document) - for checking user document types
-  - `idx_documents_created`: (created_at DESC) - for sorting
+  - `idx_entity`: (entity_type, entity_id) - récupérer les documents par entité
+  - `idx_user_type`: (user_id, type_document) - vérifier les types de documents d'un user
 
   ### reservations
-  - `idx_reservations_user_statut`: (user_id, statut) - for user reservation lists
-  - `idx_reservations_espace_dates`: (espace_id, date_debut, date_fin) - for availability checks
-  - `idx_reservations_statut_created`: (statut, created_at) - for admin lists
+  - `idx_reservations_user_statut`: (user_id, statut) - listes de réservations par user
+  - `idx_reservations_espace_dates`: (espace_id, date_debut, date_fin) - vérification disponibilité
+  - `idx_reservations_statut_created`: (statut, created_at) - listes admin
 
   ### domiciliations
-  - `idx_domiciliations_user`: (user_id, statut) - for user domiciliation lookup
-  - `idx_domiciliations_statut`: (statut, created_at) - for admin lists
+  - `idx_domiciliations_user`: (user_id, statut) - lookup domiciliation par user
+  - `idx_domiciliations_statut`: (statut, created_at) - listes admin
 
   ### notifications
-  - `idx_notifications_user_read`: (user_id, lu, created_at) - for unread count
+  - Pas d'ajout : l'index (user_id, lue, created_at) existe déjà dans le schéma initial
+
+  ### users
+  - `idx_users_statut`: (statut) - filtrage par statut
+  - `idx_users_role`: (role, statut) - filtrage par rôle
 
   ## Notes
-  - All use `ADD INDEX IF NOT EXISTS` for safety
+  - Utilise `ADD INDEX IF NOT EXISTS` (MariaDB 10.1+)
+  - Les colonnes DESC dans les définitions d'index ne sont pas supportées en MariaDB < 10.8,
+    ORDER BY reste géré par le moteur InnoDB
 */
 
 -- documents_uploads indexes
 ALTER TABLE documents_uploads
   ADD INDEX IF NOT EXISTS idx_entity (entity_type, entity_id),
-  ADD INDEX IF NOT EXISTS idx_user_type (user_id, type_document),
-  ADD INDEX IF NOT EXISTS idx_documents_created (created_at DESC);
+  ADD INDEX IF NOT EXISTS idx_user_type (user_id, type_document);
 
 -- reservations indexes
 ALTER TABLE reservations
   ADD INDEX IF NOT EXISTS idx_reservations_user_statut (user_id, statut),
   ADD INDEX IF NOT EXISTS idx_reservations_espace_dates (espace_id, date_debut, date_fin),
-  ADD INDEX IF NOT EXISTS idx_reservations_statut_created (statut, created_at DESC);
+  ADD INDEX IF NOT EXISTS idx_reservations_statut_created (statut, created_at);
 
 -- domiciliations indexes
 ALTER TABLE domiciliations
   ADD INDEX IF NOT EXISTS idx_domiciliations_user (user_id, statut),
-  ADD INDEX IF NOT EXISTS idx_domiciliations_statut (statut, created_at DESC);
-
--- notifications indexes
-ALTER TABLE notifications
-  ADD INDEX IF NOT EXISTS idx_notifications_user_read (user_id, lu, created_at DESC);
+  ADD INDEX IF NOT EXISTS idx_domiciliations_statut (statut, created_at);
 
 -- users indexes
 ALTER TABLE users
-  ADD INDEX IF NOT EXISTS idx_users_statut (statut, created_at DESC),
+  ADD INDEX IF NOT EXISTS idx_users_statut (statut),
   ADD INDEX IF NOT EXISTS idx_users_role (role, statut);
