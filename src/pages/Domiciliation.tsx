@@ -76,8 +76,8 @@ const DomiciliationPublic = () => {
         setStats({
           activeCount: (data.active_count as number) || 0,
           visibleCompanies: companies.map((c: Record<string, unknown>) => ({
-            companyName: (c.company_name as string) || (c.raison_sociale as string) || "",
-            legalForm: (c.legal_form as string) || (c.forme_juridique as string) || "",
+            companyName: (c.raison_sociale as string) || "",
+            legalForm: (c.forme_juridique as string) || "",
           })),
         });
       }
