@@ -61,7 +61,7 @@ interface CreateReservationForm {
 
 type SortField = "date" | "user" | "space" | "amount" | "status";
 type SortDirection = "asc" | "desc";
-type StatusTab = "tous" | "en_attente" | "confirmee" | "en_cours" | "terminee" | "annulee";
+type StatusTab = "tous" | "en_attente" | "confirmee" | "en_cours" | "terminee" | "annulee" | "no_show";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -72,6 +72,7 @@ const STATUS_TABS: { key: StatusTab; label: string; color: string; dotColor: str
   { key: "en_cours", label: "En cours", color: "text-blue-700", dotColor: "bg-blue-500" },
   { key: "terminee", label: "Terminées", color: "text-gray-600", dotColor: "bg-gray-400" },
   { key: "annulee", label: "Annulées", color: "text-red-700", dotColor: "bg-red-500" },
+  { key: "no_show", label: "No-show", color: "text-rose-700", dotColor: "bg-rose-500" },
 ];
 
 const Reservations = () => {
@@ -137,6 +138,12 @@ const Reservations = () => {
     e.preventDefault();
     if (!selectedUser || !formData.espace_id || !formData.date_debut || !formData.date_fin) {
       toast.error("Veuillez remplir tous les champs obligatoires");
+      return;
+    }
+    const debutDate = new Date(`${formData.date_debut}T12:00:00`);
+    const debutDow = debutDate.getDay();
+    if (debutDow === 5 || debutDow === 6) {
+      toast.error("Coffice est fermé le vendredi et le samedi");
       return;
     }
     const [hDebutH, hDebutM] = formData.heure_debut.split(":").map(Number);

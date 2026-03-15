@@ -32,6 +32,7 @@ const AdminContacts = lazy(() => import("./dashboard/admin/Contacts"));
 const ContactDetail = lazy(() => import("./dashboard/admin/ContactDetail"));
 const ContactCreate = lazy(() => import("./dashboard/admin/ContactCreate"));
 const AdminEmail = lazy(() => import("./dashboard/admin/Email"));
+const AdminCourrier = lazy(() => import("./dashboard/admin/Courrier"));
 
 const AdminGuard = React.memo(() => {
   const { isAdmin } = useAuthStore();
@@ -79,6 +80,7 @@ const Dashboard = () => {
             <Route path="parrainages" element={<AdminParrainages />} />
             <Route path="caisse" element={<Caisse />} />
             <Route path="reports" element={<AdminReports />} />
+            <Route path="courrier" element={<AdminCourrier />} />
             <Route path="email" element={<AdminEmail />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>

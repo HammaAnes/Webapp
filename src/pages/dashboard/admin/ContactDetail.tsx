@@ -367,7 +367,7 @@ export default function ContactDetail() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate(`/dashboard/admin/users/${contact.userId}`)}
+                onClick={() => navigate(`/app/admin/users/${contact.userId}`)}
                 className="mt-4 w-full"
               >
                 Voir le profil utilisateur

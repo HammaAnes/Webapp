@@ -126,6 +126,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         { name: "Utilisateurs", href: "/app/admin/users", icon: Users },
         { name: "Contacts CRM", href: "/app/admin/contacts", icon: UserCircle },
         { name: "Domiciliations", href: "/app/admin/domiciliations", icon: FileText },
+        { name: "Courrier", href: "/app/admin/courrier", icon: Mail },
       ],
     },
     {

@@ -43,11 +43,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = UuidHelper::generate();
         $insertStmt = $db->prepare("
             INSERT INTO abonnements_utilisateurs
-            (id, user_id, abonnement_id, date_debut, date_fin, montant_paye, statut, credits_restants, commentaire, date_debut_souhaitee, entreprise)
-            VALUES (?, ?, ?, ?, ?, ?, 'actif', ?, ?, ?, ?)
+            (id, user_id, abonnement_id, date_debut, date_fin, statut, commentaire, date_debut_souhaitee, entreprise)
+            VALUES (?, ?, ?, ?, ?, 'actif', ?, ?, ?)
         ");
 
-        $creditsRestants = $abonnement['credits_mensuels'] ?? 0;
         $prixAbonnement = floatval($abonnement['prix'] ?? 0);
 
         $db->beginTransaction();
@@ -58,8 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $abonnementId,
             $dateDebut,
             $dateFin,
-            $prixAbonnement,
-            $creditsRestants,
             $commentaire,
             $dateDebutSouhaitee,
             $entreprise
