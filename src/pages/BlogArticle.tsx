@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -22,9 +22,13 @@ import {
   Banknote,
   Lightbulb,
   RefreshCw,
+  Download,
+  AlertTriangle,
+  Info,
 } from "lucide-react";
 import { useSEO } from "../hooks/useSEO";
 import { blogArticles, blogCategories } from "../data/blogArticles";
+import { generateGuidePDF } from "../utils/generateGuidePDF";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -49,6 +53,7 @@ const BlogArticle = () => {
   const { slug } = useParams<{ slug: string }>();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("");
+  const [isPdfGenerating, setIsPdfGenerating] = useState(false);
 
   const article = useMemo(() => {
     return blogArticles.find((a) => a.slug === slug);
@@ -163,6 +168,17 @@ const BlogArticle = () => {
     }
   };
 
+  const handleDownloadPDF = useCallback(async () => {
+    if (!article) return;
+    setIsPdfGenerating(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      generateGuidePDF(article);
+    } finally {
+      setIsPdfGenerating(false);
+    }
+  }, [article]);
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -178,51 +194,174 @@ const BlogArticle = () => {
     }
   };
 
+  const renderInlineText = (text: string): React.ReactNode => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={i}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
   const renderContent = () => {
     const lines = article.content.split("\n");
     const elements: React.ReactNode[] = [];
-    let listItems: string[] = [];
+    let listItems: { text: string; isNested: boolean }[] = [];
     let listType: "ul" | "ol" | null = null;
+    let tableRows: string[][] = [];
+    let tableHeader: string[] = [];
+    let inTable = false;
+    let stepCounter = 0;
 
     const flushList = () => {
-      if (listItems.length > 0 && listType) {
-        const ListTag = listType === "ol" ? "ol" : "ul";
-        elements.push(
-          <ListTag
-            key={`list-${elements.length}`}
-            className={`mb-6 space-y-2 ${listType === "ol" ? "list-decimal" : "list-disc"} list-inside text-gray-600`}
-          >
-            {listItems.map((item, idx) => (
-              <li key={idx} className="leading-relaxed">
-                {item}
-              </li>
-            ))}
-          </ListTag>
-        );
-        listItems = [];
-        listType = null;
-      }
+      if (listItems.length === 0 || !listType) return;
+      const items = [...listItems];
+      listItems = [];
+      const isOrdered = listType === "ol";
+      listType = null;
+
+      elements.push(
+        <div key={`list-${elements.length}`} className="mb-5">
+          {isOrdered ? (
+            <ol className="space-y-2 list-none pl-0">
+              {items.map((item, idx) => (
+                <li key={idx} className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center mt-0.5">
+                    {idx + 1}
+                  </span>
+                  <span className="text-gray-700 leading-relaxed text-base">{renderInlineText(item.text)}</span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <ul className="space-y-2 list-none pl-0">
+              {items.map((item, idx) => (
+                <li key={idx} className={`flex items-start gap-3 ${item.isNested ? "ml-6" : ""}`}>
+                  <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-amber-500 mt-2.5" />
+                  <span className="text-gray-700 leading-relaxed text-base">{renderInlineText(item.text)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      );
+    };
+
+    const flushTable = () => {
+      if (tableRows.length === 0) return;
+      const header = tableHeader.length > 0 ? [...tableHeader] : null;
+      const rows = [...tableRows];
+      tableHeader = [];
+      tableRows = [];
+      inTable = false;
+
+      elements.push(
+        <div key={`table-${elements.length}`} className="mb-6 overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+          <table className="w-full text-sm">
+            {header && (
+              <thead>
+                <tr>
+                  {header.map((cell, ci) => (
+                    <th key={ci} className="px-4 py-3 text-left font-semibold text-white bg-teal-700 text-sm first:rounded-tl-xl last:rounded-tr-xl">
+                      {renderInlineText(cell)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+            )}
+            <tbody>
+              {rows.map((row, ri) => (
+                <tr key={ri} className={ri % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                  {row.map((cell, ci) => (
+                    <td key={ci} className="px-4 py-3 text-gray-700 border-t border-gray-100">
+                      {renderInlineText(cell)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
     };
 
     lines.forEach((line, index) => {
       const trimmed = line.trim();
+
       if (!trimmed) {
         flushList();
+        flushTable();
+        return;
+      }
+
+      if (trimmed.startsWith("> CONSEIL:")) {
+        flushList();
+        flushTable();
+        const text = trimmed.replace("> CONSEIL:", "").trim();
+        elements.push(
+          <div key={index} className="mb-5 flex gap-3 bg-green-50 border border-green-200 rounded-xl p-4">
+            <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+              <Lightbulb className="w-4 h-4 text-green-600" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-green-700 uppercase tracking-wide mb-1">Conseil</p>
+              <p className="text-green-900 text-sm leading-relaxed">{renderInlineText(text)}</p>
+            </div>
+          </div>
+        );
+        return;
+      }
+
+      if (trimmed.startsWith("> ATTENTION:")) {
+        flushList();
+        flushTable();
+        const text = trimmed.replace("> ATTENTION:", "").trim();
+        elements.push(
+          <div key={index} className="mb-5 flex gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
+            <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4 text-red-600" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-red-700 uppercase tracking-wide mb-1">Attention</p>
+              <p className="text-red-900 text-sm leading-relaxed">{renderInlineText(text)}</p>
+            </div>
+          </div>
+        );
+        return;
+      }
+
+      if (trimmed.startsWith("> INFO:")) {
+        flushList();
+        flushTable();
+        const text = trimmed.replace("> INFO:", "").trim();
+        elements.push(
+          <div key={index} className="mb-5 flex gap-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Info className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-blue-700 uppercase tracking-wide mb-1">Information</p>
+              <p className="text-blue-900 text-sm leading-relaxed">{renderInlineText(text)}</p>
+            </div>
+          </div>
+        );
         return;
       }
 
       if (trimmed.startsWith("## ")) {
         flushList();
+        flushTable();
         const title = trimmed.replace("## ", "");
-        const id = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        const id = title.toLowerCase().replace(/[^a-z0-9àâäéèêëîïôùûüç]+/gi, "-");
         elements.push(
           <h2
             key={index}
             id={id}
             className="text-2xl md:text-3xl font-bold text-gray-900 mt-12 mb-6 scroll-mt-24 flex items-center gap-3"
           >
-            <span className="w-1 h-8 bg-amber-500 rounded-full" />
-            {title}
+            <span className="w-1 h-8 bg-amber-500 rounded-full flex-shrink-0" />
+            {renderInlineText(title)}
           </h2>
         );
         return;
@@ -230,61 +369,96 @@ const BlogArticle = () => {
 
       if (trimmed.startsWith("### ")) {
         flushList();
+        flushTable();
         const title = trimmed.replace("### ", "");
-        const id = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-        elements.push(
-          <h3
-            key={index}
-            id={id}
-            className="text-xl md:text-2xl font-semibold text-gray-900 mt-8 mb-4 scroll-mt-24"
-          >
-            {title}
-          </h3>
-        );
+        const id = title.toLowerCase().replace(/[^a-z0-9àâäéèêëîïôùûüç]+/gi, "-");
+        const stepMatch = title.match(/^Étape\s+(\d+)\s*:?\s*(.*)/i);
+        if (stepMatch) {
+          stepCounter++;
+          const stepNum = stepMatch[1];
+          const stepTitle = stepMatch[2].trim();
+          elements.push(
+            <div key={index} id={id} className="scroll-mt-24 mt-8 mb-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-amber-500 text-white font-bold text-sm flex items-center justify-center shadow-sm">
+                  {stepNum}
+                </div>
+                <h3 className="text-xl md:text-2xl font-bold text-gray-900">
+                  {stepTitle}
+                </h3>
+                <span className="hidden md:inline-flex items-center text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">
+                  Étape {stepNum}
+                </span>
+              </div>
+              <div className="h-0.5 bg-gradient-to-r from-amber-400 to-transparent rounded-full" />
+            </div>
+          );
+        } else {
+          elements.push(
+            <h3
+              key={index}
+              id={id}
+              className="text-xl md:text-2xl font-semibold text-gray-900 mt-7 mb-4 scroll-mt-24 flex items-center gap-2"
+            >
+              <span className="w-1 h-5 bg-amber-300 rounded-full flex-shrink-0" />
+              {renderInlineText(title)}
+            </h3>
+          );
+        }
         return;
       }
 
-      if (trimmed.startsWith("**") && trimmed.endsWith("**")) {
+      if (trimmed.startsWith("**") && trimmed.endsWith("**") && !trimmed.slice(2, -2).includes("**")) {
         flushList();
+        flushTable();
         elements.push(
-          <p key={index} className="font-semibold text-gray-900 mb-4 text-lg">
-            {trimmed.replace(/\*\*/g, "")}
+          <p key={index} className="font-semibold text-gray-900 mb-3 text-base">
+            {trimmed.slice(2, -2)}
           </p>
         );
         return;
       }
 
-      if (trimmed.startsWith("- ")) {
-        if (listType !== "ul") {
-          flushList();
-          listType = "ul";
-        }
-        listItems.push(trimmed.replace("- ", ""));
+      if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+        flushTable();
+        if (listType !== "ul") flushList();
+        listType = "ul";
+        listItems.push({ text: trimmed.replace(/^[-*] /, ""), isNested: false });
         return;
       }
 
       if (/^\d+\./.test(trimmed)) {
-        if (listType !== "ol") {
-          flushList();
-          listType = "ol";
-        }
-        listItems.push(trimmed.replace(/^\d+\.\s*/, ""));
+        flushTable();
+        if (listType !== "ol") flushList();
+        listType = "ol";
+        listItems.push({ text: trimmed.replace(/^\d+\.\s*/, ""), isNested: false });
         return;
       }
 
       if (trimmed.startsWith("|")) {
+        flushList();
+        const cells = trimmed.split("|").map((c) => c.trim()).filter(Boolean);
+        if (cells.every((c) => /^[-:]+$/.test(c))) return;
+        if (!inTable) {
+          tableHeader = cells;
+          inTable = true;
+        } else {
+          tableRows.push(cells);
+        }
         return;
       }
 
       flushList();
+      flushTable();
       elements.push(
-        <p key={index} className="text-gray-600 mb-4 leading-relaxed text-lg">
-          {trimmed}
+        <p key={index} className="text-gray-600 mb-4 leading-relaxed text-base">
+          {renderInlineText(trimmed)}
         </p>
       );
     });
 
     flushList();
+    flushTable();
     return elements;
   };
 
@@ -354,13 +528,25 @@ const BlogArticle = () => {
                   </div>
                 </div>
 
-                <button
-                  onClick={handleShare}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-amber-100 text-gray-700 hover:text-amber-700 rounded-xl transition-colors font-medium"
-                >
-                  <Share2 className="w-4 h-4" />
-                  Partager
-                </button>
+                <div className="flex items-center gap-2">
+                  {article.category === "creation" && (
+                    <button
+                      onClick={handleDownloadPDF}
+                      disabled={isPdfGenerating}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:bg-teal-400 text-white rounded-xl transition-colors font-medium"
+                    >
+                      <Download className="w-4 h-4" />
+                      {isPdfGenerating ? "Génération…" : "Télécharger le guide PDF"}
+                    </button>
+                  )}
+                  <button
+                    onClick={handleShare}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-amber-100 text-gray-700 hover:text-amber-700 rounded-xl transition-colors font-medium"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Partager
+                  </button>
+                </div>
               </div>
             </motion.div>
 
@@ -415,20 +601,32 @@ const BlogArticle = () => {
                         <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
                           <CheckCircle2 className="w-6 h-6 text-amber-600" />
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <h4 className="font-bold text-gray-900 mb-2">
                             Cet article vous a été utile ?
                           </h4>
                           <p className="text-gray-600 text-sm mb-4">
-                            Partagez-le avec d'autres entrepreneurs qui pourraient en bénéficier.
+                            Partagez-le avec d'autres entrepreneurs ou téléchargez-le pour le consulter hors ligne.
                           </p>
-                          <button
-                            onClick={handleShare}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-medium transition-colors"
-                          >
-                            <Share2 className="w-4 h-4" />
-                            Partager l'article
-                          </button>
+                          <div className="flex flex-wrap gap-2">
+                            {article.category === "creation" && (
+                              <button
+                                onClick={handleDownloadPDF}
+                                disabled={isPdfGenerating}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:bg-teal-400 text-white rounded-xl text-sm font-medium transition-colors"
+                              >
+                                <Download className="w-4 h-4" />
+                                {isPdfGenerating ? "Génération…" : "Télécharger le guide PDF"}
+                              </button>
+                            )}
+                            <button
+                              onClick={handleShare}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-medium transition-colors"
+                            >
+                              <Share2 className="w-4 h-4" />
+                              Partager l'article
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>

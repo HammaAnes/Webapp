@@ -30,258 +30,408 @@ export const blogCategories = [
 export const blogArticles: BlogArticle[] = [
   {
     id: "1",
-    slug: "guide-complet-creation-entreprise-algerie-2024",
-    title: "Guide complet : Créer son entreprise en Algérie en 2024",
-    excerpt: "Le guide ultime pour créer votre entreprise en Algérie. Toutes les étapes, documents, démarches et conseils pour réussir votre projet entrepreneurial.",
+    slug: "creation-entreprise-morale-algerie-10-etapes",
+    title: "Les 10 étapes de création d'une entreprise morale en Algérie",
+    excerpt: "Le guide officiel et complet pour créer votre société (SARL, EURL, SPA) en Algérie. Les 10 étapes détaillées avec tous les documents requis, les coûts, les délais et les conseils pratiques.",
     featured: true,
     difficulty: "débutant",
     content: `
 ## Introduction
 
-Créer une entreprise en Algérie est une aventure passionnante qui nécessite une bonne préparation. Ce guide complet vous accompagne à chaque étape, de l'idée initiale jusqu'au démarrage de votre activité.
+La volonté, la détermination et la patience sont les principales qualités que doit avoir un entrepreneur.
 
-L'Algérie offre un environnement de plus en plus favorable aux entrepreneurs, avec des procédures simplifiées et des dispositifs d'aide variés. Que vous souhaitiez créer une SARL, une EURL, devenir auto-entrepreneur ou lancer une startup, ce guide vous donnera toutes les clés pour réussir.
+Ce guide s'adresse aux personnes désireuses de créer une entreprise morale en Algérie, c'est-à-dire une société dotée d'une personnalité juridique distincte de celle de ses associés : SARL, EURL, SPA, SPAS, etc.
 
-## Avant de commencer : les questions essentielles
+Avant de vous lancer dans le bain, nous vous conseillons, afin de ne pas perdre de temps et d'énergie, de vous munir des documents suivants pour chaque associé et gérant :
 
-### 1. Validez votre idée de projet
+- 10 copies de votre pièce d'identité nationale ou de votre permis de conduire
+- 06 actes de naissance n°12
+- 04 certificats de résidence
+- 02 casiers judiciaires n°3
 
-Avant de vous lancer dans les démarches administratives, assurez-vous que votre projet est viable :
+> INFO: Si l'entreprise a plusieurs associés et gérants, chacun d'eux doit se munir de l'intégralité des documents mentionnés ci-dessus.
 
-- **Étude de marché** : Analysez la demande, la concurrence et les tendances du secteur
-- **Business plan** : Rédigez un plan d'affaires détaillé avec projections financières sur 3 ans
-- **Test du concept** : Si possible, testez votre idée à petite échelle avant de vous engager
+## Récapitulatif des 10 étapes
 
-### 2. Choisissez votre forme juridique
+> INFO: Les 10 étapes ci-dessous doivent être suivies dans l'ordre. Chaque étape produit des documents nécessaires à l'étape suivante. Une bonne préparation en amont vous fera gagner un temps précieux.
 
-Le choix de la forme juridique est crucial et dépend de plusieurs facteurs :
+- Étape 1 : Dénomination de l'entreprise (CNRC)
+- Étape 2 : Domiciliation auprès d'un notaire
+- Étape 3 : Établissement des statuts juridiques et publication du BOAL
+- Étape 4 : Établissement du registre de commerce (CNRC)
+- Étape 5 : Affiliation auprès de la CASNOS
+- Étape 6 : Établissement du certificat d'existence (Centre des impôts)
+- Étape 7 : Établissement du Numéro d'Identification Fiscale (NIF)
+- Étape 8 : Établissement du Numéro d'Identification Statistique (NIS)
+- Étape 9 : Création d'un compte bancaire
+- Étape 10 : Établissement des registres et livres légaux
 
-| Critère | EURL | SARL | SPA | Auto-entrepreneur |
-|---------|------|------|-----|-------------------|
-| Associés | 1 | 2-50 | 7+ | 1 |
-| Capital minimum | 100 000 DA | 100 000 DA | 1 000 000 DA | Aucun |
-| Responsabilité | Limitée | Limitée | Limitée | Illimitée |
-| Complexité | Moyenne | Moyenne | Élevée | Faible |
+## Étape 1 : Dénomination de l'entreprise
 
-### 3. Évaluez vos besoins financiers
+En Algérie, la dénomination ou la raison sociale est le nom commercial que l'on donne à une entreprise. Elle sera connue en tant que telle auprès de l'administration publique, des clients et des fournisseurs.
 
-Prévoyez un budget pour :
-- Les frais de création (environ 30 000 à 50 000 DA)
-- Le capital social minimum
-- Le fonds de roulement (3 à 6 mois de charges)
-- Les investissements initiaux (matériel, local, stock)
+L'obtention de l'attestation de dénomination peut se faire de deux manières.
 
-## Les 12 étapes de la création d'entreprise
+### Option A : Création en ligne (700 DA)
 
-### Étape 1 : Obtenir la dénomination sociale
+Le CNRC offre la possibilité aux opérateurs économiques de faire la demande de leurs attestations de dénomination en ligne via le portail Sidjilcom.
 
-**Où** : CNRC (Centre National du Registre de Commerce)
+1. Choisir la forme juridique de votre entreprise (SARL, EURL, SPA, etc.)
+2. Se rendre sur le site officiel du CNRC : sidjilcom.cnrc.dz pour vérifier si le nom choisi est disponible
+3. Cliquer sur « Ouvrir une session » puis sur « Créer un compte »
+4. Remplir le formulaire de création de compte
+5. Cliquer sur « Chahada » puis sur « Attestation de dénomination »
+6. Cliquer sur « Nouvelle demande » et remplir le formulaire
+7. Cliquer sur « Envoyer » pour finaliser l'opération
+8. Procéder au paiement par carte CIB ou EDAHABIA (700 DA en ligne, au lieu de 800 DA en guichet)
+9. 24 à 48 heures après, aller dans la rubrique « Chahada » : si le statut est « Validé », imprimer l'attestation de dénomination
 
-**Documents requis** :
-- Formulaire de demande de dénomination
-- Copie de la pièce d'identité du demandeur
+### Option B : Création classique (800 DA)
 
-**Coût** : 200 DA
-**Délai** : Immédiat (sur place)
+1. Choisir la forme juridique de votre entreprise
+2. Vérifier la disponibilité du nom sur sidjilcom.cnrc.dz
+3. Remplir le formulaire « Demande de recherche de dénomination d'une personne morale » (vous pouvez proposer jusqu'à 4 noms différents)
+4. Se rendre au CNRC et demander une « Fiche de versement pour une dénomination » (800 DA)
+5. Se rendre à la banque domiciliataire du CNRC et payer la somme de 800 DA
+6. Revenir au CNRC muni des documents suivants :
+- (01) copie de votre pièce d'identité
+- Formulaire « Demande de recherche de dénomination d'une personne morale » signé
+- Justificatif de paiement des 800 DA remis par la banque
+7. Votre certificat de dénomination sera prêt 48 heures après le dépôt
 
-**Conseils** :
-- Préparez 3 à 5 noms alternatifs au cas où votre premier choix serait déjà pris
-- Évitez les noms trop génériques ou descriptifs
-- Vérifiez que le nom est disponible comme nom de domaine internet
+> CONSEIL: Vérifiez auprès de quelle antenne locale du CNRC relève votre lieu d'activité. Faites toujours une copie de votre justificatif de paiement afin de le faire figurer dans le bilan comptable de votre société dans le poste « compte courant des associés ». Conservez toujours les documents originaux et faites une copie de tous les formulaires déposés.
 
-### Étape 2 : Rédiger les statuts de la société
+> ATTENTION: La vérification de disponibilité d'un nom au CNRC se fait sur l'orthographe ET l'intonation (prononciation). Ainsi, si « mycompany » est déjà pris, « mycompani » sera également rejeté car la prononciation est identique. Préparez plusieurs noms alternatifs.
 
-Pour les sociétés (SARL, EURL, SPA), les statuts doivent contenir :
+> INFO: Le dépôt des dossiers auprès du CNRC se fait le matin et le retrait l'après-midi.
 
-- La dénomination sociale
-- La forme juridique
-- L'objet social (activités de l'entreprise)
-- Le siège social
-- Le capital social et sa répartition
-- La durée de la société (généralement 99 ans)
-- Les modalités de fonctionnement
-- Les pouvoirs des gérants
+## Étape 2 : Domiciliation de l'entreprise auprès d'un notaire
 
-**Conseil** : Faites appel à un notaire ou un avocat pour la rédaction des statuts, surtout si vous avez plusieurs associés.
+En Algérie, la domiciliation de l'entreprise consiste à se rendre auprès d'un notaire pour l'établissement d'un contrat de location ou de propriété au nom de l'entreprise. Les frais de notaire varient en fonction du montant de la location.
 
-### Étape 3 : Domiciliation de l'entreprise
+Les frais de domiciliation selon la Chambre nationale des notaires se calculent comme suit :
+- 1 % du montant du loyer à durée ferme si celui-ci est inférieur à 500 000 DA
+- 0,75 % du montant du loyer à durée ferme si celui-ci est supérieur à 500 000 DA
+- Minimum : 8 000 DA de frais de notaire
 
-Vous avez plusieurs options :
+### Documents requis pour le locataire
 
-**Option 1 : Local commercial**
-- Contrat de location commercial (bail 3-6-9)
-- Plus coûteux mais offre une présence physique
+- (01) acte de naissance du futur gérant de la société et des associés
+- (01) copie de la pièce d'identité du futur gérant et des associés
+- (01) copie du certificat de dénomination de votre entreprise (obtenu à l'étape 1)
 
-**Option 2 : Domiciliation commerciale**
-- Adresse professionnelle sans local
-- À partir de 12 000 DA/mois chez Coffice
-- Idéal pour démarrer avec un budget limité
-- Services inclus : réception courrier, salle de réunion
+### Documents requis pour le propriétaire
 
-**Option 3 : Domicile personnel**
-- Possible pour certaines activités
-- Nécessite l'accord du propriétaire si locataire
+- (01) acte de naissance du propriétaire ou de son représentant légal
+- (01) copie de la pièce d'identité des propriétaires ou du représentant légal
+- Procuration notariée faite par les propriétaires au profit de leur représentant (si applicable)
+- (01) copie de l'acte de propriété du bien et/ou du livret foncier
+- Assurance catastrophe naturelle (CATNAT) du bien
 
-### Étape 4 : Dépôt du capital social
+Une fois le contrat de location signé auprès du notaire, vous pouvez le récupérer soit le jour même, soit dans un délai maximum de 48 heures.
 
-**Où** : Banque de votre choix
+> CONSEIL: Demandez au notaire de mentionner le délai de préavis dans le contrat de location (il ne doit pas dépasser 6 mois). Demandez la facture à votre notaire afin de faire figurer la dépense dans le bilan de votre société. Le montant du loyer représente un coût fixe pour votre entreprise : prévoyez au moins 18 mois de loyer dans votre budget de démarrage.
 
-**Procédure** :
-1. Ouvrir un compte bancaire bloqué au nom de "Société en formation"
-2. Déposer le montant du capital social
-3. Obtenir l'attestation de dépôt de fonds
+> ATTENTION: Certains services d'impôts n'acceptent plus les nouveaux dossiers fiscaux en l'absence du livret foncier du bien. Avant de vous engager dans une location, vérifiez que le propriétaire dispose du livret foncier. Si vous êtes propriétaire du bien et que vous le louez à votre entreprise, le montant déclaré doit être proche de la réalité du marché pour éviter un redressement fiscal.
 
-**Documents requis** :
-- Statuts de la société
-- Pièces d'identité des associés
-- Attestation de domiciliation
-- Formulaire de la banque
+> INFO: Des espaces de coworking, comme Coffice au Mohammadia Mall d'Alger, vous offrent la possibilité de domicilier l'adresse de votre entreprise à des prix abordables, avec tous les services inclus.
 
-**Délai** : 1 à 3 jours ouvrables
+## Étape 3 : Établissement des statuts juridiques et publication du BOAL
 
-### Étape 5 : Enregistrement des statuts
+En Algérie, les statuts juridiques représentent un contrat entre les associés qui détermine les règles de fonctionnement de l'entreprise, les relations entre les associés et leurs obligations envers la société et les tiers.
 
-**Où** : Direction des Impôts (inspection d'enregistrement)
+### Avant de vous rendre chez le notaire
 
-**Documents requis** :
-- 4 exemplaires des statuts signés
-- Copie de la dénomination CNRC
-- Attestation de dépôt de capital
-- Timbre fiscal
+1. Se rendre sur le site officiel du CNRC (sidjilcom.cnrc.dz) pour choisir vos codes d'activités. Un code d'activité est un code à 6 chiffres qui définit l'activité principale de l'entreprise et ses éventuelles activités secondaires. Exemple : 605021 correspond à « Agence de communication ».
+2. Rédiger un procès-verbal de l'Assemblée Générale Extraordinaire (AGEX) relatif à la création de l'entreprise (peut être fait par le notaire le jour de la signature des statuts, moyennant supplément)
+3. Établir une lettre d'engagement auprès de votre Commissaire aux Comptes (CAC) — coût minimum : 40 000 DA
 
-**Coût** : Variable selon le capital (environ 1% du capital + frais fixes)
-**Délai** : Immédiat à 48h
+Les frais de notaire relatifs à l'établissement des statuts juridiques sont de 15 000 DA minimum.
 
-### Étape 6 : Publication dans un journal d'annonces légales
+### Documents à remettre au notaire
 
-**Où** : Journal d'annonces légales agréé (BAOSEM, El Moudjahid, etc.)
+- (01) acte de naissance du futur gérant et des associés
+- (01) certificat de résidence du futur gérant et des associés
+- (01) copie de la pièce d'identité du futur gérant et des associés
+- (01) copie du certificat de dénomination de votre entreprise
+- Casier judiciaire n°3 du futur gérant et des associés
+- Le procès-verbal de l'AGEX relatif à la création de l'entreprise
+- La liste des codes d'activité à inclure dans les statuts
+- La lettre d'engagement de votre Commissaire aux Comptes (CAC)
+- Le montant du capital social de votre entreprise (varie selon la forme juridique)
 
-**Contenu de l'annonce** :
-- Création de société
-- Dénomination et forme juridique
-- Objet social
-- Siège social
-- Capital social
-- Durée de la société
-- Nom du gérant
+### Publication du BOAL
 
-**Coût** : 15 000 à 25 000 DA
-**Délai** : Publication dans les 7 jours
+Au moment de la récupération des statuts juridiques (le jour même ou sous 48 heures), le notaire mettra à votre disposition 06 exemplaires du Bulletin Officiel des Annonces Légales (BOAL) — 03 en français et 03 en arabe. Ce document doit obligatoirement être publié auprès du CNRC.
 
-### Étape 7 : Inscription au registre de commerce
+La publication peut se faire par le notaire (moyennant supplément) ou par vous-même :
 
-**Où** : CNRC de votre wilaya
+1. Se rendre au CNRC et demander une fiche de versement pour la publication du BOAL (droits minimum : 7 610 DA)
+2. Se rendre à la banque domiciliataire du CNRC et payer la somme de 7 610 DA
+3. Revenir au CNRC muni des documents suivants :
+- (01) copie de la pièce d'identité du représentant légal
+- (01) copie des statuts juridiques
+- (02) exemplaires du BOAL (01 en français et 01 en arabe)
+- (01) copie du contrat de location
+- Justificatif de paiement des 7 610 DA remis par la banque
+4. La publication du BOAL se fera en 24 heures maximum
 
-**Documents requis** :
-- Formulaire d'inscription (disponible au CNRC)
-- Statuts enregistrés (2 exemplaires)
-- Attestation de dépôt de capital
-- Extrait de naissance du gérant (- de 3 mois)
-- Copie CNI du gérant
-- Attestation de domiciliation
-- Extrait de casier judiciaire du gérant (- de 3 mois)
-- Publication au BOAL
-- 2 photos d'identité
+> CONSEIL: Faites une copie de tous les justificatifs de paiement (facture, reçu de banque) afin de les faire figurer dans le bilan de votre société dans le poste « compte courant des associés ».
 
-**Coût** : 4 000 DA (création) + timbres fiscaux
-**Délai** : 24h à 72h
+> ATTENTION: Certaines activités nécessitent l'obtention d'agréments ou d'autorisations (elles apparaissent en rouge et en vert lors de votre recherche sur le site du CNRC). Lisez attentivement la définition et les conditions d'obtention de chaque code d'activité pour éviter toute surprise. La présence de tous les associés est obligatoire lors de la signature des statuts, sauf si une tierce personne dispose d'une procuration de pouvoir.
 
-### Étape 8 : Obtention du NIF et NIS
+> INFO: Le dépôt des dossiers auprès du CNRC se fait le matin et le retrait l'après-midi.
 
-**NIF (Numéro d'Identification Fiscale)** :
-- Délivré automatiquement par les impôts
-- Disponible sous 48h après inscription au RC
+## Étape 4 : Établissement du registre de commerce (CNRC)
 
-**NIS (Numéro d'Identification Statistique)** :
-- Délivré par l'ONS
-- Souvent obtenu en même temps que le NIF
+Le registre de commerce en Algérie est la pièce d'identité de votre entreprise, délivrée par le CNRC. Il est doté d'un numéro unique et regroupe les informations essentielles : dénomination, forme juridique, siège social, capital social, noms des associés, codes d'activités, etc.
 
-### Étape 9 : Affiliation aux organismes sociaux
+### Option A : Création en ligne
 
-**CASNOS (pour le gérant non salarié)** :
-- Inscription obligatoire dans les 10 jours suivant le début d'activité
-- Cotisation trimestrielle
+En avril 2021, le CNRC a lancé un portail électronique permettant aux opérateurs économiques de demander leur registre de commerce en ligne.
 
-**CNAS (si vous avez des salariés)** :
-- Obtention du numéro employeur
-- Déclaration des salariés
-- Cotisations mensuelles
+1. Se rendre sur le portail : cnrcinfo.cnrc.dz
+2. Cliquer sur « Accès aux formalités »
+3. Cliquer sur « Enregistrement en ligne » pour personne morale, puis sur « Entreprise ou société morale »
+4. Créer un compte ou ouvrir une session existante
+5. Remplir le formulaire de création
+6. Cliquer sur « Immatriculation »
+7. Remplir les formulaires de chaque étape jusqu'au paiement (carte CIB ou EDAHABIA, entre 9 072 DA et 10 112 DA). Avoir en sa possession les documents scannés suivants : carte d'identité du gérant et des associés, certificat de dénomination, contrat de location, statuts juridiques, BOAL en français et en arabe, actes de naissance, casiers judiciaires, reçu du timbre fiscal de 4 000 DA
+8. Une fois le paiement validé, cliquer sur « Envoyer » pour transmettre le reçu au CNRC
+9. 24 à 48 heures après, vérifier le statut dans la rubrique « Suivi » ; si validé, imprimer l'accusé de réception
 
-### Étape 10 : Ouverture du compte bancaire définitif
+> ATTENTION: À compter de la date d'établissement de l'accusé de réception, vous aurez 10 jours maximum pour vous présenter à votre antenne CNRC muni des documents de l'étape 7 et de l'accusé de réception.
 
-Avec votre extrait de registre de commerce, transformez le compte bloqué en compte courant professionnel.
+### Option B : Création classique
 
-**Documents généralement requis** :
-- Extrait de registre de commerce
-- Statuts enregistrés
-- NIF
-- Pièces d'identité des représentants légaux
+1. Se rendre à la recette des impôts de votre commune et payer 4 000 DA pour le timbre fiscal
+2. Se rendre au CNRC et demander une fiche de versement pour la création d'un registre de commerce (droits : entre 9 472 DA et 10 112 DA) et récupérer le formulaire d'inscription en 2 exemplaires
+3. Se rendre à la banque domiciliataire du CNRC et payer les droits d'inscription
+4. Revenir au CNRC muni des documents suivants :
+- (02) formulaires d'inscription au registre de commerce dûment remplis et signés par le gérant
+- Reçu de paiement du timbre fiscal de 4 000 DA
+- Reçu de versement des droits d'inscription
+- (01) acte de naissance du gérant et des associés
+- (01) copie de la pièce d'identité du gérant et des associés
+- (01) copie du certificat de dénomination
+- Casier judiciaire n°3 du gérant et des associés
+- (01) copie du BOAL publié en français et en arabe
+- (02) copies des statuts juridiques
+- (02) copies du contrat de location ou acte de propriété
+- (01) copie de l'agrément ou autorisation si activité réglementée
 
-### Étape 11 : Formalités complémentaires
+Votre registre de commerce sera prêt 48 heures après le dépôt.
 
-Selon votre activité, vous pourriez avoir besoin de :
+> CONSEIL: Vérifiez auprès de quelle antenne CNRC relève votre lieu d'activité. Une fois le registre de commerce en votre possession, vous pouvez faire fabriquer le cachet de votre entreprise (1 500 à 2 500 DA) en présentant le registre original et une copie, ainsi que votre pièce d'identité.
 
-- **Agrément** : Certaines activités réglementées
-- **Licence** : Import/export, débits de boissons, etc.
-- **Autorisation d'exercice** : Professions libérales
-- **Carte de commerçant** : Pour les activités commerciales
+> ATTENTION: Les droits d'inscription peuvent varier selon le capital social et le nombre de codes d'activités. Une majoration de 240 DA est appliquée pour chaque code d'activité supplémentaire. Certaines administrations peuvent demander une copie certifiée de votre registre de commerce (800 DA la copie certifiée).
 
-### Étape 12 : Mise en conformité comptable
+> INFO: Le dépôt des dossiers auprès du CNRC se fait le matin et le retrait l'après-midi.
 
-- Choisissez un comptable agréé
-- Ouvrez les livres comptables obligatoires
-- Mettez en place votre système de facturation
+## Étape 5 : Affiliation auprès de la CASNOS
 
-## Récapitulatif des coûts
+La Caisse Nationale de Sécurité Sociale des Non-salariés (CASNOS), créée par décret exécutif 92/07 du 04 janvier 1992, est chargée de la protection sociale des catégories professionnelles non-salariées. L'affiliation permet de cotiser pour la retraite et de bénéficier d'une carte CHIFA.
 
-| Poste | Coût estimé |
-|-------|-------------|
-| Dénomination CNRC | 200 DA |
-| Rédaction statuts | 5 000 - 20 000 DA |
-| Enregistrement impôts | 10 000 - 30 000 DA |
-| Publication BOAL | 15 000 - 25 000 DA |
-| Inscription RC | 4 000 DA + timbres |
-| Frais bancaires | 5 000 - 10 000 DA |
-| **TOTAL** | **40 000 - 90 000 DA** |
+En Algérie, le dossier d'affiliation doit être déposé auprès de l'agence ou de l'antenne de la CASNOS dont relève votre lieu d'activité dans les 10 jours qui suivent la création de l'entreprise (à partir de la date d'établissement du registre de commerce).
 
-*Hors capital social et honoraires professionnels*
+Toute cotisation doit être payée entre le 1er janvier et le 30 juin de l'année courante. La cotisation minimale est de 32 400 DA pour la première année.
 
-## Délais indicatifs
+### Documents requis pour l'affiliation CASNOS
 
-| Étape | Délai |
-|-------|-------|
-| Dénomination | Immédiat |
-| Rédaction statuts | 1-3 jours |
-| Dépôt capital | 1-3 jours |
-| Enregistrement | 1-2 jours |
-| Publication | 7 jours |
-| Inscription RC | 1-3 jours |
-| NIF/NIS | 2-5 jours |
-| **TOTAL** | **15-25 jours** |
+- Formulaire d'affiliation dûment renseigné et signé
+- Formulaire de déclaration annuelle d'activité et d'assiette de cotisation (si vous souhaitez payer vos cotisations dès le jour du dépôt)
+- (01) acte de naissance des associés
+- (01) copie des pièces d'identité des associés
+- (01) copie des statuts juridiques
+- (01) copie du registre de commerce
 
-## Conseils pour réussir
+> CONSEIL: Faites une copie des justificatifs de paiement afin de les faire figurer dans le bilan de votre société dans le poste « compte courant des associés ». Conservez toujours les originaux.
 
-1. **Anticipez** : Préparez tous vos documents à l'avance
-2. **Faites-vous accompagner** : Un expert-comptable ou un conseiller juridique peut vous faire gagner du temps
-3. **Domiciliez-vous intelligemment** : La domiciliation commerciale est une excellente option pour démarrer
-4. **Gardez des copies** : Conservez des copies de tous vos documents
-5. **Respectez les délais** : Les retards peuvent entraîner des pénalités
+> ATTENTION: Le défaut de déclaration d'activité expose l'employeur à une pénalité de 5 000 DA majorée de 20 % par mois de retard. Si l'entreprise a été créée entre le 1er juillet et le 31 décembre, la cotisation doit être payée dans les 10 jours suivant le début d'activité. Au-delà, une majoration de retard sera appliquée.
 
-## Besoin d'aide ?
+> INFO: Pour plus d'informations, consultez le site web de la CASNOS : casnos.com.dz
 
-Coffice vous accompagne dans votre création d'entreprise avec :
-- **Domiciliation commerciale** au Mohammadia Mall (CNRC au 5ème étage, juste au-dessus de nous !)
-- **Espaces de travail** flexibles pour développer votre activité
-- **Accompagnement administratif** pour vos démarches
+## Étape 6 : Établissement du certificat d'existence
 
-Contactez-nous pour en savoir plus.
+En Algérie, le certificat d'existence est un document établi par le service des impôts, comportant un code d'article fiscal unique. Avec ce document, votre entreprise aura une existence fiscale auprès des services des impôts.
+
+Tout nouveau contribuable exerçant une activité imposable doit se déclarer dans les 30 jours suivant la date de début de son activité (calculés à partir de la date d'établissement du registre de commerce). Au-delà, une pénalité de retard sera appliquée.
+
+### Étape 6a : Obtention du code d'article fiscal (Inspection des impôts)
+
+1. Se rendre auprès de l'inspection des impôts pour l'établissement du code d'article fiscal
+
+Documents requis à l'inspection des impôts :
+- (02) copies du contrat de location
+- (02) copies des statuts juridiques
+- (01) copie du registre de commerce
+- (01) copie du BOAL en arabe et en français
+- (01) copie de la pièce d'identité du gérant
+
+L'obtention du code d'article fiscal peut se faire le jour même ou 24 heures après.
+
+### Étape 6b : Obtention du certificat d'existence (Centre des impôts — CDI)
+
+2. Une fois le code d'article fiscal obtenu, se rendre au Centre des Impôts (CDI) dont relève votre lieu d'activité
+
+Documents requis au CDI :
+- Formulaire d'« existence G8 » en arabe ou en français, dûment renseigné et cacheté par le gérant
+- Spécimen de signature du gérant légalisé auprès de la Mairie
+- Code d'article fiscal
+- (01) extrait de naissance du gérant et des associés
+- (01) certificat de résidence du gérant et des associés
+- (01) copie des statuts juridiques
+- (01) copie du registre de commerce
+- (01) copie du contrat de location ou de l'acte de propriété
+- (01) copie du BOAL en arabe et en français
+
+Votre certificat d'existence sera prêt au bout d'une semaine.
+
+> CONSEIL: Conservez toujours les documents originaux et faites une copie de tous les formulaires déposés.
+
+> INFO: Généralement, les jours de réception au niveau des inspections des impôts sont le dimanche et le mardi. S'il n'existe pas de CDI dans votre wilaya, la procédure se fera entièrement au niveau de votre inspection des impôts. Site web de la direction des impôts : mfdgi.gov.dz
+
+## Étape 7 : Établissement du Numéro d'Identification Fiscale (NIF)
+
+Le numéro d'identification fiscale (NIF) est un identifiant unique à 15 chiffres établi par le service des impôts.
+
+Depuis le 08 mai 2016, les entreprises doivent procéder à la demande du NIF via le portail de la direction des impôts : nifenligne.mfdgi.gov.dz
+
+### Procédure d'obtention du NIF (personne morale)
+
+1. Remplir le formulaire de demande en ligne du NIF (environ 10 minutes)
+2. Une fois la demande faite, imprimer obligatoirement l'accusé de réception (nécessaire pour le suivi et l'obtention du NIF)
+3. Une fois le NIF prêt (délai d'une semaine minimum), le faire signer et cacheter auprès de l'inspection des impôts en présentant :
+- (02) copies du NIF imprimées depuis le site web
+- (01) copie de l'accusé de réception
+- (01) copie du certificat d'existence (C20)
+- (01) copie de la pièce d'identité du gérant
+
+Le délai de récupération du NIF signé et cacheté auprès du Centre des Impôts est de 48 heures maximum.
+
+> CONSEIL: Pour la demande du NIF en ligne, ayez en votre possession le numéro de votre registre de commerce et votre code d'article fiscal inscrit sur votre certificat d'existence.
+
+## Étape 8 : Établissement du Numéro d'Identification Statistique (NIS)
+
+Le numéro d'identification statistique (NIS) est un numéro unique attribué à toutes les entreprises par l'Office National des Statistiques (ONS). Toutes les entreprises sont dans l'obligation d'avoir un NIS.
+
+Depuis avril 2021, l'établissement et l'attribution du NIS se fait en ligne. Consultez la nouvelle procédure sur le site de l'ONS.
+
+### Documents requis pour l'ONS
+
+- Formulaire NIS dûment renseigné et signé par le gérant
+- (01) copie de la carte fiscale (NIF) ou du certificat d'existence
+- (01) copie du registre de commerce ou de l'agrément
+- (01) copie de la carte d'identité du gérant ou du représentant légal
+
+Le délai d'obtention du NIS est d'une semaine.
+
+> CONSEIL: Conservez toujours les documents originaux et faites une copie de tous les formulaires déposés.
+
+> INFO: Le dépôt du dossier se fait le matin.
+
+## Étape 9 : Création d'un compte bancaire
+
+Toutes les entreprises sont dans l'obligation d'avoir un compte bancaire. Les associés ne doivent absolument pas utiliser leurs comptes privés pour les transactions commerciales de leur entreprise. Cette procédure permet une séparation totale entre les comptes privés des associés et ceux de l'entreprise.
+
+### Documents requis pour l'ouverture de compte
+
+- Formulaire de création de compte bancaire dûment renseigné et signé (à récupérer auprès de votre banque)
+- Spécimen de signature dûment renseigné et signé (à récupérer auprès de votre banque)
+- Acte de naissance du gérant et des associés
+- Certificat de résidence du gérant et des associés
+- Copie de la pièce d'identité du gérant et des associés
+- Contrat de location ou acte de propriété
+- Copie des statuts juridiques
+- Copie du Numéro d'Identification Fiscale (NIF)
+- Copie du Numéro d'Identification Statistique (NIS)
+- Carte magnétique (pour les entreprises exerçant une activité d'import/export)
+- Copie du registre de commerce
+
+L'ouverture du compte bancaire se fait le jour même pour la majorité des banques.
+
+> CONSEIL: Après l'ouverture de votre compte, versez le montant du capital social dans le compte bancaire de votre entreprise. Faites une copie de tous les justificatifs de paiement afin de les faire figurer dans le bilan de votre société. Conservez toujours les documents originaux.
+
+> ATTENTION: La liste des documents peut varier d'une banque à l'autre. Certaines banques enverront une lettre de vérification à l'adresse du siège social. Si cette lettre n'arrive pas, présentez-vous auprès d'un huissier de justice pour obtenir un procès-verbal de constatation des lieux (délai : 2 jours minimum, coût : 5 000 DA minimum).
+
+## Étape 10 : Établissement des registres et livres légaux
+
+Les livres légaux sont souvent présentés sous forme de cahiers ou de classeurs qui doivent être présentés en cas de contrôle (fiscal, inspection du travail, hygiène et sécurité, etc.). Ils permettent aux contrôleurs d'avoir un état de suivi depuis la création de l'entreprise.
+
+Toutes les entreprises sont dans l'obligation d'établir les livres légaux. Ils sont disponibles dans toutes les papeteries à un prix variant entre 180 DA et 350 DA.
+
+### Livres à faire coter et parapher auprès du Tribunal
+
+- Le livre de paie
+- Le livre journal général (dit également livre centralisateur)
+- Le livre d'inventaires
+
+Documents requis par le Tribunal :
+- (01) copie du registre de commerce
+- (01) copie du certificat d'existence (C20)
+- Timbre fiscal de 3 000 DA par livre (disponible dans les bureaux de poste ou dans les recettes des impôts)
+
+Les livres seront prêts en une semaine maximum.
+
+### Livres à faire coter et parapher auprès de l'Inspection du Travail
+
+- Livre du congé annuel
+- Livre mouvement du personnel
+- Livre du personnel étranger
+- Livre des vérifications techniques des installations et équipements industriels
+- Livre d'hygiène et sécurité et de médecine du travail
+- Livre des accidents du travail
+- Livre des mises en demeure de l'inspection du travail
+
+Documents requis par l'Inspection du Travail :
+- (01) copie du registre de commerce
+- (01) copie du certificat d'existence (C20)
+- (01) acte de naissance du gérant
+- (01) copie de la pièce d'identité du gérant
+
+Les livres seront prêts en une semaine maximum.
+
+> CONSEIL: Faites une copie des justificatifs de paiement afin de les faire figurer dans le bilan de votre société dans le poste « compte courant des associés ». Conservez toujours les documents originaux.
+
+> ATTENTION: Vous devez également vous munir du livre des procès-verbaux, qui doit être signé et cacheté par le gérant de l'entreprise. L'entreprise doit aussi avoir en sa possession le grand livre (qui n'existe pas sous support papier).
+
+## Récapitulatif des coûts et délais
+
+| Étape | Organisme | Coût estimé | Délai |
+|-------|-----------|-------------|-------|
+| Dénomination | CNRC | 700 DA (en ligne) / 800 DA (guichet) | 24-48 h |
+| Domiciliation (notaire) | Notaire | 8 000 DA minimum | Jour même ou 48 h |
+| Statuts juridiques | Notaire | 15 000 DA minimum | Jour même ou 48 h |
+| Publication BOAL | CNRC | 7 610 DA minimum | 24 h |
+| Registre de commerce | CNRC | 9 072 à 10 112 DA + timbre 4 000 DA | 48 h |
+| Affiliation CASNOS | CASNOS | 32 400 DA (cotisation annuelle) | Immédiat |
+| Certificat d'existence | Centre des impôts | Gratuit | 1 semaine |
+| NIF | Direction des impôts | Gratuit | 1 semaine |
+| NIS | ONS | Gratuit | 1 semaine |
+| Livres légaux | Tribunal + Inspection du travail | 180 à 350 DA/livre + timbres 3 000 DA | 1 semaine |
+
+**Coût total estimé (hors capital social et honoraires CAC) : entre 70 000 DA et 100 000 DA**
+
+## Conseils essentiels pour réussir votre création
+
+1. Préparez tous vos documents en avance et faites toujours des copies de chaque document et formulaire déposé
+2. Conservez systématiquement les originaux sur vous lors de chaque démarche
+3. Faites une copie de tous vos justificatifs de paiement afin de les faire figurer dans le bilan de votre société dans le poste « compte courant des associés »
+4. Vérifiez auprès de quelle antenne locale du CNRC relève votre lieu d'activité avant de vous déplacer
+5. Respectez les délais légaux (10 jours pour la CASNOS, 30 jours pour le certificat d'existence) pour éviter les pénalités
+
+## Coffice vous accompagne dans votre domiciliation
+
+Coffice vous offre la possibilité de domicilier votre entreprise au Mohammadia Mall, 4ème étage, Bureau 1178, Alger — à quelques pas du CNRC. Nos services incluent la réception de courrier, la notification par email et l'accès ponctuel à nos espaces de travail et salles de réunion.
+
+Contactez-nous pour en savoir plus sur nos formules de domiciliation.
     `,
     category: "creation",
     author: "Coffice",
     publishedAt: "2024-12-20",
-    updatedAt: "2024-12-28",
-    readTime: 25,
-    tags: ["création", "entreprise", "guide", "démarches", "CNRC", "registre de commerce"],
+    updatedAt: "2025-05-08",
+    readTime: 30,
+    tags: ["création", "entreprise morale", "SARL", "EURL", "CNRC", "BOAL", "NIF", "NIS", "CASNOS", "notaire", "registre de commerce", "domiciliation", "statuts juridiques"],
   },
   {
     id: "2",
@@ -2463,6 +2613,531 @@ L'IFU et le statut d'auto-entrepreneur sont d'excellentes solutions pour démarr
     publishedAt: "2024-11-25",
     readTime: 16,
     tags: ["IFU", "auto-entrepreneur", "fiscalité", "régime simplifié", "création"],
+  },
+  {
+    id: "11",
+    slug: "creation-entreprise-personne-physique-algerie",
+    title: "Créer une entreprise en tant que personne physique en Algérie",
+    excerpt: "Guide complet pour créer votre entreprise individuelle en Algérie (commerçant, artisan, profession libérale). Toutes les étapes, documents requis, coûts et délais.",
+    featured: true,
+    difficulty: "débutant",
+    content: `
+## Introduction
+
+En Algérie, une entreprise individuelle (personne physique) est une activité exercée à titre personnel par un individu sans séparation entre son patrimoine professionnel et son patrimoine personnel. C'est la forme la plus simple pour lancer une activité commerciale, artisanale ou libérale.
+
+Contrairement à la personne morale (société), la personne physique n'a pas de capital social minimum, pas d'associés, et les formalités de création sont plus légères. En revanche, le gérant est responsable des dettes de l'entreprise sur ses biens personnels.
+
+Avant de vous lancer dans les démarches, munissez-vous de :
+
+- 10 copies de votre pièce d'identité nationale ou de votre permis de conduire
+- 06 actes de naissance n°12
+- 04 certificats de résidence
+- 02 casiers judiciaires n°3
+
+> INFO: Le guide ci-dessous couvre la création d'une entreprise individuelle classique (personne physique). Si vous souhaitez bénéficier du régime fiscal simplifié IFU, consultez notre guide sur la micro-entreprise et l'auto-entrepreneur.
+
+## Étape 1 : Dénomination de l'entreprise
+
+En Algérie, la dénomination de la personne physique est généralement le nom et prénom du gérant, suivi de la mention de son activité. Il est cependant possible de choisir un nom commercial distinct.
+
+### Option A : Création en ligne (700 DA)
+
+1. Choisir la forme juridique : personne physique
+2. Vérifier la disponibilité du nom sur sidjilcom.cnrc.dz
+3. Créer un compte sur le portail Sidjilcom
+4. Cliquer sur « Chahada » puis « Attestation de dénomination »
+5. Remplir et soumettre la demande
+6. Payer par carte CIB ou EDAHABIA (700 DA)
+7. Récupérer l'attestation sous 24 à 48 heures
+
+### Option B : Création classique (800 DA)
+
+1. Vérifier la disponibilité du nom sur sidjilcom.cnrc.dz
+2. Remplir le formulaire « Demande de recherche de dénomination d'une personne physique »
+3. Se rendre au CNRC et demander une fiche de versement (800 DA)
+4. Payer à la banque domiciliataire du CNRC
+5. Revenir au CNRC avec : copie de pièce d'identité, formulaire signé, justificatif de paiement
+6. Certificat disponible sous 48 heures
+
+> CONSEIL: Vous pouvez proposer jusqu'à 4 noms différents dans le formulaire. Vérifiez auprès de quelle antenne CNRC relève votre lieu d'activité.
+
+> ATTENTION: La vérification se fait sur l'orthographe et l'intonation. Un nom phonétiquement identique à un nom déjà pris sera rejeté.
+
+## Étape 2 : Domiciliation de l'entreprise
+
+La domiciliation de votre activité est obligatoire. Vous avez plusieurs options :
+
+### Option 1 : Local commercial
+
+Se rendre chez un notaire pour établir un contrat de bail commercial. Les frais de notaire sont calculés sur la base du montant du loyer :
+- 1 % du loyer à durée ferme si inférieur à 500 000 DA
+- 0,75 % si supérieur à 500 000 DA
+- Minimum : 8 000 DA
+
+Documents requis pour le locataire :
+- (01) acte de naissance
+- (01) copie de la pièce d'identité
+- (01) copie du certificat de dénomination
+
+Documents requis pour le propriétaire :
+- (01) acte de naissance
+- (01) copie de la pièce d'identité
+- (01) copie de l'acte de propriété et/ou livret foncier
+- Assurance catastrophe naturelle (CATNAT) du bien
+
+### Option 2 : Domiciliation commerciale
+
+Les espaces de coworking comme Coffice vous permettent de domicilier votre activité à moindre coût avec tous les services inclus (réception de courrier, notification, accès aux espaces de travail).
+
+### Option 3 : Domicile personnel
+
+Possible pour certaines activités. Nécessite l'accord du propriétaire si vous êtes locataire.
+
+> INFO: Certaines activités (professions libérales, import/export) nécessitent un local d'une certaine superficie. Certains services d'impôts n'acceptent plus les dossiers en l'absence du livret foncier du bien : vérifiez ce point avant tout engagement.
+
+## Étape 3 : Établissement du registre de commerce (CNRC)
+
+Pour les personnes physiques exerçant une activité commerciale, l'inscription au registre de commerce est obligatoire.
+
+### Option A : Création en ligne
+
+1. Se rendre sur cnrcinfo.cnrc.dz
+2. Cliquer sur « Accès aux formalités » puis « Enregistrement en ligne »
+3. Sélectionner « Personne physique »
+4. Créer un compte ou ouvrir une session existante
+5. Remplir les formulaires jusqu'au paiement (carte CIB ou EDAHABIA)
+6. Documents scannés nécessaires : pièce d'identité, certificat de dénomination, contrat de location, acte de naissance, casier judiciaire, reçu du timbre fiscal de 4 000 DA
+7. Envoyer le dossier et suivre le statut dans la rubrique « Suivi »
+8. Si validé, se présenter à l'antenne CNRC sous 10 jours avec les originaux
+
+### Option B : Création classique
+
+1. Se rendre à la recette des impôts de votre commune et payer 4 000 DA pour le timbre fiscal
+2. Se rendre au CNRC et demander la fiche de versement et les formulaires (2 exemplaires)
+3. Payer les droits d'inscription à la banque (entre 4 736 DA et 6 336 DA selon l'activité)
+4. Revenir au CNRC muni des documents suivants :
+- (02) formulaires d'inscription dûment remplis et signés
+- Reçu du timbre fiscal de 4 000 DA
+- Reçu des droits d'inscription
+- (01) acte de naissance
+- (01) copie de la pièce d'identité
+- (01) copie du certificat de dénomination
+- Casier judiciaire n°3
+- (01) copie du contrat de location ou de l'acte de propriété
+- (01) copie de l'agrément ou autorisation si activité réglementée
+
+Votre registre de commerce sera prêt 48 heures après le dépôt.
+
+> CONSEIL: Vérifiez auprès de quelle antenne CNRC relève votre lieu d'activité. Une fois le registre obtenu, faites fabriquer le cachet de votre entreprise (1 500 à 2 500 DA).
+
+> INFO: Le dépôt des dossiers se fait le matin et le retrait l'après-midi.
+
+## Étape 4 : Affiliation auprès de la CASNOS
+
+L'affiliation à la CASNOS est obligatoire dans les 10 jours suivant la date d'établissement du registre de commerce.
+
+Documents requis :
+- Formulaire d'affiliation dûment renseigné et signé
+- (01) acte de naissance
+- (01) copie de la pièce d'identité
+- (01) copie du registre de commerce
+
+La cotisation minimale est de 32 400 DA pour la première année.
+
+> ATTENTION: Le défaut de déclaration expose l'employeur à une pénalité de 5 000 DA majorée de 20 % par mois de retard. Les 10 jours sont calculés à partir de la date d'établissement du registre de commerce.
+
+## Étape 5 : Établissement du certificat d'existence
+
+Tout nouveau contribuable doit se déclarer dans les 30 jours suivant le début d'activité.
+
+### Étape 5a : Obtention du code d'article fiscal (Inspection des impôts)
+
+Documents requis :
+- (02) copies du contrat de location
+- (01) copie du registre de commerce
+- (01) copie de la pièce d'identité
+
+L'obtention du code d'article fiscal se fait le jour même ou sous 24 heures.
+
+### Étape 5b : Obtention du certificat d'existence (Inspection des impôts)
+
+Pour les personnes physiques soumises au régime forfaitaire, la procédure complète se fait à l'inspection des impôts.
+
+Documents requis :
+- Formulaire d'« existence G8 » dûment renseigné et cacheté
+- Spécimen de signature légalisé auprès de la Mairie
+- Code d'article fiscal
+- (01) extrait de naissance
+- (01) certificat de résidence
+- (01) copie du registre de commerce
+- (01) copie du contrat de location ou de l'acte de propriété
+
+Le certificat d'existence sera prêt au bout d'une semaine.
+
+> INFO: Les jours de réception à l'inspection des impôts sont généralement le dimanche et le mardi.
+
+## Étape 6 : Établissement du Numéro d'Identification Fiscale (NIF)
+
+Le NIF est un identifiant unique à 15 chiffres. La demande se fait en ligne sur nifenligne.mfdgi.gov.dz.
+
+1. Remplir le formulaire en ligne (environ 10 minutes)
+2. Imprimer l'accusé de réception
+3. Une fois le NIF prêt (délai : 1 semaine minimum), le faire signer et cacheter à l'inspection des impôts avec :
+- (02) copies du NIF imprimées
+- (01) copie de l'accusé de réception
+- (01) copie du certificat d'existence (C20)
+- (01) copie de la pièce d'identité
+
+> CONSEIL: Ayez en votre possession votre numéro de registre de commerce et votre code d'article fiscal avant de remplir le formulaire en ligne.
+
+## Étape 7 : Établissement du Numéro d'Identification Statistique (NIS)
+
+Le NIS est obligatoire pour toutes les entreprises. Depuis avril 2021, la procédure se fait entièrement en ligne sur le site de l'ONS.
+
+Documents requis :
+- Formulaire NIS dûment renseigné et signé
+- (01) copie du NIF ou du certificat d'existence
+- (01) copie du registre de commerce
+- (01) copie de la pièce d'identité
+
+Délai d'obtention : une semaine.
+
+## Étape 8 : Création d'un compte bancaire professionnel
+
+Bien que non obligatoire pour une personne physique au régime IFU, l'ouverture d'un compte professionnel est fortement recommandée pour séparer les finances personnelles et professionnelles.
+
+Documents généralement requis :
+- Formulaire de la banque
+- Spécimen de signature
+- Acte de naissance
+- Certificat de résidence
+- Copie de la pièce d'identité
+- Registre de commerce
+- NIF et NIS
+- Contrat de location ou acte de propriété
+
+## Étape 9 : Établissement des livres légaux
+
+Même les entreprises individuelles sont tenues d'établir certains livres légaux.
+
+Livres à faire coter et parapher auprès du Tribunal (si vous avez des salariés) :
+- Le livre de paie
+- Le livre journal général
+- Le livre d'inventaires
+
+Documents requis : copie du registre de commerce, copie du certificat d'existence (C20), timbre fiscal de 3 000 DA par livre.
+
+Livres à faire coter auprès de l'Inspection du Travail (si vous avez des salariés) :
+- Livre du congé annuel
+- Livre mouvement du personnel
+- Livre des accidents du travail
+
+> CONSEIL: Faites une copie de tous les justificatifs de paiement. Conservez l'ensemble des originaux.
+
+## Récapitulatif des coûts et délais
+
+| Étape | Organisme | Coût estimé | Délai |
+|-------|-----------|-------------|-------|
+| Dénomination | CNRC | 700 DA (en ligne) / 800 DA (guichet) | 24-48 h |
+| Domiciliation (notaire) | Notaire | 8 000 DA minimum | Jour même ou 48 h |
+| Registre de commerce | CNRC | 4 736 à 6 336 DA + timbre 4 000 DA | 48 h |
+| Affiliation CASNOS | CASNOS | 32 400 DA (cotisation annuelle) | Immédiat |
+| Certificat d'existence | Inspection des impôts | Gratuit | 1 semaine |
+| NIF | Direction des impôts | Gratuit | 1 semaine |
+| NIS | ONS | Gratuit | 1 semaine |
+| Livres légaux (si salariés) | Tribunal | 180 à 350 DA/livre + timbres | 1 semaine |
+
+**Coût total estimé (hors cotisation CASNOS) : entre 15 000 DA et 25 000 DA**
+
+## Conseils essentiels
+
+1. Conservez toujours les originaux sur vous lors de chaque démarche administrative
+2. Faites une copie de tous les formulaires déposés (ils servent d'accusé de réception)
+3. Faites une copie de tous les justificatifs de paiement et conservez-les pour le bilan
+4. Respectez les délais légaux pour éviter les pénalités (10 jours pour CASNOS, 30 jours pour le certificat d'existence)
+5. Vérifiez si votre activité nécessite un agrément ou une autorisation avant de démarrer
+
+## Coffice vous accompagne
+
+Coffice vous offre des solutions de domiciliation et des espaces de travail flexibles au Mohammadia Mall, Alger. Idéal pour lancer votre activité sans les contraintes d'un bail commercial classique.
+    `,
+    category: "creation",
+    author: "Coffice",
+    publishedAt: "2025-05-08",
+    readTime: 22,
+    tags: ["création", "personne physique", "entreprise individuelle", "commerçant", "artisan", "CNRC", "registre de commerce", "CASNOS", "NIF", "NIS"],
+  },
+  {
+    id: "12",
+    slug: "creation-micro-entreprise-auto-entrepreneur-algerie",
+    title: "Créer une micro-entreprise (auto-entrepreneur) en Algérie",
+    excerpt: "Guide complet pour lancer votre activité en tant qu'auto-entrepreneur en Algérie. Conditions, démarches simplifiées, régime fiscal IFU et conseils pratiques.",
+    featured: true,
+    difficulty: "débutant",
+    content: `
+## Introduction
+
+Le statut d'auto-entrepreneur est la forme la plus accessible pour lancer une activité en Algérie. Il s'adresse aux personnes souhaitant exercer une activité commerciale, artisanale ou de services à titre individuel, avec un chiffre d'affaires limité et une gestion administrative allégée.
+
+Ce statut bénéficie du régime fiscal de l'Impôt Forfaitaire Unique (IFU), qui remplace l'ensemble des impôts et taxes habituels par un taux unique appliqué sur le chiffre d'affaires.
+
+> INFO: L'auto-entrepreneur est une personne physique. Il est responsable des dettes de son activité sur l'ensemble de ses biens personnels. Si vous souhaitez protéger votre patrimoine, envisagez la création d'une EURL (personne morale).
+
+## Conditions d'éligibilité au statut d'auto-entrepreneur
+
+Vous pouvez créer une micro-entreprise si vous exercez l'une des activités suivantes :
+
+- Activités commerciales (achat-revente, négoce)
+- Activités artisanales (menuiserie, plomberie, électricité, couture, etc.)
+- Prestations de services (consulting, informatique, graphisme, formation, etc.)
+- Professions libérales non réglementées
+
+### Plafonds de chiffre d'affaires pour rester en IFU
+
+| Type d'activité | Plafond annuel |
+|-----------------|----------------|
+| Activités commerciales | 8 000 000 DA |
+| Prestations de services | 5 000 000 DA |
+| Activités artisanales | 5 000 000 DA |
+
+> ATTENTION: Si votre chiffre d'affaires dépasse ces seuils, vous serez automatiquement basculé vers le régime réel d'imposition (IBS/IRG + TVA + TAP). Anticipez cette évolution avec un comptable.
+
+## Documents à préparer
+
+Avant de commencer les démarches, munissez-vous de :
+
+- 10 copies de votre pièce d'identité nationale ou permis de conduire
+- 06 actes de naissance n°12
+- 04 certificats de résidence
+- 02 casiers judiciaires n°3
+
+## Étape 1 : Dénomination de l'activité
+
+La dénomination de l'auto-entrepreneur est généralement le nom et prénom du gérant, suivi de la mention de son activité. Il est possible d'ajouter un nom commercial.
+
+### Option A : En ligne (700 DA)
+
+1. Se rendre sur sidjilcom.cnrc.dz pour vérifier la disponibilité du nom
+2. Créer un compte sur le portail Sidjilcom
+3. Aller dans « Chahada » puis « Attestation de dénomination »
+4. Remplir et soumettre la demande
+5. Payer par carte CIB ou EDAHABIA (700 DA)
+6. Récupérer l'attestation sous 24 à 48 heures
+
+### Option B : En guichet (800 DA)
+
+1. Vérifier la disponibilité du nom sur sidjilcom.cnrc.dz
+2. Remplir le formulaire « Demande de recherche de dénomination d'une personne physique »
+3. Se rendre au CNRC pour la fiche de versement (800 DA)
+4. Payer à la banque domiciliataire du CNRC
+5. Revenir au CNRC avec : copie de pièce d'identité, formulaire signé, justificatif de paiement
+6. Certificat disponible sous 48 heures
+
+> CONSEIL: Préparez jusqu'à 4 noms alternatifs. La vérification au CNRC porte sur l'orthographe ET l'intonation.
+
+## Étape 2 : Domiciliation de l'activité
+
+Vous devez avoir une adresse professionnelle pour immatriculer votre activité. Plusieurs options s'offrent à vous.
+
+### Option 1 : Local commercial (via notaire)
+
+Frais de notaire : minimum 8 000 DA, calculés sur la base du loyer.
+
+Documents requis pour le locataire :
+- (01) acte de naissance
+- (01) copie de la pièce d'identité
+- (01) copie du certificat de dénomination
+
+Documents requis pour le propriétaire :
+- (01) acte de naissance
+- (01) copie de la pièce d'identité
+- (01) copie de l'acte de propriété et/ou livret foncier
+- Assurance catastrophe naturelle (CATNAT) du bien
+
+### Option 2 : Domiciliation commerciale (espace de coworking)
+
+Une solution idéale pour démarrer avec un budget réduit. Des espaces comme Coffice vous offrent une adresse professionnelle légale, la réception et la gestion de votre courrier, et l'accès à des salles de réunion.
+
+### Option 3 : Domicile personnel
+
+Possible pour les activités de services ne nécessitant pas de local spécifique. Nécessite l'accord du propriétaire si vous êtes locataire.
+
+> INFO: Pour les activités d'import/export ou les professions libérales, un local d'une certaine superficie peut être exigé.
+
+## Étape 3 : Inscription au registre de commerce (CNRC)
+
+L'inscription au registre de commerce est obligatoire pour les activités commerciales et artisanales.
+
+### En ligne
+
+1. Se rendre sur cnrcinfo.cnrc.dz
+2. « Accès aux formalités » → « Enregistrement en ligne » → « Personne physique »
+3. Créer un compte et remplir les formulaires jusqu'au paiement (entre 4 736 DA et 6 336 DA + timbre fiscal de 4 000 DA)
+4. Documents scannés nécessaires : pièce d'identité, certificat de dénomination, contrat de location, acte de naissance, casier judiciaire, reçu timbre fiscal
+5. Se présenter à l'antenne CNRC sous 10 jours après validation
+
+### En guichet
+
+1. Payer 4 000 DA de timbre fiscal à la recette des impôts de votre commune
+2. Récupérer la fiche de versement au CNRC et payer les droits d'inscription à la banque
+3. Déposer le dossier complet au CNRC :
+- (02) formulaires d'inscription remplis et signés
+- Reçu du timbre fiscal de 4 000 DA
+- Reçu des droits d'inscription
+- (01) acte de naissance
+- (01) copie de pièce d'identité
+- (01) copie du certificat de dénomination
+- Casier judiciaire n°3
+- (01) copie du contrat de location ou acte de propriété
+- (01) copie de l'agrément si activité réglementée
+
+Délai : 48 heures.
+
+> INFO: Certaines activités de services ne nécessitent pas d'inscription au registre de commerce. Consultez le site du CNRC pour vérifier.
+
+## Étape 4 : Affiliation à la CASNOS
+
+L'affiliation à la CASNOS est obligatoire dans les 10 jours suivant le début d'activité (date du registre de commerce).
+
+Documents requis :
+- Formulaire d'affiliation dûment renseigné et signé
+- (01) acte de naissance
+- (01) copie de la pièce d'identité
+- (01) copie du registre de commerce
+
+Cotisation minimale : 32 400 DA pour la première année.
+
+> ATTENTION: Le défaut de déclaration expose à une pénalité de 5 000 DA majorée de 20 % par mois de retard.
+
+## Étape 5 : Déclaration à l'inspection des impôts (Régime IFU)
+
+Tout nouveau contribuable doit se déclarer dans les 30 jours suivant le début d'activité.
+
+### Obtention du code d'article fiscal
+
+Se rendre à l'inspection des impôts avec :
+- (02) copies du contrat de location
+- (01) copie du registre de commerce
+- (01) copie de la pièce d'identité
+
+Délai : jour même ou 24 heures.
+
+### Obtention du certificat d'existence (régime IFU)
+
+Pour les auto-entrepreneurs en IFU, la procédure complète se fait à l'inspection des impôts.
+
+Documents requis :
+- Formulaire d'« existence G8 » dûment renseigné
+- Spécimen de signature légalisé auprès de la Mairie
+- Code d'article fiscal
+- (01) extrait de naissance
+- (01) certificat de résidence
+- (01) copie du registre de commerce
+- (01) copie du contrat de location
+
+Délai : une semaine.
+
+## Étape 6 : Déclaration et paiement de l'IFU
+
+### Comprendre l'IFU
+
+L'Impôt Forfaitaire Unique remplace l'ensemble des impôts et taxes suivants :
+- Impôt sur le revenu global (IRG)
+- Taxe sur la valeur ajoutée (TVA)
+- Taxe sur l'activité professionnelle (TAP)
+
+### Taux de l'IFU
+
+| Activité | Taux |
+|----------|------|
+| Production et vente de biens | 5 % |
+| Prestations de services | 12 % |
+
+### Obligations déclaratives
+
+- Déclaration annuelle unique : avant le 31 janvier de l'année suivante
+- Paiement spontané accompagnant la déclaration
+- Formulaire G50 simplifié
+
+> CONSEIL: Même si votre chiffre d'affaires est nul, vous êtes tenu de déposer votre déclaration annuelle pour éviter les pénalités. Conservez toutes vos factures d'achats et de ventes.
+
+> ATTENTION: Si vous dépassez les plafonds de chiffre d'affaires autorisés, vous serez automatiquement soumis au régime réel. Cette transition nécessite une comptabilité complète et l'intervention d'un expert-comptable. Anticipez ce passage plutôt que de le subir.
+
+## Étape 7 : Obtention du NIF
+
+La demande du NIF se fait en ligne sur nifenligne.mfdgi.gov.dz.
+
+1. Remplir le formulaire en ligne (10 minutes)
+2. Imprimer l'accusé de réception
+3. Une fois le NIF prêt (délai : 1 semaine), le faire signer à l'inspection des impôts avec :
+- (02) copies du NIF
+- (01) copie de l'accusé de réception
+- (01) copie du certificat d'existence (C20)
+- (01) copie de la pièce d'identité
+
+## Étape 8 : Obtention du NIS
+
+La demande du NIS se fait en ligne sur le site de l'ONS (depuis avril 2021).
+
+Documents requis :
+- Formulaire NIS renseigné et signé
+- (01) copie du NIF ou certificat d'existence
+- (01) copie du registre de commerce
+- (01) copie de la pièce d'identité
+
+Délai : une semaine.
+
+## Avantages et inconvénients du statut d'auto-entrepreneur
+
+| Avantages | Inconvénients |
+|-----------|---------------|
+| Création rapide et peu coûteuse | Responsabilité illimitée sur le patrimoine personnel |
+| Gestion administrative simplifiée | Plafond de chiffre d'affaires |
+| Régime fiscal allégé (IFU) | Difficulté à obtenir certains crédits bancaires |
+| Possibilité de cumuler avec un emploi salarié | Crédibilité moindre auprès de grandes entreprises |
+| Pas de capital social minimum | Impossible de s'associer |
+| Comptabilité simplifiée | Passage obligatoire au régime réel si seuils dépassés |
+
+## Récapitulatif des coûts et délais
+
+| Étape | Organisme | Coût estimé | Délai |
+|-------|-----------|-------------|-------|
+| Dénomination | CNRC | 700 DA (en ligne) / 800 DA (guichet) | 24-48 h |
+| Domiciliation (notaire) | Notaire | 8 000 DA minimum | Jour même ou 48 h |
+| Registre de commerce | CNRC | 4 736 à 6 336 DA + timbre 4 000 DA | 48 h |
+| Affiliation CASNOS | CASNOS | 32 400 DA (cotisation annuelle) | Immédiat |
+| Certificat d'existence | Inspection des impôts | Gratuit | 1 semaine |
+| NIF | Direction des impôts | Gratuit | 1 semaine |
+| NIS | ONS | Gratuit | 1 semaine |
+
+**Coût total estimé (hors cotisation CASNOS) : entre 15 000 DA et 25 000 DA**
+
+## Questions fréquentes
+
+**Puis-je exercer plusieurs activités avec un seul registre de commerce ?**
+Oui, vous pouvez inclure plusieurs codes d'activités dans votre registre. Une majoration de 240 DA est appliquée pour chaque code supplémentaire.
+
+**Dois-je émettre des factures ?**
+Oui, vous êtes tenu d'émettre des factures pour toutes vos ventes et prestations. La facture doit mentionner votre numéro de registre de commerce, votre NIF, et la mention « Exonéré de TVA — Régime IFU ».
+
+**Puis-je embaucher des salariés en tant qu'auto-entrepreneur ?**
+Oui, mais cela implique des obligations supplémentaires : déclaration à la CNAS, paiement des cotisations patronales et salariales, tenue du livre de paie, etc.
+
+**Que se passe-t-il si je dépasse les seuils IFU ?**
+Vous basculerez automatiquement vers le régime réel d'imposition l'année suivante. Il est impératif d'anticiper cette transition avec un expert-comptable.
+
+## Coffice vous accompagne dans votre lancement
+
+Coffice propose des solutions de domiciliation d'entreprise abordables et clé en main au Mohammadia Mall, Alger. En domiciliant votre micro-entreprise chez nous, vous bénéficiez d'une adresse professionnelle légale, de la réception et de la gestion de votre courrier, et d'un accès à nos espaces de travail et salles de réunion.
+
+Contactez-nous pour découvrir nos formules adaptées aux auto-entrepreneurs.
+    `,
+    category: "creation",
+    author: "Coffice",
+    publishedAt: "2025-05-08",
+    readTime: 20,
+    tags: ["auto-entrepreneur", "micro-entreprise", "IFU", "création", "CNRC", "CASNOS", "personne physique", "régime simplifié", "démarches"],
   },
 ];
 
