@@ -13,6 +13,14 @@ import type {
 } from "../types";
 import { logger } from "../utils/logger";
 
+function toLocalISOString(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  );
+}
+
 type ApiRecord = Record<string, unknown>;
 
 export const espaceAdapter = {
@@ -57,9 +65,16 @@ export const espaceAdapter = {
 function parseDate(value: unknown): Date {
   if (value instanceof Date && !isNaN(value.getTime())) return value;
   if (typeof value === "string" && value.trim()) {
-    const normalized = value.replace(" ", "T");
-    const d = new Date(normalized);
-    if (!isNaN(d.getTime())) return d;
+    const str = value.trim();
+    const hasTimezone = /Z$|[+-]\d{2}:?\d{2}$/.test(str);
+    if (hasTimezone) {
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) return d;
+    }
+    const normalized = str.replace(" ", "T");
+    const withoutTz = normalized.replace(/Z$|[+-]\d{2}:?\d{2}$/, "");
+    const local = new Date(withoutTz);
+    if (!isNaN(local.getTime())) return local;
   }
   throw new Error(`parseDate: valeur invalide "${value}"`);
 }
@@ -118,14 +133,16 @@ export const reservationAdapter = {
     if (reservation.userId !== undefined) data.user_id = reservation.userId;
     if (reservation.espaceId !== undefined) data.espace_id = reservation.espaceId;
     if (reservation.dateDebut !== undefined) {
-      data.date_debut = reservation.dateDebut instanceof Date
-        ? reservation.dateDebut.toISOString()
-        : new Date(reservation.dateDebut as string).toISOString();
+      const d = reservation.dateDebut instanceof Date
+        ? reservation.dateDebut
+        : new Date(reservation.dateDebut as string);
+      data.date_debut = toLocalISOString(d);
     }
     if (reservation.dateFin !== undefined) {
-      data.date_fin = reservation.dateFin instanceof Date
-        ? reservation.dateFin.toISOString()
-        : new Date(reservation.dateFin as string).toISOString();
+      const d = reservation.dateFin instanceof Date
+        ? reservation.dateFin
+        : new Date(reservation.dateFin as string);
+      data.date_fin = toLocalISOString(d);
     }
     if (reservation.statut !== undefined) data.statut = reservation.statut;
     if (reservation.notes !== undefined) data.notes = reservation.notes;

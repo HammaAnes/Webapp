@@ -29,6 +29,14 @@ import type {
 } from "../types";
 import type { TypeEntreprise } from "../types";
 
+function toLocalISOString(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  );
+}
+
 interface AppState {
   users: User[];
   espaces: Espace[];
@@ -304,8 +312,8 @@ export const useAppStore = create<AppState>()(
         try {
           const response = await apiClient.createReservation({
             espaceId: data.espaceId,
-            dateDebut: data.dateDebut.toISOString(),
-            dateFin: data.dateFin.toISOString(),
+            dateDebut: toLocalISOString(data.dateDebut),
+            dateFin: toLocalISOString(data.dateFin),
             participants: data.participants,
             notes: data.notes,
             codePromo: data.codePromo,
