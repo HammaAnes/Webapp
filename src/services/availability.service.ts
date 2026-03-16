@@ -76,9 +76,9 @@ export async function fetchMonthAvailability(
       days: (data.days || []).map(mapApiDayToAvailability),
       blocages: data.blocages || [],
       isOpenSpace: data.is_open_space ?? false,
-      capacity: data.capacity ?? 1,
+      capacity: data.capacity ?? 0,
     };
   }
 
-  return { days: [], blocages: [], isOpenSpace: false, capacity: 1 };
+  return { days: [], blocages: [], isOpenSpace: false, capacity: 0 };
 }

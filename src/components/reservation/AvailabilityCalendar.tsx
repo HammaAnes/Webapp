@@ -301,7 +301,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                   title={
                     isOpenSpace
                       ? dayInfo.seatsTaken != null
-                        ? `${dayInfo.seatsTaken}/${dayInfo.capacity} places réservées`
+                        ? `${dayInfo.seatsTaken} occupées / ${dayInfo.capacity} places disponibles`
                         : ""
                       : dayInfo.status === "available"
                       ? "Disponible"
@@ -330,7 +330,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
           {isOpenSpace ? (
             <div className="flex items-center gap-1.5">
               <Users className="w-3 h-3 text-gray-400" />
-              <span className="text-xs text-gray-500">X/{spaceCapacity} = places réservées</span>
+              <span className="text-xs text-gray-500">Occupées / {spaceCapacity} places total</span>
             </div>
           ) : (
             <>

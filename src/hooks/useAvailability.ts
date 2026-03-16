@@ -109,7 +109,7 @@ export function useAvailability({
     return eachDayOfInterval({ start: calStart, end: calEnd });
   }, [currentMonth]);
 
-  const capacity = monthData?.capacity ?? spaceCapacity;
+  const capacity = (monthData?.capacity && monthData.capacity > 0) ? monthData.capacity : spaceCapacity;
 
   const dayAvailabilities = useMemo((): DayAvailability[] => {
     const today = startOfDay(new Date());
