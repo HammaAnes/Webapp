@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, User, Phone, ArrowRight, Gift, Building, Briefcase } from "lucide-react";
+import { Mail, User, Phone, ArrowRight, Gift, Building, Briefcase, CheckCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { Input, PasswordInput, Button, Checkbox, GoogleButton } from "../components/ui";
@@ -17,6 +17,13 @@ interface RegisterForm extends UserForm {
   acceptTerms: boolean;
 }
 
+const BENEFITS = [
+  "Reservez des espaces de travail en quelques clics",
+  "Gerez vos reservations et abonnements",
+  "Demandez une domiciliation legale en ligne",
+  "Recevez et suivez votre courrier professionnel",
+];
+
 const Register = () => {
   useSEO({ noIndex: true });
   const { register: registerUser, loginWithGoogle, user } = useAuthStore();
@@ -24,9 +31,7 @@ const Register = () => {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
   const [validatingReferral, setValidatingReferral] = React.useState(false);
-  const [referralValid, setReferralValid] = React.useState<boolean | null>(
-    null,
-  );
+  const [referralValid, setReferralValid] = React.useState<boolean | null>(null);
 
   const {
     register,
@@ -87,7 +92,7 @@ const Register = () => {
         codeParrainage: data.codeParrainage,
       });
     } catch {
-      // error is already handled by authStore toast
+      // handled by authStore
     } finally {
       setIsLoading(false);
     }
@@ -98,32 +103,95 @@ const Register = () => {
     try {
       await loginWithGoogle(credential);
     } catch {
-      // error is already handled by authStore toast
+      // handled by authStore
     } finally {
       setIsGoogleLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-2xl w-full"
-      >
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-block">
-            <Logo className="h-16 mx-auto" />
-          </Link>
-        </div>
+    <div className="min-h-screen flex">
+      <div className="hidden lg:flex lg:w-[42%] relative overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url(/salle-reunion.jpeg)" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/80 to-accent/70" />
 
-        <div className="card p-8">
-          <h2 className="text-2xl font-display font-bold text-primary mb-2 text-center">
-            Inscription
-          </h2>
-          <p className="text-gray-600 text-center mb-8">
-            Créez votre compte Coffice
-          </p>
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full">
+          <div>
+            <Link to="/">
+              <Logo variant="light" className="h-10" />
+            </Link>
+          </div>
+
+          <div className="space-y-8">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h1 className="text-4xl font-bold text-white leading-tight">
+                Rejoignez
+                <br />
+                Coffice
+              </h1>
+              <p className="mt-4 text-white/80 text-lg leading-relaxed max-w-md">
+                Creez votre compte et accedez a un espace de travail moderne au
+                coeur d'Alger.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="space-y-3"
+            >
+              {BENEFITS.map((benefit, i) => (
+                <motion.div
+                  key={benefit}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 + i * 0.1 }}
+                  className="flex items-center gap-3"
+                >
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <span className="text-white/90 text-sm">{benefit}</span>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+
+          <div className="text-white/50 text-sm">
+            Mohammadia Mall, 4eme etage, Alger
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 flex items-start lg:items-center justify-center p-6 sm:p-8 bg-gray-50/50 overflow-y-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="w-full max-w-[520px] py-8 lg:py-4"
+        >
+          <div className="lg:hidden text-center mb-8">
+            <Link to="/" className="inline-block">
+              <Logo className="h-12 mx-auto" />
+            </Link>
+          </div>
+
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Creer votre compte
+            </h2>
+            <p className="mt-2 text-gray-500">
+              Inscrivez-vous pour commencer a utiliser Coffice
+            </p>
+          </div>
 
           <GoogleButton
             onSuccess={handleGoogleSuccess}
@@ -133,19 +201,19 @@ const Register = () => {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+              <div className="w-full border-t border-gray-200"></div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Ou avec email</span>
+            <div className="relative flex justify-center">
+              <span className="px-4 bg-gray-50/50 text-gray-400 text-sm">ou avec email</span>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Prénom"
+                label="Prenom"
                 icon={<User className="w-5 h-5" />}
-                placeholder="Prénom"
+                placeholder="Prenom"
                 autoComplete="given-name"
                 {...register("prenom", validationRules.prenom)}
                 error={errors.prenom?.message}
@@ -174,7 +242,7 @@ const Register = () => {
             />
 
             <Input
-              label="Téléphone"
+              label="Telephone"
               type="tel"
               icon={<Phone className="w-5 h-5" />}
               placeholder="+213 55 123 4567"
@@ -188,7 +256,7 @@ const Register = () => {
               error={errors.telephone?.message}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
                 label="Entreprise"
                 icon={<Building className="w-5 h-5" />}
@@ -207,24 +275,25 @@ const Register = () => {
               />
             </div>
 
-            <PasswordInput
-              label="Mot de passe"
-              placeholder="••••••••"
-              autoComplete="new-password"
-              showStrength
-              {...register("password", validationRules.password)}
-              error={errors.password?.message}
-              required
-            />
-
-            <PasswordInput
-              label="Confirmer le mot de passe"
-              placeholder="••••••••"
-              autoComplete="new-password"
-              {...register("passwordConfirm", validationRules.passwordConfirm(password))}
-              error={errors.passwordConfirm?.message}
-              required
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <PasswordInput
+                label="Mot de passe"
+                placeholder="Min. 8 caracteres"
+                autoComplete="new-password"
+                showStrength
+                {...register("password", validationRules.password)}
+                error={errors.password?.message}
+                required
+              />
+              <PasswordInput
+                label="Confirmer"
+                placeholder="Retapez le mot de passe"
+                autoComplete="new-password"
+                {...register("passwordConfirm", validationRules.passwordConfirm(password))}
+                error={errors.passwordConfirm?.message}
+                required
+              />
+            </div>
 
             <div className="relative">
               <Input
@@ -232,7 +301,7 @@ const Register = () => {
                 type="text"
                 icon={<Gift className="w-5 h-5" />}
                 placeholder="COFFICE-AHM123"
-                helperText="Entrez le code de parrainage de votre ami pour bénéficier d'un bonus"
+                helperText="Entrez le code d'un ami pour recevoir un bonus de 3000 DA"
                 {...register("codeParrainage", {
                   onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
                     const value = e.target.value.toUpperCase();
@@ -248,35 +317,35 @@ const Register = () => {
                   validatingReferral ? (
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
                   ) : referralValid === true ? (
-                    <span className="text-green-600 text-xs font-medium">✓ Valide</span>
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
                   ) : referralValid === false ? (
-                    <span className="text-red-600 text-xs font-medium">✗ Invalide</span>
+                    <span className="text-red-500 text-xs font-medium">Invalide</span>
                   ) : null
                 }
               />
               {referralValid === true && (
-                <p className="text-sm text-green-600 mt-2">
-                  Code valide - Bonus de 3000 DA à votre première réservation
+                <p className="text-xs text-emerald-600 mt-1.5 font-medium">
+                  Code valide - Bonus de 3000 DA a votre premiere reservation
                 </p>
               )}
             </div>
 
             <Checkbox
               label={
-                <span className="text-sm text-gray-700">
+                <span className="text-sm text-gray-600">
                   J'accepte les{" "}
                   <Link
                     to="/mentions-legales"
-                    className="text-accent hover:text-accent/80 font-medium"
+                    className="text-accent hover:text-accent-dark font-medium"
                   >
                     conditions d'utilisation
                   </Link>{" "}
                   et la{" "}
                   <Link
                     to="/mentions-legales"
-                    className="text-accent hover:text-accent/80 font-medium"
+                    className="text-accent hover:text-accent-dark font-medium"
                   >
-                    politique de confidentialité
+                    politique de confidentialite
                   </Link>
                 </span>
               }
@@ -285,34 +354,32 @@ const Register = () => {
               required
             />
 
-            <Button type="submit" loading={isLoading} className="w-full">
-              Créer mon compte
-              <ArrowRight className="ml-2 w-5 h-5" />
+            <Button type="submit" loading={isLoading} className="w-full" size="lg">
+              Creer mon compte
+              <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
-              Déjà un compte ?{" "}
-              <Link
-                to="/connexion"
-                className="text-accent hover:text-accent/80 font-medium"
-              >
-                Se connecter
-              </Link>
-            </p>
-          </div>
-        </div>
+          <p className="mt-6 text-center text-gray-500 text-sm">
+            Deja un compte ?{" "}
+            <Link
+              to="/connexion"
+              className="text-accent font-semibold hover:text-accent-dark transition-colors"
+            >
+              Se connecter
+            </Link>
+          </p>
 
-        <div className="text-center mt-6">
-          <Link
-            to="/"
-            className="text-gray-600 hover:text-primary transition-colors"
-          >
-            ← Retour à l'accueil
-          </Link>
-        </div>
-      </motion.div>
+          <div className="lg:hidden text-center mt-6">
+            <Link
+              to="/"
+              className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Retour a l'accueil
+            </Link>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 };
