@@ -8,7 +8,7 @@
  * Crontab: 0 8 * * * php /path/to/api/cron/subscription_reminders.php
  */
 
-require_once __DIR__ . '/../../api/bootstrap.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 echo "====================================\n";
 echo "Coffice — Rappels Abonnements\n";
@@ -31,8 +31,8 @@ try {
             SELECT
                 ua.*,
                 u.email, u.prenom, u.nom,
-                a.nom AS plan_nom, a.prix_mensuel
-            FROM user_abonnements ua
+                a.nom AS plan_nom, a.prix AS prix_mensuel
+            FROM abonnements_utilisateurs ua
             INNER JOIN users u ON ua.user_id = u.id
             INNER JOIN abonnements a ON ua.abonnement_id = a.id
             WHERE ua.statut = 'actif'

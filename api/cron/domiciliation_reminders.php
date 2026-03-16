@@ -8,7 +8,7 @@
  * Crontab: 30 8 * * * php /path/to/api/cron/domiciliation_reminders.php
  */
 
-require_once __DIR__ . '/../../api/bootstrap.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 echo "====================================\n";
 echo "Coffice — Rappels Domiciliations\n";

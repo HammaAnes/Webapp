@@ -395,8 +395,12 @@ try {
         if ($clientName) {
             AdminNotifier::newReservation($reservation, $clientName, $clientEmail);
         }
+
+        if (!empty($clientEmail)) {
+            Mailer::sendReservationConfirmation($clientEmail, $reservation);
+        }
     } catch (Exception $notifErr) {
-        Logger::warn('Admin notification error', ['error' => $notifErr->getMessage()]);
+        Logger::warning('Notification error on reservation create', ['error' => $notifErr->getMessage()]);
     }
 
     Response::success($reservation, "Reservation creee avec succes", 201);

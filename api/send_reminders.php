@@ -8,8 +8,7 @@
  * Crontab: 0 9 * * * php /path/to/api/send_reminders.php
  */
 
-require_once __DIR__ . '/../api/bootstrap.php';
-require_once __DIR__ . '/../api/utils/Mailer.php';
+require_once __DIR__ . '/bootstrap.php';
 
 echo "====================================\n";
 echo "Coffice - Envoi de Rappels Automatiques\n";
@@ -48,12 +47,17 @@ try {
         echo "  Date: " . date('d/m/Y H:i', strtotime($reservation['date_debut'])) . "\n";
 
         try {
-            $emailSent = Mailer::sendReservationReminder(
+            $queueId = EmailQueue::enqueue(
+                'reservation_reminder',
                 $reservation['email'],
-                $reservation
+                'Rappel – Réservation demain à ' . date('H:i', strtotime($reservation['date_debut'])),
+                'reservation-reminder',
+                ['reservation' => $reservation],
+                $reservation['user_id'],
+                2
             );
 
-            if ($emailSent) {
+            if ($queueId) {
                 $updateStmt = $db->prepare('
                     UPDATE reservations
                     SET rappel_envoye = 1, updated_at = NOW()
@@ -75,19 +79,19 @@ try {
                     'reservation'
                 ]);
 
-                echo "  ✓ Rappel envoyé avec succès\n\n";
+                echo "  ✓ Rappel mis en file d'attente (ID: " . substr($queueId, 0, 8) . ")\n\n";
                 $sent++;
 
-                Logger::info('Reminder sent', [
+                Logger::info('Reminder queued', [
                     'reservation_id' => $reservation['id'],
                     'user_id' => $reservation['user_id'],
-                    'email' => $reservation['email']
+                    'email' => $reservation['email'],
+                    'queue_id' => $queueId
                 ]);
             } else {
-                echo "  ✗ Échec de l'envoi\n\n";
-                $errors++;
+                echo "  - Rappel ignoré (doublon ou préférence)\n\n";
 
-                Logger::error('Failed to send reminder', [
+                Logger::info('Reminder skipped', [
                     'reservation_id' => $reservation['id'],
                     'email' => $reservation['email']
                 ]);
@@ -96,7 +100,7 @@ try {
             echo "  ✗ Erreur: " . $e->getMessage() . "\n\n";
             $errors++;
 
-            Logger::error('Exception while sending reminder', [
+            Logger::error('Exception while queuing reminder', [
                 'reservation_id' => $reservation['id'],
                 'error' => $e->getMessage()
             ]);

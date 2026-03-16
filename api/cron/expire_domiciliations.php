@@ -6,9 +6,7 @@
  */
 
 define('CRON_CONTEXT', true);
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../utils/UuidHelper.php';
-require_once __DIR__ . '/../utils/Mailer.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 $startTime = microtime(true);
 $log = [];

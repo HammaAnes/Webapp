@@ -5,12 +5,7 @@
  * PUT /api/domiciliations/update.php
  */
 
-require_once '../config/cors.php';
-require_once '../config/database.php';
-require_once '../utils/Auth.php';
-require_once '../utils/Response.php';
-require_once '../utils/Mailer.php';
-require_once '../utils/UuidHelper.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 try {
     $auth = Auth::verifyAuth();

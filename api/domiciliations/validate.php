@@ -9,13 +9,7 @@
  *   en_attente_complements → en_attente_signature
  */
 
-require_once '../config/cors.php';
-require_once '../config/database.php';
-require_once '../utils/Auth.php';
-require_once '../utils/Response.php';
-require_once '../utils/Validator.php';
-require_once '../utils/UuidHelper.php';
-require_once '../utils/Mailer.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     Response::methodNotAllowed();

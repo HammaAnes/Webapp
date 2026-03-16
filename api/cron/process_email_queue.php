@@ -8,7 +8,7 @@
  * Crontab: * /5 * * * * php /path/to/api/cron/process_email_queue.php
  */
 
-require_once __DIR__ . '/../../api/bootstrap.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 $start = microtime(true);
 echo "====================================\n";

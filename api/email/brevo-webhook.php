@@ -19,6 +19,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+$webhookSecret = env('BREVO_WEBHOOK_SECRET', '');
+if (!empty($webhookSecret)) {
+    $token = $_GET['token'] ?? '';
+    if (!hash_equals($webhookSecret, $token)) {
+        Logger::security('Brevo webhook: invalid token', ['ip' => $_SERVER['REMOTE_ADDR'] ?? '']);
+        http_response_code(403);
+        exit;
+    }
+}
+
 $rawBody = file_get_contents('php://input');
 
 if (empty($rawBody)) {

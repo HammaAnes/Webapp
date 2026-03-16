@@ -231,8 +231,20 @@ require_once __DIR__ . '/utils/ErrorHandler.php';
 // Mailer
 require_once __DIR__ . '/utils/Mailer.php';
 
+// Brevo Mailer
+require_once __DIR__ . '/utils/BrevoMailer.php';
+
+// Email Queue
+require_once __DIR__ . '/utils/EmailQueue.php';
+
+// Email Logger
+require_once __DIR__ . '/utils/EmailLogger.php';
+
 // Admin Notifier
 require_once __DIR__ . '/utils/AdminNotifier.php';
+
+// Audit Logger
+require_once __DIR__ . '/utils/AuditLogger.php';
 
 // =====================================================
 // FONCTIONS GLOBALES HELPERS
