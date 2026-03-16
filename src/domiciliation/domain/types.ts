@@ -10,7 +10,7 @@ export type {
 } from "../../types";
 export { DEFAULT_OPTIONS } from "./constants";
 
-export type LegalForm = 'SARL' | 'EURL' | 'SPA' | 'SNC' | 'SCS' | 'Startup';
+export type LegalForm = 'SARL' | 'EURL' | 'SPA' | 'SNC' | 'SCS' | 'Startup' | 'auto_entrepreneur' | 'freelance' | 'autre';
 export type CourrierType = 'lettre' | 'colis' | 'recommande' | 'officiel' | 'autre';
 export type CourrierStatut =
   | 'recu' | 'notifie' | 'en_attente_instruction'
@@ -129,6 +129,7 @@ export interface CourrierItem {
   description?: string;
   statut: CourrierStatut;
   dateReception: string;
+  dateRetrait?: string;
   dateTraitement?: string;
   notesAdmin?: string;
   instructionClient?: string;

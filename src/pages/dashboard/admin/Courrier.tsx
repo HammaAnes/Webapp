@@ -119,7 +119,7 @@ export default function AdminCourrier() {
         type: newCourrier.type,
         expediteur: newCourrier.expediteur,
         description: newCourrier.description,
-        notes: newCourrier.notes || null,
+        notes_admin: newCourrier.notes || null,
       });
       if (response.success) {
         toast.success("Courrier enregistré et client notifié");
@@ -140,7 +140,7 @@ export default function AdminCourrier() {
     setActionLoading(`${courrierId}-${action}`);
     try {
       const response = await apiClient.put("/admin/courrier.php", {
-        id: courrierId,
+        courrier_id: courrierId,
         action,
         ...extra,
       });

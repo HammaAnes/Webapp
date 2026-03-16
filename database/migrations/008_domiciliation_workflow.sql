@@ -26,7 +26,7 @@ ADD COLUMN IF NOT EXISTS representant_ville VARCHAR(100) NULL AFTER representant
 
 -- Add columns for notary contract (Step 6 in the prompt)
 ALTER TABLE domiciliations
-ADD COLUMN IF NOT EXISTS numero_bureau TINYINT UNSIGNED NULL CHECK (numero_bureau BETWEEN 1 AND 36) AFTER capital,
+ADD COLUMN IF NOT EXISTS numero_bureau TINYINT UNSIGNED NULL CHECK (numero_bureau BETWEEN 1 AND 60) AFTER capital,
 ADD COLUMN IF NOT EXISTS reference_contrat_notarie VARCHAR(100) NULL AFTER numero_bureau,
 ADD COLUMN IF NOT EXISTS date_debut_contrat DATE NULL AFTER reference_contrat_notarie,
 ADD COLUMN IF NOT EXISTS date_fin_contrat DATE NULL AFTER date_debut_contrat;

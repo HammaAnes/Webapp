@@ -30,10 +30,11 @@ const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
                 }
                 peer-focus:ring-2 peer-focus:ring-accent peer-focus:ring-opacity-50
                 peer-disabled:bg-gray-100 peer-disabled:cursor-not-allowed
+                peer-checked:[&>svg]:opacity-100
                 ${className}
               `}
             >
-              <Check className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+              <Check className="w-3.5 h-3.5 text-white opacity-0 transition-opacity" />
             </div>
           </div>
           {(label || description) && (

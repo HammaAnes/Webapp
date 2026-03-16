@@ -46,6 +46,8 @@ export function courrierFromAPI(raw: Record<string, unknown>): CourrierItem {
     statut: (raw.statut ?? 'recu') as CourrierItem['statut'],
     dateReception: str(raw.date_reception ?? raw.created_at),
     dateRetrait: strOrUndefined(raw.date_retrait),
+    dateTraitement: strOrUndefined(raw.date_traitement),
+    notesAdmin: strOrUndefined(raw.notes_admin),
     instructionClient: strOrUndefined(raw.instruction_client),
   };
 }

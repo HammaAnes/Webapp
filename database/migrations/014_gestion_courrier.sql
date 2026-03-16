@@ -43,30 +43,28 @@ CREATE TABLE IF NOT EXISTS courriers (
     INDEX idx_statut (statut)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Ajouter colonne alerte_expiration_envoyee à domiciliations si elle n'existe pas
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = DATABASE()
-        AND table_name = 'domiciliations'
-        AND column_name = 'alerte_expiration_envoyee'
-    ) THEN
-        ALTER TABLE domiciliations
-            ADD COLUMN alerte_expiration_envoyee TINYINT(1) DEFAULT 0;
-    END IF;
-END $$;
+-- Ajouter colonne alerte_expiration_envoyee à domiciliations si elle n'existe pas (MySQL compatible)
+SET @dbname = DATABASE();
+
+SELECT COUNT(*) INTO @col_exists
+FROM information_schema.columns
+WHERE table_schema = @dbname AND table_name = 'domiciliations' AND column_name = 'alerte_expiration_envoyee';
+
+SET @sql = IF(@col_exists = 0,
+  'ALTER TABLE domiciliations ADD COLUMN alerte_expiration_envoyee TINYINT(1) DEFAULT 0',
+  'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- Ajouter colonne credits_restants à abonnements_utilisateurs si elle n'existe pas
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = DATABASE()
-        AND table_name = 'abonnements_utilisateurs'
-        AND column_name = 'credits_restants'
-    ) THEN
-        ALTER TABLE abonnements_utilisateurs
-            ADD COLUMN credits_restants DECIMAL(10,2) DEFAULT 0;
-    END IF;
-END $$;
+SELECT COUNT(*) INTO @col_exists
+FROM information_schema.columns
+WHERE table_schema = @dbname AND table_name = 'abonnements_utilisateurs' AND column_name = 'credits_restants';
+
+SET @sql = IF(@col_exists = 0,
+  'ALTER TABLE abonnements_utilisateurs ADD COLUMN credits_restants DECIMAL(10,2) DEFAULT 0',
+  'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

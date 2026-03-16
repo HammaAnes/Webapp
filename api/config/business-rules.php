@@ -38,7 +38,7 @@ return [
         'numero_bureau_max' => 60,
         'adresse_siege' => 'Mohammadia Mall, 4ème étage, Bureau 1178, Alger',
         'formes_juridiques_valides' => [
-            'SARL', 'EURL', 'SPA', 'SNC', 'SCS',
+            'SARL', 'EURL', 'SPA', 'SNC', 'SCS', 'Startup',
             'auto_entrepreneur', 'freelance', 'autre'
         ],
         'transitions_statut_autorisees' => [

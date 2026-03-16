@@ -17,6 +17,36 @@ try {
     $database = Database::getInstance();
     $db = $database->getConnection();
 
+    // Si un ID est fourni, retourner une seule domiciliation
+    if (isset($_GET['id']) && !empty($_GET['id'])) {
+        $id = $_GET['id'];
+
+        if ($auth['role'] === 'admin') {
+            $query = "SELECT d.*, u.email, u.nom, u.prenom,
+                             c.nom AS contact_nom, c.prenom AS contact_prenom, c.email AS contact_email, c.telephone AS contact_telephone
+                      FROM domiciliations d
+                      LEFT JOIN users u ON d.user_id = u.id
+                      LEFT JOIN contacts c ON d.contact_id = c.id
+                      WHERE d.id = :id";
+        } else {
+            $query = "SELECT * FROM domiciliations WHERE id = :id AND user_id = :user_id";
+        }
+
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':id', $id);
+        if ($auth['role'] !== 'admin') {
+            $stmt->bindParam(':user_id', $auth['id']);
+        }
+        $stmt->execute();
+        $domiciliation = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$domiciliation) {
+            Response::notFound('Domiciliation introuvable');
+        }
+
+        Response::success(['data' => $domiciliation]);
+    }
+
     // Paramètres de pagination
     $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
     $limit = isset($_GET['limit']) ? min((int)$_GET['limit'], 100) : 20;

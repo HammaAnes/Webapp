@@ -42,28 +42,27 @@ CREATE TABLE IF NOT EXISTS checkins (
     INDEX idx_statut (statut)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Ajouter colonnes à la table reservations si elles n'existent pas
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = DATABASE()
-        AND table_name = 'reservations'
-        AND column_name = 'no_show'
-    ) THEN
-        ALTER TABLE reservations
-            ADD COLUMN no_show TINYINT(1) DEFAULT 0 COMMENT 'Client ne s est pas présenté',
-            ADD INDEX idx_no_show (no_show);
-    END IF;
+-- Ajouter colonnes à la table reservations si elles n'existent pas (MySQL compatible)
+SET @dbname = DATABASE();
 
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = DATABASE()
-        AND table_name = 'reservations'
-        AND column_name = 'checkin_id'
-    ) THEN
-        ALTER TABLE reservations
-            ADD COLUMN checkin_id CHAR(36) NULL,
-            ADD INDEX idx_checkin_id (checkin_id);
-    END IF;
-END $$;
+SELECT COUNT(*) INTO @col_exists
+FROM information_schema.columns
+WHERE table_schema = @dbname AND table_name = 'reservations' AND column_name = 'no_show';
+
+SET @sql = IF(@col_exists = 0,
+  'ALTER TABLE reservations ADD COLUMN no_show TINYINT(1) DEFAULT 0, ADD INDEX idx_no_show (no_show)',
+  'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SELECT COUNT(*) INTO @col_exists
+FROM information_schema.columns
+WHERE table_schema = @dbname AND table_name = 'reservations' AND column_name = 'checkin_id';
+
+SET @sql = IF(@col_exists = 0,
+  'ALTER TABLE reservations ADD COLUMN checkin_id CHAR(36) NULL, ADD INDEX idx_checkin_id (checkin_id)',
+  'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
