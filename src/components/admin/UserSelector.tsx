@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, UserPlus, X, User, Loader2, ChevronRight } from 'lucide-react';
 import { apiClient } from '../../lib/api-client';
-import { CreateContactModal } from './CreateContactModal';
 import { CreateUserModal, type CreatedUser } from './CreateUserModal';
-import { useContactStore } from '../../store/contactStore';
 
 export interface SelectedUser {
   id: string;
@@ -22,20 +20,11 @@ interface UserSelectorProps {
 }
 
 export function UserSelector({ value, onChange, label = 'Client', required, error }: UserSelectorProps) {
-  const { fetchContactById } = useContactStore();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SelectedUser[]>([]);
   const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [showCreateContact, setShowCreateContact] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
-  const [pendingContactId, setPendingContactId] = useState<string | null>(null);
-  const [pendingContactData, setPendingContactData] = useState<{
-    prenom?: string;
-    nom?: string;
-    email?: string;
-    telephone?: string;
-  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const search = useCallback(async (q: string) => {
@@ -105,29 +94,6 @@ export function UserSelector({ value, onChange, label = 'Client', required, erro
     setQuery('');
   };
 
-  const handleContactCreated = async (contactId: string) => {
-    setShowCreateContact(false);
-    try {
-      await fetchContactById(contactId);
-      const { useContactStore: store } = await import('../../store/contactStore');
-      const contact = store.getState().currentContact;
-      if (contact) {
-        setPendingContactId(contactId);
-        setPendingContactData({
-          prenom: contact.prenom,
-          nom: contact.nom,
-          email: contact.email || undefined,
-          telephone: contact.telephone || undefined,
-        });
-        setShowCreateUser(true);
-      }
-    } catch {
-      setPendingContactId(contactId);
-      setPendingContactData(null);
-      setShowCreateUser(true);
-    }
-  };
-
   const handleUserCreated = (user: CreatedUser) => {
     selectUser({
       id: user.id,
@@ -137,8 +103,6 @@ export function UserSelector({ value, onChange, label = 'Client', required, erro
       telephone: user.telephone,
     });
     setShowCreateUser(false);
-    setPendingContactId(null);
-    setPendingContactData(null);
   };
 
   return (
@@ -188,7 +152,7 @@ export function UserSelector({ value, onChange, label = 'Client', required, erro
           </div>
           <button
             type="button"
-            onClick={() => setShowCreateContact(true)}
+            onClick={() => setShowCreateUser(true)}
             className="flex items-center gap-1.5 px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors whitespace-nowrap"
           >
             <UserPlus className="w-4 h-4" />
@@ -226,31 +190,18 @@ export function UserSelector({ value, onChange, label = 'Client', required, erro
       {showResults && !value && !searching && query.trim().length >= 2 && results.length === 0 && (
         <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg">
           <div className="px-4 py-3 text-sm text-gray-500 text-center">
-            Aucun résultat — utilisez "Nouveau" pour créer un contact
+            Aucun resultat — utilisez "Nouveau" pour creer un compte
           </div>
         </div>
       )}
 
-      <CreateContactModal
-        isOpen={showCreateContact}
-        onClose={() => setShowCreateContact(false)}
-        onContactCreated={handleContactCreated}
-      />
-
-      <CreateUserModal
-        isOpen={showCreateUser}
-        onClose={() => {
-          setShowCreateUser(false);
-          setPendingContactId(null);
-          setPendingContactData(null);
-        }}
-        onUserCreated={handleUserCreated}
-        initialData={
-          pendingContactId
-            ? { ...pendingContactData, contactId: pendingContactId }
-            : undefined
-        }
-      />
+      {showCreateUser && (
+        <CreateUserModal
+          isOpen={showCreateUser}
+          onClose={() => setShowCreateUser(false)}
+          onUserCreated={handleUserCreated}
+        />
+      )}
     </div>
   );
 }
