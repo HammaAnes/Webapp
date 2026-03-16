@@ -61,6 +61,7 @@ export type TypeEntreprise =
   | "spa"
   | "snc"
   | "scs"
+  | "startup"
   | "freelance"
   | "autre";
 
@@ -161,6 +162,7 @@ export interface Reservation {
   codePromo?: string;
   notes?: string;
   participants?: number;
+  noShow?: boolean;
   checkinId?: string;
   dateCreation?: Date;
   createdAt?: string;
@@ -302,11 +304,7 @@ export interface CodePromo {
   description?: string;
   conditions?: string;
   montantMin?: number;
-  montantMaxReduction?: number;
-  utilisationsParUser?: number;
   typesApplication?: ("reservation" | "domiciliation")[];
-  premiereCommandeSeulement?: boolean;
-  codeParrainageRequis?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -416,6 +414,7 @@ export interface AbonnementUtilisateur {
   dateFin: string;
   statut: "actif" | "expire" | "suspendu" | "annule";
   autoRenouvellement: boolean;
+  creditsRestants?: number;
   createdAt?: string;
   updatedAt?: string;
 }

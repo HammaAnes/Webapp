@@ -93,7 +93,8 @@ function parseDateSafe(value: unknown, fallback: Date = new Date()): Date {
 export const reservationAdapter = {
   fromAPI: (apiData: ApiRecord): Reservation => ({
     id: String(apiData.id || ""),
-    userId: String(apiData.user_id || ""),
+    userId: apiData.user_id ? String(apiData.user_id) : undefined,
+    contactId: apiData.contact_id ? String(apiData.contact_id) : undefined,
     espaceId: String(apiData.espace_id || ""),
     dateDebut: parseDateSafe(apiData.date_debut),
     dateFin: parseDateSafe(apiData.date_fin),
@@ -106,6 +107,7 @@ export const reservationAdapter = {
     participants: apiData.participants != null ? parseInt(String(apiData.participants), 10) || 1 : 1,
     notes: apiData.notes as string | undefined,
     codePromo: (apiData.code_promo_id || apiData.code_promo) as string | undefined,
+    noShow: apiData.no_show === 1 || apiData.no_show === true || apiData.no_show === "1",
     checkinId: apiData.checkin_id ? String(apiData.checkin_id) : undefined,
     dateCreation: apiData.created_at ? parseDate(apiData.created_at) : undefined,
     createdAt: apiData.created_at ? String(apiData.created_at) : undefined,
@@ -131,6 +133,7 @@ export const reservationAdapter = {
   toAPI: (reservation: Partial<Reservation>): ApiRecord => {
     const data: ApiRecord = {};
     if (reservation.userId !== undefined) data.user_id = reservation.userId;
+    if (reservation.contactId !== undefined) data.contact_id = reservation.contactId;
     if (reservation.espaceId !== undefined) data.espace_id = reservation.espaceId;
     if (reservation.dateDebut !== undefined) {
       const d = reservation.dateDebut instanceof Date
@@ -539,8 +542,14 @@ export const codePromoAdapter = {
     description: apiData.description as string | undefined,
     conditions: apiData.conditions as string | undefined,
     montantMin: apiData.montant_min != null ? Number(apiData.montant_min) : undefined,
-    montantMaxReduction: apiData.montant_max_reduction != null ? Number(apiData.montant_max_reduction) : undefined,
-    utilisationsParUser: apiData.utilisations_par_user != null ? Number(apiData.utilisations_par_user) : undefined,
+    typesApplication: (() => {
+      if (!apiData.types_application) return undefined;
+      if (Array.isArray(apiData.types_application)) return apiData.types_application as ("reservation" | "domiciliation")[];
+      if (typeof apiData.types_application === "string") {
+        try { return JSON.parse(apiData.types_application); } catch { return undefined; }
+      }
+      return undefined;
+    })(),
     createdAt: apiData.created_at ? String(apiData.created_at) : undefined,
     updatedAt: apiData.updated_at ? String(apiData.updated_at) : undefined,
   }),
@@ -557,8 +566,7 @@ export const codePromoAdapter = {
     if (code.description !== undefined) data.description = code.description;
     if (code.conditions !== undefined) data.conditions = code.conditions;
     if (code.montantMin !== undefined) data.montant_min = code.montantMin;
-    if (code.montantMaxReduction !== undefined) data.montant_max_reduction = code.montantMaxReduction;
-    if (code.utilisationsParUser !== undefined) data.utilisations_par_user = code.utilisationsParUser;
+    if (code.typesApplication !== undefined) data.types_application = JSON.stringify(code.typesApplication);
     return data;
   },
 };
