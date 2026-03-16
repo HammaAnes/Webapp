@@ -219,7 +219,6 @@ class Mailer
                 CURLOPT_HTTPHEADER     => ['accept: application/json', 'api-key: ' . $apiKey, 'content-type: application/json'],
                 CURLOPT_TIMEOUT        => 15,
             ]);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
