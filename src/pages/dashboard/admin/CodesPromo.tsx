@@ -54,14 +54,14 @@ function getCodeStatus(code: CodePromo): {
   key: StatusFilter;
 } {
   if (!code.actif)
-    return { label: "D\u00e9sactiv\u00e9", variant: "neutral", key: "disabled" };
+    return { label: "Désactivé", variant: "neutral", key: "disabled" };
   if (isValidDateString(code.date_fin) && isPast(parseISO(code.date_fin)))
-    return { label: "Expir\u00e9", variant: "danger", key: "expired" };
+    return { label: "Expiré", variant: "danger", key: "expired" };
   if (
     code.utilisations_max > 0 &&
     code.utilisations_actuelles >= code.utilisations_max
   )
-    return { label: "\u00c9puis\u00e9", variant: "warning", key: "exhausted" };
+    return { label: "Épuisé", variant: "warning", key: "exhausted" };
   return { label: "Actif", variant: "success", key: "active" };
 }
 
@@ -72,7 +72,7 @@ function getDaysRemaining(dateFin: string): number {
 
 function getApplicationLabel(type?: string): string {
   if (!type || type === "tous") return "Tous";
-  if (type === "reservation") return "R\u00e9servations";
+  if (type === "reservation") return "Réservations";
   if (type === "abonnement") return "Abonnements";
   if (type === "domiciliation") return "Domiciliation";
   return type;
@@ -179,14 +179,14 @@ const CodesPromo = () => {
       return;
     }
     if (!formData.valeur || parseFloat(formData.valeur) <= 0) {
-      toast.error("La valeur doit \u00eatre sup\u00e9rieure \u00e0 0");
+      toast.error("La valeur doit être supérieure à 0");
       return;
     }
     if (
       formData.type === "pourcentage" &&
       parseFloat(formData.valeur) > 100
     ) {
-      toast.error("Le pourcentage ne peut pas d\u00e9passer 100%");
+      toast.error("Le pourcentage ne peut pas dépasser 100%");
       return;
     }
     if (!formData.date_debut || !formData.date_fin) {
@@ -194,7 +194,7 @@ const CodesPromo = () => {
       return;
     }
     if (new Date(formData.date_fin) < new Date(formData.date_debut)) {
-      toast.error("La date de fin doit \u00eatre apr\u00e8s ou \u00e9gale \u00e0 la date de d\u00e9but");
+      toast.error("La date de fin doit être après ou égale à la date de début");
       return;
     }
 
@@ -219,11 +219,11 @@ const CodesPromo = () => {
       if (editingCode) {
         const res = await apiClient.updateCodePromo(editingCode.id, payload);
         if (!res.success) throw new Error(res.error || "Erreur mise à jour");
-        toast.success("Code promo mis \u00e0 jour");
+        toast.success("Code promo mis à jour");
       } else {
         const res = await apiClient.createCodePromo(payload);
         if (!res.success) throw new Error(res.error || "Erreur création");
-        toast.success("Code promo cr\u00e9\u00e9");
+        toast.success("Code promo créé");
       }
       setShowModal(false);
       resetForm();
@@ -231,8 +231,8 @@ const CodesPromo = () => {
     } catch {
       toast.error(
         editingCode
-          ? "Erreur lors de la mise \u00e0 jour"
-          : "Erreur lors de la cr\u00e9ation",
+          ? "Erreur lors de la mise à jour"
+          : "Erreur lors de la création",
       );
     } finally {
       setSubmitting(false);
@@ -243,10 +243,10 @@ const CodesPromo = () => {
     try {
       const res = await apiClient.updateCodePromo(id, { actif: !actif });
       if (!res.success) throw new Error(res.error || "Erreur");
-      toast.success(actif ? "Code d\u00e9sactiv\u00e9" : "Code activ\u00e9");
+      toast.success(actif ? "Code désactivé" : "Code activé");
       await loadCodes();
     } catch {
-      toast.error("Erreur lors de la mise \u00e0 jour");
+      toast.error("Erreur lors de la mise à jour");
     }
   };
 
@@ -256,7 +256,7 @@ const CodesPromo = () => {
     try {
       const res = await apiClient.deleteCodePromo(deleteTarget.id);
       if (!res.success) throw new Error(res.error || "Erreur suppression");
-      toast.success("Code supprim\u00e9");
+      toast.success("Code supprimé");
       setDeleteTarget(null);
       await loadCodes();
     } catch {
@@ -268,7 +268,7 @@ const CodesPromo = () => {
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    toast.success("Code copi\u00e9");
+    toast.success("Code copié");
   };
 
   const statusFilters: {
@@ -291,19 +291,19 @@ const CodesPromo = () => {
     },
     {
       value: "expired",
-      label: "Expir\u00e9s",
+      label: "Expirés",
       count: stats.expired,
       color: "bg-red-50 text-red-700",
     },
     {
       value: "exhausted",
-      label: "\u00c9puis\u00e9s",
+      label: "Épuisés",
       count: stats.exhausted,
       color: "bg-amber-50 text-amber-700",
     },
     {
       value: "disabled",
-      label: "D\u00e9sactiv\u00e9s",
+      label: "Désactivés",
       count: stats.disabled,
       color: "bg-gray-50 text-gray-500",
     },
@@ -377,7 +377,7 @@ const CodesPromo = () => {
               <p className="text-2xl font-bold text-gray-900">
                 {stats.expired}
               </p>
-              <p className="text-xs text-gray-500">Expir\u00e9s</p>
+              <p className="text-xs text-gray-500">Expirés</p>
             </div>
           </div>
         </Card>
@@ -390,7 +390,7 @@ const CodesPromo = () => {
               <p className="text-2xl font-bold text-gray-900">
                 {stats.exhausted}
               </p>
-              <p className="text-xs text-gray-500">\u00c9puis\u00e9s</p>
+              <p className="text-xs text-gray-500">Épuisés</p>
             </div>
           </div>
         </Card>
@@ -428,12 +428,12 @@ const CodesPromo = () => {
         <div className="text-center py-16">
           <Tag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 font-medium">
-            Aucun code promo trouv\u00e9
+            Aucun code promo trouvé
           </p>
           <p className="text-sm text-gray-400 mt-1">
             {searchQuery || statusFilter !== "all"
               ? "Essayez de modifier vos filtres"
-              : "Cr\u00e9ez votre premier code promo"}
+              : "Créez votre premier code promo"}
           </p>
         </div>
       ) : (
@@ -531,7 +531,7 @@ const CodesPromo = () => {
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div>
                         <span className="text-gray-400 block mb-0.5">
-                          P\u00e9riode
+                          Période
                         </span>
                         <span className="text-gray-700 font-medium">
                           {format(parseISO(code.date_debut), "dd MMM", {
@@ -551,7 +551,7 @@ const CodesPromo = () => {
                           className={`font-medium ${daysLeft <= 0 ? "text-red-600" : daysLeft <= 7 ? "text-amber-600" : "text-gray-700"}`}
                         >
                           {daysLeft <= 0
-                            ? "Expir\u00e9"
+                            ? "Expiré"
                             : `${daysLeft} jour${daysLeft > 1 ? "s" : ""}`}
                         </span>
                       </div>
@@ -567,7 +567,7 @@ const CodesPromo = () => {
                       </div>
                       <div>
                         <span className="text-gray-400 block mb-0.5">
-                          Applicable \u00e0
+                          Applicable à
                         </span>
                         <span className="text-gray-700 font-medium">
                           {getApplicationLabel(code.types_application)}
@@ -589,7 +589,7 @@ const CodesPromo = () => {
                         {code.actif ? (
                           <>
                             <ToggleRight className="w-3.5 h-3.5" />{" "}
-                            D\u00e9sactiver
+                            Désactiver
                           </>
                         ) : (
                           <>
@@ -627,7 +627,7 @@ const CodesPromo = () => {
           resetForm();
         }}
         title={
-          editingCode ? "Modifier le code promo" : "Cr\u00e9er un code promo"
+          editingCode ? "Modifier le code promo" : "Créer un code promo"
         }
         size="lg"
       >
@@ -661,7 +661,7 @@ const CodesPromo = () => {
                   className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap"
                 >
                   <Shuffle className="w-4 h-4" />
-                  G\u00e9n\u00e9rer
+                  Générer
                 </button>
               )}
             </div>
@@ -679,7 +679,7 @@ const CodesPromo = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Type de r\u00e9duction *
+                Type de réduction *
               </label>
               <select
                 value={formData.type}
@@ -714,7 +714,7 @@ const CodesPromo = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Date d\u00e9but *"
+              label="Date début *"
               type="date"
               value={formData.date_debut}
               onChange={(e) =>
@@ -758,7 +758,7 @@ const CodesPromo = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Applicable \u00e0 *
+              Applicable à *
             </label>
             <select
               value={formData.types_application}
@@ -769,7 +769,7 @@ const CodesPromo = () => {
               required
             >
               <option value="tous">Tous les services</option>
-              <option value="reservation">R\u00e9servations uniquement</option>
+              <option value="reservation">Réservations uniquement</option>
               <option value="abonnement">Abonnements uniquement</option>
               <option value="domiciliation">Domiciliation uniquement</option>
             </select>
@@ -781,7 +781,7 @@ const CodesPromo = () => {
                 ? "Enregistrement..."
                 : editingCode
                   ? "Enregistrer les modifications"
-                  : "Cr\u00e9er le code"}
+                  : "Créer le code"}
             </Button>
             <Button
               type="button"
@@ -827,14 +827,14 @@ const CodesPromo = () => {
                     Supprimer ce code promo ?
                   </h3>
                   <p className="text-sm text-gray-500 mb-1">
-                    Vous \u00eates sur le point de supprimer le code :
+                    Vous êtes sur le point de supprimer le code :
                   </p>
                   <p className="text-lg font-bold text-gray-900 mb-4 bg-gray-50 py-2 px-4 rounded-lg inline-block">
                     {deleteTarget.code}
                   </p>
                   <p className="text-sm text-gray-500 mb-6">
-                    Cette action est irr\u00e9versible. Le code ne pourra plus
-                    \u00eatre utilis\u00e9.
+                    Cette action est irréversible. Le code ne pourra plus
+                    être utilisé.
                   </p>
                   <div className="flex gap-3">
                     <button

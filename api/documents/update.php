@@ -3,7 +3,7 @@
 /**
  * Update Document - Mettre à jour le statut d'un document
  * PUT /api/documents/update.php?id=uuid
- * Body: { "statut": "valide|rejete|en_attente", "commentaire_rejet": "..." }
+ * Body: { "status": "valide|rejete|en_attente" }
  */
 
 require_once __DIR__ . '/../bootstrap.php';
@@ -52,19 +52,15 @@ try {
     $updates = [];
     $params = [];
 
-    if (isset($input['statut'])) {
+    $statusKey = isset($input['status']) ? 'status' : (isset($input['statut']) ? 'statut' : null);
+    if ($statusKey) {
         $allowed = ['en_attente', 'valide', 'rejete'];
-        if (!in_array($input['statut'], $allowed)) {
+        if (!in_array($input[$statusKey], $allowed)) {
             Response::error('Statut invalide. Valeurs autorisées: ' . implode(', ', $allowed), 400);
             exit;
         }
-        $updates[] = 'statut = ?';
-        $params[] = $input['statut'];
-    }
-
-    if (isset($input['commentaire_rejet'])) {
-        $updates[] = 'commentaire_rejet = ?';
-        $params[] = $input['commentaire_rejet'];
+        $updates[] = 'status = ?';
+        $params[] = $input[$statusKey];
     }
 
     if (empty($updates)) {

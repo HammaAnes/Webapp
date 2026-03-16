@@ -11,12 +11,11 @@ export type {
 export { DEFAULT_OPTIONS } from "./constants";
 
 export type LegalForm = 'SARL' | 'EURL' | 'SPA' | 'SNC' | 'SCS' | 'Startup';
-export type CourrierType = 'lettre' | 'colis' | 'recommande' | 'autre';
+export type CourrierType = 'lettre' | 'colis' | 'recommande' | 'officiel' | 'autre';
 export type CourrierStatut =
   | 'recu' | 'notifie' | 'en_attente_instruction'
-  | 'recupere' | 'retire'
-  | 'scanne' | 'reexpedier' | 'envoye'
-  | 'traite' | 'archive';
+  | 'recupere' | 'scanne' | 'reexpedier'
+  | 'traite';
 export type DocumentStatus = 'en_attente' | 'valide' | 'rejete';
 export type CasMetier = 'A1' | 'A2' | 'B1' | 'B2';
 
@@ -130,8 +129,8 @@ export interface CourrierItem {
   description?: string;
   statut: CourrierStatut;
   dateReception: string;
-  dateRetrait?: string;
-  retirePar?: string;
+  dateTraitement?: string;
+  notesAdmin?: string;
   instructionClient?: string;
 }
 

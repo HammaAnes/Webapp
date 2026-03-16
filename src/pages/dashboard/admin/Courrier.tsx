@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Mail, Package, FileText, Search, RefreshCw, Plus, Check,
-  Send, Eye, ChevronDown, Building2, Calendar, User, X, AlertCircle,
+  Mail, Search, RefreshCw, Plus, Check,
+  Send, Eye, Building2, Calendar, User, AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -12,26 +12,32 @@ import Button from "../../../components/ui/Button";
 import Modal from "../../../components/ui/Modal";
 import { apiClient } from "../../../lib/api-client";
 import { useAppStore } from "../../../store/store";
+import {
+  COURRIER_TYPE_CONFIG,
+  COURRIER_STATUT_CONFIG,
+  COURRIER_INACTIVE_STATUTS,
+} from "../../../features/domiciliation/constants";
 
 interface CourrierItem {
   id: string;
   domiciliation_id: string;
-  user_id: string;
   type: string;
   expediteur: string;
   description: string;
   statut: string;
-  notes: string | null;
+  notes_admin: string | null;
   scan_url: string | null;
+  photo_url: string | null;
   date_reception: string;
-  date_recuperation: string | null;
+  date_traitement: string | null;
+  date_notification: string | null;
+  date_instruction: string | null;
+  instruction_client: string | null;
   raison_sociale: string;
+  user_id: string;
   email: string;
   prenom: string;
   nom: string;
-  instruction_client?: string | null;
-  scan_demande?: boolean;
-  reexpedition_demandee?: boolean;
 }
 
 interface NewCourrierForm {
@@ -42,27 +48,15 @@ interface NewCourrierForm {
   notes: string;
 }
 
-const TYPE_CONFIG: Record<string, { label: string; icon: React.FC<{ className?: string }>; color: string }> = {
-  courrier: { label: "Courrier", icon: Mail, color: "bg-blue-100 text-blue-600" },
-  colis: { label: "Colis", icon: Package, color: "bg-teal-100 text-teal-600" },
-  recommande: { label: "Recommandé", icon: FileText, color: "bg-red-100 text-red-600" },
-};
-
-const STATUT_CONFIG: Record<string, { label: string; variant: "info" | "warning" | "success" | "neutral" | "accent" | "danger" }> = {
-  recu: { label: "Reçu", variant: "neutral" },
-  notifie: { label: "Notifié", variant: "info" },
-  en_attente_instruction: { label: "En attente d'instruction", variant: "warning" },
-  recupere: { label: "Récupéré", variant: "success" },
-  reexpedi: { label: "Réexpédié", variant: "accent" },
-};
-
 const STATUS_FILTERS = [
   { value: "tous", label: "Tous" },
   { value: "recu", label: "Reçu" },
   { value: "notifie", label: "Notifié" },
   { value: "en_attente_instruction", label: "En attente" },
   { value: "recupere", label: "Récupéré" },
-  { value: "reexpedi", label: "Réexpédié" },
+  { value: "scanne", label: "Scanné" },
+  { value: "reexpedier", label: "Réexpédition" },
+  { value: "traite", label: "Traité" },
 ];
 
 export default function AdminCourrier() {
@@ -78,7 +72,7 @@ export default function AdminCourrier() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [newCourrier, setNewCourrier] = useState<NewCourrierForm>({
     domiciliation_id: "",
-    type: "courrier",
+    type: "lettre",
     expediteur: "",
     description: "",
     notes: "",
@@ -130,7 +124,7 @@ export default function AdminCourrier() {
       if (response.success) {
         toast.success("Courrier enregistré et client notifié");
         setShowCreateModal(false);
-        setNewCourrier({ domiciliation_id: "", type: "courrier", expediteur: "", description: "", notes: "" });
+        setNewCourrier({ domiciliation_id: "", type: "lettre", expediteur: "", description: "", notes: "" });
         await loadCourriers();
       } else {
         toast.error(response.error || response.message || "Erreur lors de l'enregistrement");
@@ -153,16 +147,17 @@ export default function AdminCourrier() {
       if (response.success) {
         const labels: Record<string, string> = {
           recuperer: "Courrier marqué récupéré",
+          marquer_retire: "Courrier marqué récupéré",
           reexpedier: "Courrier marqué pour réexpédition",
+          marquer_envoye: "Courrier marqué pour réexpédition",
           scanner: "Scan demandé",
+          archiver: "Courrier archivé",
         };
         toast.success(labels[action] || "Mis à jour");
         if (showDetailModal?.id === courrierId) {
-          await loadCourriers();
           setShowDetailModal(null);
-        } else {
-          await loadCourriers();
         }
+        await loadCourriers();
       } else {
         toast.error(response.error || response.message || "Erreur");
       }
@@ -190,7 +185,7 @@ export default function AdminCourrier() {
     total: courriers.length,
     nonTraites: courriers.filter((c) => c.statut === "recu" || c.statut === "notifie").length,
     enAttente: courriers.filter((c) => c.statut === "en_attente_instruction").length,
-    traites: courriers.filter((c) => c.statut === "recupere" || c.statut === "reexpedi").length,
+    traites: courriers.filter((c) => COURRIER_INACTIVE_STATUTS.includes(c.statut)).length,
   }), [courriers]);
 
   if (loading) {
@@ -242,7 +237,7 @@ export default function AdminCourrier() {
               placeholder="Rechercher par entreprise, expéditeur..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -252,7 +247,7 @@ export default function AdminCourrier() {
                 onClick={() => setStatutFilter(f.value)}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   statutFilter === f.value
-                    ? "bg-amber-600 text-white"
+                    ? "bg-sky-600 text-white"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
@@ -278,17 +273,17 @@ export default function AdminCourrier() {
       ) : (
         <div className="space-y-3">
           {filtered.map((courrier) => {
-            const tc = TYPE_CONFIG[courrier.type] || TYPE_CONFIG.courrier;
-            const sc = STATUT_CONFIG[courrier.statut] || STATUT_CONFIG.recu;
+            const tc = COURRIER_TYPE_CONFIG[courrier.type] ?? COURRIER_TYPE_CONFIG.autre;
+            const sc = COURRIER_STATUT_CONFIG[courrier.statut] ?? COURRIER_STATUT_CONFIG.recu;
             const TypeIcon = tc.icon;
-            const isActionable = courrier.statut === "recu" || courrier.statut === "notifie" || courrier.statut === "en_attente_instruction";
+            const isActive = !COURRIER_INACTIVE_STATUTS.includes(courrier.statut);
             const isActLoading = (a: string) => actionLoading === `${courrier.id}-${a}`;
 
             return (
               <Card key={courrier.id} className="p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${tc.color}`}>
-                    <TypeIcon className="w-5 h-5" />
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${tc.iconBg}`}>
+                    <TypeIcon className={`w-5 h-5 ${tc.iconColor}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-3">
@@ -298,7 +293,7 @@ export default function AdminCourrier() {
                           <Badge variant={sc.variant}>{sc.label}</Badge>
                           {courrier.instruction_client && (
                             <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">
-                              Instruction client
+                              {courrier.instruction_client}
                             </span>
                           )}
                         </div>
@@ -321,14 +316,9 @@ export default function AdminCourrier() {
                         {courrier.description && (
                           <p className="text-sm text-gray-500 mt-1 truncate">{courrier.description}</p>
                         )}
-                        {courrier.instruction_client && (
-                          <p className="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded mt-1">
-                            Instruction : {courrier.instruction_client}
-                          </p>
-                        )}
                       </div>
                     </div>
-                    {isActionable && (
+                    {isActive && (
                       <div className="flex gap-2 mt-3 flex-wrap">
                         <Button
                           size="sm"
@@ -358,7 +348,7 @@ export default function AdminCourrier() {
                         </Button>
                       </div>
                     )}
-                    {!isActionable && (
+                    {!isActive && (
                       <button
                         className="text-xs text-gray-400 hover:text-gray-600 mt-2 flex items-center gap-1"
                         onClick={() => setShowDetailModal(courrier)}
@@ -396,7 +386,7 @@ export default function AdminCourrier() {
                 value={newCourrier.domiciliation_id}
                 onChange={(e) => setNewCourrier((p) => ({ ...p, domiciliation_id: e.target.value }))}
                 required
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
               >
                 <option value="">Sélectionner une domiciliation</option>
                 {activeDomiciliations.map((d) => (
@@ -412,8 +402,8 @@ export default function AdminCourrier() {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Type de courrier <span className="text-red-500">*</span>
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {Object.entries(TYPE_CONFIG).map(([value, cfg]) => {
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+              {Object.entries(COURRIER_TYPE_CONFIG).map(([value, cfg]) => {
                 const Icon = cfg.icon;
                 return (
                   <button
@@ -422,7 +412,7 @@ export default function AdminCourrier() {
                     onClick={() => setNewCourrier((p) => ({ ...p, type: value }))}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-medium ${
                       newCourrier.type === value
-                        ? "border-amber-500 bg-amber-50 text-amber-700"
+                        ? "border-sky-500 bg-sky-50 text-sky-700"
                         : "border-gray-200 text-gray-600 hover:border-gray-300"
                     }`}
                   >
@@ -441,7 +431,7 @@ export default function AdminCourrier() {
               placeholder="Nom de l'expéditeur"
               value={newCourrier.expediteur}
               onChange={(e) => setNewCourrier((p) => ({ ...p, expediteur: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
           </div>
 
@@ -452,7 +442,7 @@ export default function AdminCourrier() {
               value={newCourrier.description}
               onChange={(e) => setNewCourrier((p) => ({ ...p, description: e.target.value }))}
               rows={2}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
             />
           </div>
 
@@ -463,7 +453,7 @@ export default function AdminCourrier() {
               placeholder="Notes visibles uniquement par l'admin"
               value={newCourrier.notes}
               onChange={(e) => setNewCourrier((p) => ({ ...p, notes: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
           </div>
 
@@ -488,17 +478,17 @@ export default function AdminCourrier() {
           <div className="space-y-4">
             {(() => {
               const c = showDetailModal;
-              const tc = TYPE_CONFIG[c.type] || TYPE_CONFIG.courrier;
-              const sc = STATUT_CONFIG[c.statut] || STATUT_CONFIG.recu;
+              const tc = COURRIER_TYPE_CONFIG[c.type] ?? COURRIER_TYPE_CONFIG.autre;
+              const sc = COURRIER_STATUT_CONFIG[c.statut] ?? COURRIER_STATUT_CONFIG.recu;
               const TypeIcon = tc.icon;
-              const isActionable = c.statut === "recu" || c.statut === "notifie" || c.statut === "en_attente_instruction";
+              const isActive = !COURRIER_INACTIVE_STATUTS.includes(c.statut);
               const isActLoading = (a: string) => actionLoading === `${c.id}-${a}`;
 
               return (
                 <>
                   <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${tc.color}`}>
-                      <TypeIcon className="w-6 h-6" />
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${tc.iconBg}`}>
+                      <TypeIcon className={`w-6 h-6 ${tc.iconColor}`} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -530,21 +520,21 @@ export default function AdminCourrier() {
                         <p className="font-medium text-amber-900">{c.instruction_client}</p>
                       </div>
                     )}
-                    {c.notes && (
+                    {c.notes_admin && (
                       <div className="bg-gray-50 rounded-lg p-3 col-span-2">
                         <p className="text-xs text-gray-400 mb-0.5">Notes internes</p>
-                        <p className="font-medium text-gray-900">{c.notes}</p>
+                        <p className="font-medium text-gray-900">{c.notes_admin}</p>
                       </div>
                     )}
-                    {c.date_recuperation && (
+                    {c.date_traitement && (
                       <div className="bg-emerald-50 rounded-lg p-3 col-span-2">
-                        <p className="text-xs text-emerald-500 mb-0.5">Récupéré le</p>
-                        <p className="font-medium text-emerald-900">{format(new Date(c.date_recuperation), "d MMM yyyy", { locale: fr })}</p>
+                        <p className="text-xs text-emerald-500 mb-0.5">Traité le</p>
+                        <p className="font-medium text-emerald-900">{format(new Date(c.date_traitement), "d MMM yyyy", { locale: fr })}</p>
                       </div>
                     )}
                   </div>
 
-                  {isActionable && (
+                  {isActive && (
                     <div className="flex gap-2 pt-2">
                       <Button
                         variant="primary"

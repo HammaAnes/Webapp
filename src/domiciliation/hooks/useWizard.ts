@@ -160,7 +160,7 @@ export function useWizard(
       case 2: return !!formData.typeStructure;
       case 3: {
         const d = formData.dirigeant;
-        return !!(d.adresseResidence?.trim() && d.ville?.trim() && d.telephone?.trim() && d.email?.trim());
+        return !!(d.adresseResidence?.trim() && d.ville?.trim() && d.telephone?.trim() && d.email?.trim() && formData.dateDebutSouhaitee);
       }
       case 4: return !!formData.entreprise;
       case 5: return true;
@@ -176,7 +176,7 @@ export function useWizard(
     switch (currentStep) {
       case 1: result = validateStep1({ situation: formData.situation }); break;
       case 2: result = validateStep2({ typeStructure: formData.typeStructure }); break;
-      case 3: result = validateStep3({ dirigeant: formData.dirigeant }); break;
+      case 3: result = validateStep3({ dirigeant: formData.dirigeant, dateDebutSouhaitee: formData.dateDebutSouhaitee }); break;
       case 4:
         if (formData.situation && formData.typeStructure) {
           result = validateStep4(formData.situation, formData.typeStructure, formData.entreprise);

@@ -90,19 +90,21 @@ export function mapApiDocument(raw: Record<string, unknown>): DocumentRecord {
 export function mapApiCourrier(raw: Record<string, unknown>) {
   return {
     id: String(raw.id || ""),
-    type: String(raw.type || "autre") as "lettre" | "colis" | "recommande" | "autre",
+    type: String(raw.type || "autre") as "lettre" | "colis" | "recommande" | "officiel" | "autre",
     expediteur: String(raw.expediteur || ""),
     description: raw.description ? String(raw.description) : undefined,
     statut: String(raw.statut || "recu") as
       | "recu"
       | "notifie"
       | "en_attente_instruction"
-      | "retire"
-      | "envoye"
-      | "archive",
+      | "recupere"
+      | "scanne"
+      | "reexpedier"
+      | "traite",
     dateReception: String(raw.date_reception || raw.dateReception || raw.created_at || ""),
-    dateRetrait: raw.date_retrait ? String(raw.date_retrait) : undefined,
-    retirePar: raw.retire_par ? String(raw.retire_par) : undefined,
+    dateTraitement: raw.date_traitement ? String(raw.date_traitement) : undefined,
+    notesAdmin: raw.notes_admin ? String(raw.notes_admin) : undefined,
+    instructionClient: raw.instruction_client ? String(raw.instruction_client) : undefined,
   };
 }
 

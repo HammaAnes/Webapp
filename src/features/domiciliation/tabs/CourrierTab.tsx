@@ -1,16 +1,5 @@
 import React, { useState } from "react";
-import {
-  Mail,
-  Package,
-  Bookmark,
-  Plus,
-  X,
-  CheckCircle,
-  Send,
-  Archive,
-  Loader2,
-  InboxIcon,
-} from "lucide-react";
+import { Mail, Package, Bookmark, Plus, X, CheckCircle, Send, Archive, Loader2, Inbox as InboxIcon } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import toast from "react-hot-toast";
@@ -32,7 +21,7 @@ export default function CourrierTab({ demande }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [nc, setNc] = useState({ type: "lettre", expediteur: "", description: "" });
   const [retireModal, setRetireModal] = useState<string | null>(null);
-  const [retirePar, setRetirePar] = useState("");
+  const [retireNotes, setRetireNotes] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const pending = courriers.filter((c) => !COURRIER_INACTIVE_STATUTS.includes(c.statut)).length;
@@ -71,11 +60,11 @@ export default function CourrierTab({ demande }: Props) {
     try {
       const payload: Record<string, string> = { action };
       if (action === "marquer_retire") {
-        if (!retirePar.trim()) {
+        if (!retireNotes.trim()) {
           toast.error("Précisez le nom de la personne");
           return;
         }
-        payload.retire_par = retirePar;
+        payload.retire_par = retireNotes;
       }
       const response = await apiClient.updateCourrier(item.id, payload);
       if (response.success) {
@@ -87,7 +76,7 @@ export default function CourrierTab({ demande }: Props) {
         toast.success(msgs[action]);
         if (action === "marquer_retire") {
           setRetireModal(null);
-          setRetirePar("");
+          setRetireNotes("");
         }
         await reload();
       } else {
@@ -211,17 +200,17 @@ export default function CourrierTab({ demande }: Props) {
                     {c.dateReception && ` — ${format(new Date(c.dateReception), "d MMM yyyy", { locale: fr })}`}
                   </p>
                   {c.description && <p className="text-xs text-gray-400 mt-0.5">{c.description}</p>}
-                  {c.retirePar && (
+                  {c.dateTraitement && (
                     <p className="text-xs text-emerald-600 mt-0.5 font-medium">
-                      Retiré par {c.retirePar}
-                      {c.dateRetrait && ` le ${format(new Date(c.dateRetrait), "d MMM yyyy", { locale: fr })}`}
+                      Traité le {format(new Date(c.dateTraitement), "d MMM yyyy", { locale: fr })}
+                      {c.notesAdmin && ` — ${c.notesAdmin}`}
                     </p>
                   )}
                 </div>
                 {isActive && (
                   <div className="flex gap-1 flex-shrink-0">
                     <button
-                      onClick={() => { setRetireModal(c.id); setRetirePar(""); }}
+                      onClick={() => { setRetireModal(c.id); setRetireNotes(""); }}
                       className="p-2 rounded-lg hover:bg-emerald-50 text-emerald-600 transition-colors"
                       title="Marquer retiré"
                     >
@@ -270,8 +259,8 @@ export default function CourrierTab({ demande }: Props) {
             <label className="block text-sm font-semibold text-gray-700 mb-2">Nom de la personne</label>
             <input
               type="text"
-              value={retirePar}
-              onChange={(e) => setRetirePar(e.target.value)}
+              value={retireNotes}
+              onChange={(e) => setRetireNotes(e.target.value)}
               placeholder="Prénom Nom"
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
               autoFocus

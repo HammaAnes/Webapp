@@ -24,8 +24,9 @@ try {
             SELECT
                 c.*,
                 d.raison_sociale,
+                d.user_id,
                 u.email, u.prenom, u.nom
-            FROM courrier c
+            FROM courriers c
             LEFT JOIN domiciliations d ON c.domiciliation_id = d.id
             LEFT JOIN users u ON d.user_id = u.id
             WHERE 1=1
@@ -59,7 +60,7 @@ try {
             Response::error('Données manquantes: domiciliation_id, type requis', 400);
         }
 
-        $domStmt = $db->prepare("SELECT user_id FROM domiciliations WHERE id = ?");
+        $domStmt = $db->prepare("SELECT user_id, raison_sociale FROM domiciliations WHERE id = ?");
         $domStmt->execute([$data['domiciliation_id']]);
         $domRow = $domStmt->fetch(PDO::FETCH_ASSOC);
         if (!$domRow) {
@@ -68,19 +69,18 @@ try {
 
         $id = UuidHelper::generate();
         $insertStmt = $db->prepare("
-            INSERT INTO courrier
-            (id, domiciliation_id, user_id, type, expediteur, description, scan_url, statut, notifie, date_notification, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'notifie', 1, NOW(), ?)
+            INSERT INTO courriers
+            (id, domiciliation_id, type, expediteur, description, photo_url, statut, date_reception, date_notification, notes_admin)
+            VALUES (?, ?, ?, ?, ?, ?, 'notifie', NOW(), NOW(), ?)
         ");
         $insertStmt->execute([
             $id,
             $data['domiciliation_id'],
-            $domRow['user_id'],
             $data['type'],
             $data['expediteur'] ?? '',
-            $data['description'] ?? '',
-            $data['scan_url'] ?? null,
-            $data['notes'] ?? null,
+            $data['description'] ?? null,
+            $data['photo_url'] ?? null,
+            $data['notes'] ?? $data['notes_admin'] ?? null,
         ]);
 
         $userStmt = $db->prepare("
@@ -110,17 +110,21 @@ try {
                 Logger::warning('Courrier email notification failed', ['error' => $e->getMessage()]);
             }
 
-            $notifId = UuidHelper::generate();
-            $notifStmt = $db->prepare("
-                INSERT INTO notifications (id, user_id, type, titre, message, lue)
-                VALUES (?, ?, 'info', ?, ?, 0)
-            ");
-            $notifStmt->execute([
-                $notifId,
-                $domRow['user_id'],
-                'Nouveau courrier reçu',
-                "Un nouveau courrier a été reçu pour {$domiciliation['raison_sociale']}",
-            ]);
+            try {
+                $notifId = UuidHelper::generate();
+                $notifStmt = $db->prepare("
+                    INSERT INTO notifications (id, user_id, type, titre, message, lue)
+                    VALUES (?, ?, 'domiciliation', ?, ?, 0)
+                ");
+                $notifStmt->execute([
+                    $notifId,
+                    $domRow['user_id'],
+                    'Nouveau courrier reçu',
+                    "Un nouveau courrier a été reçu pour {$domiciliation['raison_sociale']}",
+                ]);
+            } catch (Exception $e) {
+                Logger::warning('Courrier notification insert failed', ['error' => $e->getMessage()]);
+            }
         }
 
         Response::success([
@@ -143,7 +147,7 @@ try {
 
         $checkStmt = $db->prepare("
             SELECT c.*, d.user_id
-            FROM courrier c
+            FROM courriers c
             LEFT JOIN domiciliations d ON c.domiciliation_id = d.id
             WHERE c.id = ?
         ");
@@ -161,54 +165,65 @@ try {
         $action = $data['action'] ?? null;
 
         if ($action === 'recuperer' || $action === 'marquer_retire') {
+            $notesVal = $data['retire_par'] ?? $data['notes'] ?? $data['notes_admin'] ?? null;
             $updateStmt = $db->prepare("
-                UPDATE courrier
-                SET statut = 'recupere', date_recuperation = NOW(), notes = COALESCE(?, notes), updated_at = NOW()
+                UPDATE courriers
+                SET statut = 'recupere', date_traitement = NOW(), notes_admin = COALESCE(?, notes_admin)
                 WHERE id = ?
             ");
-            $updateStmt->execute([$data['notes'] ?? null, $courrierId]);
+            $updateStmt->execute([$notesVal, $courrierId]);
             Response::success(['message' => 'Courrier marqué comme récupéré']);
 
         } elseif ($action === 'reexpedier' || $action === 'marquer_envoye') {
             $updateStmt = $db->prepare("
-                UPDATE courrier
-                SET statut = 'reexpedi', reexpedition_demandee = 1, notes = COALESCE(?, notes), updated_at = NOW()
+                UPDATE courriers
+                SET statut = 'reexpedier', instruction_client = 'reexpedier', date_traitement = NOW(), notes_admin = COALESCE(?, notes_admin)
                 WHERE id = ?
             ");
-            $updateStmt->execute([$data['notes'] ?? null, $courrierId]);
+            $updateStmt->execute([$data['notes'] ?? $data['notes_admin'] ?? null, $courrierId]);
             Response::success(['message' => 'Courrier marqué pour réexpédition']);
 
         } elseif ($action === 'scanner') {
             $updateStmt = $db->prepare("
-                UPDATE courrier
-                SET scan_demande = 1, scan_url = COALESCE(?, scan_url), updated_at = NOW()
+                UPDATE courriers
+                SET statut = 'scanne', instruction_client = 'scanner', scan_url = COALESCE(?, scan_url)
                 WHERE id = ?
             ");
             $updateStmt->execute([$data['scan_url'] ?? null, $courrierId]);
             Response::success(['message' => 'Scan demandé']);
 
+        } elseif ($action === 'archiver') {
+            $updateStmt = $db->prepare("
+                UPDATE courriers
+                SET statut = 'traite', date_traitement = NOW()
+                WHERE id = ?
+            ");
+            $updateStmt->execute([$courrierId]);
+            Response::success(['message' => 'Courrier archivé']);
+
         } elseif ($action === 'instruction_client' || isset($data['instruction_client'])) {
             $instruction = $data['instruction_client'] ?? $data['instruction'] ?? '';
             $updateStmt = $db->prepare("
-                UPDATE courrier
-                SET instruction_client = ?, statut = 'en_attente_instruction', date_instruction = NOW(), updated_at = NOW()
+                UPDATE courriers
+                SET instruction_client = ?, statut = 'en_attente_instruction', date_instruction = NOW()
                 WHERE id = ?
             ");
             $updateStmt->execute([$instruction, $courrierId]);
             Response::success(['message' => 'Instruction enregistrée']);
 
         } elseif (isset($data['statut'])) {
-            $allowedStatuts = ['recu', 'notifie', 'recupere', 'reexpedi', 'en_attente_instruction'];
+            $allowedStatuts = ['recu', 'notifie', 'en_attente_instruction', 'recupere', 'scanne', 'reexpedier', 'traite'];
             if (!in_array($data['statut'], $allowedStatuts)) {
                 Response::error('Statut invalide', 400);
             }
-            $updateStmt = $db->prepare("UPDATE courrier SET statut = ?, updated_at = NOW() WHERE id = ?");
+            $updateStmt = $db->prepare("UPDATE courriers SET statut = ? WHERE id = ?");
             $updateStmt->execute([$data['statut'], $courrierId]);
             Response::success(['message' => 'Statut mis à jour']);
 
-        } elseif (isset($data['notes'])) {
-            $updateStmt = $db->prepare("UPDATE courrier SET notes = ?, updated_at = NOW() WHERE id = ?");
-            $updateStmt->execute([$data['notes'], $courrierId]);
+        } elseif (isset($data['notes']) || isset($data['notes_admin'])) {
+            $notes = $data['notes_admin'] ?? $data['notes'];
+            $updateStmt = $db->prepare("UPDATE courriers SET notes_admin = ? WHERE id = ?");
+            $updateStmt->execute([$notes, $courrierId]);
             Response::success(['message' => 'Notes mises à jour']);
 
         } else {

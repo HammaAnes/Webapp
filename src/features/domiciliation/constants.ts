@@ -140,6 +140,12 @@ export const COURRIER_TYPE_CONFIG: Record<
     iconBg: "bg-red-50",
     iconColor: "text-red-600",
   },
+  officiel: {
+    label: "Officiel",
+    icon: FileText,
+    iconBg: "bg-amber-50",
+    iconColor: "text-amber-600",
+  },
   autre: {
     label: "Autre",
     icon: Mail,
@@ -156,15 +162,12 @@ export const COURRIER_STATUT_CONFIG: Record<
   notifie: { label: "Notifié", variant: "info" },
   en_attente_instruction: { label: "Att. instruction", variant: "warning" },
   recupere: { label: "Récupéré", variant: "success" },
-  retire: { label: "Retiré", variant: "success" },
   scanne: { label: "Scanné", variant: "accent" },
   reexpedier: { label: "Réexpédition", variant: "info" },
-  envoye: { label: "Envoyé", variant: "info" },
-  traite: { label: "Traité", variant: "success" },
-  archive: { label: "Archivé", variant: "neutral" },
+  traite: { label: "Traité", variant: "neutral" },
 };
 
-export const COURRIER_INACTIVE_STATUTS = ["retire", "envoye", "archive"];
+export const COURRIER_INACTIVE_STATUTS = ["recupere", "reexpedier", "traite"];
 
 export const SOCIETE_DOCS = [
   { type: "registre_commerce", label: "Registre de Commerce (RC)", required: true },

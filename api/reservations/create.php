@@ -70,7 +70,13 @@ function computeReservationPrice(array $tarifs, int $debut, int $fin, array $rul
 try {
     $auth = Auth::verifyAuth();
     $authUserId = $auth['id'];
-    $authUser = (new Auth())->getUserById($authUserId);
+
+    $stmtUser = $db->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
+    $stmtUser->execute([$authUserId]);
+    $authUser = $stmtUser->fetch(PDO::FETCH_ASSOC);
+    if (!$authUser) {
+        Response::error("Utilisateur introuvable", 404);
+    }
 
     $input = file_get_contents("php://input");
     $data = json_decode($input, true);

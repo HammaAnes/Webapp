@@ -55,7 +55,7 @@ export function validateStep2(data: Pick<WizardFormData, 'typeStructure'>): Vali
   return ok();
 }
 
-export function validateStep3(data: Pick<WizardFormData, 'dirigeant'>): ValidationResult {
+export function validateStep3(data: Pick<WizardFormData, 'dirigeant' | 'dateDebutSouhaitee'>): ValidationResult {
   const errors: Record<string, string> = {};
   const { dirigeant } = data;
   if (!dirigeant.adresseResidence?.trim()) errors['dirigeant.adresseResidence'] = "L'adresse de résidence est requise";
@@ -70,6 +70,7 @@ export function validateStep3(data: Pick<WizardFormData, 'dirigeant'>): Validati
   } else if (!isValidEmail(dirigeant.email)) {
     errors['dirigeant.email'] = 'Format email invalide';
   }
+  if (!data.dateDebutSouhaitee) errors.dateDebutSouhaitee = 'La date de début souhaitée est requise';
   return Object.keys(errors).length > 0 ? fail(errors) : ok();
 }
 
