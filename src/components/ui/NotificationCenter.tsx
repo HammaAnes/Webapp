@@ -7,8 +7,10 @@ import {
   Gift,
   Building,
   CheckCircle,
+  ArrowRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 import { apiClient } from "../../lib/api-client";
 import { useAuthStore } from "../../store/authStore";
 import { formatDistanceToNow } from "date-fns";
@@ -211,17 +213,22 @@ const NotificationCenter: React.FC = () => {
               )}
             </div>
 
-            {/* Footer */}
-            {notifications.length > 0 && (
-              <div className="p-3 border-t border-gray-200 bg-gray-50 text-center">
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
-                >
-                  Fermer
-                </button>
-              </div>
-            )}
+                    <div className="p-3 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                Fermer
+              </button>
+              <Link
+                to="/app/notifications"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+              >
+                Tout voir
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

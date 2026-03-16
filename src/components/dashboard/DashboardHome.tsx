@@ -446,11 +446,11 @@ const AdminDashboard = () => {
               </div>
             </Link>
 
-            <Link to="/app/admin/walk-ins">
+            <Link to="/app/admin/caisse">
               <div className="p-4 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors text-center">
                 <UserPlus className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-                <p className="font-medium text-emerald-900 text-sm">Walk-ins</p>
-                <p className="text-xs text-emerald-600">Venues spontanées</p>
+                <p className="font-medium text-emerald-900 text-sm">Caisse</p>
+                <p className="text-xs text-emerald-600">Transactions</p>
               </div>
             </Link>
 
@@ -478,11 +478,11 @@ const AdminDashboard = () => {
               </div>
             </Link>
 
-            <Link to="/app/admin/blocages">
+            <Link to="/app/admin/settings">
               <div className="p-4 bg-red-50 rounded-xl hover:bg-red-100 transition-colors text-center">
                 <Lock className="w-8 h-8 text-red-600 mx-auto mb-2" />
-                <p className="font-medium text-red-900 text-sm">Blocages</p>
-                <p className="text-xs text-red-600">Maintenance</p>
+                <p className="font-medium text-red-900 text-sm">Paramètres</p>
+                <p className="text-xs text-red-600">Configuration</p>
               </div>
             </Link>
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Calendar,
   Clock,
@@ -162,6 +162,10 @@ const Reservations = () => {
       setLoading(false);
     }
   }, [loadReservations]);
+
+  useEffect(() => {
+    refresh(false);
+  }, []);
 
   const handleCancelReservation = async () => {
     if (!cancelId || cancelling) return;
