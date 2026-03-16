@@ -101,16 +101,17 @@ export const STATUT_CONFIG: Record<
 
 export const WORKFLOW_STEPS: { key: DomiciliationStatut; label: string }[] = [
   { key: "dossier_preparatoire", label: "Dossier" },
+  { key: "en_attente_complements", label: "Complements" },
   { key: "en_attente_signature", label: "Signature" },
-  { key: "domiciliation_creee", label: "Créée" },
+  { key: "domiciliation_creee", label: "Creee" },
   { key: "active", label: "Active" },
-  { key: "expiree", label: "Expirée" },
+  { key: "expiree", label: "Expiree" },
 ];
 
 export const WORKFLOW_TRANSITIONS: Record<DomiciliationStatut, DomiciliationStatut[]> = {
   dossier_preparatoire: ["en_attente_complements", "en_attente_signature", "refusee"],
-  en_attente_complements: ["en_attente_signature", "refusee"],
-  en_attente_signature: ["domiciliation_creee", "refusee"],
+  en_attente_complements: ["dossier_preparatoire", "en_attente_signature", "refusee"],
+  en_attente_signature: ["domiciliation_creee", "en_attente_complements", "refusee"],
   domiciliation_creee: ["active", "en_attente_complements", "refusee"],
   active: ["resiliee", "expiree"],
   expiree: [],

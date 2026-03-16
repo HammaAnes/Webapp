@@ -425,7 +425,7 @@ export const useAppStore = create<AppState>()(
       },
 
       addUser: async (data) => {
-        const result = await userService.adminCreateUser(data as { email: string; nom: string; prenom: string; telephone?: string; password?: string });
+        const result = await userService.adminCreateUser(data as { email: string; nom: string; prenom: string; telephone?: string; password?: string; role?: 'user' | 'admin'; entreprise?: string; profession?: string });
 
         if (result.success && result.user) {
           set({ users: [...get().users, result.user] });
@@ -434,6 +434,8 @@ export const useAppStore = create<AppState>()(
         return {
           success: result.success,
           error: result.error,
+          user: result.user,
+          tempPassword: result.tempPassword,
         };
       },
 

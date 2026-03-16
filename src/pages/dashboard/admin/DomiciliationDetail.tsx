@@ -103,13 +103,13 @@ export default function AdminDomiciliationDetail() {
       try {
         const res = await apiClient.updateDemandeDomiciliation(id, data as Parameters<typeof apiClient.updateDemandeDomiciliation>[1]);
         if ((res as { success: boolean }).success) {
-          toast.success("Informations mises à jour");
-          await loadDemandesDomiciliation();
+          toast.success("Informations mises a jour");
+          try { await loadDemandesDomiciliation(); } catch { /* reload failed silently */ }
         } else {
-          const errMsg = (res as { error?: string }).error || "Erreur lors de la mise à jour";
-          toast.error(errMsg);
-          throw new Error(errMsg);
+          toast.error((res as { error?: string }).error || "Erreur lors de la mise a jour");
         }
+      } catch {
+        toast.error("Erreur lors de la mise a jour");
       } finally {
         setLoading(false);
       }
@@ -186,7 +186,7 @@ export default function AdminDomiciliationDetail() {
             resilier: "Domiciliation résiliée",
           };
           toast.success(msgs[action]);
-          await loadDemandesDomiciliation();
+          try { await loadDemandesDomiciliation(); } catch { /* reload failed silently */ }
         } else {
           toast.error(res.error || res.message || "Erreur lors de l'action");
         }

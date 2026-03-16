@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             'duree_minutes' => round($dureeMinutes)
         ]);
     } catch (Exception $e) {
-        if ($db->inTransaction()) {
+        if (isset($db) && $db->inTransaction()) {
             $db->rollBack();
         }
         Response::error($e->getMessage());

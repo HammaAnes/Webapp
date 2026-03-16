@@ -218,7 +218,7 @@ class ApiClient {
     const url = `${API_URL}${endpoint}`;
     logger.debug(`Request: ${options.method || "GET"} ${url}`);
 
-    const timeoutMs = 30000;
+    const timeoutMs = 45000;
     const timeoutController = new AbortController();
     const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
     const existingSignal = options.signal as AbortSignal | undefined;
@@ -278,7 +278,13 @@ class ApiClient {
           preview: text.substring(0, 200),
         });
 
-        if (response.status === 401) {
+        if (response.ok) {
+          try {
+            data = text.trim() ? JSON.parse(text) : { success: true };
+          } catch {
+            data = { success: true };
+          }
+        } else if (response.status === 401) {
           data = { success: false, error: ERROR_MESSAGES.SESSION_EXPIRED };
         } else if (response.status >= 500 && retryCount < MAX_RETRIES) {
           logger.debug(`Server error, retrying... (${retryCount + 1}/${MAX_RETRIES})`);
@@ -1121,7 +1127,7 @@ class ApiClient {
   }
 
   async getClotures() {
-    return this.request("/caisse/transactions.php?type=clotures");
+    return this.request("/caisse/cloture.php");
   }
 
   // ============= COURRIER =============

@@ -55,12 +55,12 @@ try {
             Response::error('Le montant doit être supérieur à 0', 400);
         }
 
-        $typesValides = ['reservation', 'domiciliation', 'abonnement', 'autre', 'remboursement'];
+        $typesValides = ['reservation', 'domiciliation', 'abonnement', 'autre', 'remboursement', 'impression', 'boisson'];
         if (!in_array($data['type_transaction'], $typesValides)) {
             Response::error('Type de transaction invalide', 400);
         }
 
-        $modesValides = ['cash', 'virement', 'cheque', 'tpe', 'autre'];
+        $modesValides = ['cash', 'virement', 'cheque', 'tpe', 'credit'];
         if (!in_array($data['mode_paiement'], $modesValides)) {
             Response::error('Mode de paiement invalide', 400);
         }

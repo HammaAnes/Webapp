@@ -5,7 +5,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import SelectNative from '../ui/SelectNative';
 import { useContactStore } from '../../store/contactStore';
-import { apiClient } from '../../lib/api-client';
+import { useAppStore } from '../../store/store';
 import toast from 'react-hot-toast';
 
 export interface CreatedUser {
@@ -38,6 +38,7 @@ interface CreateUserModalProps {
 
 export function CreateUserModal({ isOpen, onClose, onUserCreated, initialData }: CreateUserModalProps) {
   const { convertToUser } = useContactStore();
+  const { addUser } = useAppStore();
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [createdUser, setCreatedUser] = useState<CreatedUser | null>(null);
@@ -89,7 +90,7 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated, initialData }:
           tempPassword: result.temporaryPassword,
         };
       } else {
-        const response = await apiClient.adminCreateUser({
+        const result = await addUser({
           email: formData.email.trim(),
           nom: formData.nom.trim(),
           prenom: formData.prenom.trim(),
@@ -100,22 +101,23 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated, initialData }:
           role: formData.role,
         });
 
-        if (!response.success) {
-          toast.error(response.error || response.message || 'Erreur lors de la création');
+        if (!result.success) {
+          toast.error(result.error || 'Erreur lors de la creation');
           return;
         }
 
-        const data = response.data as Record<string, unknown>;
+        const resultData = result as Record<string, unknown>;
+        const createdUserData = resultData.user as Record<string, unknown> | undefined;
         user = {
-          id: String(data.id),
-          email: String(data.email),
-          nom: String(data.nom),
-          prenom: String(data.prenom),
-          telephone: data.telephone as string | undefined,
-          entreprise: data.entreprise as string | undefined,
-          profession: data.profession as string | undefined,
-          role: (data.role as 'user' | 'admin') || 'user',
-          tempPassword: data.temp_password as string | undefined,
+          id: String(createdUserData?.id || ''),
+          email: formData.email.trim(),
+          nom: formData.nom.trim(),
+          prenom: formData.prenom.trim(),
+          telephone: formData.telephone.trim() || undefined,
+          entreprise: formData.entreprise.trim() || undefined,
+          profession: formData.profession.trim() || undefined,
+          role: formData.role,
+          tempPassword: resultData.tempPassword as string | undefined,
         };
       }
 

@@ -14,7 +14,7 @@ try {
         Response::error('Données invalides', 400);
     }
 
-    $contactId = $data['contactId'] ?? '';
+    $contactId = $data['contact_id'] ?? $data['contactId'] ?? '';
     if (empty($contactId)) {
         Response::error('ID du contact requis', 400);
     }
@@ -52,11 +52,13 @@ try {
     $tempPassword = bin2hex(random_bytes(8));
     $hashedPassword = password_hash($tempPassword, PASSWORD_BCRYPT);
 
+    $codeParrainage = 'CPF' . strtoupper(substr($newUserId, 0, 6));
+
     $insertUser = "
         INSERT INTO users (
-            id, email, password, nom, prenom, telephone, role, statut, entreprise
+            id, email, password_hash, nom, prenom, telephone, role, statut, entreprise, code_parrainage
         ) VALUES (
-            :id, :email, :password, :nom, :prenom, :telephone, 'user', 'actif', :entreprise
+            :id, :email, :password_hash, :nom, :prenom, :telephone, 'user', 'actif', :entreprise, :code_parrainage
         )
     ";
 
@@ -64,11 +66,12 @@ try {
     $stmt->execute([
         ':id' => $newUserId,
         ':email' => $contact['email'],
-        ':password' => $hashedPassword,
+        ':password_hash' => $hashedPassword,
         ':nom' => $contact['nom'],
         ':prenom' => $contact['prenom'],
         ':telephone' => $contact['telephone'],
-        ':entreprise' => $contact['entreprise']
+        ':entreprise' => $contact['entreprise'],
+        ':code_parrainage' => $codeParrainage
     ]);
 
     $updateContact = "UPDATE contacts SET user_id = :user_id, statut = 'client', updated_at = NOW() WHERE id = :id";
@@ -92,7 +95,8 @@ try {
         ':contact_id' => $contactId
     ]);
 
-    if (isset($data['sendWelcomeEmail']) && $data['sendWelcomeEmail']) {
+    $sendWelcome = $data['send_welcome_email'] ?? $data['sendWelcomeEmail'] ?? false;
+    if ($sendWelcome) {
         $mailer = new Mailer();
         $emailSent = $mailer->sendTemplateEmail(
             $contact['email'],

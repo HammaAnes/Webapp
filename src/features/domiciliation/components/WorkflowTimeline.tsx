@@ -48,12 +48,8 @@ export default function WorkflowTimeline({ statut, size = "md" }: Props) {
       <div className="flex items-center w-full overflow-x-auto pb-1">
         {WORKFLOW_STEPS.map((step, idx) => {
           const stepCfg = STATUT_CONFIG[step.key];
-          const isDone = isComplement
-            ? stepCfg.step < currentStep
-            : currentStep > stepCfg.step;
-          const isCurrent =
-            step.key === statut ||
-            (isComplement && step.key === "dossier_preparatoire");
+          const isDone = currentStep > stepCfg.step;
+          const isCurrent = step.key === statut;
           const isLast = idx === WORKFLOW_STEPS.length - 1;
 
           let circleClass = "bg-white border-gray-200";
@@ -80,7 +76,7 @@ export default function WorkflowTimeline({ statut, size = "md" }: Props) {
               </div>
               {!isLast && (
                 <div className={`flex-1 h-0.5 mx-1 mb-5 transition-all ${
-                  isDone && !isComplement ? "bg-emerald-400" : "bg-gray-200"
+                  isDone ? "bg-emerald-400" : "bg-gray-200"
                 }`} />
               )}
             </React.Fragment>

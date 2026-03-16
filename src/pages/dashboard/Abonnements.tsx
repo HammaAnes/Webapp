@@ -50,6 +50,17 @@ interface Abonnement {
   ordre: number;
 }
 
+interface ActiveSubscription {
+  id: string;
+  abonnementId: string;
+  abonnementNom: string;
+  dateDebut: string;
+  dateFin: string;
+  statut: string;
+  prix: number;
+  autoRenouvellement: boolean;
+}
+
 const steps = [
   { id: 1, title: "Sélection", icon: Package },
   { id: 2, title: "Informations", icon: User },
@@ -61,6 +72,7 @@ const Abonnements = () => {
   const { user } = useAuthStore();
   const [abonnements, setAbonnements] = useState<Abonnement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeSubscription, setActiveSubscription] = useState<ActiveSubscription | null>(null);
   const [selectedAbonnement, setSelectedAbonnement] = useState<Abonnement | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
@@ -80,6 +92,7 @@ const Abonnements = () => {
 
   useEffect(() => {
     loadAbonnements();
+    loadActiveSubscription();
   }, []);
 
   useEffect(() => {
@@ -118,6 +131,33 @@ const Abonnements = () => {
       toast.error("Erreur lors du chargement des abonnements");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadActiveSubscription = async () => {
+    try {
+      const response = await apiClient.getAbonnementsUtilisateurs();
+      if (response.success && response.data) {
+        const data = response.data as Record<string, unknown>;
+        const souscriptions = (data.souscriptions || data.abonnements_utilisateurs || []) as Record<string, unknown>[];
+        const active = souscriptions.find(
+          (s) => s.statut === "actif" || s.statut === "en_attente"
+        );
+        if (active) {
+          setActiveSubscription({
+            id: String(active.id),
+            abonnementId: String(active.abonnement_id),
+            abonnementNom: String(active.abonnement_nom || active.nom_abonnement || ""),
+            dateDebut: String(active.date_debut || ""),
+            dateFin: String(active.date_fin || ""),
+            statut: String(active.statut),
+            prix: parseFloat(String(active.prix || active.montant || 0)),
+            autoRenouvellement: active.auto_renouvellement === true || active.auto_renouvellement === 1,
+          });
+        }
+      }
+    } catch (error) {
+      logger.error("Erreur chargement souscription active:", error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -192,8 +232,9 @@ const Abonnements = () => {
       const response = await apiClient.souscrireAbonnement(payload);
 
       if (response.success) {
-        toast.success("Demande d'abonnement envoyée ! Vous recevrez un email de confirmation.");
+        toast.success("Demande d'abonnement envoyee ! Vous recevrez un email de confirmation.");
         setCurrentStep(4);
+        loadActiveSubscription();
       } else {
         toast.error(response.error || "Erreur lors de la souscription");
       }
@@ -232,12 +273,71 @@ const Abonnements = () => {
     return <LoadingSpinner />;
   }
 
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "-";
+    try {
+      return format(new Date(dateStr), "dd MMMM yyyy", { locale: fr });
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Abonnements</h1>
-        <p className="text-gray-600 mt-1">Choisissez l'abonnement qui vous convient</p>
+        <p className="text-gray-600 mt-1">
+          {activeSubscription ? "Gerez votre abonnement en cours" : "Choisissez l'abonnement qui vous convient"}
+        </p>
       </div>
+
+      {activeSubscription && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card className="p-6 border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50">
+            <div className="flex items-start gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/25 flex-shrink-0">
+                <CreditCard className="w-7 h-7 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-1">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {activeSubscription.abonnementNom || "Abonnement"}
+                  </h3>
+                  <Badge variant={activeSubscription.statut === "actif" ? "success" : "warning"}>
+                    {activeSubscription.statut === "actif" ? "Actif" : "En attente"}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                  <div>
+                    <p className="text-xs text-emerald-600 font-medium uppercase tracking-wider">Debut</p>
+                    <p className="text-sm font-semibold text-gray-900 mt-0.5">{formatDate(activeSubscription.dateDebut)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-emerald-600 font-medium uppercase tracking-wider">Fin</p>
+                    <p className="text-sm font-semibold text-gray-900 mt-0.5">{formatDate(activeSubscription.dateFin)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-emerald-600 font-medium uppercase tracking-wider">Montant</p>
+                    <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                      {activeSubscription.prix > 0 ? `${activeSubscription.prix.toLocaleString()} DA` : "-"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-emerald-200 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-emerald-600" />
+              <p className="text-sm text-emerald-700">
+                Votre abonnement est {activeSubscription.statut === "actif" ? "actif" : "en cours de traitement"}.
+                {activeSubscription.statut === "actif" && " Profitez de tous vos avantages."}
+              </p>
+            </div>
+          </Card>
+        </motion.div>
+      )}
 
       {abonnements.length === 0 ? (
         <Card className="p-12 text-center">

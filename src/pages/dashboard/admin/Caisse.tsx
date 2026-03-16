@@ -205,7 +205,7 @@ export default function Caisse() {
         montant,
         mode_paiement: paymentForm.mode_paiement,
         reference_paiement: paymentForm.reference_paiement || undefined,
-        description: paymentForm.description || undefined,
+        notes: paymentForm.description || undefined,
       });
 
       if (response.success) {

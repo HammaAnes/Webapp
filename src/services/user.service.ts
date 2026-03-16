@@ -10,6 +10,7 @@ export interface AdminCreateUserData {
   profession?: string;
   entreprise?: string;
   password?: string;
+  role?: 'user' | 'admin';
 }
 
 export interface AdminCreateUserResult {
