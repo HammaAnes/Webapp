@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import {
   startOfDay,
   eachDayOfInterval,
@@ -14,8 +14,6 @@ import {
 import { useAvailabilityStore } from "../store/availabilityStore";
 import { isClosedDay, type DayAvailability, type DayStatus } from "../services/availability.service";
 
-const POLLING_INTERVAL_MS = 30_000;
-const DEGRADED_POLLING_INTERVAL_MS = 60_000;
 
 interface UseAvailabilityOptions {
   espaceId: string;
@@ -43,16 +41,11 @@ export function useAvailability({
 }: UseAvailabilityOptions): UseAvailabilityResult {
   const store = useAvailabilityStore();
   const lastGlobalRefresh = useAvailabilityStore((s) => s.lastGlobalRefresh);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const isMountedRef = useRef(true);
 
   const monthData = store.getMonthData(espaceId, currentMonth);
   const isLoading = monthData?.loading ?? false;
   const hasError = monthData?.error ?? false;
-  const isStale =
-    !monthData ||
-    Date.now() - (monthData.fetchedAt ?? 0) > POLLING_INTERVAL_MS * 2 ||
-    (lastGlobalRefresh > 0 && (monthData?.fetchedAt ?? 0) < lastGlobalRefresh);
+  const isStale = !monthData || (lastGlobalRefresh > 0 && (monthData?.fetchedAt ?? 0) < lastGlobalRefresh);
 
   const doFetch = useCallback(
     (force = false) => {
@@ -65,35 +58,9 @@ export function useAvailability({
   const refresh = useCallback(() => doFetch(true), [doFetch]);
 
   useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
     if (!enabled || !espaceId) return;
     doFetch(false);
   }, [espaceId, currentMonth, enabled, doFetch]);
-
-  useEffect(() => {
-    if (!enabled || !espaceId) return;
-
-    const interval = hasError ? DEGRADED_POLLING_INTERVAL_MS : POLLING_INTERVAL_MS;
-
-    pollingRef.current = setInterval(() => {
-      if (isMountedRef.current) {
-        doFetch(true);
-      }
-    }, interval);
-
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    };
-  }, [espaceId, currentMonth, enabled, hasError, doFetch]);
 
   useEffect(() => {
     if (lastGlobalRefresh > 0 && enabled && espaceId) {

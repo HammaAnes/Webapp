@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Loader2, Users, RefreshCw, WifiOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Users } from "lucide-react";
 import {
   format,
   addMonths,
@@ -148,9 +148,9 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
 
     switch (dayInfo.status) {
       case "available":
-        return `${base} bg-emerald-50 text-emerald-900 hover:bg-emerald-100 hover:shadow-md cursor-pointer font-medium ${isToday ? "ring-2 ring-emerald-400" : ""}`;
+        return `${base} bg-emerald-50 text-emerald-900 hover:bg-emerald-100 cursor-pointer font-medium ${isToday ? "ring-2 ring-emerald-400" : ""}`;
       case "partial":
-        return `${base} bg-amber-50 text-amber-900 hover:bg-amber-100 hover:shadow-md cursor-pointer font-medium ${isToday ? "ring-2 ring-amber-400" : ""}`;
+        return `${base} bg-amber-50 text-amber-800 hover:bg-amber-100 cursor-pointer font-medium ${isToday ? "ring-2 ring-amber-400" : ""}`;
       case "full":
         return `${base} bg-red-50 text-red-400 cursor-not-allowed ${isToday ? "ring-2 ring-red-300" : ""}`;
       case "closed":
@@ -174,19 +174,13 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
       dayInfo.status !== "past" &&
       dayInfo.status !== "closed"
     ) {
-      const reserved = dayInfo.seatsTaken;
+      const taken = dayInfo.seatsTaken;
       const total = dayInfo.capacity;
-      const color =
-        reserved === 0
-          ? "text-emerald-600"
-          : reserved >= total
-          ? "text-red-500"
-          : reserved > total / 2
-          ? "text-amber-600"
-          : "text-emerald-600";
+      const ratio = total > 0 ? taken / total : 0;
+      const color = ratio === 0 ? "text-emerald-600" : ratio >= 1 ? "text-red-500" : ratio >= 0.5 ? "text-amber-500" : "text-emerald-600";
       return (
-        <span className={`absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[9px] font-bold ${color} whitespace-nowrap`}>
-          {reserved}/{total}
+        <span className={`absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-semibold ${color} whitespace-nowrap`}>
+          {taken}/{total}
         </span>
       );
     }
@@ -220,25 +214,9 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
           <ChevronLeft className="w-5 h-5" />
         </button>
 
-        <div className="text-center flex items-center gap-2">
-          <h4 className="text-lg font-bold text-gray-900 capitalize">
-            {format(currentMonth, "MMMM yyyy", { locale: fr })}
-          </h4>
-          {hasError ? (
-            <span title="Erreur de chargement — données en cache">
-              <WifiOff className="w-4 h-4 text-amber-500" />
-            </span>
-          ) : isStale && !isLoading ? (
-            <button
-              type="button"
-              onClick={refresh}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-              title="Rafraîchir la disponibilité"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
-          ) : null}
-        </div>
+        <h4 className="text-lg font-bold text-gray-900 capitalize">
+          {format(currentMonth, "MMMM yyyy", { locale: fr })}
+        </h4>
 
         <button
           type="button"
@@ -348,11 +326,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className={`w-2 h-2 rounded-full ${hasError ? "bg-amber-400" : "bg-emerald-400 animate-pulse"}`} />
-          <span className="text-[10px] text-gray-400">{hasError ? "Mode hors-ligne" : "Temps réel"}</span>
         </div>
-      </div>
 
       {selectionMode === "range" && (
         <div className="mt-2 text-center">
