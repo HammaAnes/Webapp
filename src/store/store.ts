@@ -367,12 +367,9 @@ export const useAppStore = create<AppState>()(
               domiciliationAdapter.fromAPI(d),
             );
             set({ demandesDomiciliation });
-          } else {
-            set({ demandesDomiciliation: [] });
           }
         } catch (error) {
           logger.error("Erreur chargement domiciliations:", error instanceof Error ? error.message : String(error));
-          set({ demandesDomiciliation: [] });
         }
       },
 

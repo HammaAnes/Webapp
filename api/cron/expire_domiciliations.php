@@ -8,6 +8,7 @@
 define('CRON_CONTEXT', true);
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/UuidHelper.php';
+require_once __DIR__ . '/../utils/Mailer.php';
 
 $startTime = microtime(true);
 $log = [];
@@ -26,11 +27,12 @@ try {
     $db = $database->getConnection();
 
     $findStmt = $db->prepare("
-        SELECT id, user_id, raison_sociale
-        FROM domiciliations
-        WHERE statut = 'active'
-          AND date_fin_contrat IS NOT NULL
-          AND DATE(date_fin_contrat) < CURDATE()
+        SELECT d.id, d.user_id, d.raison_sociale, u.email, u.prenom, u.nom
+        FROM domiciliations d
+        LEFT JOIN users u ON d.user_id = u.id
+        WHERE d.statut = 'active'
+          AND d.date_fin_contrat IS NOT NULL
+          AND DATE(d.date_fin_contrat) < CURDATE()
     ");
     $findStmt->execute();
     $toExpire = $findStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -64,6 +66,19 @@ try {
                 $notifStmt->bindParam(':titre', $titre);
                 $notifStmt->bindParam(':message', $message);
                 $notifStmt->execute();
+
+                if (!empty($dom['email'])) {
+                    try {
+                        Mailer::sendDomiciliationStatus($dom['email'], 'expiree', [
+                            'raison_sociale' => $dom['raison_sociale'] ?: '',
+                            'id' => $dom['id'],
+                            'prenom' => $dom['prenom'] ?: '',
+                            'nom' => $dom['nom'] ?: '',
+                        ]);
+                    } catch (Exception $mailErr) {
+                        cron_log('expire_domiciliations: email failed for id=' . $dom['id'] . ' — ' . $mailErr->getMessage());
+                    }
+                }
 
                 cron_log('expire_domiciliations: expired id=' . $dom['id'] . ' (' . $dom['raison_sociale'] . ')');
             } catch (Exception $e) {

@@ -50,7 +50,7 @@ export default function ActionsSidebar({ demande, onAction, loading }: Props) {
     referenceContratNotarie: demande.referenceContratNotarie ?? "",
     dateDebutContrat: toDateInputValue(demande.dateDebutContrat as string | undefined) || DEFAULT_DATE_DEBUT,
     dateFinContrat: toDateInputValue(demande.dateFinContrat as string | undefined) || DEFAULT_DATE_FIN,
-    montantMensuel: demande.montantMensuel ?? 12000,
+    montantMensuel: demande.montantMensuel ?? 0,
   });
 
   const statut = demande.statut;
@@ -107,8 +107,8 @@ export default function ActionsSidebar({ demande, onAction, loading }: Props) {
   };
 
   const canValider = ["dossier_preparatoire", "en_attente_complements"].includes(statut);
-  const canComplements = ["dossier_preparatoire", "domiciliation_creee"].includes(statut);
-  const canRejeter = ["dossier_preparatoire", "en_attente_complements", "en_attente_signature", "domiciliation_creee"].includes(statut);
+  const canComplements = ["dossier_preparatoire", "en_attente_signature"].includes(statut);
+  const canRejeter = ["dossier_preparatoire", "en_attente_complements", "en_attente_signature"].includes(statut);
   const canSigner = statut === "en_attente_signature";
   const canActiver = statut === "domiciliation_creee";
   const canRenouveler = ["expiree", "active"].includes(statut);

@@ -41,13 +41,38 @@ try {
             $params[] = $userId;
         }
 
-        $query .= " ORDER BY c.date_reception DESC";
+        $countQuery = "SELECT COUNT(*) as total FROM courriers c LEFT JOIN domiciliations d ON c.domiciliation_id = d.id WHERE 1=1";
+        $countParams = [];
+        if ($domiciliationId) {
+            $countQuery .= " AND c.domiciliation_id = ?";
+            $countParams[] = $domiciliationId;
+        } elseif ($userRole !== 'admin') {
+            $countQuery .= " AND d.user_id = ?";
+            $countParams[] = $userId;
+        }
+        $countStmt = $db->prepare($countQuery);
+        $countStmt->execute($countParams);
+        $total = (int) $countStmt->fetchColumn();
+
+        $page = max(1, intval($_GET['page'] ?? 1));
+        $limit = min(100, max(1, intval($_GET['limit'] ?? 50)));
+        $offset = ($page - 1) * $limit;
+
+        $query .= " ORDER BY c.date_reception DESC LIMIT $limit OFFSET $offset";
 
         $stmt = $db->prepare($query);
         $stmt->execute($params);
         $courriers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        Response::success(['courriers' => $courriers]);
+        Response::success([
+            'courriers' => $courriers,
+            'pagination' => [
+                'total' => $total,
+                'page' => $page,
+                'limit' => $limit,
+                'pages' => ceil($total / $limit),
+            ]
+        ]);
 
     } elseif ($method === 'POST') {
         if ($userRole !== 'admin') {

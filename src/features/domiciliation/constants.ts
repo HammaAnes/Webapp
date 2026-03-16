@@ -112,7 +112,7 @@ export const WORKFLOW_TRANSITIONS: Record<DomiciliationStatut, DomiciliationStat
   dossier_preparatoire: ["en_attente_complements", "en_attente_signature", "refusee"],
   en_attente_complements: ["dossier_preparatoire", "en_attente_signature", "refusee"],
   en_attente_signature: ["domiciliation_creee", "en_attente_complements", "refusee"],
-  domiciliation_creee: ["active", "en_attente_complements", "refusee"],
+  domiciliation_creee: ["active", "refusee"],
   active: ["resiliee", "expiree"],
   expiree: [],
   refusee: [],

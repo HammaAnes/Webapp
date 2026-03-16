@@ -103,7 +103,7 @@ try {
 
     $db->beginTransaction();
 
-    if (!$is_admin_creation) {
+    if ($target_user_id) {
         $query = "SELECT id FROM domiciliations
                   WHERE user_id = :user_id
                   AND statut IN ('dossier_preparatoire', 'en_attente_signature', 'domiciliation_creee', 'en_attente_complements', 'active')
@@ -115,7 +115,24 @@ try {
 
         if ($stmt->rowCount() > 0) {
             $db->rollBack();
-            Response::error("Vous avez déjà une demande de domiciliation en cours ou active", 400);
+            $msg = $is_admin_creation
+                ? "Cet utilisateur a déjà une domiciliation en cours ou active"
+                : "Vous avez déjà une demande de domiciliation en cours ou active";
+            Response::error($msg, 400);
+        }
+    }
+
+    if (!empty($data->numero_bureau)) {
+        $numBureau = intval($data->numero_bureau);
+        if ($numBureau < 1 || $numBureau > 60) {
+            $db->rollBack();
+            Response::error("Le numéro de bureau doit être entre 1 et 60", 400);
+        }
+        $bureauStmt = $db->prepare("SELECT id FROM domiciliations WHERE numero_bureau = :bureau AND statut NOT IN ('refusee','resiliee','expiree') LIMIT 1 FOR UPDATE");
+        $bureauStmt->execute([':bureau' => $numBureau]);
+        if ($bureauStmt->fetch()) {
+            $db->rollBack();
+            Response::error("Le bureau N°$numBureau est déjà attribué à une domiciliation active", 409);
         }
     }
 
@@ -124,7 +141,7 @@ try {
         $stmt->execute([':nif' => $data->nif]);
         if ($stmt->fetch()) {
             $db->rollBack();
-            Response::error("Une domiciliation existe déjà avec ce NIF (" . $data->nif . ")", 409);
+            Response::error("Une domiciliation existe déjà avec ce NIF", 409);
         }
     }
 
@@ -133,7 +150,7 @@ try {
         $stmt->execute([':rc' => $data->registre_commerce]);
         if ($stmt->fetch()) {
             $db->rollBack();
-            Response::error("Une domiciliation existe déjà avec ce registre de commerce (" . $data->registre_commerce . ")", 409);
+            Response::error("Une domiciliation existe déjà avec ce registre de commerce", 409);
         }
     }
 
@@ -231,7 +248,11 @@ try {
                 $fin = new DateTime($data->date_fin_contrat);
                 if ($fin > $debut) {
                     $diff = $debut->diff($fin);
-                    $mois = max(1, $diff->m + ($diff->y * 12));
+                    $totalMonths = $diff->m + ($diff->y * 12);
+                    if ($diff->d > 0) {
+                        $totalMonths++;
+                    }
+                    $mois = max(1, $totalMonths);
                 }
             } catch (Exception $dateErr) {
                 error_log("Invalid contract dates: " . $dateErr->getMessage());

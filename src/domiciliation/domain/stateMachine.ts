@@ -2,9 +2,9 @@ import type { DomiciliationStatut } from './types';
 
 export const TRANSITIONS: Record<DomiciliationStatut, DomiciliationStatut[]> = {
   dossier_preparatoire: ['en_attente_complements', 'en_attente_signature', 'refusee'],
-  en_attente_complements: ['en_attente_signature', 'refusee'],
-  en_attente_signature: ['domiciliation_creee', 'refusee'],
-  domiciliation_creee: ['active', 'en_attente_complements', 'refusee'],
+  en_attente_complements: ['dossier_preparatoire', 'en_attente_signature', 'refusee'],
+  en_attente_signature: ['domiciliation_creee', 'en_attente_complements', 'refusee'],
+  domiciliation_creee: ['active', 'refusee'],
   active: ['resiliee', 'expiree'],
   refusee: [],
   expiree: [],

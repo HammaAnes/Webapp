@@ -96,7 +96,7 @@ const DomiciliationPublic = () => {
 
   const visibleCompanies = stats.visibleCompanies;
   const MAX_DOMICILIATIONS = 60;
-  const activeCount = stats.activeCount > 0 ? stats.activeCount : 10;
+  const activeCount = stats.activeCount;
   const placesRestantes = MAX_DOMICILIATIONS - activeCount;
 
   const pricingFeatures = [
