@@ -49,46 +49,50 @@ try {
         Response::error("Cette demande ne peut pas être refusée depuis son statut actuel ('" . $domiciliation['statut'] . "')", 400);
     }
 
-    // Mettre à jour le statut
     $query = "UPDATE domiciliations
               SET statut = 'refusee',
-                  notes_admin = :notes,
+                  motif_refus = :motif_refus,
+                  commentaire_admin = :commentaire_admin,
                   updated_at = NOW()
               WHERE id = :id";
 
     $stmt = $db->prepare($query);
     $stmt->bindParam(':id', $data['domiciliation_id']);
-    $stmt->bindParam(':notes', $data['commentaire']);
+    $stmt->bindParam(':motif_refus', $data['commentaire']);
+    $stmt->bindParam(':commentaire_admin', $data['commentaire']);
 
     if (!$stmt->execute()) {
         Response::serverError('Erreur lors du rejet');
     }
 
-    // Créer une notification pour l'utilisateur
-    $notificationId = UuidHelper::generate();
-    $query = "INSERT INTO notifications
-              (id, user_id, type, titre, message, created_at)
-              VALUES (:id, :user_id, 'domiciliation', :titre, :message, NOW())";
+    if (!empty($domiciliation['user_id'])) {
+        $notificationId = UuidHelper::generate();
+        $query = "INSERT INTO notifications
+                  (id, user_id, type, titre, message, lue, created_at)
+                  VALUES (:id, :user_id, 'domiciliation', :titre, :message, 0, NOW())";
 
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':id', $notificationId);
-    $stmt->bindParam(':user_id', $domiciliation['user_id']);
-    $titre = 'Demande de domiciliation refusée';
-    $message = 'Votre demande de domiciliation a été refusée. Raison: ' . $data['commentaire'];
-    $stmt->bindParam(':titre', $titre);
-    $stmt->bindParam(':message', $message);
-    $stmt->execute();
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':id', $notificationId);
+        $stmt->bindParam(':user_id', $domiciliation['user_id']);
+        $titre = 'Demande de domiciliation refusée';
+        $message = 'Votre demande de domiciliation a été refusée. Raison: ' . $data['commentaire'];
+        $stmt->bindParam(':titre', $titre);
+        $stmt->bindParam(':message', $message);
+        $stmt->execute();
+    }
 
-    try {
-        $userStmt = $db->prepare("SELECT email, prenom, nom FROM users WHERE id = ?");
-        $userStmt->execute([$domiciliation['user_id']]);
-        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
-        if ($user) {
-            $domiciliation['commentaire_admin'] = $data['commentaire'];
-            Mailer::sendDomiciliationStatus($user['email'], 'refusee', $domiciliation);
+    if (!empty($domiciliation['user_id'])) {
+        try {
+            $userStmt = $db->prepare("SELECT email, prenom, nom FROM users WHERE id = ?");
+            $userStmt->execute([$domiciliation['user_id']]);
+            $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+            if ($user) {
+                $domiciliation['motif_refus'] = $data['commentaire'];
+                Mailer::sendDomiciliationStatus($user['email'], 'refusee', $domiciliation);
+            }
+        } catch (Exception $mailErr) {
+            error_log("Email domiciliation reject error: " . $mailErr->getMessage());
         }
-    } catch (Exception $mailErr) {
-        error_log("Email domiciliation reject error: " . $mailErr->getMessage());
     }
 
     Response::success([

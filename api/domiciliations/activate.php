@@ -1,17 +1,6 @@
 <?php
 
-/**
- * API: Activer une domiciliation (Admin)
- * POST /api/domiciliations/activate.php
- */
-
-require_once '../config/cors.php';
-require_once '../config/database.php';
-require_once '../utils/Auth.php';
-require_once '../utils/Response.php';
-require_once '../utils/Validator.php';
-require_once '../utils/UuidHelper.php';
-require_once '../utils/Mailer.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     Response::methodNotAllowed();
@@ -20,14 +9,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 try {
     $auth = Auth::verifyAuth();
 
-    // Vérifier que l'utilisateur est admin
     if ($auth['role'] !== 'admin') {
-        Response::unauthorized('Accès réservé aux administrateurs');
+        Response::unauthorized('Acces reserve aux administrateurs');
     }
 
     $data = json_decode(file_get_contents('php://input'), true);
 
-    // Validation
     $validator = new Validator($data);
     $validator->required(['domiciliation_id', 'montant_mensuel', 'date_debut', 'date_fin']);
 
@@ -46,31 +33,30 @@ try {
     $domiciliation = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$domiciliation) {
-        Response::notFound('Domiciliation introuvable ou ne peut pas être activée depuis son statut actuel (statut requis: en_attente_signature ou domiciliation_creee)');
+        Response::notFound('Domiciliation introuvable ou ne peut pas etre activee depuis son statut actuel');
     }
 
-    // Validation des dates
     $dateDebut = new DateTime($data['date_debut']);
     $dateFin = new DateTime($data['date_fin']);
     if ($dateFin <= $dateDebut) {
-        Response::badRequest('La date de fin doit être postérieure à la date de début');
+        Response::badRequest('La date de fin doit etre posterieure a la date de debut');
     }
 
-    // Validation du numéro de bureau
-    if (isset($data['numero_bureau']) && $data['numero_bureau'] > 0) {
-        $bureauNum = intval($data['numero_bureau']);
-        if ($bureauNum < 1 || $bureauNum > 60) {
-            Response::badRequest('Le numéro de bureau doit être compris entre 1 et 60');
+    $numeroBureau = isset($data['numero_bureau']) && $data['numero_bureau'] > 0 ? intval($data['numero_bureau']) : null;
+
+    if ($numeroBureau !== null) {
+        if ($numeroBureau < 1 || $numeroBureau > 60) {
+            Response::badRequest('Le numero de bureau doit etre compris entre 1 et 60');
         }
         $bureauCheckStmt = $db->prepare("SELECT id FROM domiciliations WHERE numero_bureau = ? AND statut IN ('active', 'domiciliation_creee') AND id != ?");
-        $bureauCheckStmt->execute([$bureauNum, $data['domiciliation_id']]);
+        $bureauCheckStmt->execute([$numeroBureau, $data['domiciliation_id']]);
         if ($bureauCheckStmt->fetch()) {
-            Response::error('Ce numéro de bureau est déjà attribué à une domiciliation active', 409);
+            Response::error('Ce numero de bureau est deja attribue a une domiciliation active', 409);
         }
     }
 
-    // Activer la domiciliation
-    $numeroBureau = isset($data['numero_bureau']) && $data['numero_bureau'] > 0 ? intval($data['numero_bureau']) : null;
+    $db->beginTransaction();
+
     $bureauSet = $numeroBureau !== null ? ", numero_bureau = :numero_bureau" : "";
 
     $query = "UPDATE domiciliations
@@ -80,6 +66,7 @@ try {
                   date_debut_contrat = :date_debut_contrat,
                   date_fin_contrat = :date_fin_contrat,
                   montant_mensuel = :montant_mensuel,
+                  date_activation = NOW(),
                   visible_sur_site = TRUE,
                   updated_at = NOW()
                   $bureauSet
@@ -97,64 +84,65 @@ try {
     }
 
     if (!$stmt->execute()) {
+        $db->rollBack();
         Response::serverError('Erreur lors de l\'activation');
     }
 
-    // Créer une transaction pour le premier paiement
-    $transactionId = UuidHelper::generate();
-    $query = "INSERT INTO transactions
-              (id, user_id, type, montant, statut, mode_paiement, reference, description, date_paiement, created_at)
-              VALUES (:id, :user_id, 'domiciliation', :montant, 'en_attente', :mode_paiement, :reference, :description, NOW(), NOW())";
+    if (!empty($domiciliation['user_id'])) {
+        $transactionId = UuidHelper::generate();
+        $query = "INSERT INTO transactions
+                  (id, user_id, type, montant, statut, mode_paiement, reference, description, date_paiement, created_at)
+                  VALUES (:id, :user_id, 'domiciliation', :montant, 'en_attente', :mode_paiement, :reference, :description, NOW(), NOW())";
 
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':id', $transactionId);
-    $stmt->bindParam(':user_id', $domiciliation['user_id']);
-    $stmt->bindParam(':montant', $data['montant_mensuel']);
-    $mode_paiement = $data['mode_paiement'] ?? 'cash';
-    $stmt->bindParam(':mode_paiement', $mode_paiement);
-    $reference = 'DOM-' . date('YmdHis') . '-' . substr($transactionId, 0, 8);
-    $stmt->bindParam(':reference', $reference);
-    $description = 'Activation domiciliation - ' . $domiciliation['raison_sociale'];
-    $stmt->bindParam(':description', $description);
-    $stmt->execute();
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':id', $transactionId);
+        $stmt->bindParam(':user_id', $domiciliation['user_id']);
+        $stmt->bindParam(':montant', $data['montant_mensuel']);
+        $mode_paiement = $data['mode_paiement'] ?? 'cash';
+        $stmt->bindParam(':mode_paiement', $mode_paiement);
+        $reference = 'DOM-' . date('YmdHis') . '-' . substr($transactionId, 0, 8);
+        $stmt->bindParam(':reference', $reference);
+        $description = 'Activation domiciliation - ' . $domiciliation['raison_sociale'];
+        $stmt->bindParam(':description', $description);
+        $stmt->execute();
 
-    // Créer une notification pour l'utilisateur
-    $notificationId = UuidHelper::generate();
-    $query = "INSERT INTO notifications
-              (id, user_id, type, titre, message, created_at)
-              VALUES (:id, :user_id, 'domiciliation', :titre, :message, NOW())";
+        $notificationId = UuidHelper::generate();
+        $notifQuery = "INSERT INTO notifications (id, user_id, type, titre, message, lue, created_at) VALUES (?, ?, 'domiciliation', ?, ?, 0, NOW())";
+        $notifStmt = $db->prepare($notifQuery);
+        $titre = 'Domiciliation activee';
+        $message = 'Votre domiciliation est maintenant active. Montant mensuel: ' . number_format($data['montant_mensuel'], 2, ',', ' ') . ' DA';
+        $notifStmt->execute([$notificationId, $domiciliation['user_id'], $titre, $message]);
+    }
 
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':id', $notificationId);
-    $stmt->bindParam(':user_id', $domiciliation['user_id']);
-    $titre = 'Domiciliation activée';
-    $message = 'Votre domiciliation est maintenant active. Montant mensuel: ' . number_format($data['montant_mensuel'], 2, ',', ' ') . ' DA';
-    $stmt->bindParam(':titre', $titre);
-    $stmt->bindParam(':message', $message);
-    $stmt->execute();
+    $db->commit();
 
-    try {
-        $userStmt = $db->prepare("SELECT email, prenom, nom FROM users WHERE id = ?");
-        $userStmt->execute([$domiciliation['user_id']]);
-        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
-        if ($user) {
-            $domiciliation['date_debut'] = $data['date_debut'];
-            $domiciliation['date_fin'] = $data['date_fin'];
-            $domiciliation['montant_mensuel'] = $data['montant_mensuel'];
-            Mailer::sendDomiciliationStatus($user['email'], 'active', $domiciliation);
+    if (!empty($domiciliation['user_id'])) {
+        try {
+            $userStmt = $db->prepare("SELECT email, prenom, nom FROM users WHERE id = ?");
+            $userStmt->execute([$domiciliation['user_id']]);
+            $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+            if ($user) {
+                $domiciliation['date_debut'] = $data['date_debut'];
+                $domiciliation['date_fin'] = $data['date_fin'];
+                $domiciliation['montant_mensuel'] = $data['montant_mensuel'];
+                Mailer::sendDomiciliationStatus($user['email'], 'active', $domiciliation);
+            }
+        } catch (Exception $mailErr) {
+            error_log("Email domiciliation activate error: " . $mailErr->getMessage());
         }
-    } catch (Exception $mailErr) {
-        error_log("Email domiciliation activate error: " . $mailErr->getMessage());
     }
 
     Response::success([
-        'message' => 'Domiciliation activée avec succès',
+        'message' => 'Domiciliation activee avec succes',
         'id' => $data['domiciliation_id'],
-        'transaction_id' => $transactionId,
-        'reference' => $reference
+        'transaction_id' => $transactionId ?? null,
+        'reference' => $reference ?? null
     ]);
 
 } catch (Exception $e) {
+    if (isset($db) && $db->inTransaction()) {
+        $db->rollBack();
+    }
     error_log("Activate domiciliation error: " . $e->getMessage());
     Response::serverError();
 }

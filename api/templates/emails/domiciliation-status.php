@@ -25,7 +25,7 @@ if ($isSuccess) {
 } elseif ($isDanger) {
     $title = 'Demande de domiciliation refusée';
     $intro = 'Bonjour, nous sommes au regret de vous informer que votre demande de domiciliation n\'a pas pu être acceptée.';
-    $motif = $domiciliation['raison_rejet'] ?? $domiciliation['commentaire_admin'] ?? '';
+    $motif = $domiciliation['motif_refus'] ?? $domiciliation['commentaire_admin'] ?? '';
     $outro = '';
     if ($motif) {
         $outro .= '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#fef2f2;border:1px solid #fecaca;border-radius:12px;margin:20px 0;"><tr><td style="padding:16px 20px;font-size:14px;color:#991b1b;"><strong>Motif&nbsp;:</strong> ' . htmlspecialchars($motif) . '</td></tr></table>';

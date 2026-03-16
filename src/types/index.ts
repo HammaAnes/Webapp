@@ -210,92 +210,83 @@ export interface DomiciliationOptions {
   accesPonctuelEspaces: boolean;
 }
 
+export interface RepresentantLegal {
+  nom: string;
+  prenom: string;
+  fonction?: string;
+  telephone: string;
+  email: string;
+  adresseResidence?: string;
+  ville?: string;
+}
+
 export interface DemandeDomiciliation {
   id: string;
   userId?: string;
   contactId?: string;
   utilisateur?: User;
   contact?: Contact;
+
   situationAdministrative: "en_cours_creation" | "deja_creee";
   typeStructure: "societe" | "auto_entrepreneur";
+
   raisonSociale: string;
   formeJuridique: string;
+  capital?: number;
+  activitePrincipale?: string;
+  domaineActivite?: string;
+  activiteExercee?: string;
+  descriptionActivite?: string;
+
   nif?: string;
   nis?: string;
   registreCommerce?: string;
   articleImposition?: string;
-  codeNae?: string;
-  activiteExercee?: string;
-  descriptionActivite?: string;
   numeroAutoEntrepreneur?: string;
+  codeNae?: string;
+
+  wilaya?: string;
+  commune?: string;
+  adresseActuelle?: string;
+  adresseSiegeSocial?: string;
+
+  representantLegal: RepresentantLegal;
+
   dateCreationEntreprise?: string;
   villeImmatriculation?: string;
   dateInscriptionAutoEntrepreneur?: string;
-  representantLegal: {
-    nom: string;
-    prenom: string;
-    fonction?: string;
-    telephone: string;
-    email: string;
-    adresseResidence?: string;
-    ville?: string;
-  };
-  domaineActivite?: string;
-  adresseSiegeSocial?: string;
-  capital?: number;
+
   numeroBureau?: number;
   referenceContratNotarie?: string;
   dateDebutContrat?: string;
   dateFinContrat?: string;
-  options?: DomiciliationOptions;
-  cguAcceptees: boolean;
-  dateCguAcceptation?: string;
-  statut: "dossier_preparatoire" | "en_attente_signature" | "domiciliation_creee" | "en_attente_complements" | "active" | "refusee" | "expiree" | "resiliee";
-  commentaireAdmin?: string;
-  dateValidation?: string;
-  dateCreation: string;
-  updatedAt: string;
-  montantMensuel?: number;
+  dateDebutSouhaitee?: string;
   dateDebut?: string;
   dateFin?: string;
+
+  options?: DomiciliationOptions;
+  montantMensuel?: number;
   modePaiement?: string;
-  wilaya?: string;
-  commune?: string;
-  adresseActuelle?: string;
-  activitePrincipale?: string;
+
+  cguAcceptees: boolean;
+  dateCguAcceptation?: string;
+
+  statut: DomiciliationStatut;
+
+  dateValidation?: string;
+  dateActivation?: string;
+  dateExpiration?: string;
+
+  notesAdmin?: string;
+  commentaireAdmin?: string;
+  motifRefus?: string;
+  complementsDemandes?: string;
+
   visibleSurSite?: boolean;
   documents?: Array<{ type: string; name: string }>;
-  dateDebutSouhaitee?: string;
-}
 
-export interface DomiciliationService {
-  id: string;
-  userId: string;
-  demande: DemandeDomiciliation;
-  companyName: string;
-  legalForm: string;
-  identification: IdentificationEntreprise;
-  startDate: Date;
-  endDate: Date;
-  status: "active" | "pending" | "expired" | "suspended";
-  address: string;
-  services: string[];
-  monthlyFee: number;
-  setupFee: number;
-  documentsLegaux: DocumentLegal[];
-  representantLegal: {
-    nom: string;
-    prenom: string;
-    fonction?: string;
-    telephone: string;
-    email: string;
-  };
-  activityDomain?: string;
-  dateSignatureContrat?: Date;
-  numeroContrat?: string;
-  visibleSurSite: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  dateCreation: string;
+  updatedAt: string;
 }
 
 export interface CodePromo {
@@ -346,35 +337,43 @@ export interface CreateReservationData {
 }
 
 export interface CreateDomiciliationData {
-  userId: string;
+  userId?: string;
+  contactId?: string;
   situationAdministrative: "en_cours_creation" | "deja_creee";
   typeStructure: "societe" | "auto_entrepreneur";
   raisonSociale?: string;
   formeJuridique?: string;
+  capital?: number;
+  activitePrincipale?: string;
+  domaineActivite?: string;
+  activiteExercee?: string;
+  descriptionActivite?: string;
   nif?: string;
   nis?: string;
   registreCommerce?: string;
   articleImposition?: string;
-  codeNae?: string;
-  activiteExercee?: string;
-  descriptionActivite?: string;
   numeroAutoEntrepreneur?: string;
+  codeNae?: string;
+  wilaya?: string;
+  commune?: string;
+  adresseActuelle?: string;
   dateCreationEntreprise?: string;
   villeImmatriculation?: string;
   dateInscriptionAutoEntrepreneur?: string;
-  representantLegal: {
-    nom: string;
-    prenom: string;
-    fonction?: string;
-    telephone: string;
-    email: string;
-    adresseResidence?: string;
-    ville?: string;
-  };
-  domaineActivite?: string;
+  representantLegal: RepresentantLegal;
   options?: DomiciliationOptions;
   cguAcceptees: boolean;
   dateDebutSouhaitee?: string;
+  numeroBureau?: number;
+  montantMensuel?: number;
+  dateDebutContrat?: string;
+  dateFinContrat?: string;
+  dateDebut?: string;
+  dateFin?: string;
+  statut?: DomiciliationStatut;
+  modePaiement?: string;
+  notesAdmin?: string;
+  commentaireAdmin?: string;
 }
 
 export interface AdminStats {

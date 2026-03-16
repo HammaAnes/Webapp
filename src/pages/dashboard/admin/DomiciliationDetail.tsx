@@ -132,6 +132,7 @@ export default function AdminDomiciliationDetail() {
             res = await apiClient.updateDemandeDomiciliation(id, {
               statut: "en_attente_complements",
               commentaireAdmin: data?.motif,
+              complementsDemandes: data?.complementsDemandes || data?.motif,
             });
             break;
           case "rejeter":

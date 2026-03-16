@@ -356,52 +356,76 @@ export const domiciliationAdapter = {
       };
     }
 
+    let contact: Contact | undefined;
+    if (apiData.contact && typeof apiData.contact === "object") {
+      contact = contactAdapter.fromAPI(apiData.contact as ApiRecord);
+    } else if (apiData.contact_nom) {
+      contact = {
+        id: String(apiData.contact_id || ""),
+        nom: String(apiData.contact_nom || ""),
+        prenom: String(apiData.contact_prenom || ""),
+        email: apiData.contact_email as string | undefined,
+        source: "autre" as const,
+        statut: "prospect" as const,
+        createdBy: "",
+        createdAt: "",
+        updatedAt: "",
+      };
+    }
+
     return {
       id: String(apiData.id || ""),
-      userId: String(apiData.user_id || ""),
+      userId: apiData.user_id ? String(apiData.user_id) : undefined,
+      contactId: apiData.contact_id ? String(apiData.contact_id) : undefined,
       utilisateur,
+      contact,
       situationAdministrative: (apiData.situation_administrative || "deja_creee") as DemandeDomiciliation["situationAdministrative"],
       typeStructure: (apiData.type_structure || "societe") as DemandeDomiciliation["typeStructure"],
       raisonSociale: String(apiData.raison_sociale || ""),
       formeJuridique: String(apiData.forme_juridique || ""),
-      nif: String(apiData.nif || ""),
-      nis: String(apiData.nis || ""),
-      registreCommerce: String(apiData.registre_commerce || ""),
-      articleImposition: String(apiData.article_imposition || ""),
-      codeNae: apiData.code_nae as string | undefined,
+      capital: apiData.capital != null ? Number(apiData.capital) : undefined,
+      activitePrincipale: apiData.activite_principale as string | undefined,
+      domaineActivite: apiData.domaine_activite as string | undefined,
       activiteExercee: apiData.activite_exercee as string | undefined,
       descriptionActivite: apiData.description_activite as string | undefined,
+      nif: apiData.nif ? String(apiData.nif) : undefined,
+      nis: apiData.nis ? String(apiData.nis) : undefined,
+      registreCommerce: apiData.registre_commerce ? String(apiData.registre_commerce) : undefined,
+      articleImposition: apiData.article_imposition ? String(apiData.article_imposition) : undefined,
       numeroAutoEntrepreneur: apiData.numero_auto_entrepreneur as string | undefined,
+      codeNae: apiData.code_nae as string | undefined,
+      wilaya: apiData.wilaya as string | undefined,
+      commune: apiData.commune as string | undefined,
+      adresseActuelle: apiData.adresse_actuelle as string | undefined,
+      adresseSiegeSocial: apiData.adresse_siege_social as string | undefined,
+      representantLegal,
       dateCreationEntreprise: apiData.date_creation_entreprise as string | undefined,
       villeImmatriculation: apiData.ville_immatriculation as string | undefined,
       dateInscriptionAutoEntrepreneur: apiData.date_inscription_auto_entrepreneur as string | undefined,
-      representantLegal,
-      domaineActivite: String(apiData.domaine_activite || ""),
-      adresseSiegeSocial: String(apiData.adresse_siege_social || ""),
-      capital: apiData.capital != null ? Number(apiData.capital) : undefined,
       numeroBureau: apiData.numero_bureau != null ? Number(apiData.numero_bureau) : undefined,
       referenceContratNotarie: apiData.reference_contrat_notarie as string | undefined,
       dateDebutContrat: apiData.date_debut_contrat as string | undefined,
       dateFinContrat: apiData.date_fin_contrat as string | undefined,
+      dateDebutSouhaitee: apiData.date_debut_souhaitee as string | undefined,
+      dateDebut: apiData.date_debut as string | undefined,
+      dateFin: apiData.date_fin as string | undefined,
       options,
+      montantMensuel: apiData.montant_mensuel != null ? parseFloat(String(apiData.montant_mensuel)) : undefined,
+      modePaiement: apiData.mode_paiement as string | undefined,
       cguAcceptees: apiData.cgu_acceptees === 1 || apiData.cgu_acceptees === true,
       dateCguAcceptation: apiData.date_cgu_acceptation as string | undefined,
       statut,
-      commentaireAdmin: (apiData.commentaire_admin || apiData.notes_admin) as string | undefined,
-      montantMensuel: apiData.montant_mensuel != null ? parseFloat(String(apiData.montant_mensuel)) : undefined,
-      dateDebut: apiData.date_debut as string | undefined,
-      dateFin: apiData.date_fin as string | undefined,
-      modePaiement: apiData.mode_paiement as string | undefined,
       dateValidation: apiData.date_validation as string | undefined,
-      dateCreation: String(apiData.created_at || ""),
-      updatedAt: String(apiData.updated_at || ""),
-      wilaya: apiData.wilaya as string | undefined,
-      commune: apiData.commune as string | undefined,
-      adresseActuelle: apiData.adresse_actuelle as string | undefined,
-      activitePrincipale: apiData.activite_principale as string | undefined,
-      dateDebutSouhaitee: apiData.date_debut_souhaitee as string | undefined,
+      dateActivation: apiData.date_activation as string | undefined,
+      dateExpiration: apiData.date_expiration as string | undefined,
+      notesAdmin: apiData.notes_admin as string | undefined,
+      commentaireAdmin: apiData.commentaire_admin as string | undefined,
+      motifRefus: apiData.motif_refus as string | undefined,
+      complementsDemandes: apiData.complements_demandes as string | undefined,
       visibleSurSite: apiData.visible_sur_site === true || apiData.visible_sur_site === 1 || apiData.visible_sur_site === "1",
       documents,
+      dateCreation: String(apiData.created_at || ""),
+      updatedAt: String(apiData.updated_at || ""),
     };
   },
 
@@ -412,21 +436,27 @@ export const domiciliationAdapter = {
       return v instanceof Date ? v.toISOString().split("T")[0] : String(v);
     };
 
+    if (domiciliation.userId !== undefined) data.user_id = domiciliation.userId;
+    if (domiciliation.contactId !== undefined) data.contact_id = domiciliation.contactId;
     if (domiciliation.situationAdministrative !== undefined) data.situation_administrative = domiciliation.situationAdministrative;
     if (domiciliation.typeStructure !== undefined) data.type_structure = domiciliation.typeStructure;
     if (domiciliation.raisonSociale !== undefined) data.raison_sociale = domiciliation.raisonSociale;
     if (domiciliation.formeJuridique !== undefined) data.forme_juridique = domiciliation.formeJuridique;
+    if (domiciliation.capital !== undefined) data.capital = domiciliation.capital;
+    if (domiciliation.activitePrincipale !== undefined) data.activite_principale = domiciliation.activitePrincipale;
+    if (domiciliation.domaineActivite !== undefined) data.domaine_activite = domiciliation.domaineActivite;
+    if (domiciliation.activiteExercee !== undefined) data.activite_exercee = domiciliation.activiteExercee;
+    if (domiciliation.descriptionActivite !== undefined) data.description_activite = domiciliation.descriptionActivite;
     if (domiciliation.nif !== undefined) data.nif = domiciliation.nif;
     if (domiciliation.nis !== undefined) data.nis = domiciliation.nis;
     if (domiciliation.registreCommerce !== undefined) data.registre_commerce = domiciliation.registreCommerce;
     if (domiciliation.articleImposition !== undefined) data.article_imposition = domiciliation.articleImposition;
-    if (domiciliation.codeNae !== undefined) data.code_nae = domiciliation.codeNae;
-    if (domiciliation.activiteExercee !== undefined) data.activite_exercee = domiciliation.activiteExercee;
-    if (domiciliation.descriptionActivite !== undefined) data.description_activite = domiciliation.descriptionActivite;
     if (domiciliation.numeroAutoEntrepreneur !== undefined) data.numero_auto_entrepreneur = domiciliation.numeroAutoEntrepreneur;
-    if (domiciliation.dateCreationEntreprise !== undefined) data.date_creation_entreprise = toDateStr(domiciliation.dateCreationEntreprise);
-    if (domiciliation.villeImmatriculation !== undefined) data.ville_immatriculation = domiciliation.villeImmatriculation;
-    if (domiciliation.dateInscriptionAutoEntrepreneur !== undefined) data.date_inscription_auto_entrepreneur = toDateStr(domiciliation.dateInscriptionAutoEntrepreneur);
+    if (domiciliation.codeNae !== undefined) data.code_nae = domiciliation.codeNae;
+    if (domiciliation.wilaya !== undefined) data.wilaya = domiciliation.wilaya;
+    if (domiciliation.commune !== undefined) data.commune = domiciliation.commune;
+    if (domiciliation.adresseActuelle !== undefined) data.adresse_actuelle = domiciliation.adresseActuelle;
+    if (domiciliation.adresseSiegeSocial !== undefined) data.adresse_siege_social = domiciliation.adresseSiegeSocial;
     if (domiciliation.representantLegal !== undefined) {
       const rl = domiciliation.representantLegal;
       if (rl.nom !== undefined) data.representant_nom = rl.nom;
@@ -437,28 +467,26 @@ export const domiciliationAdapter = {
       if (rl.adresseResidence !== undefined) data.representant_adresse_residence = rl.adresseResidence;
       if (rl.ville !== undefined) data.representant_ville = rl.ville;
     }
-    if (domiciliation.domaineActivite !== undefined) data.domaine_activite = domiciliation.domaineActivite;
-    if (domiciliation.adresseSiegeSocial !== undefined) data.adresse_siege_social = domiciliation.adresseSiegeSocial;
-    if (domiciliation.capital !== undefined) data.capital = String(domiciliation.capital);
+    if (domiciliation.dateCreationEntreprise !== undefined) data.date_creation_entreprise = toDateStr(domiciliation.dateCreationEntreprise);
+    if (domiciliation.villeImmatriculation !== undefined) data.ville_immatriculation = domiciliation.villeImmatriculation;
+    if (domiciliation.dateInscriptionAutoEntrepreneur !== undefined) data.date_inscription_auto_entrepreneur = toDateStr(domiciliation.dateInscriptionAutoEntrepreneur);
     if (domiciliation.numeroBureau !== undefined) data.numero_bureau = domiciliation.numeroBureau;
     if (domiciliation.referenceContratNotarie !== undefined) data.reference_contrat_notarie = domiciliation.referenceContratNotarie;
     if (domiciliation.dateDebutContrat !== undefined) data.date_debut_contrat = toDateStr(domiciliation.dateDebutContrat);
     if (domiciliation.dateFinContrat !== undefined) data.date_fin_contrat = toDateStr(domiciliation.dateFinContrat);
-    if (domiciliation.options !== undefined) data.options = domiciliation.options;
-    if (domiciliation.cguAcceptees !== undefined) data.cgu_acceptees = domiciliation.cguAcceptees;
-    if (domiciliation.statut !== undefined) data.statut = domiciliation.statut;
-    if (domiciliation.commentaireAdmin !== undefined) data.commentaire_admin = domiciliation.commentaireAdmin;
-    if (domiciliation.montantMensuel !== undefined) data.montant_mensuel = domiciliation.montantMensuel;
+    if (domiciliation.dateDebutSouhaitee !== undefined) data.date_debut_souhaitee = toDateStr(domiciliation.dateDebutSouhaitee);
     if (domiciliation.dateDebut !== undefined) data.date_debut = toDateStr(domiciliation.dateDebut);
     if (domiciliation.dateFin !== undefined) data.date_fin = toDateStr(domiciliation.dateFin);
+    if (domiciliation.options !== undefined) data.options = typeof domiciliation.options === "string" ? domiciliation.options : JSON.stringify(domiciliation.options);
+    if (domiciliation.montantMensuel !== undefined) data.montant_mensuel = domiciliation.montantMensuel;
     if (domiciliation.modePaiement !== undefined) data.mode_paiement = domiciliation.modePaiement;
-    if (domiciliation.wilaya !== undefined) data.wilaya = domiciliation.wilaya;
-    if (domiciliation.commune !== undefined) data.commune = domiciliation.commune;
-    if (domiciliation.adresseActuelle !== undefined) data.adresse_actuelle = domiciliation.adresseActuelle;
-    if (domiciliation.activitePrincipale !== undefined) data.activite_principale = domiciliation.activitePrincipale;
-    if (domiciliation.dateDebutSouhaitee !== undefined) data.date_debut_souhaitee = toDateStr(domiciliation.dateDebutSouhaitee);
+    if (domiciliation.cguAcceptees !== undefined) data.cgu_acceptees = domiciliation.cguAcceptees;
+    if (domiciliation.statut !== undefined) data.statut = domiciliation.statut;
+    if (domiciliation.notesAdmin !== undefined) data.notes_admin = domiciliation.notesAdmin;
+    if (domiciliation.commentaireAdmin !== undefined) data.commentaire_admin = domiciliation.commentaireAdmin;
+    if (domiciliation.motifRefus !== undefined) data.motif_refus = domiciliation.motifRefus;
+    if (domiciliation.complementsDemandes !== undefined) data.complements_demandes = domiciliation.complementsDemandes;
     if (domiciliation.visibleSurSite !== undefined) data.visible_sur_site = domiciliation.visibleSurSite;
-    if (domiciliation.userId !== undefined) data.user_id = domiciliation.userId;
 
     return data;
   },

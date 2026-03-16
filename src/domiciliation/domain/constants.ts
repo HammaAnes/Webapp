@@ -1,9 +1,17 @@
-import type { SituationAdministrative, TypeStructure, DocumentSlot } from './types';
-import type { LegalForm } from './types';
+import type { DocumentSlot, LegalForm, CasMetier } from './types';
 import { getCasMetier } from './types';
+import type { DomiciliationOptions } from '../../types';
 
 export const MAX_DOMICILIATIONS = 60;
 export const ACTIVATION_DELAY = '48h';
+
+export const DEFAULT_OPTIONS: DomiciliationOptions = {
+  domiciliationSimple: true,
+  receptionCourrier: false,
+  scanNotificationEmail: false,
+  reexpeditionCourrier: false,
+  accesPonctuelEspaces: false,
+};
 
 export const COFFICE_ADDRESS = {
   full: 'Mohammadia Mall, 4ème étage, Bureau 1178, Alger',
@@ -72,8 +80,8 @@ const DOCS_B2: RequiredDocConfig[] = [
 ];
 
 export function getRequiredDocuments(
-  situation: SituationAdministrative,
-  typeStructure: TypeStructure
+  situation: 'en_cours_creation' | 'deja_creee',
+  typeStructure: 'societe' | 'auto_entrepreneur'
 ): RequiredDocConfig[] {
   const cas = getCasMetier(situation, typeStructure);
   return { A1: DOCS_A1, A2: DOCS_A2, B1: DOCS_B1, B2: DOCS_B2 }[cas];
@@ -94,7 +102,7 @@ export const AUTO_ENTREPRENEUR_DOC_SLOTS: DocumentSlot[] = [
   { type: 'autre', label: 'Autre document', required: false },
 ];
 
-export function getDocumentSlots(typeStructure: TypeStructure): DocumentSlot[] {
+export function getDocumentSlots(typeStructure: 'societe' | 'auto_entrepreneur'): DocumentSlot[] {
   return typeStructure === 'societe' ? SOCIETE_DOC_SLOTS : AUTO_ENTREPRENEUR_DOC_SLOTS;
 }
 

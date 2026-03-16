@@ -1,17 +1,16 @@
-export type SituationAdministrative = 'en_cours_creation' | 'deja_creee';
-export type TypeStructure = 'societe' | 'auto_entrepreneur';
+export type {
+  DomiciliationStatut,
+  SituationAdministrative,
+  TypeStructure,
+} from "../../constants";
+export type {
+  DemandeDomiciliation,
+  DomiciliationOptions,
+  RepresentantLegal,
+} from "../../types";
+export { DEFAULT_OPTIONS } from "./constants";
+
 export type LegalForm = 'SARL' | 'EURL' | 'SPA' | 'SNC' | 'SCS' | 'Startup';
-
-export type DomiciliationStatut =
-  | 'dossier_preparatoire'
-  | 'en_attente_complements'
-  | 'en_attente_signature'
-  | 'domiciliation_creee'
-  | 'active'
-  | 'refusee'
-  | 'expiree'
-  | 'resiliee';
-
 export type CourrierType = 'lettre' | 'colis' | 'recommande' | 'autre';
 export type CourrierStatut =
   | 'recu' | 'notifie' | 'en_attente_instruction'
@@ -19,20 +18,19 @@ export type CourrierStatut =
   | 'scanne' | 'reexpedier' | 'envoye'
   | 'traite' | 'archive';
 export type DocumentStatus = 'en_attente' | 'valide' | 'rejete';
-
 export type CasMetier = 'A1' | 'A2' | 'B1' | 'B2';
 
-export function getCasMetier(situation: SituationAdministrative, typeStructure: TypeStructure): CasMetier {
+export function getCasMetier(situation: 'en_cours_creation' | 'deja_creee', typeStructure: 'societe' | 'auto_entrepreneur'): CasMetier {
   if (situation === 'en_cours_creation') return typeStructure === 'societe' ? 'A1' : 'A2';
   return typeStructure === 'societe' ? 'B1' : 'B2';
 }
 
 export function getCasLabel(cas: CasMetier): string {
   const labels: Record<CasMetier, string> = {
-    A1: 'CAS A1 — Société en cours de création',
-    A2: 'CAS A2 — Auto-entrepreneur en cours de création',
-    B1: 'CAS B1 — Société déjà créée',
-    B2: 'CAS B2 — Auto-entrepreneur déjà créé',
+    A1: 'CAS A1 — Societe en cours de creation',
+    A2: 'CAS A2 — Auto-entrepreneur en cours de creation',
+    B1: 'CAS B1 — Societe deja creee',
+    B2: 'CAS B2 — Auto-entrepreneur deja cree',
   };
   return labels[cas];
 }
@@ -40,32 +38,6 @@ export function getCasLabel(cas: CasMetier): string {
 export function getCasShortLabel(cas: CasMetier): string {
   return { A1: 'CAS A1', A2: 'CAS A2', B1: 'CAS B1', B2: 'CAS B2' }[cas];
 }
-
-export interface RepresentantLegal {
-  nom: string;
-  prenom: string;
-  telephone: string;
-  email: string;
-  adresseResidence?: string;
-  ville?: string;
-  fonction?: string;
-}
-
-export interface DomiciliationOptions {
-  domiciliationSimple: boolean;
-  receptionCourrier: boolean;
-  scanNotificationEmail: boolean;
-  reexpeditionCourrier: boolean;
-  accesPonctuelEspaces: boolean;
-}
-
-export const DEFAULT_OPTIONS: DomiciliationOptions = {
-  domiciliationSimple: true,
-  receptionCourrier: false,
-  scanNotificationEmail: false,
-  reexpeditionCourrier: false,
-  accesPonctuelEspaces: false,
-};
 
 export interface DonneesA1 {
   denominationSociale: string;
@@ -97,13 +69,27 @@ export interface DonneesB2 {
 }
 
 export interface WizardFormData {
-  situation: SituationAdministrative | null;
-  typeStructure: TypeStructure | null;
-  dirigeant: RepresentantLegal;
+  situation: 'en_cours_creation' | 'deja_creee' | null;
+  typeStructure: 'societe' | 'auto_entrepreneur' | null;
+  dirigeant: {
+    nom: string;
+    prenom: string;
+    telephone: string;
+    email: string;
+    adresseResidence?: string;
+    ville?: string;
+    fonction?: string;
+  };
   dateDebutSouhaitee: Date | null;
   entreprise: DonneesA1 | DonneesA2 | DonneesB1 | DonneesB2 | null;
   cguAcceptees: boolean;
-  options: DomiciliationOptions;
+  options: {
+    domiciliationSimple: boolean;
+    receptionCourrier: boolean;
+    scanNotificationEmail: boolean;
+    reexpeditionCourrier: boolean;
+    accesPonctuelEspaces: boolean;
+  };
 }
 
 export interface UploadedDocument {
@@ -137,54 +123,6 @@ export interface DocumentSlot {
   required: boolean;
 }
 
-export interface DemandeDomiciliation {
-  id: string;
-  userId?: string;
-  contactId?: string;
-  utilisateur?: { id: string; nom: string; prenom: string; email?: string };
-  contact?: { id: string; nom: string; prenom: string; email?: string };
-  situationAdministrative: SituationAdministrative;
-  typeStructure: TypeStructure;
-  raisonSociale: string;
-  formeJuridique: string;
-  nif?: string;
-  nis?: string;
-  registreCommerce?: string;
-  articleImposition?: string;
-  codeNae?: string;
-  activiteExercee?: string;
-  descriptionActivite?: string;
-  numeroAutoEntrepreneur?: string;
-  dateCreationEntreprise?: string;
-  villeImmatriculation?: string;
-  activitePrincipale?: string;
-  domaineActivite?: string;
-  adresseSiegeSocial?: string;
-  capital?: number;
-  representantLegal: RepresentantLegal;
-  numeroBureau?: number;
-  referenceContratNotarie?: string;
-  dateDebutContrat?: string;
-  dateFinContrat?: string;
-  montantMensuel?: number;
-  options?: DomiciliationOptions;
-  cguAcceptees: boolean;
-  dateCguAcceptation?: string;
-  statut: DomiciliationStatut;
-  commentaireAdmin?: string;
-  dateValidation?: string;
-  dateCreation: string;
-  updatedAt: string;
-  dateDebut?: string;
-  dateFin?: string;
-  dateDebutSouhaitee?: string;
-  wilaya?: string;
-  commune?: string;
-  adresseActuelle?: string;
-  visibleSurSite?: boolean;
-  documents?: Array<{ type: string; name: string }>;
-}
-
 export interface CourrierItem {
   id: string;
   type: CourrierType;
@@ -208,9 +146,11 @@ export type ActionKey =
 
 export interface ActionData {
   motif?: string;
+  complementsDemandes?: string;
   numeroBureau?: number;
   referenceContratNotarie?: string;
   dateDebutContrat?: string;
   dateFinContrat?: string;
   montantMensuel?: number;
+  modePaiement?: string;
 }

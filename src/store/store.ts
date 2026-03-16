@@ -19,7 +19,6 @@ import type {
   Reservation,
   Transaction,
   DemandeDomiciliation,
-  DomiciliationService,
   CodePromo,
   CreateReservationData,
   CreateDomiciliationData,
@@ -27,7 +26,6 @@ import type {
   AbonnementUtilisateur,
   NotificationSettings,
 } from "../types";
-import type { TypeEntreprise } from "../types";
 
 function toLocalISOString(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -43,7 +41,6 @@ interface AppState {
   reservations: Reservation[];
   transactions: Transaction[];
   demandesDomiciliation: DemandeDomiciliation[];
-  domiciliationServices: DomiciliationService[];
   codesPromo: CodePromo[];
   abonnements: Abonnement[];
   abonnementsUtilisateurs: AbonnementUtilisateur[];
@@ -126,7 +123,6 @@ export const useAppStore = create<AppState>()(
       reservations: [],
       transactions: [],
       demandesDomiciliation: [],
-      domiciliationServices: [],
       codesPromo: [],
       abonnements: [],
       abonnementsUtilisateurs: [],
@@ -365,88 +361,18 @@ export const useAppStore = create<AppState>()(
       loadDemandesDomiciliation: async () => {
         try {
           const response = await apiClient.getDomiciliations();
-
           if (response.success && response.data) {
             const rawData = extractArray(response.data);
-
             const demandesDomiciliation = rawData.map((d) =>
               domiciliationAdapter.fromAPI(d),
             );
-
-            const domiciliationServices = demandesDomiciliation
-              .filter((d) => d.statut === "active" || d.statut === "domiciliation_creee")
-              .map((d) => {
-                const startDateStr = d.dateDebutContrat || d.dateValidation || d.dateCreation;
-                const startDateRaw = startDateStr ? new Date(startDateStr as string) : null;
-                const startDate = startDateRaw && !isNaN(startDateRaw.getTime()) ? startDateRaw : new Date(d.dateCreation as string);
-                const endDateStr = d.dateFinContrat || null;
-                let endDate: Date;
-                if (endDateStr) {
-                  const parsed = new Date(endDateStr as string);
-                  endDate = !isNaN(parsed.getTime()) ? parsed : new Date(startDate.getTime() + 365 * 24 * 60 * 60 * 1000);
-                } else if (!isNaN(startDate.getTime())) {
-                  endDate = new Date(startDate);
-                  endDate.setFullYear(endDate.getFullYear() + 1);
-                } else {
-                  endDate = new Date();
-                  endDate.setFullYear(endDate.getFullYear() + 1);
-                }
-
-                return {
-                  id: d.id,
-                  userId: d.userId || "",
-                  demande: d,
-                  companyName: d.raisonSociale,
-                  legalForm: d.formeJuridique || "",
-                  identification: {
-                    typeEntreprise: (d.formeJuridique?.toLowerCase() || "autre") as TypeEntreprise,
-                    nif: d.nif,
-                    nis: d.nis,
-                    registreCommerce: d.registreCommerce,
-                    articleImposition: d.articleImposition,
-                    raisonSociale: d.raisonSociale,
-                    dateCreation: d.dateCreationEntreprise ? new Date(d.dateCreationEntreprise as string) : undefined,
-                    capital: d.capital,
-                    siegeSocial: d.adresseSiegeSocial,
-                    activitePrincipale: d.domaineActivite,
-                  },
-                  startDate,
-                  endDate,
-                  status: (d.statut === "active" ? "active" : "pending") as DomiciliationService["status"],
-                  address: d.numeroBureau
-                    ? `Bureau ${d.numeroBureau}, Mohammadia Mall, 4ème étage, Alger`
-                    : "Mohammadia Mall, 4ème étage, Alger",
-                  services: [
-                    "Domiciliation",
-                    "Courrier",
-                    "Support administratif",
-                  ],
-                  monthlyFee: d.montantMensuel || 0,
-                  setupFee: 0,
-                  documentsLegaux: [],
-                  representantLegal: {
-                    nom: d.representantLegal?.nom || "",
-                    prenom: d.representantLegal?.prenom || "",
-                    fonction: d.representantLegal?.fonction,
-                    telephone: d.representantLegal?.telephone || "",
-                    email: d.representantLegal?.email || "",
-                  },
-                  activityDomain: d.domaineActivite,
-                  dateSignatureContrat: d.dateValidation ? new Date(d.dateValidation as string) : undefined,
-                  numeroContrat: `DOM-${d.id.substring(0, 8).toUpperCase()}`,
-                  visibleSurSite: d.visibleSurSite || false,
-                  createdAt: d.dateCreation ? new Date(d.dateCreation as string) : new Date(),
-                  updatedAt: d.updatedAt ? new Date(d.updatedAt as string) : new Date(),
-                };
-              });
-
-            set({ demandesDomiciliation, domiciliationServices });
+            set({ demandesDomiciliation });
           } else {
-            set({ demandesDomiciliation: [], domiciliationServices: [] });
+            set({ demandesDomiciliation: [] });
           }
         } catch (error) {
           logger.error("Erreur chargement domiciliations:", error instanceof Error ? error.message : String(error));
-          set({ demandesDomiciliation: [], domiciliationServices: [] });
+          set({ demandesDomiciliation: [] });
         }
       },
 

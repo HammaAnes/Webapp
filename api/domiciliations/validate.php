@@ -55,10 +55,11 @@ try {
         Response::badRequest('Cette demande ne peut pas être validée depuis son statut actuel (' . $domiciliation['statut'] . ')');
     }
 
-    $notes = $data['commentaire'] ?? 'Dossier validé — en attente de signature notariale';
+    $notes = $data['commentaire'] ?? 'Dossier valide - en attente de signature notariale';
     $query = "UPDATE domiciliations
               SET statut = 'en_attente_signature',
                   notes_admin = :notes,
+                  date_validation = NOW(),
                   updated_at = NOW()
               WHERE id = :id";
 

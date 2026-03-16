@@ -59,7 +59,7 @@ function getChecklist(demande: DemandeDomiciliation): ChecklistItem[] {
         label: 'Fournir les compléments demandés',
         done: false,
         urgent: true,
-        note: demande.commentaireAdmin || 'Consultez le message de l\'équipe Coffice ci-dessous',
+        note: demande.complementsDemandes || demande.commentaireAdmin || 'Consultez le message de l\'équipe Coffice ci-dessous',
       });
       items.push({ label: 'Revalidation du dossier par Coffice', done: false });
       items.push({ label: 'Signature du contrat chez le notaire', done: false });
@@ -349,7 +349,7 @@ export default function DemandeSummary({ demande, loading, onPostCreationSubmit,
         </Card>
       )}
 
-      {demande.statut === 'en_attente_complements' && demande.commentaireAdmin && (
+      {demande.statut === 'en_attente_complements' && (demande.complementsDemandes || demande.commentaireAdmin) && (
         <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -357,14 +357,14 @@ export default function DemandeSummary({ demande, loading, onPostCreationSubmit,
             </div>
             <div>
               <h3 className="font-bold text-amber-900 mb-2 text-lg">Message de l'équipe Coffice</h3>
-              <p className="text-amber-800">{demande.commentaireAdmin}</p>
+              <p className="text-amber-800">{demande.complementsDemandes || demande.commentaireAdmin}</p>
               <p className="text-xs text-amber-600 mt-2">Merci de fournir les compléments demandés pour que votre dossier puisse avancer.</p>
             </div>
           </div>
         </Card>
       )}
 
-      {(demande.statut === 'refusee' || demande.statut === 'resiliee') && demande.commentaireAdmin && (
+      {(demande.statut === 'refusee' || demande.statut === 'resiliee') && (demande.motifRefus || demande.commentaireAdmin) && (
         <Card className="p-6 bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-200">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -374,7 +374,7 @@ export default function DemandeSummary({ demande, loading, onPostCreationSubmit,
               <h3 className="font-bold text-red-900 mb-2 text-lg">
                 {demande.statut === 'refusee' ? 'Raison du refus' : 'Motif de la résiliation'}
               </h3>
-              <p className="text-red-700">{demande.commentaireAdmin}</p>
+              <p className="text-red-700">{demande.motifRefus || demande.commentaireAdmin}</p>
             </div>
           </div>
         </Card>

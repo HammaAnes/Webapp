@@ -1,7 +1,4 @@
 <?php
-ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/error.log');
-error_reporting(E_ALL);
 
 /**
  * API: Liste des demandes de domiciliation
@@ -16,7 +13,6 @@ require_once '../utils/Pagination.php';
 
 try {
     $auth = Auth::verifyAuth();
-    error_log("AUTH OK: " . json_encode($auth));
 
     $database = Database::getInstance();
     $db = $database->getConnection();
@@ -49,10 +45,11 @@ try {
         $stmt->execute($params);
         $totalCount = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-        // Requête des données avec pagination
-        $query = "SELECT d.*, u.email, u.nom, u.prenom
+        $query = "SELECT d.*, u.email, u.nom, u.prenom,
+                         c.nom AS contact_nom, c.prenom AS contact_prenom, c.email AS contact_email, c.telephone AS contact_telephone
                   FROM domiciliations d
-                  LEFT JOIN users u ON d.user_id = u.id";
+                  LEFT JOIN users u ON d.user_id = u.id
+                  LEFT JOIN contacts c ON d.contact_id = c.id";
 
         if (!empty($whereConditions)) {
             $query .= " WHERE " . implode(" AND ", $whereConditions);

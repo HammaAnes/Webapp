@@ -42,7 +42,7 @@ try {
 
         $updateStmt = $db->prepare("
             UPDATE domiciliations
-            SET statut = 'expiree', updated_at = NOW()
+            SET statut = 'expiree', date_expiration = NOW(), updated_at = NOW()
             WHERE id = :id
         ");
 
