@@ -99,4 +99,4 @@ L'architecture technique, l'organisation du code, les composants UI, les pattern
 - Supprimer des colonnes de base de données existantes sans migration
 - Casser les workflows existants (réservation, domiciliation)
 
-ne jamais utilisé bolt.database
+ne jamais utilisé bolt.database ni supabase, seulement le mysql en prod
