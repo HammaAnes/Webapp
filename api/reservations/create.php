@@ -8,6 +8,65 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     Response::error("Methode non autorisee", 405);
 }
 
+function countWorkingDaysBetween(int $startTs, int $endTs): int {
+    $count = 0;
+    $cur = strtotime(date('Y-m-d', $startTs));
+    $endDay = strtotime(date('Y-m-d', $endTs));
+    while ($cur <= $endDay) {
+        $dow = (int)date('N', $cur);
+        if ($dow != 5 && $dow != 6) {
+            $count++;
+        }
+        $cur += 86400;
+    }
+    return $count;
+}
+
+function computeReservationPrice(array $tarifs, int $debut, int $fin, array $rules): array {
+    $seuilDemiJ = (int)$rules['reservation']['seuil_heure_demi_journee'];
+    $seuilJour  = (int)$rules['reservation']['seuil_demi_journee_journee'];
+
+    $prixHeure    = floatval($tarifs['prix_heure'] ?? 0);
+    $prixDemiJour = floatval($tarifs['prix_demi_journee'] ?? 0);
+    $prixJour     = floatval($tarifs['prix_jour'] ?? 0);
+    $prixSemaine  = floatval($tarifs['prix_semaine'] ?? 0);
+    $prixMois     = floatval($tarifs['prix_mois'] ?? 0);
+
+    $heures  = ($fin - $debut) / 3600;
+    $calDays = (strtotime(date('Y-m-d', $fin)) - strtotime(date('Y-m-d', $debut))) / 86400 + 1;
+
+    if ($calDays <= 1) {
+        if ($heures <= $seuilDemiJ) {
+            $montant = ceil($heures) * $prixHeure;
+            $type = 'heure';
+        } elseif ($heures <= $seuilJour) {
+            $montant = $prixDemiJour > 0 ? $prixDemiJour : ($prixJour / 2);
+            $type = 'demi_journee';
+        } else {
+            $montant = $prixJour;
+            $type = 'jour';
+        }
+    } else {
+        $workingDays = countWorkingDaysBetween($debut, $fin);
+
+        if ($calDays >= 28 && $prixMois > 0) {
+            $mois = max(1, (int)round($calDays / 30));
+            $montant = $mois * $prixMois;
+            $type = 'mois';
+        } elseif ($workingDays >= 5 && $prixSemaine > 0) {
+            $semaines = (int)floor($workingDays / 5);
+            $joursRestants = $workingDays - ($semaines * 5);
+            $montant = $semaines * $prixSemaine + $joursRestants * $prixJour;
+            $type = 'semaine';
+        } else {
+            $montant = $workingDays * $prixJour;
+            $type = 'jour';
+        }
+    }
+
+    return ['montant' => $montant, 'type' => $type];
+}
+
 try {
     $auth = Auth::verifyAuth();
     $authUserId = $auth['id'];
@@ -98,7 +157,7 @@ try {
     }
 
     $debutDow = (int)date('N', $debut);
-    $finDow = (int)date('N', $fin);
+    $finDow   = (int)date('N', $fin);
     if ($debutDow == 5 || $debutDow == 6) {
         Response::error("Coffice est fermé le vendredi et le samedi", 400);
     }
@@ -106,10 +165,26 @@ try {
         Response::error("La date de fin tombe un jour de fermeture (vendredi ou samedi)", 400);
     }
 
-    $debutMysql = date('Y-m-d H:i:s', $debut);
-    $finMysql = date('Y-m-d H:i:s', $fin);
+    $debutHour    = (int)date('H', $debut);
+    $debutMinute  = (int)date('i', $debut);
+    $finHour      = (int)date('H', $fin);
+    $finMinute    = (int)date('i', $fin);
+    $debutMinutes = $debutHour * 60 + $debutMinute;
+    $finMinutes   = $finHour * 60 + $finMinute;
+    $OPEN_MINUTES  = 8 * 60 + 30;
+    $CLOSE_MINUTES = 18 * 60 + 30;
 
-    $stmt = $db->prepare("SELECT id, nom, type, capacite, prix_heure, prix_jour, disponible FROM espaces WHERE id = ?");
+    if ($debutMinutes < $OPEN_MINUTES) {
+        Response::error("L'heure de début ne peut pas être avant 08:30", 400);
+    }
+    if ($finMinutes > $CLOSE_MINUTES) {
+        Response::error("L'heure de fin ne peut pas être après 18:30", 400);
+    }
+
+    $debutMysql = date('Y-m-d H:i:s', $debut);
+    $finMysql   = date('Y-m-d H:i:s', $fin);
+
+    $stmt = $db->prepare("SELECT id, nom, type, capacite, disponible FROM espaces WHERE id = ?");
     $stmt->execute([$espaceId]);
     $espace = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -126,7 +201,6 @@ try {
         Response::error("Le nombre de participants ($participants) depasse la capacite maximale de l'espace ($capacite places)", 400);
     }
 
-    // Bug 10 — Reject reservations in the past (except for admins)
     if (!($authUser['role'] === 'admin')) {
         $now = new DateTime('now', new DateTimeZone('Africa/Algiers'));
         $debutDt = new DateTime($debutMysql, new DateTimeZone('Africa/Algiers'));
@@ -138,55 +212,25 @@ try {
     $isOpenSpace = strtolower($espace['type']) === 'open_space';
 
     $rules = require __DIR__ . '/../config/business-rules.php';
-    $seuilDemiJ = $rules['reservation']['seuil_heure_demi_journee'];
-    $seuilJour  = $rules['reservation']['seuil_demi_journee_journee'];
 
-    $heures = ($fin - $debut) / 3600;
+    $stmtTarifs = $db->prepare("SELECT prix_heure, prix_demi_journee, prix_jour, prix_semaine, prix_mois FROM espaces WHERE id = ?");
+    $stmtTarifs->execute([$espaceId]);
+    $tarifs = $stmtTarifs->fetch(PDO::FETCH_ASSOC);
 
-    $stmt = $db->prepare("SELECT prix_heure, prix_demi_journee, prix_jour, prix_semaine, prix_mois FROM espaces WHERE id = ?");
-    $stmt->execute([$espaceId]);
-    $tarifs = $stmt->fetch(PDO::FETCH_ASSOC);
+    $priceResult = computeReservationPrice($tarifs, $debut, $fin, $rules);
+    $montant     = $priceResult['montant'];
+    $type        = $priceResult['type'];
 
-    $prixHeure     = floatval($tarifs['prix_heure'] ?? $espace['prix_heure']);
-    $prixDemiJour  = floatval($tarifs['prix_demi_journee'] ?? 0);
-    $prixJour      = floatval($tarifs['prix_jour'] ?? $espace['prix_jour']);
-    $prixSemaine   = floatval($tarifs['prix_semaine'] ?? 0);
-    $prixMois      = floatval($tarifs['prix_mois'] ?? 0);
-
-    $jours = $heures / 24;
-    $semaines = $jours / 7;
-
-    if ($heures <= $seuilDemiJ) {
-        $montant = ceil($heures) * $prixHeure;
-        $type = 'heure';
-    } elseif ($heures <= $seuilJour) {
-        $montant = $prixDemiJour > 0 ? $prixDemiJour : ($prixJour / 2);
-        $type = 'demi_journee';
-    } elseif ($jours <= 1) {
-        $montant = $prixJour;
-        $type = 'jour';
-    } elseif ($jours >= 28 && $prixMois > 0) {
-        $mois = ceil($jours / 30);
-        $montant = $mois * $prixMois;
-        $type = 'mois';
-    } elseif ($jours >= 7 && $prixSemaine > 0) {
-        $semaines_completes = floor($jours / 7);
-        $joursRestants = $jours - ($semaines_completes * 7);
-        $montant = $semaines_completes * $prixSemaine + ($joursRestants > 0 ? ceil($joursRestants) * $prixJour : 0);
-        $type = 'semaine';
-    } else {
-        $montant = ceil($jours) * $prixJour;
-        $type = 'jour';
+    if ($isOpenSpace) {
+        $montant *= $participants;
     }
 
     $reduction = 0;
     $codePromoId = null;
     $montantAvantReduction = $montant;
 
-    // Bug 6 — Begin transaction BEFORE availability check to prevent race conditions
     $db->beginTransaction();
 
-    // Availability check INSIDE the transaction with FOR UPDATE to lock rows
     if ($isOpenSpace) {
         $stmtAvail = $db->prepare("
             SELECT COALESCE(SUM(GREATEST(COALESCE(participants, 1), 1)), 0) as seats_taken

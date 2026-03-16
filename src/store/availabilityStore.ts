@@ -3,12 +3,10 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import {
   fetchMonthAvailability,
   type DayAvailability,
-  type BlocageSlot,
 } from "../services/availability.service";
 
 interface MonthData {
   days: DayAvailability[];
-  blocages: BlocageSlot[];
   isOpenSpace: boolean;
   capacity: number;
   fetchedAt: number;
@@ -60,7 +58,6 @@ export const useAvailabilityStore = create<AvailabilityState>((set, get) => ({
         ...state.cache,
         [key]: {
           days: existing?.days ?? [],
-          blocages: existing?.blocages ?? [],
           isOpenSpace: existing?.isOpenSpace ?? false,
           capacity: existing?.capacity ?? 0,
           fetchedAt: existing?.fetchedAt ?? 0,
@@ -80,7 +77,6 @@ export const useAvailabilityStore = create<AvailabilityState>((set, get) => ({
           ...state.cache,
           [key]: {
             days: data.days,
-            blocages: data.blocages,
             isOpenSpace: data.isOpenSpace,
             capacity: data.capacity,
             fetchedAt: Date.now(),
@@ -95,7 +91,6 @@ export const useAvailabilityStore = create<AvailabilityState>((set, get) => ({
           ...state.cache,
           [key]: {
             days: existing?.days ?? [],
-            blocages: existing?.blocages ?? [],
             isOpenSpace: existing?.isOpenSpace ?? false,
             capacity: existing?.capacity ?? 0,
             fetchedAt: existing?.fetchedAt ?? 0,

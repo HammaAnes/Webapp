@@ -79,7 +79,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
 
   const handleDayClick = useCallback(
     (dayInfo: DayAvailability) => {
-      if (dayInfo.status === "past" || dayInfo.status === "closed" || dayInfo.status === "blocked") return;
+      if (dayInfo.status === "past" || dayInfo.status === "closed") return;
       if (!isSameMonth(dayInfo.date, currentMonth)) return;
       if (dayInfo.status === "full" && !isOpenSpace) return;
 
@@ -153,8 +153,6 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
         return `${base} bg-amber-50 text-amber-900 hover:bg-amber-100 hover:shadow-md cursor-pointer font-medium ${isToday ? "ring-2 ring-amber-400" : ""}`;
       case "full":
         return `${base} bg-red-50 text-red-400 cursor-not-allowed ${isToday ? "ring-2 ring-red-300" : ""}`;
-      case "blocked":
-        return `${base} bg-gray-100 text-gray-300 cursor-not-allowed line-through`;
       case "closed":
         return `${base} bg-gray-50 text-gray-300 cursor-default`;
       case "past":
@@ -174,8 +172,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
       dayInfo.seatsTaken != null &&
       dayInfo.capacity != null &&
       dayInfo.status !== "past" &&
-      dayInfo.status !== "closed" &&
-      dayInfo.status !== "blocked"
+      dayInfo.status !== "closed"
     ) {
       const reserved = dayInfo.seatsTaken;
       const total = dayInfo.capacity;
@@ -293,7 +290,6 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                     !isCurrentMonth ||
                     dayInfo.status === "past" ||
                     dayInfo.status === "closed" ||
-                    dayInfo.status === "blocked" ||
                     (dayInfo.status === "full" && !isOpenSpace)
                   }
                   layout
@@ -311,8 +307,6 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                       ? "Complet"
                       : dayInfo.status === "closed"
                       ? "Fermé"
-                      : dayInfo.status === "blocked"
-                      ? "Indisponible"
                       : ""
                   }
                 >

@@ -1,12 +1,7 @@
 import { getDay } from "date-fns";
 import { apiClient } from "../lib/api-client";
 
-export interface BlocageSlot {
-  date_debut: string;
-  date_fin: string;
-}
-
-export type DayStatus = "available" | "partial" | "full" | "closed" | "past" | "blocked";
+export type DayStatus = "available" | "partial" | "full" | "closed" | "past";
 
 export interface DayAvailability {
   date: Date;
@@ -22,7 +17,6 @@ export interface DayAvailability {
 
 export interface MonthAvailabilityData {
   days: DayAvailability[];
-  blocages: BlocageSlot[];
   isOpenSpace: boolean;
   capacity: number;
 }
@@ -42,7 +36,6 @@ interface ApiDayData {
 
 interface ApiAvailabilityResponse {
   days?: ApiDayData[];
-  blocages?: BlocageSlot[];
   is_open_space?: boolean;
   capacity?: number;
 }
@@ -74,11 +67,10 @@ export async function fetchMonthAvailability(
     const data = response.data as ApiAvailabilityResponse;
     return {
       days: (data.days || []).map(mapApiDayToAvailability),
-      blocages: data.blocages || [],
       isOpenSpace: data.is_open_space ?? false,
       capacity: data.capacity ?? 0,
     };
   }
 
-  return { days: [], blocages: [], isOpenSpace: false, capacity: 0 };
+  return { days: [], isOpenSpace: false, capacity: 0 };
 }

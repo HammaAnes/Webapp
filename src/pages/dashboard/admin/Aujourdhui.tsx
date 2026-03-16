@@ -569,7 +569,6 @@ export default function Aujourdhui() {
               : dayInfo.status === 'available' ? 'border-emerald-200 bg-emerald-50'
               : dayInfo.status === 'partial' ? 'border-amber-200 bg-amber-50'
               : dayInfo.status === 'full' ? 'border-red-200 bg-red-50'
-              : dayInfo.status === 'blocked' ? 'border-gray-200 bg-gray-100'
               : 'border-gray-200 bg-gray-50';
             const dotColor =
               !hasData ? 'bg-gray-300'
@@ -584,7 +583,6 @@ export default function Aujourdhui() {
               : dayInfo.status === 'available' ? 'Disponible'
               : dayInfo.status === 'partial' ? `${dayInfo.freeSlots}/${dayInfo.totalSlots} créneaux`
               : dayInfo.status === 'full' ? 'Complet'
-              : dayInfo.status === 'blocked' ? 'Bloqué'
               : '—';
 
             return (
