@@ -31,7 +31,7 @@ function loadEnv($path) {
     }
 }
 
-loadEnv(__DIR__ . '/../.env');
+loadEnv(__DIR__ . '/../api/.env');
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');

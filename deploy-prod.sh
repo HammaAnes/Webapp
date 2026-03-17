@@ -77,11 +77,11 @@ echo "🔐 Étape 5/5: Configuration des permissions..."
 chmod 755 api/uploads
 chmod 755 api/uploads/documents
 chmod 755 api/logs
-if [ -f ".env" ]; then
-    chmod 644 .env
+if [ -f "api/.env" ]; then
+    chmod 644 api/.env
     echo -e "${GREEN}✓ Permissions configurées${NC}"
 else
-    echo -e "${YELLOW}⚠️  Fichier .env non trouvé - à créer manuellement${NC}"
+    echo -e "${YELLOW}⚠️  Fichier api/.env non trouvé - à créer manuellement${NC}"
 fi
 echo ""
 
@@ -93,7 +93,7 @@ echo ""
 echo "📋 Prochaines étapes:"
 echo ""
 echo "1. Configuration .env"
-echo "   nano .env"
+echo "   nano api/.env"
 echo ""
 echo "2. Import base de données:"
 echo "   mysql -u USER -p DATABASE < database/coffice.sql"

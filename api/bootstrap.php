@@ -67,7 +67,7 @@ ini_set('session.cookie_samesite', 'Lax');
 // =====================================================
 
 // Charger .env si disponible
-$envFile = __DIR__ . '/../.env';
+$envFile = __DIR__ . '/.env';
 if (file_exists($envFile)) {
     $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {

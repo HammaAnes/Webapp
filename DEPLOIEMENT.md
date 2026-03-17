@@ -21,8 +21,8 @@ cd coffice-app
 npm install
 
 # Configurer .env
-cp .env.example .env
-nano .env
+cp api/.env.example api/.env
+nano api/.env
 ```
 
 **Configuration .env minimale :**
@@ -95,7 +95,7 @@ Le dossier `dist/` contient maintenant tous les fichiers frontend compilés.
 4. Uploadez TOUS les fichiers depuis `dist/` à la racine de `public_html/`
 5. Uploadez le dossier `api/` complet
 6. Uploadez le dossier `database/migrations/`
-7. Uploadez le fichier `.env` (configuré pour le serveur)
+7. Assurez-vous que `api/.env` est bien configuré pour le serveur
 
 **Via FTP/SFTP :**
 
@@ -104,7 +104,6 @@ Le dossier `dist/` contient maintenant tous les fichiers frontend compilés.
 rsync -avz --delete dist/ user@serveur:/home/user/public_html/
 rsync -avz api/ user@serveur:/home/user/public_html/api/
 rsync -avz database/migrations/ user@serveur:/home/user/public_html/database/migrations/
-scp .env user@serveur:/home/user/public_html/
 ```
 
 **Structure finale sur le serveur :**
@@ -132,8 +131,9 @@ public_html/
 │   └── logs/               ✅ (créer si absent)
 ├── database/
 │   └── migrations/         ✅ (optionnel mais recommandé)
-├── .htaccess               ✅ (depuis dist/)
-└── .env                    ✅ (configuré pour prod)
+├── api/
+│   └── .env                ✅ (configuré pour prod)
+└── .htaccess               ✅ (depuis dist/)
 ```
 
 ### 5. Permissions Serveur
@@ -143,7 +143,7 @@ public_html/
 chmod 755 api/uploads
 chmod 755 api/uploads/documents
 chmod 755 api/logs
-chmod 644 .env
+chmod 644 api/.env
 chmod 644 .htaccess
 
 # Vérifier propriétaire
@@ -152,7 +152,7 @@ chown -R user:user public_html/
 
 ### 6. Configuration .env Serveur
 
-Éditer `.env` sur le serveur avec les vraies valeurs :
+Éditer `api/.env` sur le serveur avec les vraies valeurs :
 
 ```env
 VITE_API_URL=https://coffice.dz/api
@@ -178,7 +178,7 @@ MAIL_PASSWORD=MotDePasseEmailReel
 2. Créer un mot de passe d'application : https://myaccount.google.com/apppasswords
 3. Utiliser ce mot de passe dans `MAIL_PASSWORD`
 
-**Configuration Gmail dans .env :**
+**Configuration Gmail dans api/.env :**
 
 ```env
 MAIL_HOST=smtp.gmail.com
@@ -249,7 +249,7 @@ Le `.htaccess` contient déjà :
 
 ```apache
 # Déjà dans .htaccess
-<Files ".env">
+<Files "api/.env">
     Order allow,deny
     Deny from all
 </Files>
@@ -280,8 +280,8 @@ npm run build
 ### Erreur : API ne répond pas
 
 **Solution :**
-1. Vérifier `.env` configuré
-2. Test : `https://coffice.dz/api/check.php`
+1. Vérifier `api/.env` configuré
+2. Test : `https://coffice.dz/api/health.php`
 3. Vérifier logs : `api/logs/app.log`
 4. Vérifier permissions `api/uploads/` = 755
 
@@ -296,7 +296,7 @@ npm run build
 ### Erreur : Emails ne partent pas
 
 **Solution :**
-1. Vérifier config email dans `.env`
+1. Vérifier config email dans `api/.env`
 2. Test : créer un compte utilisateur
 3. Vérifier logs : `api/logs/app.log`
 4. Gmail : vérifier mot de passe d'application
@@ -340,9 +340,9 @@ Avant de considérer le déploiement terminé :
 
 - [ ] `npm run build` exécuté sans erreur
 - [ ] Base de données créée + toutes migrations appliquées
-- [ ] `.env` configuré avec les vraies valeurs
+- [ ] `api/.env` configuré avec les vraies valeurs
 - [ ] Structure `public_html/` correcte (dist/ + api/)
-- [ ] Permissions correctes (755 uploads/, 644 .env)
+- [ ] Permissions correctes (755 uploads/, 644 api/.env)
 - [ ] `.htaccess` présent à la racine
 - [ ] SSL/HTTPS actif et fonctionnel
 - [ ] `https://coffice.dz` accessible sans erreur
