@@ -67,10 +67,10 @@ npm install
 
 3. Configurer l'environnement
 ```bash
-cp api/.env.example api/.env
+cp .env.example .env
 ```
 
-Modifier `api/.env` avec vos informations :
+Modifier `.env` avec vos informations :
 ```env
 DB_HOST=localhost
 DB_NAME=cofficed_coffice
@@ -235,13 +235,15 @@ Via cPanel File Manager :
 1. Connectez-vous a cPanel
 2. File Manager -> `public_html/`
 3. Uploadez les fichiers depuis `dist/` a la racine de `public_html/`
-4. Uploadez le dossier `api/` complet (incluant `api/.env` configuré pour le serveur)
+4. Uploadez le dossier `api/` complet
+5. Uploadez le fichier `.env` (configure pour le serveur)
 
 Via FTP/SFTP :
 
 ```bash
 rsync -avz --delete dist/ user@serveur:/home/user/public_html/
 rsync -avz api/ user@serveur:/home/user/public_html/api/
+scp .env user@serveur:/home/user/public_html/
 ```
 
 Structure finale sur le serveur :
@@ -263,9 +265,9 @@ public_html/
 │   ├── admin/
 │   ├── uploads/
 │   │   └── documents/
-│   ├── logs/
-│   └── .env
-└── .htaccess
+│   └── logs/
+├── .htaccess
+└── .env
 ```
 
 ### 3. Permissions
@@ -274,7 +276,7 @@ public_html/
 chmod 755 api/uploads
 chmod 755 api/uploads/documents
 chmod 755 api/logs
-chmod 644 api/.env
+chmod 644 .env
 chmod 644 .htaccess
 ```
 
@@ -308,9 +310,9 @@ Ajouter dans cron (cPanel -> Cron Jobs) :
 ## Depannage
 
 - Page blanche : F12 -> Console, verifier index.html et .htaccess, vider cache
-- API ne repond pas : verifier api/.env, tester /api/health.php, consulter api/logs/app.log
+- API ne repond pas : verifier .env, tester /api/check.php, consulter api/logs/app.log
 - Reservations en erreur : `php scripts/init_espaces.php`, consulter logs PHP
-- Emails ne partent pas : verifier config SMTP dans api/.env, verifier mot de passe d'application Gmail
+- Emails ne partent pas : verifier config SMTP dans .env, verifier mot de passe d'application Gmail
 
 ## Mises a jour
 

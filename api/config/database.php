@@ -44,7 +44,9 @@ class Database
             return;
         }
 
-        $envFile = __DIR__ . '/../../.env';
+        $envFile = file_exists(__DIR__ . '/../.env')
+            ? __DIR__ . '/../.env'
+            : __DIR__ . '/../../.env';
 
         if (file_exists($envFile)) {
             $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
