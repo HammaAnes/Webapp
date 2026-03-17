@@ -16,7 +16,7 @@ echo "║   CRÉATION ADMIN - COFFICE COWORKING    ║\n";
 echo "╚══════════════════════════════════════════╝\n\n";
 
 // Charger les variables d'environnement
-$envFile = __DIR__ . '/../api/.env';
+$envFile = __DIR__ . '/../.env';
 $envVars = [];
 
 if (file_exists($envFile)) {
