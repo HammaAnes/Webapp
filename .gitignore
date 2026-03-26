@@ -27,7 +27,7 @@ vite.config.ts.timestamp*
 *.sw?
 api
 # Environment
-.env
+
 
 # Composer binary (use system composer instead)
 composer.phar
