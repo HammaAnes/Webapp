@@ -7,9 +7,9 @@ export const ACTIVATION_DELAY = '48h';
 
 export const DEFAULT_OPTIONS: DomiciliationOptions = {
   domiciliationSimple: true,
-  receptionCourrier: false,
-  scanNotificationEmail: false,
-  reexpeditionCourrier: false,
+  receptionCourrier: true,
+  scanNotificationEmail: true,
+  reexpeditionCourrier: true,
   accesPonctuelEspaces: false,
 };
 
@@ -93,12 +93,14 @@ export const SOCIETE_DOC_SLOTS: DocumentSlot[] = [
   { type: 'statuts', label: 'Statuts de la société', required: true },
   { type: 'cni_gerant', label: 'CNI du gérant', required: true },
   { type: 'extrait_naissance_gerant', label: 'Extrait de naissance du gérant', required: true },
+  { type: 'contrat_notarie', label: 'Contrat de location notarié (scan)', required: false },
   { type: 'autre', label: 'Autre document', required: false },
 ];
 
 export const AUTO_ENTREPRENEUR_DOC_SLOTS: DocumentSlot[] = [
   { type: 'carte_ae', label: 'Carte Auto-Entrepreneur', required: true },
   { type: 'cni', label: 'Carte Nationale d\'Identité', required: true },
+  { type: 'contrat_notarie', label: 'Contrat de location notarié (scan)', required: false },
   { type: 'autre', label: 'Autre document', required: false },
 ];
 

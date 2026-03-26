@@ -69,7 +69,7 @@ try {
                 u.prenom as admin_prenom,
                 u.nom as admin_nom
             FROM clotures_caisse c
-            LEFT JOIN users u ON c.cloture_par = u.id
+            LEFT JOIN persons u ON c.cloture_par = u.id
             ORDER BY c.date_cloture DESC
             LIMIT 30
         ");

@@ -126,16 +126,20 @@ class EmailQueue
     {
         global $db;
 
-        $attempts = (int) $item['attempts'];
+        // $item['attempts'] est la valeur avant l'incrément UPDATE (pré-fetch).
+        // Le UPDATE "attempts = attempts + 1" a déjà été exécuté → tentative réelle = $attempts + 1.
+        $attempts    = (int) $item['attempts'];
+        $currentAttempt = $attempts + 1;
         $maxAttempts = (int) $item['max_attempts'];
 
-        if ($attempts >= $maxAttempts) {
+        if ($currentAttempt >= $maxAttempts) {
             $db->prepare("UPDATE email_queue SET status = 'failed', error_message = ? WHERE id = ?")->execute([$error, $item['id']]);
-            EmailLogger::logFailed($item['type'], $item['to_email'], $item['subject'], $error, $item['user_id'] ?: null, $attempts);
+            EmailLogger::logFailed($item['type'], $item['to_email'], $item['subject'], $error, $item['user_id'] ?: null, $currentAttempt);
             Logger::error('EmailQueue: item permanently failed', ['id' => $item['id'], 'type' => $item['type'], 'error' => $error]);
         } else {
+            // Backoff exponentiel : 1 min → 5 min → 30 min
             $delays = [1, 5, 30];
-            $delayMinutes = $delays[min($attempts - 1, count($delays) - 1)];
+            $delayMinutes = $delays[min($attempts, count($delays) - 1)];
             $nextTry = date('Y-m-d H:i:s', strtotime("+{$delayMinutes} minutes"));
 
             $db->prepare("

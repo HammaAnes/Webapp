@@ -3,14 +3,14 @@
 class EmailLogger
 {
     public static function log(
-        string $type,
-        string $recipient,
+        string $template,
+        string $toEmail,
         string $subject,
         string $status,
         ?string $userId = null,
+        ?string $contactId = null,
         ?string $errorMessage = null,
-        array $metadata = [],
-        int $attempts = 1
+        array $metadata = []
     ): void {
         global $db;
 
@@ -22,18 +22,17 @@ class EmailLogger
             $id = UuidHelper::generate();
             $stmt = $db->prepare('
                 INSERT INTO email_logs
-                    (id, user_id, type, recipient, subject, status, attempts, error_message, metadata, sent_at)
+                    (id, person_id, template, to_email, subject, status, error_message, metadata, created_at)
                 VALUES
-                    (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                    (?, ?, ?, ?, ?, ?, ?, ?, NOW())
             ');
             $stmt->execute([
                 $id,
-                $userId,
-                $type,
-                $recipient,
+                $userId ?? $contactId,
+                $template,
+                $toEmail,
                 $subject,
                 $status,
-                $attempts,
                 $errorMessage,
                 !empty($metadata) ? json_encode($metadata, JSON_UNESCAPED_UNICODE) : null,
             ]);
@@ -43,25 +42,26 @@ class EmailLogger
     }
 
     public static function logSent(
-        string $type,
-        string $recipient,
+        string $template,
+        string $toEmail,
         string $subject,
         ?string $userId = null,
+        ?string $contactId = null,
         array $metadata = []
     ): void {
-        self::log($type, $recipient, $subject, 'sent', $userId, null, $metadata);
+        self::log($template, $toEmail, $subject, 'sent', $userId, $contactId, null, $metadata);
     }
 
     public static function logFailed(
-        string $type,
-        string $recipient,
+        string $template,
+        string $toEmail,
         string $subject,
         string $errorMessage,
         ?string $userId = null,
-        int $attempts = 1,
+        ?string $contactId = null,
         array $metadata = []
     ): void {
-        self::log($type, $recipient, $subject, 'failed', $userId, $errorMessage, $metadata, $attempts);
+        self::log($template, $toEmail, $subject, 'failed', $userId, $contactId, $errorMessage, $metadata);
     }
 
     public static function getLogs(
@@ -76,7 +76,7 @@ class EmailLogger
         $params = [];
 
         if (!empty($filters['type'])) {
-            $where[] = 'el.type = ?';
+            $where[] = 'el.template = ?';
             $params[] = $filters['type'];
         }
         if (!empty($filters['status'])) {
@@ -84,15 +84,15 @@ class EmailLogger
             $params[] = $filters['status'];
         }
         if (!empty($filters['user_id'])) {
-            $where[] = 'el.user_id = ?';
+            $where[] = 'el.person_id = ?';
             $params[] = $filters['user_id'];
         }
         if (!empty($filters['date_debut'])) {
-            $where[] = 'DATE(el.sent_at) >= ?';
+            $where[] = 'DATE(el.created_at) >= ?';
             $params[] = $filters['date_debut'];
         }
         if (!empty($filters['date_fin'])) {
-            $where[] = 'DATE(el.sent_at) <= ?';
+            $where[] = 'DATE(el.created_at) <= ?';
             $params[] = $filters['date_fin'];
         }
 
@@ -111,9 +111,9 @@ class EmailLogger
                 CONCAT(u.prenom, ' ', u.nom) AS user_name,
                 u.email AS user_email_addr
             FROM email_logs el
-            LEFT JOIN users u ON el.user_id = u.id
+            LEFT JOIN persons u ON el.person_id = u.id
             $whereClause
-            ORDER BY el.sent_at DESC
+            ORDER BY el.created_at DESC
             LIMIT ? OFFSET ?
         ");
         $stmt->execute($params);
@@ -138,34 +138,33 @@ class EmailLogger
                 SUM(status = 'sent') AS sent,
                 SUM(status = 'failed') AS failed,
                 SUM(status = 'bounced') AS bounced,
-                COUNT(DISTINCT recipient) AS unique_recipients,
-                COUNT(CASE WHEN sent_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 END) AS last_7_days,
-                COUNT(CASE WHEN sent_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) AS last_30_days
+                COUNT(DISTINCT to_email) AS unique_recipients,
+                COUNT(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 END) AS last_7_days,
+                COUNT(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) AS last_30_days
             FROM email_logs
         ");
-
         $global = $stmt->fetch(PDO::FETCH_ASSOC);
 
         $byTypeStmt = $db->query("
-            SELECT type, COUNT(*) AS count, SUM(status = 'sent') AS sent, SUM(status = 'failed') AS failed
+            SELECT template, COUNT(*) AS nb, SUM(status = 'sent') AS sent, SUM(status = 'failed') AS failed
             FROM email_logs
-            WHERE sent_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-            GROUP BY type
-            ORDER BY count DESC
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY template
+            ORDER BY nb DESC
             LIMIT 10
         ");
         $byType = $byTypeStmt->fetchAll(PDO::FETCH_ASSOC);
 
         $trendStmt = $db->query("
             SELECT
-                DATE(sent_at) AS date,
+                DATE(created_at) AS label,
                 COUNT(*) AS total,
                 SUM(status = 'sent') AS sent,
                 SUM(status = 'failed') AS failed
             FROM email_logs
-            WHERE sent_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
-            GROUP BY DATE(sent_at)
-            ORDER BY date ASC
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+            GROUP BY DATE(created_at)
+            ORDER BY label ASC
         ");
         $trend = $trendStmt->fetchAll(PDO::FETCH_ASSOC);
 

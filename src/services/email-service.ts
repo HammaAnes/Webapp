@@ -61,6 +61,14 @@ export interface AbonnementExpirationData {
   userEmail: string;
 }
 
+export interface DomiciliationExpirationData {
+  prenom: string;
+  raisonSociale: string;
+  dateFin: string;
+  joursRestants: number;
+  userEmail: string;
+}
+
 export interface ParrainageBonusData {
   prenom: string;
   filleulPrenom: string;
@@ -160,6 +168,16 @@ export const emailService = {
       date_fin:       data.dateFin,
       jours_restants: data.joursRestants,
       user_email:     data.userEmail,
+    }, true);
+  },
+
+  async onDomiciliationExpiration(data: DomiciliationExpirationData) {
+    await dispatchSafe("domiciliation_expiration", {
+      prenom:          data.prenom,
+      raison_sociale:  data.raisonSociale,
+      date_fin:        data.dateFin,
+      jours_restants:  data.joursRestants,
+      user_email:      data.userEmail,
     }, true);
   },
 

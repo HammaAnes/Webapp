@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   FileText, Upload, Download, Trash2, CheckCircle, AlertCircle,
   Loader2, File, Eye, FolderOpen,
@@ -43,8 +43,6 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
 
   const slots = getDocumentSlots(typeStructure);
   const getDoc = (type: string) => docs.find(d => d.documentType === type);
-
-  useEffect(() => { reload(); }, [reload]);
 
   const handleUploadClick = (docType: string) => {
     setUploadTarget(docType);
@@ -131,7 +129,7 @@ export default function DocumentsEntreprise({ domiciliationId, typeStructure, re
 
   const requiredSlots = slots.filter(s => s.required);
   const uploadedCount = requiredSlots.filter(s => getDoc(s.type)).length;
-  const pct = requiredSlots.length > 0 ? Math.round((uploadedCount / requiredSlots.length) * 100) : 0;
+  const pct = requiredSlots.length > 0 ? Math.round((uploadedCount / requiredSlots.length) * 100) : 100;
 
   if (loading) return <div className="flex items-center justify-center py-16"><LoadingSpinner size="lg" /></div>;
 

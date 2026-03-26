@@ -209,8 +209,7 @@ const Reservations = () => {
         );
       }
       if (filter === "past") {
-        const dateFin = r.dateFin instanceof Date ? r.dateFin : new Date(r.dateFin as unknown as string);
-        return r.statut === "terminee" || isPast(dateFin);
+        return r.statut === "terminee";
       }
       return true;
     });

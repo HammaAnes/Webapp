@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { differenceInDays } from "date-fns";
-import type { DemandeDomiciliation } from "../types";
+import type { DemandeDomiciliation } from "../../../domiciliation/domain/types";
 import StatutBadge from "./StatutBadge";
 import DossierCompleteness from "./DossierCompleteness";
 import { getDisplayName, getSituationLabel, getTypeLabel } from "../utils";

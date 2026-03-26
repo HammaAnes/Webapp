@@ -1,7 +1,7 @@
 import React from "react";
 import Badge from "../../../components/ui/Badge";
 import { STATUT_CONFIG } from "../constants";
-import type { DomiciliationStatut } from "../types";
+import type { DomiciliationStatut } from "../../../domiciliation/domain/types";
 
 interface Props {
   statut: DomiciliationStatut | string;

@@ -19,7 +19,7 @@ import BureauSelector from "../components/BureauSelector";
 import ContratSummary from "../components/ContratSummary";
 import { useOccupiedBureaux } from "../hooks";
 import { toDateInputValue } from "../utils";
-import type { DemandeDomiciliation, ActionKey, ActionData } from "../types";
+import type { DemandeDomiciliation, ActionKey, ActionData } from "../../../domiciliation/domain/types";
 
 interface Props {
   demande: DemandeDomiciliation;

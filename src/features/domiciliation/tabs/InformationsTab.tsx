@@ -13,7 +13,7 @@ import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import Badge from "../../../components/ui/Badge";
 import { OPTIONS_DOMICILIATION } from "../constants";
-import type { DemandeDomiciliation } from "../types";
+import type { DemandeDomiciliation } from "../../../domiciliation/domain/types";
 
 interface Props {
   demande: DemandeDomiciliation;

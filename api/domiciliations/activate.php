@@ -66,7 +66,6 @@ try {
                   date_debut_contrat = :date_debut_contrat,
                   date_fin_contrat = :date_fin_contrat,
                   montant_mensuel = :montant_mensuel,
-                  date_activation = NOW(),
                   visible_sur_site = TRUE,
                   updated_at = NOW()
                   $bureauSet
@@ -88,38 +87,31 @@ try {
         Response::serverError('Erreur lors de l\'activation');
     }
 
-    if (!empty($domiciliation['user_id'])) {
-        $transactionId = UuidHelper::generate();
-        $query = "INSERT INTO transactions
-                  (id, user_id, type, montant, statut, mode_paiement, reference, description, date_paiement, created_at)
-                  VALUES (:id, :user_id, 'domiciliation', :montant, 'en_attente', :mode_paiement, :reference, :description, NOW(), NOW())";
-
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(':id', $transactionId);
-        $stmt->bindParam(':user_id', $domiciliation['user_id']);
-        $stmt->bindParam(':montant', $data['montant_mensuel']);
-        $mode_paiement = $data['mode_paiement'] ?? 'cash';
-        $stmt->bindParam(':mode_paiement', $mode_paiement);
-        $reference = 'DOM-' . date('YmdHis') . '-' . substr($transactionId, 0, 8);
-        $stmt->bindParam(':reference', $reference);
-        $description = 'Activation domiciliation - ' . $domiciliation['raison_sociale'];
-        $stmt->bindParam(':description', $description);
-        $stmt->execute();
+    if (!empty($domiciliation['person_id'])) {
+        CaisseHelper::insert($db, [
+            'domiciliation_id' => $data['domiciliation_id'],
+            'person_id'        => $domiciliation['person_id'],
+            'type_transaction' => 'domiciliation',
+            'montant'          => $data['montant_mensuel'],
+            'mode_paiement'    => $data['mode_paiement'] ?? 'cash',
+            'statut'           => 'encaisse',
+            'notes'            => 'Activation domiciliation - ' . $domiciliation['raison_sociale'],
+        ]);
 
         $notificationId = UuidHelper::generate();
-        $notifQuery = "INSERT INTO notifications (id, user_id, type, titre, message, lue, created_at) VALUES (?, ?, 'domiciliation', ?, ?, 0, NOW())";
+        $notifQuery = "INSERT INTO notifications (id, person_id, type, titre, message, lue, created_at) VALUES (?, ?, 'domiciliation', ?, ?, 0, NOW())";
         $notifStmt = $db->prepare($notifQuery);
         $titre = 'Domiciliation activee';
         $message = 'Votre domiciliation est maintenant active. Montant mensuel: ' . number_format($data['montant_mensuel'], 2, ',', ' ') . ' DA';
-        $notifStmt->execute([$notificationId, $domiciliation['user_id'], $titre, $message]);
+        $notifStmt->execute([$notificationId, $domiciliation['person_id'], $titre, $message]);
     }
 
     $db->commit();
 
-    if (!empty($domiciliation['user_id'])) {
+    if (!empty($domiciliation['person_id'])) {
         try {
-            $userStmt = $db->prepare("SELECT email, prenom, nom FROM users WHERE id = ?");
-            $userStmt->execute([$domiciliation['user_id']]);
+            $userStmt = $db->prepare("SELECT email, prenom, nom FROM persons WHERE id = ?");
+            $userStmt->execute([$domiciliation['person_id']]);
             $user = $userStmt->fetch(PDO::FETCH_ASSOC);
             if ($user) {
                 $domiciliation['date_debut'] = $data['date_debut'];
@@ -135,8 +127,6 @@ try {
     Response::success([
         'message' => 'Domiciliation activee avec succes',
         'id' => $data['domiciliation_id'],
-        'transaction_id' => $transactionId ?? null,
-        'reference' => $reference ?? null
     ]);
 
 } catch (Exception $e) {

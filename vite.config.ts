@@ -38,13 +38,6 @@ export default defineConfig({
     hmr: {
       overlay: true,
     },
-    proxy: {
-      "/api": {
-        target: "https://coffice.dz",
-        changeOrigin: true,
-        secure: true,
-      },
-    },
   },
   build: {
     outDir: "dist",

@@ -107,6 +107,8 @@ Le CNRC offre la possibilité aux opérateurs économiques de faire la demande d
 
 ## Étape 2 : Domiciliation de l'entreprise auprès d'un notaire
 
+> INFO: **La solution la plus simple : domiciliez chez Coffice.** Coffice dispose de son propre notaire partenaire, installé au Mohammadia Mall (4ème étage, Alger). Vous obtenez une adresse professionnelle légale reconnue par le CNRC, dans un cadre moderne au cœur d'Alger, sans avoir à chercher un local. Le notaire de Coffice a uniquement besoin de vos informations personnelles (voir documents ci-dessous) pour établir votre contrat de bail commercial. **Conseil de pro : préparez les Étapes 2 et 3 simultanément.** Notre notaire peut enchaîner directement la signature du contrat de location (Étape 2) avec la rédaction et la signature de vos statuts juridiques (Étape 3) lors d'un seul et même rendez-vous — vous économisez un déplacement et jusqu'à 48 heures de délai.
+
 En Algérie, la domiciliation de l'entreprise consiste à se rendre auprès d'un notaire pour l'établissement d'un contrat de location ou de propriété au nom de l'entreprise. Les frais de notaire varient en fonction du montant de la location.
 
 Les frais de domiciliation selon la Chambre nationale des notaires se calculent comme suit :
@@ -114,13 +116,15 @@ Les frais de domiciliation selon la Chambre nationale des notaires se calculent 
 - 0,75 % du montant du loyer à durée ferme si celui-ci est supérieur à 500 000 DA
 - Minimum : 8 000 DA de frais de notaire
 
-### Documents requis pour le locataire
+### Documents requis pour le locataire (futur domicilié)
 
 - (01) acte de naissance du futur gérant de la société et des associés
 - (01) copie de la pièce d'identité du futur gérant et des associés
 - (01) copie du certificat de dénomination de votre entreprise (obtenu à l'étape 1)
 
-### Documents requis pour le propriétaire
+> CONSEIL: **Préparez les Étapes 2 et 3 en même temps.** En choisissant le notaire de Coffice, vous pouvez signer votre contrat de bail (Étape 2) ET vos statuts juridiques (Étape 3) lors d'un seul et même rendez-vous. Anticipez en rassemblant dès maintenant tous les documents des deux étapes. Vous gagnerez un déplacement et au moins 48 heures sur votre planning.
+
+### Documents requis pour le propriétaire (si vous optez pour un autre local)
 
 - (01) acte de naissance du propriétaire ou de son représentant légal
 - (01) copie de la pièce d'identité des propriétaires ou du représentant légal
@@ -133,8 +137,6 @@ Une fois le contrat de location signé auprès du notaire, vous pouvez le récup
 > CONSEIL: Demandez au notaire de mentionner le délai de préavis dans le contrat de location (il ne doit pas dépasser 6 mois). Demandez la facture à votre notaire afin de faire figurer la dépense dans le bilan de votre société. Le montant du loyer représente un coût fixe pour votre entreprise : prévoyez au moins 18 mois de loyer dans votre budget de démarrage.
 
 > ATTENTION: Certains services d'impôts n'acceptent plus les nouveaux dossiers fiscaux en l'absence du livret foncier du bien. Avant de vous engager dans une location, vérifiez que le propriétaire dispose du livret foncier. Si vous êtes propriétaire du bien et que vous le louez à votre entreprise, le montant déclaré doit être proche de la réalité du marché pour éviter un redressement fiscal.
-
-> INFO: Des espaces de coworking, comme Coffice au Mohammadia Mall d'Alger, vous offrent la possibilité de domicilier l'adresse de votre entreprise à des prix abordables, avec tous les services inclus.
 
 ## Étape 3 : Établissement des statuts juridiques et publication du BOAL
 
@@ -2666,29 +2668,31 @@ En Algérie, la dénomination de la personne physique est généralement le nom 
 
 ## Étape 2 : Domiciliation de l'entreprise
 
-La domiciliation de votre activité est obligatoire. Vous avez plusieurs options :
+La domiciliation de votre activité est obligatoire. Vous avez plusieurs options.
 
-### Option 1 : Local commercial
+> INFO: **La solution recommandée : Coffice.** Coffice (Mohammadia Mall, 4ème étage, Alger) dispose de son propre notaire partenaire sur place. Vous obtenez une adresse professionnelle légale reconnue par le CNRC sans chercher de local, à un tarif mensuel accessible. Le notaire de Coffice n'a besoin que de vos informations personnelles (acte de naissance, CNI, certificat de dénomination) pour établir votre contrat de bail. **Il est conseillé de préparer les Étapes 2 et 3 simultanément** : le notaire de Coffice peut enchaîner signature du contrat de location et rédaction des statuts juridiques lors d'un même rendez-vous, vous faisant gagner un déplacement et 48 h.
+
+### Option 1 : Domiciliation chez Coffice (recommandé)
+
+Coffice vous propose une adresse professionnelle légale au cœur d'Alger avec tous les services inclus : réception et gestion du courrier, notification d'arrivée, accès aux espaces de travail et salles de réunion.
+
+Documents à fournir (locataire uniquement) :
+- (01) acte de naissance
+- (01) copie de la pièce d'identité
+- (01) copie du certificat de dénomination
+
+### Option 2 : Local commercial (via notaire)
 
 Se rendre chez un notaire pour établir un contrat de bail commercial. Les frais de notaire sont calculés sur la base du montant du loyer :
 - 1 % du loyer à durée ferme si inférieur à 500 000 DA
 - 0,75 % si supérieur à 500 000 DA
 - Minimum : 8 000 DA
 
-Documents requis pour le locataire :
-- (01) acte de naissance
-- (01) copie de la pièce d'identité
-- (01) copie du certificat de dénomination
-
 Documents requis pour le propriétaire :
 - (01) acte de naissance
 - (01) copie de la pièce d'identité
 - (01) copie de l'acte de propriété et/ou livret foncier
 - Assurance catastrophe naturelle (CATNAT) du bien
-
-### Option 2 : Domiciliation commerciale
-
-Les espaces de coworking comme Coffice vous permettent de domicilier votre activité à moindre coût avec tous les services inclus (réception de courrier, notification, accès aux espaces de travail).
 
 ### Option 3 : Domicile personnel
 
@@ -2940,24 +2944,26 @@ La dénomination de l'auto-entrepreneur est généralement le nom et prénom du 
 
 Vous devez avoir une adresse professionnelle pour immatriculer votre activité. Plusieurs options s'offrent à vous.
 
-### Option 1 : Local commercial (via notaire)
+> INFO: **Pourquoi choisir Coffice ?** Coffice (Mohammadia Mall, 4ème étage, Alger) dispose d'un notaire partenaire sur place. Vous bénéficiez d'une adresse légale reconnue par le CNRC sans chercher de local, avec courrier géré, et toute la procédure simplifiée. Documents requis : acte de naissance, CNI, certificat de dénomination — c'est tout. Mieux encore : **préparez les Étapes 2 et 3 simultanément** chez notre notaire. Il peut enchaîner contrat de bail (Étape 2) et statuts juridiques (Étape 3) lors d'un seul rendez-vous, vous faisant gagner un déplacement et 48 h.
 
-Frais de notaire : minimum 8 000 DA, calculés sur la base du loyer.
+### Option 1 : Domiciliation chez Coffice (recommandé)
 
-Documents requis pour le locataire :
+Une solution idéale pour démarrer avec un budget maîtrisé. Coffice vous offre une adresse professionnelle légale reconnue, la réception et gestion de votre courrier, et l'accès aux espaces de travail et salles de réunion.
+
+Documents à fournir (locataire uniquement) :
 - (01) acte de naissance
 - (01) copie de la pièce d'identité
 - (01) copie du certificat de dénomination
+
+### Option 2 : Local commercial (via notaire)
+
+Frais de notaire : minimum 8 000 DA, calculés sur la base du loyer.
 
 Documents requis pour le propriétaire :
 - (01) acte de naissance
 - (01) copie de la pièce d'identité
 - (01) copie de l'acte de propriété et/ou livret foncier
 - Assurance catastrophe naturelle (CATNAT) du bien
-
-### Option 2 : Domiciliation commerciale (espace de coworking)
-
-Une solution idéale pour démarrer avec un budget réduit. Des espaces comme Coffice vous offrent une adresse professionnelle légale, la réception et la gestion de votre courrier, et l'accès à des salles de réunion.
 
 ### Option 3 : Domicile personnel
 

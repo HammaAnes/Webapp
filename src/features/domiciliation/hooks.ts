@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { apiClient } from "../../lib/api-client";
 import { mapApiDocument, mapApiCourrier } from "./utils";
-import type { CourrierItem, DocumentRecord } from "./types";
+import type { CourrierItem, DocumentRecord } from "../../domiciliation/domain/types";
 import { STATUTS_ACTIFS } from "./constants";
 
 export function useOccupiedBureaux(excludeId?: string) {

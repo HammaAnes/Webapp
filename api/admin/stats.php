@@ -19,28 +19,30 @@ try {
     // Requête optimisée unique pour toutes les statistiques
     $query = "
         SELECT
-            -- Utilisateurs
-            (SELECT COUNT(*) FROM users) as total_users,
-            (SELECT COUNT(*) FROM users WHERE statut = 'actif') as active_users,
-            (SELECT COUNT(*) FROM users WHERE statut = 'actif' AND created_at < DATE_SUB(NOW(), INTERVAL 1 MONTH)) as last_month_active_users,
+            -- Utilisateurs (persons avec compte)
+            (SELECT COUNT(*) FROM persons WHERE role IS NOT NULL) as total_users,
+            (SELECT COUNT(*) FROM persons WHERE role IS NOT NULL AND statut = 'actif') as active_users,
+            (SELECT COUNT(*) FROM persons WHERE role IS NOT NULL AND statut = 'actif' AND created_at < DATE_SUB(NOW(), INTERVAL 1 MONTH)) as last_month_active_users,
 
             -- Réservations
-            (SELECT COUNT(*) FROM reservations WHERE DATE(created_at) = CURDATE()) as today_reservations,
-            (SELECT COUNT(*) FROM reservations WHERE DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) as yesterday_reservations,
-            (SELECT COUNT(*) FROM reservations WHERE MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW())) as month_reservations,
+            (SELECT COUNT(*) FROM reservations WHERE DATE(created_at) = CURDATE() AND (abonnement_couvert IS NULL OR abonnement_couvert = 0)) as today_reservations,
+            (SELECT COUNT(*) FROM reservations WHERE DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND (abonnement_couvert IS NULL OR abonnement_couvert = 0)) as yesterday_reservations,
+            (SELECT COUNT(*) FROM reservations WHERE MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW()) AND (abonnement_couvert IS NULL OR abonnement_couvert = 0)) as month_reservations,
 
-            -- Revenus (montant_total est deja net apres reduction appliquee)
+            -- Revenus (montant_total est deja net apres reduction appliquee, hors réservations abonnement)
             (SELECT COALESCE(SUM(montant_total), 0)
              FROM reservations
              WHERE MONTH(created_at) = MONTH(NOW())
              AND YEAR(created_at) = YEAR(NOW())
-             AND statut IN ('confirmee', 'terminee')) as month_revenue,
+             AND statut IN ('confirmee', 'terminee')
+             AND (abonnement_couvert IS NULL OR abonnement_couvert = 0)) as month_revenue,
 
             (SELECT COALESCE(SUM(montant_total), 0)
              FROM reservations
              WHERE MONTH(created_at) = MONTH(DATE_SUB(NOW(), INTERVAL 1 MONTH))
              AND YEAR(created_at) = YEAR(DATE_SUB(NOW(), INTERVAL 1 MONTH))
-             AND statut IN ('confirmee', 'terminee')) as last_month_revenue,
+             AND statut IN ('confirmee', 'terminee')
+             AND (abonnement_couvert IS NULL OR abonnement_couvert = 0)) as last_month_revenue,
 
             -- Abonnements
             (SELECT COUNT(*) FROM abonnements_utilisateurs WHERE statut = 'actif' AND date_fin > NOW()) as active_subscriptions,

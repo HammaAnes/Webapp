@@ -5,6 +5,8 @@
  * Gère les niveaux de log : INFO, WARNING, ERROR, SECURITY
  */
 
+require_once __DIR__ . '/IpHelper.php';
+
 class Logger
 {
     public const LEVEL_INFO = 'info';
@@ -60,7 +62,7 @@ class Logger
                     ':message' => substr($message, 0, 1000), // Limiter à 1000 caractères
                     ':context' => !empty($context) ? json_encode($context) : null,
                     ':user_id' => $userId,
-                    ':ip_address' => self::getClientIp()
+                    ':ip_address' => IpHelper::getClientIp()
                 ]);
             }
         } catch (Exception $e) {
@@ -99,19 +101,5 @@ class Logger
     public static function security($message, $context = [], $userId = null)
     {
         self::log(self::LEVEL_SECURITY, $message, $context, $userId);
-    }
-
-    /**
-     * Obtenir l'IP du client
-     */
-    private static function getClientIp()
-    {
-        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-            return $_SERVER['HTTP_CLIENT_IP'];
-        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            return $_SERVER['HTTP_X_FORWARDED_FOR'];
-        } else {
-            return $_SERVER['REMOTE_ADDR'] ?? null;
-        }
     }
 }

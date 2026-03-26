@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(grep -A 30 \"CREATE TABLE \\\\`transactions\\\\`\" /Users/riles/coffice-webapp/database/cofficed_coffice.sql)",
+      "Bash(grep -A 20 \"CREATE TABLE \\\\`transactions\\\\`\" \"/Users/riles/coffice-webapp/database/cofficed_coffice 22:03:2026.sql\")",
+      "Bash(grep -A 15 \"CREATE TABLE \\\\`notifications\\\\`\" \"/Users/riles/coffice-webapp/database/cofficed_coffice 22:03:2026.sql\")",
+      "Bash(grep:*)",
+      "WebFetch(domain:cometobladi.com)",
+      "Bash(npm install:*)",
+      "Bash(wc -l /Users/riles/coffice-webapp/src/pages/dashboard/admin/*.tsx)"
+    ]
+  }
+}

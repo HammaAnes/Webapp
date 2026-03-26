@@ -34,8 +34,8 @@ try {
     // Vérifier que l'utilisateur existe toujours et est actif
     $db = Database::getInstance()->getConnection();
 
-    $query = "SELECT id, email, role, statut FROM users
-              WHERE id = :id";
+    $query = "SELECT id, email, role, statut FROM persons
+              WHERE id = :id AND role IS NOT NULL";
 
     $stmt = $db->prepare($query);
     $stmt->execute([':id' => $userData->id]);

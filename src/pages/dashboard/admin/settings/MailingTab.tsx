@@ -42,6 +42,14 @@ const EMAIL_TEMPLATES = [
   { name: "Domiciliation - statut", trigger: "Changement de statut", to: "Utilisateur", category: "domiciliation" },
   { name: "Domiciliation activée", trigger: "Activation", to: "Utilisateur", category: "domiciliation" },
   { name: "Domiciliation refusée", trigger: "Refus", to: "Utilisateur", category: "domiciliation" },
+  { name: "Domiciliation expirée", trigger: "Expiration à J-7", to: "Utilisateur", category: "domiciliation" },
+  { name: "Abonnement souscrit", trigger: "Nouvelle souscription", to: "Utilisateur + Admin", category: "abonnement" },
+  { name: "Abonnement validé", trigger: "Validation par admin", to: "Utilisateur", category: "abonnement" },
+  { name: "Abonnement refusé", trigger: "Refus par admin", to: "Utilisateur", category: "abonnement" },
+  { name: "Abonnement expire bientôt", trigger: "Expiration à J-7", to: "Utilisateur", category: "rappel" },
+  { name: "Courrier reçu", trigger: "Réception d'un courrier", to: "Utilisateur", category: "domiciliation" },
+  { name: "Bonus parrainage débloqué", trigger: "Première réservation du filleul", to: "Parrain + Filleul", category: "parrainage" },
+  { name: "Code promo attribué", trigger: "Attribution manuelle admin", to: "Utilisateur", category: "marketing" },
   { name: "Reset mot de passe", trigger: "Demande de reset", to: "Utilisateur", category: "reset" },
   { name: "Notification admin", trigger: "Événements système", to: "Admin", category: "admin" },
 ];
@@ -61,14 +69,14 @@ const MailingTab: React.FC<Props> = ({ settings, notifications, onChange, onSave
     try {
       await emailService.sendCustom(
         testEmailTo,
-        "Test Email — Coffice (Brevo SMTP)",
+        "Test Email — Coffice SMTP",
         `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:40px;text-align:center;background:#f9fafb">
           <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:40px;box-shadow:0 2px 12px rgba(0,0,0,0.08)">
             <h2 style="color:#111827;margin-bottom:8px">Test Email Coffice</h2>
-            <p style="color:#6b7280">Cet email confirme que Brevo SMTP est correctement configuré.</p>
-            <p style="color:#059669;font-weight:700;font-size:18px;margin:24px 0">Brevo SMTP fonctionne !</p>
+            <p style="color:#6b7280">Cet email confirme que le SMTP Coffice est correctement configuré.</p>
+            <p style="color:#059669;font-weight:700;font-size:18px;margin:24px 0">SMTP Coffice fonctionne !</p>
             <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
-            <p style="color:#9ca3af;font-size:12px">smtp-relay.brevo.com:587 — ${new Date().toLocaleString("fr-FR")}</p>
+            <p style="color:#9ca3af;font-size:12px">mail.coffice.dz:465 — ${new Date().toLocaleString("fr-FR")}</p>
           </div>
         </body></html>`
       );
@@ -84,11 +92,15 @@ const MailingTab: React.FC<Props> = ({ settings, notifications, onChange, onSave
   };
 
   const isTemplateEnabled = (category: string) => {
-    if (category === "reset" || category === "admin" || category === "rappel") return true;
+    if (category === "reset" || category === "admin") return true;
+    if (category === "rappel") return notifications.email_nouvelles_reservations || notifications.email_expirations_abonnements;
     if (category === "reservation") return notifications.email_nouvelles_reservations;
     if (category === "annulation") return notifications.email_annulations;
     if (category === "bienvenue") return notifications.email_nouveaux_utilisateurs;
     if (category === "domiciliation") return notifications.email_domiciliations;
+    if (category === "abonnement") return notifications.email_expirations_abonnements;
+    if (category === "parrainage") return true;
+    if (category === "marketing") return true;
     return false;
   };
 
@@ -102,8 +114,8 @@ const MailingTab: React.FC<Props> = ({ settings, notifications, onChange, onSave
           </h2>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-xs font-semibold text-emerald-700">Brevo SMTP actif</span>
-            <span className="text-xs text-emerald-600">smtp-relay.brevo.com:587</span>
+            <span className="text-xs font-semibold text-emerald-700">SMTP Coffice actif</span>
+            <span className="text-xs text-emerald-600">mail.coffice.dz:465</span>
           </div>
         </div>
         <div className="space-y-4">
@@ -144,10 +156,10 @@ const MailingTab: React.FC<Props> = ({ settings, notifications, onChange, onSave
       <Card className="p-6">
         <h2 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
           <Send className="w-5 h-5 text-emerald-500" />
-          Test d'envoi Brevo
+          Test d'envoi SMTP
         </h2>
         <p className="text-sm text-gray-500 mb-4">
-          Vérifiez que Brevo SMTP envoie correctement les emails depuis <code className="bg-gray-100 px-1 rounded text-xs">desk@coffice.dz</code>.
+          Vérifiez que le SMTP Coffice envoie correctement les emails depuis <code className="bg-gray-100 px-1 rounded text-xs">desk@coffice.dz</code>.
         </p>
         <div className="flex gap-3 items-end">
           <div className="flex-1">
@@ -170,7 +182,7 @@ const MailingTab: React.FC<Props> = ({ settings, notifications, onChange, onSave
         {testResult === "success" && (
           <div className="mt-3 flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
             <CheckCircle className="w-4 h-4 flex-shrink-0" />
-            Email envoyé avec succès via Brevo SMTP.
+            Email envoyé avec succès via SMTP Coffice.
           </div>
         )}
         {testResult === "error" && (

@@ -50,6 +50,7 @@ class AdminNotifier
             'E-mail' => $userEmail,
             'Espace' => $reservation['espace_nom'] ?? $reservation['espace_name'] ?? '',
             'Date' => isset($reservation['date_debut']) ? date('d/m/Y', strtotime($reservation['date_debut'])) : '',
+            'Montant' => number_format((float)($reservation['montant_total'] ?? 0), 0, ',', ' ') . ' DA',
         ];
 
         self::notify('Reservation annulee', $rows, '/erp/reservations');
@@ -86,5 +87,54 @@ class AdminNotifier
         ];
 
         self::notify('Nouvel abonnement souscrit', $rows, '/erp/abonnements');
+    }
+
+    public static function documentUploaded(string $userName, string $userEmail, string $entityType, string $typeDocument, string $fileName): void
+    {
+        $typeLabels = [
+            'domiciliation' => 'Dossier domiciliation',
+            'reservation'   => 'Réservation',
+            'user'          => 'Profil utilisateur',
+        ];
+
+        $rows = [
+            'Utilisateur'    => $userName,
+            'E-mail'         => $userEmail,
+            'Dossier'        => $typeLabels[$entityType] ?? $entityType,
+            'Type document'  => $typeDocument,
+            'Fichier'        => $fileName,
+        ];
+
+        self::notify('Nouveau document déposé', $rows, '/erp/domiciliations');
+    }
+
+    public static function courrierInstruction(string $raisonSociale, string $userEmail, string $instruction, string $expediteur, string $typeCourrier): void
+    {
+        $instrLabels = [
+            'reexpedier' => 'Réexpédier',
+            'scanner'    => 'Scanner & envoyer',
+            'garder'     => 'Garder en attente',
+            'jeter'      => 'Jeter',
+        ];
+
+        $rows = [
+            'Entreprise'  => $raisonSociale,
+            'E-mail'      => $userEmail,
+            'Courrier'    => trim($typeCourrier . ($expediteur ? ' — ' . $expediteur : '')),
+            'Instruction' => $instrLabels[$instruction] ?? $instruction,
+        ];
+
+        self::notify('Instruction courrier reçue', $rows, '/erp/courriers');
+    }
+
+    public static function dossierUpdated(string $userName, string $userEmail, string $raisonSociale): void
+    {
+        $rows = [
+            'Utilisateur'  => $userName,
+            'E-mail'       => $userEmail,
+            'Dossier'      => $raisonSociale,
+        ];
+
+        self::notify('Dossier domiciliation mis à jour', $rows, '/erp/domiciliations');
     }
 }

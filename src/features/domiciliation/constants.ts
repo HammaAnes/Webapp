@@ -11,7 +11,8 @@ import {
   Package,
   Bookmark,
 } from "lucide-react";
-import type { DomiciliationStatut } from "./types";
+import type { DomiciliationStatut } from "../../domiciliation/domain/types";
+import { SOCIETE_DOC_SLOTS, AUTO_ENTREPRENEUR_DOC_SLOTS } from "../../domiciliation/domain/constants";
 
 export const STATUT_CONFIG: Record<
   DomiciliationStatut,
@@ -170,20 +171,14 @@ export const COURRIER_STATUT_CONFIG: Record<
 
 export const COURRIER_INACTIVE_STATUTS = ["recupere", "reexpedier", "traite"];
 
-export const SOCIETE_DOCS = [
-  { type: "registre_commerce", label: "Registre de Commerce (RC)", required: true },
-  { type: "c20", label: "Extrait C20", required: true },
-  { type: "statuts", label: "Statuts de la société", required: true },
-  { type: "cni_gerant", label: "CNI du gérant", required: true },
-  { type: "extrait_naissance_gerant", label: "Extrait de naissance du gérant", required: true },
-];
-
-export const AUTO_ENTREPRENEUR_DOCS = [
-  { type: "carte_ae", label: "Carte Auto-Entrepreneur", required: true },
-  { type: "cni", label: "Carte Nationale d'Identité", required: true },
-];
-
+// Dérivés de domain/constants — source unique de vérité pour les listes de documents
+export const SOCIETE_DOCS = SOCIETE_DOC_SLOTS.filter(s => s.type !== "autre");
+export const AUTO_ENTREPRENEUR_DOCS = AUTO_ENTREPRENEUR_DOC_SLOTS.filter(s => s.type !== "autre");
 export const COMMON_DOCS = [{ type: "autre", label: "Autre document", required: false }];
+
+// Alias sémantiques (même données, nommage métier différent)
+export const REQUIRED_DOCS_EXISTING_SOCIETE = SOCIETE_DOCS;
+export const REQUIRED_DOCS_EXISTING_AUTO_ENTREPRENEUR = AUTO_ENTREPRENEUR_DOCS;
 
 export const REQUIRED_DOCS_NEW_SOCIETE = [
   { type: "cni", label: "CNI du futur gérant", required: true },
@@ -193,19 +188,6 @@ export const REQUIRED_DOCS_NEW_SOCIETE = [
 
 export const REQUIRED_DOCS_NEW_AUTO_ENTREPRENEUR = [
   { type: "cni", label: "CNI de l'auto-entrepreneur", required: true },
-];
-
-export const REQUIRED_DOCS_EXISTING_SOCIETE = [
-  { type: "registre_commerce", label: "Registre de Commerce (RC)", required: true },
-  { type: "c20", label: "Extrait C20", required: true },
-  { type: "statuts", label: "Statuts de la société", required: true },
-  { type: "cni_gerant", label: "CNI du gérant", required: true },
-  { type: "extrait_naissance_gerant", label: "Extrait de naissance du gérant", required: true },
-];
-
-export const REQUIRED_DOCS_EXISTING_AUTO_ENTREPRENEUR = [
-  { type: "carte_ae", label: "Carte Auto-Entrepreneur", required: true },
-  { type: "cni", label: "CNI", required: true },
 ];
 
 export const FORMES_JURIDIQUES = [

@@ -80,7 +80,7 @@ const Step2DateTimePicker: React.FC<Step2DateTimePickerProps> = ({ state, action
   const today = new Date();
 
   const capacityFromStore = useMemo(() => {
-    if (!selectedEspace) return selectedEspace?.capacite ?? 12;
+    if (!selectedEspace) return 12;
     const monthData = getMonthData(selectedEspace.id, today);
     if (monthData && monthData.capacity > 1) return monthData.capacity;
     return selectedEspace.capacite > 0 ? selectedEspace.capacite : 12;
@@ -127,7 +127,7 @@ const Step2DateTimePicker: React.FC<Step2DateTimePickerProps> = ({ state, action
         <h3 className="font-semibold text-gray-900 mb-1">
           {selectedEspace.nom} — Choisissez la période
         </h3>
-        <p className="text-sm text-gray-500">Les jours fermés (vendredi et samedi) sont automatiquement exclus</p>
+        <p className="text-sm text-gray-500">Le vendredi est fermé. Les réservations du samedi sont soumises à confirmation.</p>
       </div>
 
       <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">

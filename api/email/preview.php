@@ -63,6 +63,28 @@ $fixturesByTemplate = [
         'date_expiration' => date('d/m/Y', strtotime('+30 days')),
         'description' => 'Bienvenue chez Coffice ! Profitez de 20% de réduction sur votre première réservation.',
     ],
+    'abonnement-valide' => [
+        'souscription' => [
+            'user_prenom' => 'Karim', 'abonnement_nom' => 'Pro',
+            'prix' => 15000, 'date_debut' => date('Y-m-d'),
+            'date_fin' => date('Y-m-d', strtotime('+1 year')),
+        ],
+    ],
+    'abonnement-refuse' => [
+        'souscription' => [
+            'user_prenom' => 'Amina', 'abonnement_nom' => 'Business',
+            'motif' => 'Dossier incomplet — merci de fournir un extrait de registre de commerce à jour.',
+        ],
+    ],
+    'reservation-annulee' => [
+        'reservation' => [
+            'prenom' => 'Karim', 'espace_nom' => 'Box Privée Atlas',
+            'date_debut' => date('Y-m-d 10:00:00', strtotime('+2 days')),
+            'date_fin'   => date('Y-m-d 12:00:00', strtotime('+2 days')),
+            'prix_total' => 4500, 'annulee_par' => 'admin',
+            'raison_annulation' => 'Espace temporairement indisponible pour maintenance.',
+        ],
+    ],
 ];
 
 $validTemplates = array_keys($fixturesByTemplate);

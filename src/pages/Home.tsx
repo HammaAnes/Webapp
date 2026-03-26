@@ -23,6 +23,7 @@ import {
   Mail,
 } from "lucide-react";
 import { useSEO } from "../hooks/useSEO";
+import { analytics } from "../lib/analytics";
 import { IMAGES } from "../config/images";
 import { useAppStore } from "../store/store";
 import { formatCurrency } from "../utils/formatters";
@@ -172,12 +173,14 @@ const Home = () => {
             <Link
               to="/espaces"
               className="px-8 py-4 bg-white text-primary rounded-lg font-bold text-lg hover:bg-gray-100 transition-all shadow-xl hover:shadow-2xl hover:scale-105 transform"
+              onClick={() => analytics.ctaClick('hero_reserver', 'hero')}
             >
               Réserver maintenant
             </Link>
             <Link
               to="/espaces"
               className="px-8 py-4 border-2 border-white text-white rounded-lg font-bold text-lg hover:bg-white hover:text-primary transition-all"
+              onClick={() => analytics.ctaClick('hero_decouvrir', 'hero')}
             >
               Découvrir nos espaces
             </Link>
@@ -334,17 +337,25 @@ const Home = () => {
               transition={{ delay: 0.1 }}
               className="card overflow-hidden hover:shadow-2xl transition-all flex flex-col"
             >
-              <div className="h-64 relative overflow-hidden">
-                <img
-                  src={IMAGES.booths.atlas.url}
-                  alt={IMAGES.booths.atlas.alt}
-                  className="object-cover h-full w-full hover:scale-110 transition-transform duration-500"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-accent/60 to-transparent"></div>
-                <div className="absolute bottom-4 left-4">
-                  <Building2 className="w-10 h-10 text-white drop-shadow-lg" />
-                </div>
+              <div className="h-64 grid grid-cols-3 gap-0.5 overflow-hidden">
+                {[
+                  { img: IMAGES.booths.hoggar, label: "Hoggar" },
+                  { img: IMAGES.booths.aures,  label: "Aurès" },
+                  { img: IMAGES.booths.atlas,  label: "Atlas" },
+                ].map(({ img, label }) => (
+                  <div key={label} className="relative overflow-hidden">
+                    <img
+                      src={img.url}
+                      alt={img.alt}
+                      className="object-cover h-full w-full hover:scale-110 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <span className="absolute bottom-2 left-0 right-0 text-center text-white text-[11px] font-semibold tracking-wide drop-shadow">
+                      {label}
+                    </span>
+                  </div>
+                ))}
               </div>
               <div className="p-6 flex-grow flex flex-col">
                 <h3 className="text-2xl font-display font-bold text-primary mb-3">
@@ -519,6 +530,7 @@ const Home = () => {
               <Link
                 to="/espaces"
                 className="px-8 py-4 bg-white text-primary rounded-lg font-bold text-lg hover:bg-gray-100 transition-all shadow-xl hover:shadow-2xl"
+                onClick={() => analytics.ctaClick('cta_voir_tarifs', 'cta_bottom')}
               >
                 Voir les tarifs
                 <ArrowRight className="w-5 h-5 ml-2 inline" />
@@ -526,6 +538,7 @@ const Home = () => {
               <a
                 href="tel:+213795380124"
                 className="px-8 py-4 border-2 border-white text-white rounded-lg font-bold text-lg hover:bg-white hover:text-primary transition-all"
+                onClick={() => analytics.contactClick('phone')}
               >
                 <Phone className="w-5 h-5 mr-2 inline" />
                 Nous appeler

@@ -45,7 +45,8 @@ const ComptesTab: React.FC = () => {
     apiClient.getUsers()
       .then((res) => {
         const raw = res.data as Record<string, unknown>;
-        const list = Array.isArray(raw?.users) ? raw.users
+        const list = Array.isArray(raw?.persons) ? raw.persons
+          : Array.isArray(raw?.users) ? raw.users
           : Array.isArray(raw?.data) ? raw.data
           : Array.isArray(res.data) ? res.data as UserResult[]
           : [];
@@ -97,7 +98,7 @@ const ComptesTab: React.FC = () => {
     }
     setSavingPassword(true);
     try {
-      const response = await apiClient.updateUser(selectedUser.id, { password: newPassword });
+      const response = await apiClient.adminResetPassword(selectedUser.id, newPassword);
       if (response.success) {
         toast.success(`Mot de passe mis à jour pour ${selectedUser.prenom} ${selectedUser.nom}`);
         setShowPasswordModal(false);

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Mail, BarChart2, List, RefreshCw, Eye, Send, AlertCircle, CheckCircle, Clock, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Mail, BarChart2, List, RefreshCw, Eye, Send, AlertCircle, CheckCircle, Clock, XCircle, ChevronLeft, ChevronRight, Zap, KeyRound, Bell, Building2, Gift } from "lucide-react";
+import AdminPageHeader from "../../../components/admin/AdminPageHeader";
+import AdminTabBar from "../../../components/admin/AdminTabBar";
 import { apiClient } from "../../../lib/api-client";
 import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
@@ -8,18 +10,21 @@ import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
-type Tab = "logs" | "queue" | "preview" | "test";
+type Tab = "logs" | "queue" | "preview" | "rapide";
 
 interface EmailLog {
   id: string;
   user_id: string | null;
   type: string;
+  template?: string;
   recipient: string;
+  to_email?: string;
   subject: string;
   status: "sent" | "failed" | "bounced";
   attempts: number;
   error_message: string | null;
   sent_at: string;
+  created_at?: string;
   user_name: string | null;
 }
 
@@ -191,14 +196,14 @@ const LogsTab: React.FC = () => {
                   {logs.map((log) => (
                     <tr key={log.id} className="hover:bg-gray-50 transition-colors">
                       <td className="py-3 px-3 text-xs text-gray-500 whitespace-nowrap">
-                        {format(new Date(log.sent_at), "dd/MM/yyyy HH:mm", { locale: fr })}
+                        {format(new Date(log.created_at ?? log.sent_at), "dd/MM/yyyy HH:mm", { locale: fr })}
                       </td>
                       <td className="py-3 px-3">
-                        <span className="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded">{log.type}</span>
+                        <span className="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded">{log.template ?? log.type}</span>
                       </td>
                       <td className="py-3 px-3 text-xs text-gray-700 max-w-[180px] truncate">
                         {log.user_name ? <span className="block font-medium">{log.user_name}</span> : null}
-                        <span className="text-gray-400">{log.recipient}</span>
+                        <span className="text-gray-400">{log.to_email ?? log.recipient}</span>
                       </td>
                       <td className="py-3 px-3 text-xs text-gray-700 max-w-[220px] truncate">{log.subject}</td>
                       <td className="py-3 px-3"><StatusBadge status={log.status} /></td>
@@ -406,68 +411,179 @@ const PreviewTab: React.FC = () => {
   );
 };
 
-const TestTab: React.FC = () => {
-  const [form, setForm] = useState({ to: "", template: TEMPLATES[0].value });
-  const [sending, setSending] = useState(false);
+const QUICK_SCENARIOS = [
+  {
+    id: "welcome",
+    label: "Bienvenue & identifiants",
+    description: "Envoie l'email de bienvenue avec le lien de connexion à l'espace Coffice.",
+    icon: Mail,
+    colorClass: "bg-emerald-50 border-emerald-200 text-emerald-700",
+    iconClass: "bg-emerald-100 text-emerald-600",
+  },
+  {
+    id: "password_reset",
+    label: "Réinitialisation mot de passe",
+    description: "Envoie un lien sécurisé de réinitialisation de mot de passe au destinataire.",
+    icon: KeyRound,
+    colorClass: "bg-amber-50 border-amber-200 text-amber-700",
+    iconClass: "bg-amber-100 text-amber-600",
+  },
+  {
+    id: "abonnement_expiration",
+    label: "Rappel expiration abonnement",
+    description: "Rappelle à l'utilisateur que son abonnement arrive à expiration dans 7 jours.",
+    icon: Bell,
+    colorClass: "bg-orange-50 border-orange-200 text-orange-700",
+    iconClass: "bg-orange-100 text-orange-600",
+  },
+  {
+    id: "domiciliation_expiration",
+    label: "Rappel expiration domiciliation",
+    description: "Rappelle que le contrat de domiciliation expire dans 30 jours.",
+    icon: Building2,
+    colorClass: "bg-blue-50 border-blue-200 text-blue-700",
+    iconClass: "bg-blue-100 text-blue-600",
+  },
+  {
+    id: "code_promo_attribue",
+    label: "Attribution code promo",
+    description: "Informe l'utilisateur d'un code promo qui lui a été attribué.",
+    icon: Gift,
+    colorClass: "bg-purple-50 border-purple-200 text-purple-700",
+    iconClass: "bg-purple-100 text-purple-600",
+  },
+];
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.to) { toast.error("L'adresse email est requise"); return; }
+const QuickSendTab: React.FC = () => {
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [recipientName, setRecipientName] = useState("");
+  const [sending, setSending] = useState<string | null>(null);
 
-    setSending(true);
+  const handleSend = async (scenarioId: string) => {
+    if (!recipientEmail) { toast.error("L'adresse email est requise"); return; }
+    setSending(scenarioId);
     try {
-      const token = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
-      const previewRes = await fetch(`${API_URL}/email/preview.php?template=${form.template}`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "text/html" },
-      });
-      const html = await previewRes.text();
+      const prenom = recipientName.trim() || recipientEmail.split("@")[0];
+      let result: { success: boolean; error?: string } | undefined;
 
-      const subject = TEMPLATES.find(t => t.value === form.template)?.label || "Test email";
-      const res = await apiClient.sendEmail(form.to, `[TEST] ${subject}`, html);
+      if (scenarioId === "welcome") {
+        const token = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
+        const previewRes = await fetch(`${API_URL}/email/preview.php?template=welcome`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "text/html" },
+        });
+        const html = await previewRes.text();
+        const r = await apiClient.sendEmail(recipientEmail, "Bienvenue chez Coffice", html);
+        result = { success: r.success, error: (r as { error?: string }).error };
+      } else if (scenarioId === "password_reset") {
+        const res = await fetch(`${API_URL}/auth/forgot-password.php`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: recipientEmail }),
+        });
+        const data = await res.json();
+        result = { success: data.success, error: data.message };
+      } else if (scenarioId === "abonnement_expiration") {
+        const r = await apiClient.dispatchEmail("abonnement_expiration", {
+          user_email: recipientEmail,
+          prenom,
+          plan_nom: "votre abonnement",
+          jours_restants: 7,
+          date_fin: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
+          prix_mensuel: 0,
+        });
+        result = { success: r.success, error: (r as { error?: string }).error };
+      } else if (scenarioId === "domiciliation_expiration") {
+        const r = await apiClient.dispatchEmail("domiciliation_expiration", {
+          user_email: recipientEmail,
+          prenom,
+          raison_sociale: "",
+          jours_restants: 30,
+          date_fin: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+        });
+        result = { success: r.success, error: (r as { error?: string }).error };
+      } else if (scenarioId === "code_promo_attribue") {
+        const r = await apiClient.dispatchEmail("code_promo_attribue", {
+          user_email: recipientEmail,
+          prenom,
+          code_promo: "COFFICE",
+          reduction: "20",
+          type_reduction: "pourcentage",
+          date_expiration: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+          description: "Code promo Coffice",
+        });
+        result = { success: r.success, error: (r as { error?: string }).error };
+      }
 
-      if (res.success) {
-        toast.success(`Email de test envoyé à ${form.to}`);
+      if (result?.success) {
+        toast.success(`Email envoyé à ${recipientEmail}`);
       } else {
-        toast.error((res as { error?: string }).error || "Erreur lors de l'envoi");
+        toast.error(result?.error || "Erreur lors de l'envoi");
       }
     } catch {
       toast.error("Erreur lors de l'envoi");
     } finally {
-      setSending(false);
+      setSending(null);
     }
   };
 
   return (
-    <Card className="p-6">
-      <p className="text-sm text-gray-500 mb-5">Envoyez un email de test à n'importe quelle adresse avec des données fictives.</p>
-      <form onSubmit={handleSend} className="space-y-4 max-w-md">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Adresse destinataire</label>
-          <input
-            type="email"
-            value={form.to}
-            onChange={(e) => setForm(f => ({ ...f, to: e.target.value }))}
-            placeholder="test@example.com"
-            required
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-          />
+    <div className="space-y-5">
+      <Card className="p-6">
+        <p className="text-sm font-medium text-gray-700 mb-4">Destinataire</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Email *</label>
+            <input
+              type="email"
+              value={recipientEmail}
+              onChange={(e) => setRecipientEmail(e.target.value)}
+              placeholder="client@example.com"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Prénom (optionnel)</label>
+            <input
+              type="text"
+              value={recipientName}
+              onChange={(e) => setRecipientName(e.target.value)}
+              placeholder="Karim"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Template</label>
-          <select
-            value={form.template}
-            onChange={(e) => setForm(f => ({ ...f, template: e.target.value }))}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-          >
-            {TEMPLATES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </select>
-        </div>
-        <Button type="submit" disabled={sending} className="flex items-center gap-2">
-          <Send className={`w-4 h-4 ${sending ? "animate-pulse" : ""}`} />
-          {sending ? "Envoi en cours…" : "Envoyer le test"}
-        </Button>
-      </form>
-    </Card>
+      </Card>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {QUICK_SCENARIOS.map((s) => {
+          const Icon = s.icon;
+          const isSending = sending === s.id;
+          return (
+            <Card key={s.id} className={`p-4 border ${s.colorClass}`}>
+              <div className="flex items-start gap-3">
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${s.iconClass}`}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">{s.label}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{s.description}</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-3"
+                    disabled={isSending || !recipientEmail}
+                    onClick={() => handleSend(s.id)}
+                  >
+                    <Send className={`w-3.5 h-3.5 mr-1.5 ${isSending ? "animate-pulse" : ""}`} />
+                    {isSending ? "Envoi…" : "Envoyer"}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
   );
 };
 
@@ -478,42 +594,27 @@ const AdminEmail: React.FC = () => {
     { id: "logs", label: "Logs", icon: <List className="w-4 h-4" /> },
     { id: "queue", label: "File d'attente", icon: <Clock className="w-4 h-4" /> },
     { id: "preview", label: "Preview", icon: <Eye className="w-4 h-4" /> },
-    { id: "test", label: "Test", icon: <Send className="w-4 h-4" /> },
+    { id: "rapide", label: "Envoi rapide", icon: <Zap className="w-4 h-4" /> },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-sky-50 rounded-xl flex items-center justify-center">
-          <Mail className="w-5 h-5 text-sky-600" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Emails</h1>
-          <p className="text-sm text-gray-500">Logs, file d'attente, prévisualisation et tests</p>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Emails"
+        subtitle="Logs, file d'attente, prévisualisation et tests"
+      />
 
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === tab.id
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <AdminTabBar
+        variant="pill"
+        tabs={tabs.map((t) => ({ key: t.id, label: t.label, icon: t.icon }))}
+        active={activeTab}
+        onChange={(key) => setActiveTab(key as Tab)}
+      />
 
       {activeTab === "logs" && <LogsTab />}
       {activeTab === "queue" && <QueueTab />}
       {activeTab === "preview" && <PreviewTab />}
-      {activeTab === "test" && <TestTab />}
+      {activeTab === "rapide" && <QuickSendTab />}
     </div>
   );
 };

@@ -22,6 +22,8 @@ import {
   ChevronRight,
   LayoutGrid,
   List,
+  Globe,
+  Store,
 } from "lucide-react";
 import { useAppStore } from "../../../store/store";
 import { useAvailabilityStore } from "../../../store/availabilityStore";
@@ -40,6 +42,8 @@ import { logger } from "../../../utils/logger";
 import { emailService } from "../../../services/email-service";
 import HotelCalendar from "../../../components/admin/HotelCalendar";
 import ReservationDrawer from "../../../components/admin/ReservationDrawer";
+import AdminPageHeader from "../../../components/admin/AdminPageHeader";
+import AdminTabBar from "../../../components/admin/AdminTabBar";
 import type { Reservation } from "../../../types";
 import { WORKING_HOURS } from "../../../constants/algeria";
 import ReservationCreateModal, { type CreateReservationForm } from "./reservations/ReservationCreateModal";
@@ -71,6 +75,7 @@ const INITIAL_FORM: CreateReservationForm = {
   heure_fin: WORKING_HOURS.END,
   participants: 1,
   notes: "",
+  reduction: 0,
 };
 
 const Reservations = () => {
@@ -126,7 +131,7 @@ const Reservations = () => {
     }
     const debutDate = new Date(`${formData.date_debut}T12:00:00`);
     const dow = debutDate.getDay();
-    if (dow === 5 || dow === 6) { toast.error("Coffice est fermé le vendredi et le samedi"); return; }
+    if (dow === 5) { toast.error("Coffice est fermé le vendredi"); return; }
     const [hDH, hDM] = formData.heure_debut.split(":").map(Number);
     const [hFH, hFM] = formData.heure_fin.split(":").map(Number);
     const debutMin = hDH * 60 + hDM;
@@ -150,20 +155,21 @@ const Reservations = () => {
     setCreateLoading(true);
     try {
       const response = await apiClient.post("/reservations/create.php", {
-        user_id: selectedUser.id,
+        person_id: selectedUser.id,
         espace_id: formData.espace_id,
         date_debut: `${formData.date_debut}T${formData.heure_debut}:00`,
         date_fin: `${formData.date_fin}T${formData.heure_fin}:00`,
         participants: formData.participants,
         notes: formData.notes || null,
         statut: "confirmee",
+        reduction_admin: formData.reduction > 0 ? formData.reduction : undefined,
       });
       if (response.success) {
-        invalidateAll();
-        toast.success("Réservation créée avec succès");
+        toast.success("Location créée avec succès");
         setShowCreateModal(false);
         resetForm();
         await loadReservations();
+        invalidateAll();
       } else {
         toast.error(response.error || "Erreur lors de la création");
       }
@@ -181,17 +187,17 @@ const Reservations = () => {
     try {
       const response = await apiClient.cancelReservation(selectedReservation);
       if (response.success) {
-        invalidateAll();
-        toast.success("Réservation annulée");
+        toast.success("Location supprimée");
         setShowDeleteModal(false);
         setSelectedReservation(null);
         await loadReservations();
+        invalidateAll();
       } else {
         toast.error(response.error || "Erreur lors de l'annulation");
       }
     } catch (error) {
       logger.error("Erreur annulation:", error as Error);
-      toast.error("Erreur lors de l'annulation");
+      toast.error("Erreur lors de la suppression");
     } finally {
       setDeleteLoading(false);
     }
@@ -202,7 +208,7 @@ const Reservations = () => {
       const result = await updateReservation(id, { statut: statut as ReservationStatut });
       if (result?.success === false) { toast.error(result.error || "Erreur"); return; }
       invalidateAll();
-      toast.success(statut === "confirmee" ? "Réservation confirmée" : statut === "annulee" ? "Réservation refusée" : "Statut mis à jour");
+      toast.success(statut === "confirmee" ? "Location confirmée" : statut === "annulee" ? "Location refusée" : "Statut mis à jour");
       setActionMenu(null);
       const res = reservations.find((r) => r.id === id);
       if (res?.utilisateur?.email) {
@@ -232,11 +238,13 @@ const Reservations = () => {
     if (selectedIds.length === 0) { toast.error("Aucune réservation sélectionnée"); return; }
     const statut = action === "confirmer" ? "confirmee" : "annulee";
     try {
-      const results = await Promise.all(selectedIds.map((id) => updateReservation(id, { statut: statut as ReservationStatut })));
-      const failed = results.filter((r) => r?.success === false);
+      // Use apiClient directly to avoid N parallel loadReservations() calls from updateReservation store action
+      const results = await Promise.all(selectedIds.map((id) => apiClient.updateReservation(id, { statut })));
+      const failed = results.filter((r) => !r.success);
       if (failed.length > 0) { toast.error(`${failed.length} réservation(s) non mises à jour`); return; }
+      await loadReservations();
       invalidateAll();
-      toast.success(`${selectedIds.length} réservation(s) ${action === "confirmer" ? "confirmées" : "refusées"}`);
+      toast.success(`${selectedIds.length} location(s) ${action === "confirmer" ? "confirmées" : "refusées"}`);
       setSelectedIds([]);
     } catch {
       toast.error("Erreur lors de l'action groupée");
@@ -293,24 +301,25 @@ const Reservations = () => {
     s === "tous" ? reservations.length : reservations.filter((r) => r.statut === s).length;
 
   const exportToCSV = () => {
-    const headers = ["Date", "Utilisateur", "Email", "Espace", "Début", "Fin", "Participants", "Montant", "Statut"];
+    const headers = ["Date", "Client", "Email", "Espace", "Début", "Fin", "Participants", "Montant", "Statut", "Origine"];
     const rows = filteredReservations.map((r) => [
       formatDate(r.dateCreation ?? new Date()),
-      `${r.utilisateur?.prenom || ""} ${r.utilisateur?.nom || ""}`,
-      r.utilisateur?.email || "",
+      `${r.utilisateur?.prenom || r.contact?.prenom || ""} ${r.utilisateur?.nom || r.contact?.nom || ""}`,
+      r.utilisateur?.email || r.contact?.email || "",
       r.espace?.nom || "",
       formatDate(r.dateDebut),
       formatDate(r.dateFin),
       String(r.participants || 0),
       String(r.montantTotal || 0),
       getReservationStatutLabel(r.statut),
+      r.personId ? "En ligne" : "Guichet",
     ]);
     const csv = buildCsvContent(headers, rows);
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `reservations-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `locations-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Export CSV réussi");
@@ -332,48 +341,42 @@ const Reservations = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestion des Réservations</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {stats.total} réservation{stats.total > 1 ? "s" : ""} au total
-            {stats.enAttente > 0 && (
-              <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold">
-                {stats.enAttente} en attente
-              </span>
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex bg-gray-100 rounded-lg p-0.5 mr-1">
-            {(["calendar", "list"] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  viewMode === mode ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {mode === "calendar" ? <LayoutGrid className="w-3.5 h-3.5" /> : <List className="w-3.5 h-3.5" />}
-                {mode === "calendar" ? "Calendrier" : "Liste"}
+      <AdminPageHeader
+        title="Locations"
+        subtitle={`${stats.total} location${stats.total > 1 ? "s" : ""} au total`}
+        badge={stats.enAttente > 0 ? { label: `${stats.enAttente} en attente`, color: "amber" } : undefined}
+        actions={
+          <>
+            <div className="flex bg-gray-100 rounded-lg p-0.5">
+              {(["calendar", "list"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    viewMode === mode ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {mode === "calendar" ? <LayoutGrid className="w-3.5 h-3.5" /> : <List className="w-3.5 h-3.5" />}
+                  {mode === "calendar" ? "Calendrier" : "Liste"}
+                </button>
+              ))}
+            </div>
+            {viewMode === "list" && (
+              <button onClick={handleRefresh} disabled={refreshing} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all" title="Actualiser">
+                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               </button>
-            ))}
-          </div>
-          {viewMode === "list" && (
-            <button onClick={handleRefresh} disabled={refreshing} className="p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all" title="Actualiser">
-              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-            </button>
-          )}
-          <Button onClick={exportToCSV} variant="outline" size="sm" className="gap-2">
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Exporter</span>
-          </Button>
-          <Button onClick={() => setShowCreateModal(true)} size="sm" className="gap-2 bg-gray-900 hover:bg-gray-800 text-white">
-            <Plus className="w-4 h-4" />
-            Nouvelle réservation
-          </Button>
-        </div>
-      </div>
+            )}
+            <Button onClick={exportToCSV} variant="outline" size="sm" className="gap-1.5">
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Exporter</span>
+            </Button>
+            <Button onClick={() => setShowCreateModal(true)} size="sm" className="gap-1.5 bg-gray-900 hover:bg-gray-800 text-white">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Nouvelle location</span>
+            </Button>
+          </>
+        }
+      />
 
       <ReservationStatsRibbon stats={stats} />
 
@@ -390,29 +393,17 @@ const Reservations = () => {
       {viewMode === "list" && (
         <Card className="p-0 overflow-hidden">
           <div className="px-4 pt-4 pb-3 border-b border-gray-100">
-            <div className="flex items-center gap-1 overflow-x-auto pb-2">
-              {STATUS_TABS.map((tab) => {
-                const count = getStatusCount(tab.key);
-                const isActive = statusTab === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setStatusTab(tab.key)}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                      isActive ? "bg-gray-900 text-white" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-                    }`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-white" : tab.dotColor}`} />
-                    {tab.label}
-                    {count > 0 && (
-                      <span className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${isActive ? "bg-white/20" : "bg-gray-200 text-gray-600"}`}>
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <AdminTabBar
+              tabs={STATUS_TABS.map((tab) => ({
+                key: tab.key,
+                label: tab.label,
+                count: getStatusCount(tab.key),
+                dot: tab.dotColor,
+              }))}
+              active={statusTab}
+              onChange={(key) => setStatusTab(key as StatusTab)}
+              className="pb-2"
+            />
             <div className="flex flex-col sm:flex-row gap-3 mt-3">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -462,11 +453,11 @@ const Reservations = () => {
               <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Calendar className="w-8 h-8 text-gray-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Aucune réservation</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">Aucune location</h3>
               <p className="text-sm text-gray-500">
                 {searchTerm || statusTab !== "tous" || espaceFilter !== "tous"
-                  ? "Aucune réservation ne correspond à vos filtres"
-                  : "Aucune réservation enregistrée"}
+                  ? "Aucune location ne correspond à vos filtres"
+                  : "Aucune location enregistrée"}
               </p>
             </div>
           ) : (
@@ -484,6 +475,7 @@ const Reservations = () => {
                         />
                       </th>
                       <th className="px-4 py-3 text-left"><SortButton field="user">Client</SortButton></th>
+                      <th className="px-4 py-3 text-left"><span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Origine</span></th>
                       <th className="px-4 py-3 text-left"><SortButton field="space">Espace</SortButton></th>
                       <th className="px-4 py-3 text-left"><SortButton field="date">Date & Horaire</SortButton></th>
                       <th className="px-4 py-3 text-left"><SortButton field="amount">Montant</SortButton></th>
@@ -504,13 +496,28 @@ const Reservations = () => {
                             <td className="px-4 py-3.5">
                               <div className="flex items-center gap-3">
                                 <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center text-xs font-bold text-gray-600">
-                                  {`${(res.utilisateur?.prenom || "?")[0]}${(res.utilisateur?.nom || "?")[0]}`.toUpperCase()}
+                                  {`${(res.utilisateur?.prenom || res.contact?.prenom || "?")[0]}${(res.utilisateur?.nom || res.contact?.nom || "?")[0]}`.toUpperCase()}
                                 </div>
                                 <div className="min-w-0">
-                                  <p className="text-sm font-semibold text-gray-900 truncate">{res.utilisateur?.prenom} {res.utilisateur?.nom}</p>
-                                  <p className="text-xs text-gray-500 truncate">{res.utilisateur?.email}</p>
+                                  <p className="text-sm font-semibold text-gray-900 truncate">
+                                    {res.utilisateur?.prenom || res.contact?.prenom} {res.utilisateur?.nom || res.contact?.nom}
+                                  </p>
+                                  <p className="text-xs text-gray-500 truncate">{res.utilisateur?.email || res.contact?.email}</p>
                                 </div>
                               </div>
+                            </td>
+                            <td className="px-4 py-3.5">
+                              {res.personId ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                                  <Globe className="w-3 h-3" />
+                                  En ligne
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700">
+                                  <Store className="w-3 h-3" />
+                                  Guichet
+                                </span>
+                              )}
                             </td>
                             <td className="px-4 py-3.5">
                               <div className="flex items-center gap-2">
@@ -553,22 +560,22 @@ const Reservations = () => {
                                   <AnimatePresence>
                                     {actionMenu === res.id && (
                                       <motion.div initial={{ opacity: 0, scale: 0.95, y: -4 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -4 }} className="absolute right-0 top-full mt-1 z-20 bg-white rounded-xl shadow-xl border border-gray-200 py-1.5 w-48" onClick={(e) => e.stopPropagation()}>
-                                        {res.statut !== "confirmee" && res.statut !== "terminee" && (
+                                        {(res.statut === "en_attente" || res.statut === "en_cours") && (
                                           <button onClick={() => handleStatusChange(res.id, "confirmee")} className="w-full px-3.5 py-2 text-left text-sm flex items-center gap-2.5 hover:bg-gray-50 text-gray-700">
                                             <CheckCircle className="w-4 h-4 text-emerald-500" /> Confirmer
                                           </button>
                                         )}
-                                        {res.statut !== "en_cours" && res.statut !== "terminee" && res.statut !== "annulee" && (
+                                        {res.statut === "confirmee" && (
                                           <button onClick={() => handleStatusChange(res.id, "en_cours")} className="w-full px-3.5 py-2 text-left text-sm flex items-center gap-2.5 hover:bg-gray-50 text-gray-700">
                                             <Timer className="w-4 h-4 text-blue-500" /> Marquer en cours
                                           </button>
                                         )}
-                                        {res.statut !== "terminee" && (
+                                        {(res.statut === "confirmee" || res.statut === "en_cours") && (
                                           <button onClick={() => handleStatusChange(res.id, "terminee")} className="w-full px-3.5 py-2 text-left text-sm flex items-center gap-2.5 hover:bg-gray-50 text-gray-700">
                                             <CheckCircle className="w-4 h-4 text-gray-500" /> Marquer terminée
                                           </button>
                                         )}
-                                        {res.statut !== "annulee" && (
+                                        {res.statut !== "annulee" && res.statut !== "terminee" && res.statut !== "no_show" && (
                                           <button onClick={() => handleStatusChange(res.id, "annulee")} className="w-full px-3.5 py-2 text-left text-sm flex items-center gap-2.5 hover:bg-gray-50 text-red-600">
                                             <XCircle className="w-4 h-4" /> Annuler
                                           </button>
@@ -587,7 +594,7 @@ const Reservations = () => {
                           <AnimatePresence>
                             {isExpanded && (
                               <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                <td colSpan={7}>
+                                <td colSpan={8}>
                                   <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                       <div>
@@ -666,6 +673,9 @@ const Reservations = () => {
         reservation={drawerReservation}
         onClose={() => setDrawerReservation(null)}
         onStatusChange={async (id, statut) => { await handleStatusChange(id, statut); setDrawerReservation(null); }}
+        onCheckinDone={() => { invalidateAll(); loadReservations(); }}
+        onCheckoutDone={() => { invalidateAll(); loadReservations(); }}
+        onEncaissementDone={() => { invalidateAll(); loadReservations(); }}
       />
 
       <ReservationCreateModal

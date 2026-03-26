@@ -1,6 +1,6 @@
 import React from "react";
-import type { DemandeDomiciliation } from "../types";
-import type { DocumentRecord } from "../types";
+import type { DemandeDomiciliation } from "../../../domiciliation/domain/types";
+import type { DocumentRecord } from "../../../domiciliation/domain/types";
 import { getRequiredDocSlots } from "../utils";
 
 interface Props {

@@ -3,8 +3,26 @@
 /**
  * Classe pour logger les actions dans le système d'audit
  */
+require_once __DIR__ . '/IpHelper.php';
+
 class AuditLogger
 {
+    private static $db = null;
+
+    private static function getDb(): ?PDO
+    {
+        if (self::$db === null) {
+            try {
+                require_once __DIR__ . '/../config/database.php';
+                require_once __DIR__ . '/UuidHelper.php';
+                self::$db = Database::getInstance()->getConnection();
+            } catch (Exception $e) {
+                error_log("AuditLogger: impossible de se connecter à la DB: " . $e->getMessage());
+            }
+        }
+        return self::$db;
+    }
+
     /**
      * Logger une action
      *
@@ -24,13 +42,10 @@ class AuditLogger
         $newValues = null
     ) {
         try {
-            require_once __DIR__ . '/../config/database.php';
-            require_once __DIR__ . '/UuidHelper.php';
-
-            $db = Database::getInstance()->getConnection();
+            $db = self::getDb();
 
             // Récupérer IP et User Agent
-            $ipAddress = self::getClientIp();
+            $ipAddress = IpHelper::getClientIp();
             $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
 
             $changesJson = null;
@@ -127,9 +142,7 @@ class AuditLogger
     public static function getUserLogs($userId, $limit = 50, $offset = 0)
     {
         try {
-            require_once __DIR__ . '/../config/database.php';
-
-            $db = Database::getInstance()->getConnection();
+            $db = self::getDb();
 
             $query = "SELECT * FROM audit_logs
                       WHERE user_id = :user_id
@@ -155,13 +168,11 @@ class AuditLogger
     public static function getEntityLogs($entityType, $entityId, $limit = 50)
     {
         try {
-            require_once __DIR__ . '/../config/database.php';
-
-            $db = Database::getInstance()->getConnection();
+            $db = self::getDb();
 
             $query = "SELECT al.*, u.nom, u.prenom, u.email
                       FROM audit_logs al
-                      LEFT JOIN users u ON al.user_id = u.id
+                      LEFT JOIN persons u ON al.user_id = u.id
                       WHERE al.entity_type = :entity_type
                       AND al.entity_id = :entity_id
                       ORDER BY al.created_at DESC
@@ -181,46 +192,12 @@ class AuditLogger
     }
 
     /**
-     * Obtenir l'adresse IP réelle du client
-     */
-    private static function getClientIp()
-    {
-        $ipHeaders = [
-            'HTTP_CF_CONNECTING_IP', // Cloudflare
-            'HTTP_X_FORWARDED_FOR',  // Proxy/Load Balancer
-            'HTTP_X_REAL_IP',        // Nginx
-            'REMOTE_ADDR'            // Direct
-        ];
-
-        foreach ($ipHeaders as $header) {
-            if (!empty($_SERVER[$header])) {
-                $ip = $_SERVER[$header];
-
-                // Si multiple IPs (proxy chain), prendre le premier
-                if (strpos($ip, ',') !== false) {
-                    $ips = explode(',', $ip);
-                    $ip = trim($ips[0]);
-                }
-
-                // Valider l'IP
-                if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                    return $ip;
-                }
-            }
-        }
-
-        return '0.0.0.0';
-    }
-
-    /**
      * Nettoyer les logs anciens (à appeler via cron)
      */
     public static function cleanup($days = 365)
     {
         try {
-            require_once __DIR__ . '/../config/database.php';
-
-            $db = Database::getInstance()->getConnection();
+            $db = self::getDb();
 
             $query = "DELETE FROM audit_logs WHERE created_at < DATE_SUB(NOW(), INTERVAL :days DAY)";
 

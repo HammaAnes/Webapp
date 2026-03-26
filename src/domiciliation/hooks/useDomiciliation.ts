@@ -16,10 +16,21 @@ import type {
 import { getCasMetier } from '../domain/types';
 
 export function useDomiciliation(userId: string) {
-  const [demande, setDemande] = useState<DemandeDomiciliation | null>(null);
+  const [demandes, setDemandes] = useState<DemandeDomiciliation[]>([]);
+  const [selectedDemandeId, setSelectedDemandeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const TERMINAL = ['refusee', 'resiliee', 'expiree'];
+
+  const demande: DemandeDomiciliation | null = (() => {
+    if (selectedDemandeId) {
+      return demandes.find(d => d.id === selectedDemandeId) ?? null;
+    }
+    // Par défaut : première non-terminale, sinon la plus récente
+    return demandes.find(d => !TERMINAL.includes(d.statut)) ?? demandes[0] ?? null;
+  })();
 
   const loadDemande = useCallback(async () => {
     setLoading(true);
@@ -31,11 +42,7 @@ export function useDomiciliation(userId: string) {
         return;
       }
       const list = (Array.isArray(res.data) ? res.data : (res.data as Record<string, unknown>)?.data ?? []) as Record<string, unknown>[];
-      const userDemande = list.find(
-        d => String(d.user_id) === userId &&
-        !['refusee', 'resiliee', 'expiree'].includes(String(d.statut))
-      ) ?? list.find(d => String(d.user_id) === userId);
-      setDemande(userDemande ? fromAPI(userDemande) : null);
+      setDemandes(list.map(fromAPI));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur inattendue');
     } finally {
@@ -116,6 +123,10 @@ export function useDomiciliation(userId: string) {
       return { success: false, error: e instanceof Error ? e.message : 'Erreur inattendue' };
     }
   }, [loadDemande]);
+
+  const selectDemande = useCallback((id: string) => {
+    setSelectedDemandeId(id);
+  }, []);
 
   const submitPostCreation = useCallback(async (
     typeStructure: TypeStructure,
@@ -203,7 +214,9 @@ export function useDomiciliation(userId: string) {
   }, []);
 
   return {
+    demandes,
     demande,
+    selectDemande,
     loading,
     actionLoading,
     error,
@@ -213,30 +226,6 @@ export function useDomiciliation(userId: string) {
     performAction,
     toAPI,
   };
-}
-
-export function useOccupiedBureaux(excludeId?: string) {
-  const [occupied, setOccupied] = useState<number[]>([]);
-
-  const load = useCallback(async () => {
-    try {
-      const res = await apiClient.getDomiciliations();
-      if (res.success && res.data) {
-        const all = (
-          Array.isArray(res.data) ? res.data : ((res.data as Record<string, unknown>).data as unknown[]) || []
-        ) as Record<string, unknown>[];
-        const STATUTS_ACTIFS = ['active', 'domiciliation_creee', 'en_attente_complements', 'en_attente_signature'];
-        const nums = all
-          .filter(d => STATUTS_ACTIFS.includes(String(d.statut)) && d.numero_bureau && (!excludeId || String(d.id) !== excludeId))
-          .map(d => Number(d.numero_bureau));
-        setOccupied(nums);
-      }
-    } catch {
-      setOccupied([]);
-    }
-  }, [excludeId]);
-
-  return { occupied, load };
 }
 
 export function useCourrier(domiciliationId: string) {

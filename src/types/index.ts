@@ -38,11 +38,59 @@ export interface Contact {
   source: ContactSource;
   statut: ContactStatut;
   notes?: string;
-  userId?: string;
+  personId?: string;
   user?: User;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Unified person — replaces the split User + Contact model. */
+export interface Person {
+  id: string;
+  nom: string;
+  prenom: string;
+  email?: string;
+  telephone?: string;
+  /** null = contact without account, 'user' | 'admin' = has account */
+  role?: "admin" | "user" | null;
+  statut?: "actif" | "inactif" | "suspendu" | null;
+  /** true when role is not null */
+  hasAccount?: boolean;
+  // Auth fields (only present when role != null)
+  codeParrainage?: string;
+  credit?: number;
+  derniereConnexion?: string;
+  googleId?: string;
+  // Profile
+  avatar?: string | null;
+  carteIdentiteUrl?: string | null;
+  profession?: string;
+  entreprise?: string;
+  adresse?: string;
+  bio?: string;
+  wilaya?: string;
+  commune?: string;
+  // Business
+  typeEntreprise?: string;
+  nif?: string;
+  nis?: string;
+  registreCommerce?: string;
+  articleImposition?: string;
+  numeroAutoEntrepreneur?: string;
+  raisonSociale?: string;
+  dateCreationEntreprise?: string;
+  capital?: number;
+  siegeSocial?: string;
+  activitePrincipale?: string;
+  // CRM
+  source?: string;
+  crmStatut?: string;
+  notes?: string;
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  absences?: number;
 }
 
 export interface ContactHistory {
@@ -111,7 +159,6 @@ export interface User {
   capital?: string;
   siegeSocial?: string;
   activitePrincipale?: string;
-  formeJuridique?: string;
   identificationEntreprise?: IdentificationEntreprise;
   absences?: number;
   bannedUntil?: Date | null;
@@ -145,11 +192,13 @@ export interface Espace {
 
 export interface Reservation {
   id: string;
+  personId?: string;
+  /** @deprecated use personId */
   userId?: string;
-  contactId?: string;
   espaceId: string;
-  utilisateur?: User;
-  contact?: Contact;
+  utilisateur?: User | Person;
+  person?: Person;
+  contact?: User | Person;
   espace?: Espace | { id: string; nom: string; type: EspaceType };
   dateDebut: Date;
   dateFin: Date;
@@ -163,7 +212,9 @@ export interface Reservation {
   notes?: string;
   participants?: number;
   noShow?: boolean;
+  abonnementCouvert?: boolean;
   checkinId?: string;
+  heureArriveeReelle?: string;
   dateCreation?: Date;
   createdAt?: string;
   updatedAt?: string;
@@ -172,7 +223,9 @@ export interface Reservation {
 
 export interface Transaction {
   id: string;
-  utilisateur?: User;
+  utilisateur?: User | Person;
+  personId?: string;
+  /** @deprecated use personId */
   userId?: string;
   type: "reservation" | "domiciliation" | "abonnement" | "remboursement";
   montant: number;
@@ -224,10 +277,11 @@ export interface RepresentantLegal {
 
 export interface DemandeDomiciliation {
   id: string;
+  personId?: string;
+  /** @deprecated use personId */
   userId?: string;
-  contactId?: string;
-  utilisateur?: User;
-  contact?: Contact;
+  utilisateur?: User | Person;
+  person?: Person;
 
   situationAdministrative: "en_cours_creation" | "deja_creee";
   typeStructure: "societe" | "auto_entrepreneur";
@@ -323,6 +377,8 @@ export interface UserForm {
 export type RegisterData = UserForm;
 
 export interface CreateReservationData {
+  personId?: string;
+  /** @deprecated use personId */
   userId?: string;
   espaceId: string;
   dateDebut: Date;
@@ -335,8 +391,9 @@ export interface CreateReservationData {
 }
 
 export interface CreateDomiciliationData {
+  personId?: string;
+  /** @deprecated use personId */
   userId?: string;
-  contactId?: string;
   situationAdministrative: "en_cours_creation" | "deja_creee";
   typeStructure: "societe" | "auto_entrepreneur";
   raisonSociale?: string;
@@ -406,9 +463,11 @@ export interface Abonnement {
 
 export interface AbonnementUtilisateur {
   id: string;
-  userId: string;
+  personId: string;
+  /** @deprecated use personId */
+  userId?: string;
   abonnementId: string;
-  utilisateur?: User;
+  utilisateur?: User | Person;
   abonnement?: Abonnement;
   dateDebut: string;
   dateFin: string;
@@ -419,9 +478,3 @@ export interface AbonnementUtilisateur {
   updatedAt?: string;
 }
 
-export interface NotificationSettings {
-  emailNotificationsEnabled: boolean;
-  reservationReminders: boolean;
-  paymentNotifications: boolean;
-  maintenanceAlerts: boolean;
-}

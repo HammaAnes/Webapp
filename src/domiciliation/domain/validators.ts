@@ -60,9 +60,7 @@ export function validateStep3(data: Pick<WizardFormData, 'dirigeant' | 'dateDebu
   const { dirigeant } = data;
   if (!dirigeant.adresseResidence?.trim()) errors['dirigeant.adresseResidence'] = "L'adresse de résidence est requise";
   if (!dirigeant.ville?.trim()) errors['dirigeant.ville'] = 'La ville est requise';
-  if (!dirigeant.telephone?.trim()) {
-    errors['dirigeant.telephone'] = 'Le téléphone est requis';
-  } else if (!isValidPhone(dirigeant.telephone)) {
+  if (dirigeant.telephone?.trim() && !isValidPhone(dirigeant.telephone)) {
     errors['dirigeant.telephone'] = 'Format invalide (ex: 05X XXX XX XX)';
   }
   if (!dirigeant.email?.trim()) {

@@ -13,11 +13,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $reservationId = $data['reservation_id'];
-        $heureArrivee = $data['heure_arrivee_reelle'] ?? date('Y-m-d H:i:s');
+        $rawArrivee = $data['heure_arrivee_reelle'] ?? date('Y-m-d H:i:s');
+        // Normalise ISO 8601 (ex: "2026-03-24T13:19:38.539Z") → MySQL "Y-m-d H:i:s"
+        try {
+            $heureArrivee = (new DateTime($rawArrivee))->format('Y-m-d H:i:s');
+        } catch (\Exception $e) {
+            $heureArrivee = date('Y-m-d H:i:s');
+        }
         $note = $data['note'] ?? null;
 
         $stmt = $db->prepare("
-            SELECT r.*, r.user_id
+            SELECT r.*, r.person_id
             FROM reservations r
             WHERE r.id = ? AND r.statut = 'confirmee'
         ");
@@ -39,13 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $checkinId = UuidHelper::generate();
         $insertStmt = $db->prepare("
             INSERT INTO checkins
-            (id, reservation_id, user_id, heure_arrivee_reelle, statut, note, enregistre_par)
+            (id, reservation_id, person_id, heure_arrivee_reelle, statut, note, enregistre_par)
             VALUES (?, ?, ?, ?, 'en_cours', ?, ?)
         ");
         $insertStmt->execute([
             $checkinId,
             $reservationId,
-            $reservation['user_id'],
+            $reservation['person_id'],
             $heureArrivee,
             $note,
             $userId
@@ -66,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         Response::success([
             'id' => $checkinId,
+            'heure_arrivee_reelle' => $heureArrivee,
             'retard_minutes' => round($retardMinutes),
             'message' => 'Check-in enregistré avec succès'
         ]);

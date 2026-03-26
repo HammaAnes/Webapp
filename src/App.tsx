@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from "react";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, useLocation } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingScreen from "./components/LoadingScreen";
 
@@ -11,6 +11,7 @@ import { useAuthStore } from "./store/authStore";
 import { useAppStore } from "./store/store";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { logger } from "./utils/logger";
+import { analytics } from "./lib/analytics";
 
 const Home = lazy(() => import("./pages/Home"));
 const SpacesAndPricing = lazy(() => import("./pages/SpacesAndPricing"));
@@ -30,6 +31,11 @@ import { BLOG_ENABLED } from "./data/blogArticles";
 function App() {
   useScrollAnimation();
   const { isInitialized } = useAuthStore();
+  const location = useLocation();
+
+  React.useEffect(() => {
+    analytics.pageView(location.pathname + location.search, document.title);
+  }, [location]);
 
   React.useEffect(() => {
     const initApp = async () => {

@@ -14,15 +14,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 r.date_fin,
                 r.participants,
                 e.nom as espace_nom,
-                u.prenom,
-                u.nom,
+                p.prenom,
+                p.nom,
                 admin.prenom as admin_prenom,
                 admin.nom as admin_nom
             FROM checkins c
             LEFT JOIN reservations r ON c.reservation_id = r.id
             LEFT JOIN espaces e ON r.espace_id = e.id
-            LEFT JOIN users u ON c.user_id = u.id
-            LEFT JOIN users admin ON c.enregistre_par = admin.id
+            LEFT JOIN persons p ON c.person_id = p.id
+            LEFT JOIN persons admin ON c.enregistre_par = admin.id
             WHERE DATE(c.heure_arrivee_reelle) = ?
             ORDER BY c.heure_arrivee_reelle DESC
         ");
@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             FROM checkins c
             LEFT JOIN reservations r ON c.reservation_id = r.id
             WHERE c.statut = 'en_cours'
+              AND DATE(c.heure_arrivee_reelle) = CURDATE()
         ");
         $presencesStmt->execute();
         $presences = $presencesStmt->fetch(PDO::FETCH_ASSOC);

@@ -51,13 +51,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNewR
 
   const commands: Command[] = useMemo(() => [
     {
-      id: "nav-aujourdhui",
-      label: "Aujourd'hui",
-      description: "Vue opérationnelle du jour",
+      id: "nav-dashboard",
+      label: "Tableau de bord",
+      description: "Opérations du jour — check-in / check-out",
       icon: Clock,
-      action: () => navigate_and_close("/app/admin/aujourdhui"),
+      action: () => navigate_and_close("/app"),
       category: "Navigation",
-      keywords: ["today", "operations", "checkin", "checkout"],
+      keywords: ["today", "aujourdhui", "operations", "checkin", "checkout", "accueil"],
     },
     {
       id: "nav-caisse",

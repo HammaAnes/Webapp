@@ -25,9 +25,9 @@ try {
     $db = $database->getConnection();
 
     $findStmt = $db->prepare("
-        SELECT d.id, d.user_id, d.raison_sociale, u.email, u.prenom, u.nom
+        SELECT d.id, d.person_id, d.raison_sociale, u.email, u.prenom, u.nom
         FROM domiciliations d
-        LEFT JOIN users u ON d.user_id = u.id
+        LEFT JOIN persons u ON d.person_id = u.id
         WHERE d.statut = 'active'
           AND d.date_fin_contrat IS NOT NULL
           AND DATE(d.date_fin_contrat) < CURDATE()
@@ -47,8 +47,8 @@ try {
         ");
 
         $notifStmt = $db->prepare("
-            INSERT INTO notifications (id, user_id, type, titre, message, lue, created_at)
-            VALUES (:id, :user_id, 'domiciliation', :titre, :message, 0, NOW())
+            INSERT INTO notifications (id, person_id, type, titre, message, lue, created_at)
+            VALUES (:id, :person_id, 'domiciliation', :titre, :message, 0, NOW())
         ");
 
         foreach ($toExpire as $dom) {
@@ -60,7 +60,7 @@ try {
                 $titre = 'Domiciliation expirée';
                 $message = 'Votre domiciliation ' . ($dom['raison_sociale'] ?: '') . ' a expiré. Contactez-nous pour un renouvellement.';
                 $notifStmt->bindParam(':id', $notifId);
-                $notifStmt->bindParam(':user_id', $dom['user_id']);
+                $notifStmt->bindParam(':person_id', $dom['person_id']);
                 $notifStmt->bindParam(':titre', $titre);
                 $notifStmt->bindParam(':message', $message);
                 $notifStmt->execute();

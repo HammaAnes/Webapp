@@ -7,23 +7,23 @@
  * Cet endpoint permet de logger la déconnexion côté serveur
  */
 
-require_once '../config/cors.php';
-require_once '../utils/Response.php';
-require_once '../utils/Auth.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 try {
-    // Vérifier l'authentification pour logger qui se déconnecte
-    $user = Auth::getCurrentUser();
-
-    if ($user) {
-        // Logger la déconnexion
-        error_log("User logout: {$user['email']} (ID: {$user['id']})");
+    // Vérifier l'authentification pour logger qui se déconnecte (optionnel)
+    try {
+        $user = Auth::verifyAuth();
+        if ($user) {
+            error_log("User logout: {$user['email']} (ID: {$user['id']})");
+        }
+    } catch (\Throwable $authErr) {
+        // Token absent ou expiré — déconnexion quand même
     }
 
     Response::success(null, "Déconnexion réussie");
 
-} catch (Exception $e) {
+} catch (\Throwable $e) {
     error_log("Logout error: " . $e->getMessage());
-    // Retourner success même en cas d'erreur car la déconnexion client doit fonctionner
+    // Toujours retourner succès : la déconnexion côté client doit fonctionner
     Response::success(null, "Déconnexion réussie");
 }

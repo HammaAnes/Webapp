@@ -485,6 +485,172 @@ const About = () => {
         </div>
       </section>
 
+      {/* Partenaires Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-14"
+          >
+            <div className="inline-flex items-center gap-2 bg-accent/10 text-accent rounded-full px-4 py-1.5 text-sm font-semibold mb-4">
+              <Globe className="w-4 h-4" />
+              Partenaires Coffice
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">
+              L'écosystème qui vous accompagne
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto text-lg">
+              Nos partenaires partagent la même vision : accompagner les entrepreneurs algériens vers le succès.
+            </p>
+          </motion.div>
+
+          {/* Come to Bladi */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden"
+          >
+            {/* Header partenaire */}
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-gray-100 px-8 py-8">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                <a href="https://cometobladi.com/" target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+                  <img
+                    src="https://cometobladi.com/wp-content/uploads/2025/12/Logo-brute-Cropped.jpeg"
+                    alt="Come to Bladi"
+                    className="h-16 w-auto rounded-xl shadow-sm object-contain bg-white p-1"
+                    loading="lazy"
+                  />
+                </a>
+                <div className="flex-1 text-center sm:text-left">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2">
+                    <h3 className="text-2xl font-bold text-gray-900">Come to Bladi</h3>
+                    <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full">
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      Partenaire officiel
+                    </span>
+                  </div>
+                  <p className="text-gray-600 text-base leading-relaxed max-w-2xl">
+                    Le guide de référence pour s'installer, travailler et entreprendre en Algérie. Des ressources pratiques et un accompagnement personnalisé pour les entrepreneurs et les membres de la diaspora qui veulent réussir en Algérie.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-8 py-8">
+              {/* Code promo */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-5 bg-gradient-to-r from-accent/10 to-emerald-50 border border-accent/20 rounded-2xl mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Star className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium">Code promo exclusif membres Coffice</p>
+                    <p className="text-xs text-gray-500">Valable sur tous les services et ebooks Come to Bladi</p>
+                  </div>
+                </div>
+                <div className="sm:ml-auto flex items-center gap-3">
+                  <code className="text-xl font-bold tracking-widest text-accent bg-white border-2 border-accent/30 px-5 py-2 rounded-xl select-all">
+                    COFFICE10
+                  </code>
+                  <span className="text-sm text-gray-500 font-medium">-10%</span>
+                </div>
+              </div>
+
+              {/* Services */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* eBooks */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-2">
+                    <Server className="w-4 h-4" />
+                    eBooks
+                  </h4>
+                  <div className="space-y-3">
+                    {[
+                      { title: "S'installer à Alger – Le guide complet", desc: "Quartiers, logement, démarches administratives : tout ce qu'il faut savoir avant d'arriver." },
+                      { title: "Entreprendre en Algérie", desc: "Statuts juridiques, démarches, financement et pièges à éviter pour lancer votre business." },
+                      { title: "30 idées de business qui marchent", desc: "30 opportunités concrètes adaptées au marché algérien avec analyse de viabilité." },
+                      { title: "7 jours à Alger – Itinéraire optimisé", desc: "Le meilleur programme pour découvrir Alger et ses opportunités en une semaine." },
+                    ].map((book) => (
+                      <a
+                        key={book.title}
+                        href="https://cometobladi.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all group"
+                      >
+                        <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-emerald-200 transition-colors">
+                          <span className="text-emerald-700 text-xs font-bold">PDF</span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 leading-snug">{book.title}</p>
+                          <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{book.desc}</p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Accompagnements */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Accompagnements
+                  </h4>
+                  <div className="space-y-3">
+                    {[
+                      { title: "Bladi Project", price: "39€", desc: "Plan d'action business personnalisé : analyse de viabilité, budget, démarches et étapes hebdomadaires." },
+                      { title: "Appel Découverte & Orientation", price: "45€", desc: "Consultation stratégique pour clarifier vos objectifs et obtenir des insights marché." },
+                      { title: "Accompagnement Installation", price: null, desc: "Aide au choix de quartier, recherche de logement et guidance administrative." },
+                      { title: "Accompagnement Entrepreneuriat", price: null, desc: "De l'idée à la création : étude de marché, statut juridique et networking." },
+                      { title: "Offre 360°", price: null, desc: "Support A–Z pour les investisseurs à distance : de la prospection à l'opérationnel." },
+                    ].map((service) => (
+                      <a
+                        key={service.title}
+                        href="https://cometobladi.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all group"
+                      >
+                        <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-teal-200 transition-colors">
+                          <Zap className="w-4 h-4 text-teal-700" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-gray-900 leading-snug">{service.title}</p>
+                            {service.price && (
+                              <span className="text-xs font-bold text-accent flex-shrink-0">{service.price}</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{service.desc}</p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-sm text-gray-500">
+                  Utilisez le code <span className="font-bold text-accent">COFFICE10</span> lors du paiement sur cometobladi.com
+                </p>
+                <a
+                  href="https://cometobladi.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-accent text-white rounded-xl font-semibold text-sm hover:bg-accent/90 transition-all shadow-sm"
+                >
+                  Visiter Come to Bladi
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-primary via-primary to-accent text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">

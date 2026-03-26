@@ -11,6 +11,7 @@ import { apiClient } from "../lib/api-client";
 import { validationRules } from "../utils/validation";
 import Logo from "../components/Logo";
 import { useSEO } from "../hooks/useSEO";
+import { analytics } from "../lib/analytics";
 
 interface RegisterForm extends UserForm {
   passwordConfirm?: string;
@@ -18,9 +19,9 @@ interface RegisterForm extends UserForm {
 }
 
 const BENEFITS = [
-  "Reservez des espaces de travail en quelques clics",
-  "Gerez vos reservations et abonnements",
-  "Demandez une domiciliation legale en ligne",
+  "Réservez des espaces de travail en quelques clics",
+  "Gérez vos réservations et abonnements",
+  "Demandez une domiciliation légale en ligne",
   "Recevez et suivez votre courrier professionnel",
 ];
 
@@ -54,7 +55,7 @@ const Register = () => {
       const result = await apiClient.verifyCodeParrainage(code.trim());
       setReferralValid(result.success);
       if (result.success) {
-        toast.success("Code de parrainage valide ! Vous recevrez 3000 DA");
+        toast.success("Code de parrainage valide ! Vous recevrez 3 000 DA");
       } else {
         toast.error(result.error || "Code de parrainage invalide");
       }
@@ -91,6 +92,7 @@ const Register = () => {
         entreprise: data.entreprise,
         codeParrainage: data.codeParrainage,
       });
+      analytics.signUp('email', !!data.codeParrainage);
     } catch {
       // handled by authStore
     } finally {
@@ -98,10 +100,13 @@ const Register = () => {
     }
   };
 
+  const codeParrainageValue = watch("codeParrainage");
+
   const handleGoogleSuccess = async (credential: string) => {
     setIsGoogleLoading(true);
     try {
-      await loginWithGoogle(credential);
+      await loginWithGoogle(credential, codeParrainageValue || undefined);
+      analytics.signUp('google', !!codeParrainageValue);
     } catch {
       // handled by authStore
     } finally {
@@ -111,6 +116,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex">
+      {/* Panneau gauche — illustration */}
       <div className="hidden lg:flex lg:w-[42%] relative overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -137,8 +143,8 @@ const Register = () => {
                 Coffice
               </h1>
               <p className="mt-4 text-white/80 text-lg leading-relaxed max-w-md">
-                Creez votre compte et accedez a un espace de travail moderne au
-                coeur d'Alger.
+                Créez votre compte et accédez à un espace de travail moderne au
+                cœur d'Alger.
               </p>
             </motion.div>
 
@@ -166,11 +172,12 @@ const Register = () => {
           </div>
 
           <div className="text-white/50 text-sm">
-            Mohammadia Mall, 4eme etage, Alger
+            Mohammadia Mall, 4ème étage — Alger
           </div>
         </div>
       </div>
 
+      {/* Panneau droit — formulaire */}
       <div className="flex-1 flex items-start lg:items-center justify-center p-6 sm:p-8 bg-gray-50/50 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -186,10 +193,10 @@ const Register = () => {
 
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900">
-              Creer votre compte
+              Créer votre compte
             </h2>
             <p className="mt-2 text-gray-500">
-              Inscrivez-vous pour commencer a utiliser Coffice
+              Inscrivez-vous pour commencer à utiliser Coffice
             </p>
           </div>
 
@@ -201,19 +208,19 @@ const Register = () => {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
+              <div className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center">
-              <span className="px-4 bg-gray-50/50 text-gray-400 text-sm">ou avec email</span>
+              <span className="px-4 bg-gray-50/50 text-gray-400 text-sm">ou avec e-mail</span>
             </div>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Prenom"
+                label="Prénom"
                 icon={<User className="w-5 h-5" />}
-                placeholder="Prenom"
+                placeholder="Votre prénom"
                 autoComplete="given-name"
                 {...register("prenom", validationRules.prenom)}
                 error={errors.prenom?.message}
@@ -222,7 +229,7 @@ const Register = () => {
               <Input
                 label="Nom"
                 icon={<User className="w-5 h-5" />}
-                placeholder="Nom"
+                placeholder="Votre nom"
                 autoComplete="family-name"
                 {...register("nom", validationRules.nom)}
                 error={errors.nom?.message}
@@ -231,7 +238,7 @@ const Register = () => {
             </div>
 
             <Input
-              label="Email"
+              label="Adresse e-mail"
               type="email"
               icon={<Mail className="w-5 h-5" />}
               placeholder="votre@email.com"
@@ -242,12 +249,12 @@ const Register = () => {
             />
 
             <Input
-              label="Telephone"
+              label="Téléphone"
               type="tel"
               icon={<Phone className="w-5 h-5" />}
               placeholder="+213 55 123 4567"
               autoComplete="tel"
-              helperText="Format: +213 ou 0 suivi de 9 chiffres"
+              helperText="Format : +213 ou 0 suivi de 9 chiffres"
               {...register("telephone", {
                 ...validationRules.phone,
                 validate: (value: string | undefined) =>
@@ -278,7 +285,7 @@ const Register = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <PasswordInput
                 label="Mot de passe"
-                placeholder="Min. 8 caracteres"
+                placeholder="Min. 8 caractères"
                 autoComplete="new-password"
                 showStrength
                 {...register("password", validationRules.password)}
@@ -286,7 +293,7 @@ const Register = () => {
                 required
               />
               <PasswordInput
-                label="Confirmer"
+                label="Confirmer le mot de passe"
                 placeholder="Retapez le mot de passe"
                 autoComplete="new-password"
                 {...register("passwordConfirm", validationRules.passwordConfirm(password))}
@@ -301,7 +308,7 @@ const Register = () => {
                 type="text"
                 icon={<Gift className="w-5 h-5" />}
                 placeholder="COFFICE-AHM123"
-                helperText="Entrez le code d'un ami pour recevoir un bonus de 3000 DA"
+                helperText="Entrez le code d'un ami pour recevoir un bonus de 3 000 DA"
                 {...register("codeParrainage", {
                   onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
                     const value = e.target.value.toUpperCase();
@@ -315,7 +322,7 @@ const Register = () => {
                 })}
                 rightElement={
                   validatingReferral ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent" />
                   ) : referralValid === true ? (
                     <CheckCircle className="w-4 h-4 text-emerald-500" />
                   ) : referralValid === false ? (
@@ -325,7 +332,7 @@ const Register = () => {
               />
               {referralValid === true && (
                 <p className="text-xs text-emerald-600 mt-1.5 font-medium">
-                  Code valide - Bonus de 3000 DA a votre premiere reservation
+                  Code valide — bonus de 3 000 DA à votre première réservation
                 </p>
               )}
             </div>
@@ -345,7 +352,7 @@ const Register = () => {
                     to="/mentions-legales"
                     className="text-accent hover:text-accent-dark font-medium"
                   >
-                    politique de confidentialite
+                    politique de confidentialité
                   </Link>
                 </span>
               }
@@ -354,14 +361,19 @@ const Register = () => {
               required
             />
 
-            <Button type="submit" loading={isLoading} className="w-full" size="lg">
-              Creer mon compte
-              <ArrowRight className="ml-2 w-4 h-4" />
+            <Button
+              type="submit"
+              loading={isLoading}
+              className="w-full"
+              size="lg"
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+            >
+              Créer mon compte
             </Button>
           </form>
 
           <p className="mt-6 text-center text-gray-500 text-sm">
-            Deja un compte ?{" "}
+            Déjà un compte ?{" "}
             <Link
               to="/connexion"
               className="text-accent font-semibold hover:text-accent-dark transition-colors"
@@ -375,7 +387,7 @@ const Register = () => {
               to="/"
               className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
             >
-              Retour a l'accueil
+              Retour à l'accueil
             </Link>
           </div>
         </motion.div>

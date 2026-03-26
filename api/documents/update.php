@@ -61,6 +61,15 @@ try {
         }
         $updates[] = 'status = ?';
         $params[] = $input[$statusKey];
+        // Effacer le commentaire automatiquement si on revalide
+        if ($input[$statusKey] !== 'rejete') {
+            $updates[] = 'commentaire_rejet = NULL';
+        }
+    }
+
+    if (array_key_exists('commentaire_rejet', $input)) {
+        $updates[] = 'commentaire_rejet = ?';
+        $params[] = !empty($input['commentaire_rejet']) ? $input['commentaire_rejet'] : null;
     }
 
     if (empty($updates)) {

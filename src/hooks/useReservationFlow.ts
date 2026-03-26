@@ -5,6 +5,7 @@ import { useAppStore } from "../store/store";
 import { useAvailabilityStore } from "../store/availabilityStore";
 import { apiClient } from "../lib/api-client";
 import toast from "react-hot-toast";
+import { analytics } from "../lib/analytics";
 
 export type ReservationStep = 1 | 2 | 3;
 export type DateSelectionMode = "single_day" | "multi_day";
@@ -59,7 +60,7 @@ const WORKING_HOURS = { open: "08:30", close: "18:30" };
 
 export function isClosedDay(date: Date): boolean {
   const d = getDay(date);
-  return d === 5 || d === 6;
+  return d === 5; // vendredi uniquement
 }
 
 function countWorkingDays(start: Date, end: Date): number {
@@ -357,7 +358,7 @@ export function useReservationFlow(opts?: {
   }, []);
 
   const submit = useCallback(async () => {
-    const { selectedEspace, dateDebut, dateFin, participants, notes, promoId, pricing } = state;
+    const { selectedEspace, dateDebut, dateFin, participants, notes, promoId, promoApplied, pricing } = state;
 
     if (!selectedEspace || !dateDebut || !dateFin || !pricing) {
       return { success: false, error: "Données manquantes" };
@@ -390,6 +391,14 @@ export function useReservationFlow(opts?: {
         await refreshAfterMutation(selectedEspace.id, dateDebut);
         if (isSameDay(dateDebut, dateFin) === false) {
           await refreshAfterMutation(selectedEspace.id, dateFin);
+        }
+        if (!editMode) {
+          analytics.reservationComplete({
+            espaceName: selectedEspace.nom,
+            espaceType: selectedEspace.type,
+            montant: pricing?.total ?? 0,
+            hasPromo: !!promoApplied,
+          });
         }
         onSuccess?.();
         toast.success(editMode ? "Réservation modifiée" : "Réservation créée avec succès !");

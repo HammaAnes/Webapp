@@ -21,7 +21,7 @@ export function useOnboarding(): {
   dismiss: () => void;
 } {
   const { user } = useAuthStore();
-  const { reservations, demandesDomiciliation, abonnements } = useAppStore();
+  const { reservations, demandesDomiciliation, abonnementsUtilisateurs } = useAppStore();
 
   const isDismissed = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -41,17 +41,25 @@ export function useOnboarding(): {
 
   const hasReservation = useMemo(() => {
     return reservations.some(
-      (r) => r.statut === "confirmee" || r.statut === "terminee" || r.statut === "en_cours"
+      (r) =>
+        (r.userId === user?.id || r.personId === user?.id) &&
+        (r.statut === "confirmee" || r.statut === "terminee" || r.statut === "en_cours")
     );
-  }, [reservations]);
+  }, [reservations, user?.id]);
 
   const hasDomiciliation = useMemo(() => {
-    return demandesDomiciliation.length > 0;
-  }, [demandesDomiciliation]);
+    return demandesDomiciliation.some(
+      (d) => d.userId === user?.id || d.personId === user?.id
+    );
+  }, [demandesDomiciliation, user?.id]);
 
   const hasAbonnement = useMemo(() => {
-    return abonnements.some((a) => a.statut === "actif");
-  }, [abonnements]);
+    return abonnementsUtilisateurs.some(
+      (a) =>
+        (a.personId === user?.id || a.userId === user?.id) &&
+        a.statut === "actif"
+    );
+  }, [abonnementsUtilisateurs, user?.id]);
 
   const hasIdCard = useMemo(() => !!(user?.carteIdentiteUrl), [user?.carteIdentiteUrl]);
 

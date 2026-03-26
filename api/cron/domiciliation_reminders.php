@@ -32,7 +32,7 @@ try {
                 d.*,
                 u.email, u.prenom, u.nom
             FROM domiciliations d
-            INNER JOIN users u ON d.user_id = u.id
+            INNER JOIN persons u ON d.person_id = u.id
             WHERE d.statut = 'active'
               AND DATE(d.date_fin_contrat) = ?
         ");
@@ -58,7 +58,7 @@ try {
                         'date_fin'       => date('d/m/Y', strtotime($dom['date_fin_contrat'])),
                         'jours_restants' => $window['days'],
                     ],
-                    $dom['user_id'],
+                    $dom['person_id'],
                     2
                 );
 

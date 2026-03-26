@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { UserPlus, X, User, Loader2, Search, Users } from 'lucide-react';
 import { apiClient } from '../../lib/api-client';
 import { CreateUserModal, type CreatedUser } from './CreateUserModal';
@@ -35,47 +35,26 @@ export function UserSelector({ value, onChange, label = 'Client', required, erro
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
+  const inputWrapperRef = useRef<HTMLDivElement>(null);
 
   const loadClients = useCallback(async () => {
     setLoading(true);
     try {
-      const [usersRes, contactsRes] = await Promise.all([
-        apiClient.getUsers(),
-        apiClient.getContacts({}).catch(() => ({ success: false, data: null })),
-      ]);
-
+      const res = await apiClient.getPersons({ limit: 300 });
       const entries: ClientEntry[] = [];
 
-      if (usersRes.success && usersRes.data) {
-        const raw = Array.isArray(usersRes.data)
-          ? usersRes.data
-          : ((usersRes.data as Record<string, unknown>).users as unknown[]) || [];
-        (raw as Record<string, unknown>[]).forEach((r) => {
+      if (res.success && res.data) {
+        const data = res.data as Record<string, unknown>;
+        const raw = (data.persons || []) as Record<string, unknown>[];
+        raw.forEach((r) => {
           entries.push({
             id: String(r.id),
             email: String(r.email || ''),
             nom: String(r.nom || ''),
             prenom: String(r.prenom || ''),
             telephone: r.telephone as string | undefined,
-            type: 'user',
-          });
-        });
-      }
-
-      if (contactsRes.success && contactsRes.data) {
-        const data = contactsRes.data as Record<string, unknown>;
-        const raw = (data.contacts || []) as Record<string, unknown>[];
-        raw.forEach((r) => {
-          if (r.user_id) return;
-          const email = String(r.email || '');
-          if (entries.some((e) => e.email && e.email === email)) return;
-          entries.push({
-            id: String(r.id),
-            email,
-            nom: String(r.nom || ''),
-            prenom: String(r.prenom || ''),
-            telephone: r.telephone as string | undefined,
-            type: 'contact',
+            type: r.role ? 'user' : 'contact',
           });
         });
       }
@@ -190,7 +169,7 @@ export function UserSelector({ value, onChange, label = 'Client', required, erro
                 Chargement...
               </div>
             ) : (
-              <div className="relative">
+              <div className="relative" ref={inputWrapperRef}>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -198,9 +177,13 @@ export function UserSelector({ value, onChange, label = 'Client', required, erro
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
+                      if (inputWrapperRef.current) setDropdownRect(inputWrapperRef.current.getBoundingClientRect());
                       setShowDropdown(true);
                     }}
-                    onFocus={() => setShowDropdown(true)}
+                    onFocus={() => {
+                      if (inputWrapperRef.current) setDropdownRect(inputWrapperRef.current.getBoundingClientRect());
+                      setShowDropdown(true);
+                    }}
                     placeholder="Rechercher un client..."
                     className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-sm bg-white"
                   />
@@ -211,7 +194,15 @@ export function UserSelector({ value, onChange, label = 'Client', required, erro
                       className="fixed inset-0 z-10"
                       onClick={() => setShowDropdown(false)}
                     />
-                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                    <div
+                      className="z-[9999] bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
+                      style={dropdownRect ? {
+                        position: 'fixed',
+                        top: dropdownRect.bottom + 4,
+                        left: dropdownRect.left,
+                        width: dropdownRect.width,
+                      } : { position: 'absolute', width: '100%', marginTop: 4 }}
+                    >
                       {filteredClients.length === 0 ? (
                         <div className="px-3 py-4 text-sm text-gray-500 text-center">
                           Aucun client trouve

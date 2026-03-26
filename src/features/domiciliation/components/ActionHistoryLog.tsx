@@ -2,7 +2,7 @@ import React from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CheckCircle, Clock, FileText, PlayCircle, XCircle, Ban, RefreshCw, AlertCircle } from "lucide-react";
-import type { DemandeDomiciliation } from "../types";
+import type { DemandeDomiciliation } from "../../../domiciliation/domain/types";
 
 interface HistoryEntry {
   date: Date;

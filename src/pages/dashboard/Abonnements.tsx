@@ -59,6 +59,7 @@ interface ActiveSubscription {
   statut: string;
   prix: number;
   autoRenouvellement: boolean;
+  codeAcces?: string;
 }
 
 const steps = [
@@ -93,6 +94,9 @@ const Abonnements = () => {
   useEffect(() => {
     loadAbonnements();
     loadActiveSubscription();
+    // Polling toutes les 30s pour détecter la validation admin
+    const interval = setInterval(loadActiveSubscription, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -138,22 +142,27 @@ const Abonnements = () => {
     try {
       const response = await apiClient.getAbonnementsUtilisateurs();
       if (response.success && response.data) {
-        const data = response.data as Record<string, unknown>;
-        const souscriptions = (data.souscriptions || data.abonnements_utilisateurs || []) as Record<string, unknown>[];
+        // L'API retourne un tableau directement dans response.data
+        const souscriptions = Array.isArray(response.data)
+          ? (response.data as Record<string, unknown>[])
+          : [];
         const active = souscriptions.find(
           (s) => s.statut === "actif" || s.statut === "en_attente"
         );
         if (active) {
           setActiveSubscription({
             id: String(active.id),
-            abonnementId: String(active.abonnement_id),
-            abonnementNom: String(active.abonnement_nom || active.nom_abonnement || ""),
-            dateDebut: String(active.date_debut || ""),
-            dateFin: String(active.date_fin || ""),
+            abonnementId: String(active.abonnement_id ?? ""),
+            abonnementNom: String(active.abonnement_nom ?? ""),
+            dateDebut: String(active.date_debut ?? ""),
+            dateFin: String(active.date_fin ?? ""),
             statut: String(active.statut),
-            prix: parseFloat(String(active.prix || active.montant || 0)),
+            prix: parseFloat(String(active.abonnement_prix ?? active.prix ?? 0)),
             autoRenouvellement: active.auto_renouvellement === true || active.auto_renouvellement === 1,
+            codeAcces: active.code_acces ? String(active.code_acces) : undefined,
           });
+        } else {
+          setActiveSubscription(null);
         }
       }
     } catch (error) {
@@ -328,6 +337,29 @@ const Abonnements = () => {
                 </div>
               </div>
             </div>
+            {/* Code d'accès serrure */}
+            {activeSubscription.statut === "actif" && activeSubscription.codeAcces && (
+              <div className="mt-4 p-4 bg-blue-900 rounded-xl">
+                <p className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-2">
+                  🔐 Code d'accès serrure
+                </p>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-3xl font-black tracking-[0.2em] text-white font-mono">
+                    {activeSubscription.codeAcces}#
+                  </span>
+                  <div className="text-right">
+                    <p className="text-xs text-blue-300">Valable jusqu'au</p>
+                    <p className="text-sm font-semibold text-white">{formatDate(activeSubscription.dateFin)}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-blue-400 mt-2">Saisissez ce code sur le pavé numérique de la porte d'entrée. Ne le communiquez pas.</p>
+              </div>
+            )}
+            {activeSubscription.statut === "en_attente" && (
+              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                <p className="text-xs text-amber-700">Votre code d'accès vous sera communiqué par email dès la validation de votre abonnement.</p>
+              </div>
+            )}
             <div className="mt-4 pt-4 border-t border-emerald-200 flex items-center gap-2">
               <Shield className="w-4 h-4 text-emerald-600" />
               <p className="text-sm text-emerald-700">
@@ -414,14 +446,18 @@ const Abonnements = () => {
 
                 <Button
                   onClick={() => handleSelectAbonnement(abonnement)}
+                  disabled={!!activeSubscription}
+                  title={activeSubscription ? "Vous avez déjà un abonnement en cours" : undefined}
                   className={`w-full ${
-                    abonnement.populaire
+                    activeSubscription
+                      ? "opacity-50 cursor-not-allowed bg-gray-300"
+                      : abonnement.populaire
                       ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                       : "bg-gray-900 hover:bg-gray-800"
                   }`}
                 >
                   <Zap className="w-4 h-4 mr-2" />
-                  Souscrire
+                  {activeSubscription ? "Abonnement en cours" : "Souscrire"}
                 </Button>
               </Card>
             </motion.div>

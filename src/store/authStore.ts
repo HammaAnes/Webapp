@@ -13,7 +13,7 @@ interface AuthState {
 
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (credential: string) => Promise<void>;
+  loginWithGoogle: (credential: string, codeParrainage?: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
@@ -84,10 +84,10 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     }
   },
 
-  loginWithGoogle: async (credential: string) => {
+  loginWithGoogle: async (credential: string, codeParrainage?: string) => {
     try {
       set({ isLoading: true });
-      const response = await apiClient.loginWithGoogle(credential);
+      const response = await apiClient.loginWithGoogle(credential, codeParrainage);
 
       if (!response.success || !response.data) {
         throw new Error(response.error || "Erreur de connexion Google");

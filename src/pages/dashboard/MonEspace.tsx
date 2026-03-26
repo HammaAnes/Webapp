@@ -11,6 +11,8 @@ import {
   Briefcase,
   Lock,
   AlertCircle,
+  ChevronRight,
+  CreditCard,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useAppStore } from "../../store/store";
@@ -31,17 +33,19 @@ import NoDemandeLanding from "../../domiciliation/components/dashboard/NoDemande
 import EntrepriseTab from "../../domiciliation/components/dashboard/EntrepriseTab";
 import CourrierUtilisateur from "../../domiciliation/components/dashboard/CourrierUtilisateur";
 import DocumentsEntreprise from "../../domiciliation/components/dashboard/DocumentsEntreprise";
+import { IdCardSection } from "../../components/user/IdCardSection";
 import type { WizardFormData, UploadedDocument } from "../../domiciliation/domain/types";
 
 registerLocale("fr", fr);
 
-type TabId = "domiciliation" | "entreprise" | "courrier" | "documents";
+type TabId = "domiciliation" | "entreprise" | "courrier" | "documents" | "identite";
 
 const ALL_TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }>; requiresActive: boolean }[] = [
   { id: "domiciliation", label: "Domiciliation", icon: Shield, requiresActive: false },
   { id: "entreprise", label: "Mon Entreprise", icon: Briefcase, requiresActive: false },
   { id: "courrier", label: "Mon courrier", icon: Mail, requiresActive: true },
   { id: "documents", label: "Mes documents", icon: FileText, requiresActive: true },
+  { id: "identite", label: "Pièce d'identité", icon: CreditCard, requiresActive: false },
 ];
 
 const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) => {
@@ -55,13 +59,14 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
   const [showWizard, setShowWizard] = useState(false);
   const [domLoading, setDomLoading] = useState(false);
 
-  const { demande, loading: dataLoading, loadDemande, submitNewDemande, submitPostCreation } = useDomiciliation(user?.id ?? '');
+  const { demandes, demande, selectDemande, loading: dataLoading, loadDemande, submitNewDemande, submitPostCreation } = useDomiciliation(user?.id ?? '');
 
   useEffect(() => {
     if (user?.id) loadDemande();
   }, [user?.id, loadDemande]);
 
-  const isTerminal = demande && ['refusee', 'expiree', 'resiliee'].includes(demande.statut);
+  const TERMINAL_STATUTS = ['refusee', 'expiree', 'resiliee'];
+  const isTerminal = demande && TERMINAL_STATUTS.includes(demande.statut);
   const hasActiveDomiciliation = !!demande && !isTerminal;
 
   const handleTabChange = (tab: TabId) => {
@@ -95,11 +100,9 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
         if (isAutoEntrepreneur) {
           companyData.typeEntreprise = 'auto_entrepreneur';
           companyData.raisonSociale = raisonSociale;
-          companyData.formeJuridique = 'auto_entrepreneur';
         } else {
           const ent = formData.entreprise as unknown as Record<string, unknown>;
           companyData.raisonSociale = ent?.denominationSociale;
-          companyData.formeJuridique = (ent?.formeJuridique as string)?.toLowerCase() || '';
           companyData.typeEntreprise = (ent?.formeJuridique as string)?.toLowerCase() || '';
         }
         await updateUser(user.id, companyData);
@@ -179,7 +182,7 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
 
   if (!user) return null;
 
-  if (dataLoading && !demande) {
+  if (dataLoading && demandes.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <LoadingSpinner size="lg" />
@@ -187,17 +190,10 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
     );
   }
 
-  const statutLabel = demande
-    ? (DOMICILIATION_STATUT_LABELS[demande.statut as keyof typeof DOMICILIATION_STATUT_LABELS] || demande.statut)
-    : null;
-
-  const statutBadgeVariant = demande
-    ? demande.statut === "active"
-      ? "success"
-      : demande.statut === "refusee" || demande.statut === "resiliee"
-        ? "danger"
-        : "warning"
-    : null;
+  const getStatutBadgeVariant = (statut: string) =>
+    statut === "active" ? "success"
+    : statut === "refusee" || statut === "resiliee" ? "danger"
+    : "warning";
 
   const userExpirationAlert = (() => {
     if (!demande?.dateFinContrat || !["active", "domiciliation_creee"].includes(demande.statut)) return null;
@@ -211,6 +207,74 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
 
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 md:p-8">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyem0wLThoMnYxMmgtMlYyNnptLTE2IDRWMTJIMTJ2LTJIMjR2MmgtNHY0em0xNi00aDJ2NEgzNHYtMmgydi0yaC0yem0tOC04aDJ2NEgyOHYtMmgydi0yaC0yem0tOCAwaDJ2MkgyMHYtMnptMCA4aDJ2MkgyMHYtMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-50" />
+        <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
+              <Building2 className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-white">Mon espace pro</h1>
+              <p className="text-white/50 text-sm mt-1">
+                {demandes.length === 0
+                  ? "Aucune domiciliation"
+                  : `${demandes.length} domiciliation${demandes.length > 1 ? "s" : ""}`}
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={() => setShowWizard(true)}
+            variant="outline"
+            className="bg-white text-gray-900 hover:bg-gray-100 font-semibold shadow-lg"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Nouvelle domiciliation
+          </Button>
+        </div>
+      </div>
+
+      {/* Liste des domiciliations (si plusieurs) */}
+      {demandes.length > 1 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {demandes.map(d => {
+            const label = DOMICILIATION_STATUT_LABELS[d.statut as keyof typeof DOMICILIATION_STATUT_LABELS] || d.statut;
+            const isSelected = demande?.id === d.id;
+            return (
+              <button
+                key={d.id}
+                onClick={() => selectDemande(d.id)}
+                className={`text-left p-4 rounded-xl border transition-all ${
+                  isSelected
+                    ? "border-gray-900 bg-gray-50 shadow-sm"
+                    : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900 text-sm truncate">
+                      {d.raisonSociale || `${d.representantLegal?.prenom || ""} ${d.representantLegal?.nom || ""}`.trim() || "—"}
+                    </p>
+                    {d.numeroBureau && (
+                      <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                        <MapPin className="w-3 h-3" />
+                        Bureau {d.numeroBureau}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <Badge variant={getStatutBadgeVariant(d.statut)}>{label}</Badge>
+                    <ChevronRight className={`w-4 h-4 transition-colors ${isSelected ? "text-gray-900" : "text-gray-300"}`} />
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Alerte expiration domiciliation sélectionnée */}
       {userExpirationAlert && (
         <div className={`flex items-start gap-3 p-4 rounded-xl border ${userExpirationAlert.type === "expired" ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"}`}>
           <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${userExpirationAlert.type === "expired" ? "text-red-600" : "text-amber-600"}`} />
@@ -236,46 +300,6 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
           )}
         </div>
       )}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 md:p-8">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyem0wLThoMnYxMmgtMlYyNnptLTE2IDRWMTJIMTJ2LTJIMjR2MmgtNHY0em0xNi00aDJ2NEgzNHYtMmgydi0yaC0yem0tOC04aDJ2NEgyOHYtMmgydi0yaC0yem0tOCAwaDJ2MkgyMHYtMnptMCA4aDJ2MkgyMHYtMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-50" />
-        <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
-              <Building2 className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white">Mon espace pro</h1>
-              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                {user.raisonSociale && (
-                  <span className="text-white/70 text-sm font-medium">{user.raisonSociale}</span>
-                )}
-                {demande && statutBadgeVariant && (
-                  <Badge variant={statutBadgeVariant}>{statutLabel}</Badge>
-                )}
-                {demande?.numeroBureau && (
-                  <span className="text-white/50 text-xs flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
-                    Bureau {demande.numeroBureau}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            {activeTab === "domiciliation" && (!demande || isTerminal) && (
-              <Button
-                onClick={() => setShowWizard(true)}
-                variant="outline"
-                className="bg-white text-gray-900 hover:bg-gray-100 font-semibold shadow-lg"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                {demande ? "Nouvelle demande" : "Faire une demande"}
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <nav className="flex overflow-x-auto">
@@ -334,6 +358,7 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
               : <NoDemandeLanding onStartDemande={() => setShowWizard(true)} />
           )}
 
+
           {activeTab === 'entreprise' && (
             <EntrepriseTab user={user} demande={demande} loading={dataLoading} />
           )}
@@ -350,6 +375,36 @@ const MonEspace = ({ initialTab: initialTabProp }: { initialTab?: TabId } = {}) 
               domiciliationId={demande.id}
               typeStructure={demande.typeStructure}
             />
+          )}
+
+          {activeTab === 'identite' && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center">
+                    <CreditCard className="w-5 h-5 text-sky-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-semibold text-gray-900">Carte d'identité nationale</h2>
+                    <p className="text-sm text-gray-500">Requise pour effectuer des réservations</p>
+                  </div>
+                </div>
+                {user.carteIdentiteUrl ? (
+                  <span className="flex items-center gap-1.5 text-emerald-700 text-sm font-medium bg-emerald-50 px-3 py-1.5 rounded-lg">
+                    Enregistrée
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 text-amber-700 text-sm font-medium bg-amber-50 px-3 py-1.5 rounded-lg">
+                    <AlertCircle className="w-4 h-4" />
+                    Non fournie
+                  </span>
+                )}
+              </div>
+              <IdCardSection />
+              <p className="text-xs text-gray-400">
+                Vos documents sont stockés de façon sécurisée et ne sont utilisés qu'à des fins de vérification d'identité.
+              </p>
+            </div>
           )}
         </motion.div>
       </AnimatePresence>

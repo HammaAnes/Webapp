@@ -28,7 +28,8 @@ try {
 
     switch ($type) {
         case 'reservation_created':
-            $results[] = sendReservationCreated($data, $userEmail, $appUrl);
+            $to = $data['user_email'] ?? $userEmail;
+            $results[] = sendReservationCreated($data, $to, $appUrl);
             $results[] = sendAdminNotification('Nouvelle réservation', $data, $adminEmail, $appUrl);
             break;
 

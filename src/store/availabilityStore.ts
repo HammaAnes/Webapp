@@ -49,7 +49,7 @@ export const useAvailabilityStore = create<AvailabilityState>((set, get) => ({
     const key = buildKey(espaceId, monthKeyOf(month));
     const existing = get().cache[key];
 
-    if (!force && existing && !existing.error && Date.now() - existing.fetchedAt < CACHE_TTL_MS) {
+    if (!force && existing && !existing.error && (existing.loading || Date.now() - existing.fetchedAt < CACHE_TTL_MS)) {
       return;
     }
 

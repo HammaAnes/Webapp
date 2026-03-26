@@ -6,14 +6,10 @@
  * POST /api/admin/settings.php          — Sauvegarder une section de paramètres
  */
 
-require_once '../config/cors.php';
-require_once '../config/database.php';
-require_once '../utils/Auth.php';
-require_once '../utils/Response.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 try {
     $auth = Auth::requireAdmin();
-    $db = Database::getInstance()->getConnection();
 
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt = $db->query(
@@ -74,8 +70,10 @@ try {
             Response::success(['message' => 'Table non encore créée — paramètres ignorés']);
         }
     } else {
-        Response::error('Erreur base de données: ' . $e->getMessage(), 500);
+        Logger::error('settings.php PDO error', ['error' => $e->getMessage()]);
+        Response::error('Erreur base de données', 500);
     }
 } catch (Exception $e) {
+    Logger::error('settings.php error', ['error' => $e->getMessage()]);
     Response::error($e->getMessage(), 500);
 }

@@ -20,7 +20,7 @@ import { apiClient } from "../../../lib/api-client";
 import { useDocuments } from "../hooks";
 import { getAllDocSlots, formatFileSize } from "../utils";
 import { DOCUMENT_STATUS_CONFIG } from "../constants";
-import type { DemandeDomiciliation, DocumentRecord } from "../types";
+import type { DemandeDomiciliation, DocumentRecord } from "../../../domiciliation/domain/types";
 
 interface Props {
   demande: DemandeDomiciliation;
@@ -258,7 +258,7 @@ export default function DocumentsTab({ demande }: Props) {
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handlePreview(doc).then(() => triggerDownload(doc)).catch(() => triggerDownload(doc))}
+                        onClick={() => triggerDownload(doc).catch(() => toast.error("Impossible de télécharger"))}
                         className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
                         title="Télécharger"
                       >

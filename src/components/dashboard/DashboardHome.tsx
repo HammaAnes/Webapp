@@ -1,520 +1,743 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import OnboardingChecklist from "./OnboardingChecklist";
 import {
   Calendar,
   Users,
   Building,
-  Banknote,
   TrendingUp,
   CheckCircle,
   Clock,
   MapPin,
   Plus,
   ArrowUpRight,
-  ArrowUp,
-  ArrowDown,
-  FileText,
   AlertCircle,
   RefreshCw,
-  BarChart3,
   Mail,
   CalendarDays,
-  Lock,
-  UserPlus,
-  Gift,
+  LogIn,
+  LogOut,
+  XCircle,
+  Search,
+  Banknote,
+  UserCheck,
+  Phone,
+  Eye,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import Card from "../ui/Card";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
+import Skeleton from "../ui/Skeleton";
 import { useAuthStore } from "../../store/authStore";
 import { useAppStore } from "../../store/store";
 import { apiClient } from "../../lib/api-client";
 import { formatDate, formatCurrency, formatTime } from "../../utils/formatters";
-import { format, isToday, isTomorrow, differenceInMinutes } from "date-fns";
+import { format, isToday, isTomorrow, differenceInMinutes, isAfter, isBefore } from "date-fns";
 import { fr } from "date-fns/locale";
 import { logger } from "../../utils/logger";
-
-interface AdminStats {
-  users: { total: number; active: number; growth: number };
-  reservations: { today: number; month: number; growth: number; pending: number };
-  revenue: { month: number; growth: number };
-  subscriptions: { active: number };
-  domiciliations: { pending: number; active: number };
-  occupancy: { rate: number; occupied: number; total: number; growth: number };
-}
-
+import toast from "react-hot-toast";
 import type { Reservation } from "../../types";
 
-const AdminDashboard = () => {
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const { reservations, espaces, demandesDomiciliation, initializeData, loadUsers, loadDemandesDomiciliation } = useAppStore();
+// ─── Types for operational data ──────────────────────────────────────────────
 
-  const loadStats = async () => {
+interface AbonnementEnAttente {
+  id: string;
+  user_prenom?: string;
+  user_nom?: string;
+  abonnement_nom?: string;
+  created_at?: string;
+}
+
+interface DomiciliationExpirante {
+  id: string;
+  raison_sociale?: string;
+  date_fin?: string;
+  user_prenom?: string;
+  user_nom?: string;
+}
+
+interface CourrierNonTraite {
+  id: string;
+  expediteur?: string;
+  type?: string;
+  date_reception?: string;
+  raison_sociale?: string;
+}
+
+interface CaisseJour {
+  total_general: number;
+  nb_transactions: number;
+  totaux?: { mode_paiement: string; total: number; nombre: number }[];
+}
+
+interface OperationalData {
+  abonnements_en_attente: AbonnementEnAttente[];
+  domiciliations_expirantes: DomiciliationExpirante[];
+  courriers_non_traites: CourrierNonTraite[];
+  caisse_jour: CaisseJour;
+}
+
+// ─── Admin Dashboard (unified operational view) ───────────────────────────────
+
+const AdminDashboard = () => {
+  const { reservations, espaces, initializeData, loadUsers, updateReservation } = useAppStore();
+
+  const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(new Date());
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [opData, setOpData] = useState<OperationalData | null>(null);
+  const [opLoading, setOpLoading] = useState(true);
+  const clockRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const storeRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const opRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fetchOpData = useCallback(async () => {
     try {
-      const response = await apiClient.getAdminStats();
-      if (response.success && response.data) {
-        setStats(response.data as AdminStats);
+      const res = await apiClient.get<OperationalData>("/admin/reception.php");
+      if (res.success && res.data) {
+        setOpData({
+          abonnements_en_attente: res.data.abonnements_en_attente ?? [],
+          domiciliations_expirantes: res.data.domiciliations_expirantes ?? [],
+          courriers_non_traites: res.data.courriers_non_traites ?? [],
+          caisse_jour: res.data.caisse_jour ?? { total_general: 0, nb_transactions: 0 },
+        });
       }
     } catch (error) {
-      logger.error("Erreur chargement stats admin:", error instanceof Error ? error : new Error(String(error)));
-    }
-  };
-
-  const refreshData = async () => {
-    setRefreshing(true);
-    try {
-      await Promise.all([
-        loadStats(),
-        initializeData(),
-        loadUsers(),
-        loadDemandesDomiciliation(),
-      ]);
+      logger.warn("fetchOpData failed:", error instanceof Error ? error.message : String(error));
     } finally {
-      setRefreshing(false);
+      setOpLoading(false);
     }
-  };
-
-  useEffect(() => {
-    let mounted = true;
-    apiClient.getAdminStats().then((response) => {
-      if (!mounted) return;
-      if (response.success && response.data) {
-        setStats(response.data as AdminStats);
-      }
-    }).catch((error) => {
-      logger.error("Erreur chargement stats admin:", error instanceof Error ? error : new Error(String(error)));
-    }).finally(() => {
-      if (mounted) setLoading(false);
-    });
-    return () => { mounted = false; };
   }, []);
 
-  const todayReservations = useMemo(() => {
-    return reservations.filter((r) => {
-      const date = new Date(r.dateDebut);
-      return isToday(date) && r.statut !== "annulee";
-    }).sort((a, b) => new Date(a.dateDebut).getTime() - new Date(b.dateDebut).getTime());
-  }, [reservations]);
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await Promise.all([initializeData(), loadUsers()]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
+    fetchOpData();
 
-  const tomorrowReservations = useMemo(() => {
-    return reservations.filter((r) => {
-      const date = new Date(r.dateDebut);
-      return isTomorrow(date) && r.statut !== "annulee";
-    }).sort((a, b) => new Date(a.dateDebut).getTime() - new Date(b.dateDebut).getTime());
-  }, [reservations]);
+    clockRef.current = setInterval(() => setNow(new Date()), 60000);
+    storeRef.current = setInterval(() => { initializeData(true); loadUsers(); }, 120000);
+    opRef.current = setInterval(fetchOpData, 60000);
 
-  const pendingReservations = useMemo(() => {
-    return reservations.filter((r) => r.statut === "en_attente").length;
-  }, [reservations]);
+    return () => {
+      if (clockRef.current) clearInterval(clockRef.current);
+      if (storeRef.current) clearInterval(storeRef.current);
+      if (opRef.current) clearInterval(opRef.current);
+    };
+  }, [initializeData, loadUsers, fetchOpData]);
 
-  const pendingDomiciliations = useMemo(() => {
-    return demandesDomiciliation.filter((d) =>
-      d.statut === "dossier_preparatoire" ||
-      d.statut === "en_attente_signature" ||
-      d.statut === "en_attente_complements"
-    ).length;
-  }, [demandesDomiciliation]);
-
-  const activeNow = useMemo(() => {
-    const now = new Date();
-    return reservations.filter((r) => {
-      const start = new Date(r.dateDebut);
-      const end = new Date(r.dateFin);
-      return start <= now && end >= now && r.statut === "confirmee";
-    });
-  }, [reservations]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
-      </div>
-    );
-  }
-
-  const getReservationBadge = (reservation: Reservation) => {
-    const now = new Date();
-    const start = new Date(reservation.dateDebut);
-    const end = new Date(reservation.dateFin);
-    const minutesUntilStart = differenceInMinutes(start, now);
-
-    if (start <= now && end >= now) {
-      return <Badge variant="success">En cours</Badge>;
-    } else if (minutesUntilStart > 0 && minutesUntilStart <= 60) {
-      return <Badge variant="warning">Dans {minutesUntilStart} min</Badge>;
-    } else if (reservation.statut === "en_attente") {
-      return <Badge variant="warning">En attente</Badge>;
-    } else if (reservation.statut === "confirmee") {
-      return <Badge variant="success">Confirmée</Badge>;
+  const handleRefresh = async () => {
+    setLoading(true);
+    setOpLoading(true);
+    try {
+      await Promise.all([initializeData(true), loadUsers(), fetchOpData()]);
+      toast.success("Données actualisées");
+    } finally {
+      setLoading(false);
     }
-    return <Badge variant="neutral">{reservation.statut}</Badge>;
   };
 
+  // ── Today's reservations ────────────────────────────────────────────────────
+
+  const todayReservations = useMemo(() => {
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(now);
+    todayEnd.setHours(23, 59, 59, 999);
+    return reservations.filter(
+      (r) => new Date(r.dateDebut) <= todayEnd && new Date(r.dateFin) >= todayStart
+    );
+  }, [reservations, now]);
+
+  const categorized = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    let src = todayReservations;
+    if (q) {
+      src = src.filter((r) =>
+        r.utilisateur?.nom?.toLowerCase().includes(q) ||
+        r.utilisateur?.prenom?.toLowerCase().includes(q) ||
+        r.contact?.nom?.toLowerCase().includes(q) ||
+        r.contact?.prenom?.toLowerCase().includes(q) ||
+        r.espace?.nom?.toLowerCase().includes(q) ||
+        r.utilisateur?.telephone?.includes(q)
+      );
+    }
+
+    const activeNow: Reservation[] = [];
+    const arrivingSoon: Reservation[] = [];
+    const upcoming: Reservation[] = [];
+    const completed: Reservation[] = [];
+    const cancelled: Reservation[] = [];
+
+    src.forEach((r) => {
+      if (r.statut === "annulee" || r.statut === "no_show") { cancelled.push(r); return; }
+      const start = new Date(r.dateDebut);
+      const end = new Date(r.dateFin);
+      const minUntilStart = differenceInMinutes(start, now);
+
+      if (r.statut === "en_cours" || (r.statut === "confirmee" && start <= now && end >= now)) {
+        activeNow.push(r);
+      } else if (minUntilStart > 0 && minUntilStart <= 60) {
+        arrivingSoon.push(r);
+      } else if (isAfter(start, now)) {
+        upcoming.push(r);
+      } else {
+        completed.push(r);
+      }
+    });
+
+    const byStart = (a: Reservation, b: Reservation) =>
+      new Date(a.dateDebut).getTime() - new Date(b.dateDebut).getTime();
+    return {
+      activeNow: activeNow.sort(byStart),
+      arrivingSoon: arrivingSoon.sort(byStart),
+      upcoming: upcoming.sort(byStart),
+      completed: completed.sort((a, b) => new Date(b.dateFin).getTime() - new Date(a.dateFin).getTime()),
+      cancelled,
+    };
+  }, [todayReservations, now, searchQuery]);
+
+  // ── Space status ────────────────────────────────────────────────────────────
+
+  const espacesStatus = useMemo(() => espaces.map((espace) => {
+    const esRes = todayReservations.filter((r) => r.espaceId === espace.id);
+    const occupantes = esRes.filter((r) => {
+      const s = new Date(r.dateDebut), e = new Date(r.dateFin);
+      return (r.statut === "en_cours" || r.statut === "confirmee") && s <= now && e >= now;
+    });
+    if (occupantes.length > 0) {
+      const who = occupantes.map((r) =>
+        `${r.utilisateur?.prenom || r.contact?.prenom || ""} ${r.utilisateur?.nom || r.contact?.nom || ""}`.trim()
+      ).filter(Boolean);
+      const capacite = espace.type === "open_space" ? (espace.capacite || 12) : undefined;
+      return { espace, color: "red" as const, who, capacite };
+    }
+    const hasLater = esRes.some(
+      (r) => r.statut !== "annulee" && r.statut !== "terminee" && isAfter(new Date(r.dateDebut), now)
+    );
+    return { espace, color: (hasLater ? "orange" : "green") as "green" | "orange" | "red", who: [] as string[], capacite: undefined };
+  }), [espaces, todayReservations, now]);
+
+  // ── Checkin / Checkout ──────────────────────────────────────────────────────
+
+  const handleCheckin = async (r: Reservation) => {
+    setActionLoading(`checkin-${r.id}`);
+    try {
+      const res = await apiClient.createCheckin({
+        reservation_id: r.id,
+        heure_arrivee_reelle: new Date().toISOString(),
+      });
+      if (res.success) {
+        const retard = (res.data as Record<string, unknown>)?.retard_minutes;
+        toast.success(retard && (retard as number) > 0 ? `Check-in · retard ${retard} min` : "Check-in effectué");
+        await initializeData();
+      } else toast.error(res.error || "Erreur check-in");
+    } catch { toast.error("Erreur check-in"); }
+    finally { setActionLoading(null); }
+  };
+
+  const handleCheckout = async (r: Reservation) => {
+    if (!r.checkinId) { toast.error("Aucun check-in enregistré"); return; }
+    setActionLoading(`checkout-${r.id}`);
+    try {
+      const res = await apiClient.checkout(r.checkinId);
+      if (res.success) { toast.success("Check-out effectué"); await initializeData(); }
+      else toast.error(res.error || "Erreur check-out");
+    } catch { toast.error("Erreur check-out"); }
+    finally { setActionLoading(null); }
+  };
+
+  const handleNoShow = async (r: Reservation) => {
+    setActionLoading(`noshow-${r.id}`);
+    try {
+      const res = await updateReservation(r.id, { statut: "no_show" });
+      if (res?.success === false) toast.error(res.error || "Erreur");
+      else toast.success("Marqué no-show");
+    } catch { toast.error("Erreur"); }
+    finally { setActionLoading(null); }
+  };
+
+  const handleConfirm = async (id: string) => {
+    setActionLoading(`confirm-${id}`);
+    try {
+      const res = await updateReservation(id, { statut: "confirmee" });
+      if (res?.success === false) toast.error(res.error || "Erreur");
+      else toast.success("Confirmée");
+    } catch { toast.error("Erreur"); }
+    finally { setActionLoading(null); }
+  };
+
+  // ── Reservation card ────────────────────────────────────────────────────────
+
+  const ReservationRow = ({ r }: { r: Reservation }) => {
+    const start = new Date(r.dateDebut);
+    const end = new Date(r.dateFin);
+    const minUntilStart = differenceInMinutes(start, now);
+    const minUntilEnd = differenceInMinutes(end, now);
+    const isPast = isBefore(end, now);
+
+    const canCheckin = r.statut === "confirmee" && !r.checkinId && !isPast;
+    const canCheckout = r.statut === "en_cours" && !!r.checkinId;
+    const canNoShow = r.statut === "confirmee" && isPast;
+
+    const getBadge = () => {
+      if (r.statut === "en_cours") {
+        if (minUntilEnd <= 30 && minUntilEnd > 0)
+          return <Badge className="bg-amber-100 text-amber-700">Fin dans {minUntilEnd}min</Badge>;
+        return <Badge variant="success">En cours</Badge>;
+      }
+      if (r.statut === "terminee") return <Badge variant="neutral">Terminée</Badge>;
+      if (r.statut === "annulee") return <Badge variant="danger">Annulée</Badge>;
+      if (r.statut === "no_show") return <Badge variant="danger">No-show</Badge>;
+      if (minUntilStart > 0 && minUntilStart <= 60)
+        return <Badge variant="warning">Dans {minUntilStart}min</Badge>;
+      if (r.statut === "en_attente") return <Badge variant="warning">En attente</Badge>;
+      if (r.statut === "confirmee" && isBefore(start, now)) return <Badge variant="info">Confirmée</Badge>;
+      return <Badge variant="info">À venir</Badge>;
+    };
+
+    return (
+      <div className={`flex items-center gap-3 p-3 rounded-xl ${r.statut === "en_cours" ? "bg-emerald-50 border border-emerald-200" : "bg-gray-50 hover:bg-gray-100"} transition-colors`}>
+        <div className="w-9 h-9 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 shrink-0">
+          {`${((r.utilisateur?.prenom || r.contact?.prenom || "?")[0] || "?")}${((r.utilisateur?.nom || r.contact?.nom || "?")[0] || "?")}`.toUpperCase()}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-semibold text-gray-900">
+              {r.utilisateur?.prenom || r.contact?.prenom} {r.utilisateur?.nom || r.contact?.nom}
+            </p>
+            {getBadge()}
+          </div>
+          <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3" />{r.espace?.nom || "Espace"}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />{format(start, "HH:mm")} – {format(end, "HH:mm")}
+            </span>
+            {r.utilisateur?.telephone && (
+              <a href={`tel:${r.utilisateur.telephone}`} className="flex items-center gap-1 text-emerald-600 hover:underline">
+                <Phone className="w-3 h-3" />{r.utilisateur.telephone}
+              </a>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {r.statut === "en_attente" && (
+            <button
+              onClick={() => handleConfirm(r.id)}
+              disabled={!!actionLoading}
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-emerald-600 hover:bg-emerald-100 disabled:opacity-50"
+              title="Confirmer"
+            >
+              <CheckCircle className="w-4 h-4" />
+            </button>
+          )}
+          {canCheckin && (
+            <button
+              onClick={() => handleCheckin(r)}
+              disabled={actionLoading === `checkin-${r.id}`}
+              className="px-2 py-1 text-xs font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1"
+            >
+              <LogIn className="w-3 h-3" /> Check-in
+            </button>
+          )}
+          {canCheckout && (
+            <button
+              onClick={() => handleCheckout(r)}
+              disabled={actionLoading === `checkout-${r.id}`}
+              className="px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1"
+            >
+              <LogOut className="w-3 h-3" /> Check-out
+            </button>
+          )}
+          {canNoShow && (
+            <button
+              onClick={() => handleNoShow(r)}
+              disabled={actionLoading === `noshow-${r.id}`}
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-50"
+              title="No-show"
+            >
+              <XCircle className="w-4 h-4" />
+            </button>
+          )}
+          <Link to="/app/admin/reservations" className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-200">
+            <Eye className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
+    );
+  };
+
+  // ── Derived stats ───────────────────────────────────────────────────────────
+
+  const kpis = useMemo(() => ({
+    totalToday: todayReservations.length,
+    activeNow: categorized.activeNow.length,
+    pending: todayReservations.filter((r) => r.statut === "en_attente").length,
+    alertes: (opData?.abonnements_en_attente.length ?? 0) +
+             (opData?.domiciliations_expirantes.length ?? 0) +
+             (opData?.courriers_non_traites.length ?? 0),
+  }), [todayReservations, categorized, opData]);
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
   return (
-    <div className="space-y-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-      >
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-            Tableau de bord
-          </h1>
-          <p className="text-gray-600 mt-1">
-            {format(new Date(), "EEEE d MMMM yyyy", { locale: fr })}
+          <h1 className="text-2xl font-bold text-gray-900">Tableau de bord</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {format(now, "EEEE d MMMM yyyy", { locale: fr })}
+            <span className="font-mono ml-2 text-gray-700">{format(now, "HH:mm")}</span>
           </p>
         </div>
-        <Button
-          onClick={refreshData}
-          variant="outline"
-          disabled={refreshing}
-          className="self-start sm:self-auto"
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-          Actualiser
-        </Button>
-      </motion.div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all"
+            title="Actualiser"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          </button>
+          <Link to="/app/admin/reservations">
+            <Button size="sm" className="gap-1.5 bg-gray-900 hover:bg-gray-800 text-white">
+              <Calendar className="w-4 h-4" /> Réservations
+            </Button>
+          </Link>
+        </div>
+      </div>
 
-      {/* Alertes importantes */}
-      {(pendingReservations > 0 || pendingDomiciliations > 0) && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card className="p-5 border-l-4 border-amber-500 bg-amber-50">
-            <div className="flex items-start gap-4">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <AlertCircle className="w-6 h-6 text-amber-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-amber-900 mb-3">
-                  Actions requises
-                </h3>
-                <div className="flex flex-wrap gap-3">
-                  {pendingReservations > 0 && (
-                    <Link to="/app/admin/reservations">
-                      <Button variant="outline" size="sm" className="bg-white border-amber-300 text-amber-700 hover:bg-amber-100">
-                        <Calendar className="w-4 h-4 mr-2" />
-                        {pendingReservations} réservation(s) en attente
-                      </Button>
-                    </Link>
-                  )}
-                  {pendingDomiciliations > 0 && (
-                    <Link to="/app/admin/domiciliations">
-                      <Button variant="outline" size="sm" className="bg-white border-amber-300 text-amber-700 hover:bg-amber-100">
-                        <Mail className="w-4 h-4 mr-2" />
-                        {pendingDomiciliations} demande(s) de domiciliation
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </div>
+      {/* KPIs du jour */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: "Réservations", sub: "aujourd'hui", value: kpis.totalToday, icon: Calendar, colors: "from-blue-500 to-blue-600" },
+          { label: "Présents", sub: "en ce moment", value: kpis.activeNow, icon: UserCheck, colors: "from-emerald-500 to-emerald-600" },
+          { label: "En attente", sub: "à confirmer", value: kpis.pending, icon: AlertCircle, colors: kpis.pending > 0 ? "from-amber-500 to-orange-500" : "from-gray-400 to-gray-500" },
+          { label: "Alertes", sub: "actions requises", value: kpis.alertes, icon: Banknote, colors: kpis.alertes > 0 ? "from-red-500 to-red-600" : "from-gray-400 to-gray-500" },
+        ].map(({ label, sub, value, icon: Icon, colors }) => (
+          <Card key={label} className={`p-4 bg-gradient-to-br ${colors} text-white`}>
+            <div className="flex items-center justify-between mb-2">
+              <Icon className="w-7 h-7 text-white/80" />
+              {loading ? <Skeleton className="h-8 w-10 bg-white/20" /> : (
+                <span className="text-2xl font-bold">{value}</span>
+              )}
             </div>
+            <p className="text-white/90 text-sm font-medium">{label}</p>
+            <p className="text-white/60 text-xs">{sub}</p>
           </Card>
-        </motion.div>
+        ))}
+      </div>
+
+      {/* Caisse du jour (inline) */}
+      {!opLoading && opData && (
+        <Card className="p-4 flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Banknote className="w-5 h-5 text-emerald-600" />
+            <span className="text-sm font-semibold text-gray-900">Caisse du jour</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-2xl font-bold text-emerald-700">{formatCurrency(opData.caisse_jour.total_general)}</span>
+            <span className="text-sm text-gray-500">— {opData.caisse_jour.nb_transactions} transaction{opData.caisse_jour.nb_transactions !== 1 ? "s" : ""}</span>
+          </div>
+          {opData.caisse_jour.totaux && opData.caisse_jour.totaux.length > 0 && (
+            <div className="flex items-center gap-3 flex-wrap">
+              {opData.caisse_jour.totaux.map((t) => (
+                <span key={t.mode_paiement} className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
+                  {t.mode_paiement}: {formatCurrency(t.total)}
+                </span>
+              ))}
+            </div>
+          )}
+          <Link to="/app/admin/caisse" className="ml-auto text-xs text-amber-600 hover:underline flex items-center gap-1">
+            Gérer la caisse <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+        </Card>
       )}
 
-      {/* Stats principales */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card className="p-5 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <Users className="w-5 h-5 text-white" />
-              </div>
-              {stats && stats.users.growth !== 0 && (
-                <div className={`flex items-center text-xs ${stats.users.growth > 0 ? "text-green-200" : "text-red-200"}`}>
-                  {stats.users.growth > 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                  {Math.abs(stats.users.growth)}%
-                </div>
-              )}
-            </div>
-            <p className="text-white/80 text-sm">Utilisateurs</p>
-            <p className="text-2xl sm:text-3xl font-bold">{stats?.users.total || 0}</p>
-            <p className="text-white/60 text-xs mt-1">{stats?.users.active || 0} actifs</p>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card className="p-5 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <Banknote className="w-5 h-5 text-white" />
-              </div>
-              {stats && stats.revenue.growth !== 0 && (
-                <div className={`flex items-center text-xs ${stats.revenue.growth > 0 ? "text-green-200" : "text-red-200"}`}>
-                  {stats.revenue.growth > 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                  {Math.abs(stats.revenue.growth)}%
-                </div>
-              )}
-            </div>
-            <p className="text-white/80 text-sm">Revenus du mois</p>
-            <p className="text-2xl sm:text-3xl font-bold">{formatCurrency(stats?.revenue.month || 0)}</p>
-            <p className="text-white/60 text-xs mt-1">vs mois précédent</p>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card className="p-5 bg-gradient-to-br from-amber-500 to-orange-500 text-white">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xs text-white/80 bg-white/20 px-2 py-0.5 rounded-full">
-                +{stats?.reservations.growth || todayReservations.length} aujourd'hui
-              </span>
-            </div>
-            <p className="text-white/80 text-sm">Réservations</p>
-            <p className="text-2xl sm:text-3xl font-bold">{stats?.reservations.month || reservations.length}</p>
-            <p className="text-white/60 text-xs mt-1">{pendingReservations} en attente</p>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Card className="p-5 bg-gradient-to-br from-teal-500 to-teal-600 text-white">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <Building className="w-5 h-5 text-white" />
-              </div>
-              {activeNow.length > 0 && (
-                <span className="text-xs text-white/80 bg-white/20 px-2 py-0.5 rounded-full animate-pulse">
-                  {activeNow.length} en cours
-                </span>
-              )}
-            </div>
-            <p className="text-white/80 text-sm">Taux d'occupation</p>
-            <p className="text-2xl sm:text-3xl font-bold">{stats?.occupancy.rate || 0}%</p>
-            <p className="text-white/60 text-xs mt-1">
-              {stats?.occupancy.occupied || 0}/{stats?.occupancy.total || espaces.length} espaces
-            </p>
-          </Card>
-        </motion.div>
-      </div>
-
-      {/* Réservations du jour et de demain */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Aujourd'hui */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <CalendarDays className="w-5 h-5 text-amber-500" />
-                Aujourd'hui
-                {todayReservations.length > 0 && (
-                  <Badge variant="warning">{todayReservations.length}</Badge>
-                )}
-              </h3>
-              <Link to="/app/admin/reservations" className="text-sm text-amber-600 hover:underline flex items-center gap-1">
-                Voir tout <ArrowUpRight className="w-4 h-4" />
-              </Link>
-            </div>
-
-            {todayReservations.length > 0 ? (
-              <div className="space-y-3">
-                {todayReservations.slice(0, 5).map((reservation) => (
-                  <div
-                    key={reservation.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                        <Clock className="w-5 h-5 text-amber-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">
-                          {reservation.utilisateur?.prenom} {reservation.utilisateur?.nom}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          {reservation.espace?.nom} - {format(new Date(reservation.dateDebut), "HH:mm")} - {format(new Date(reservation.dateFin), "HH:mm")}
-                        </p>
-                      </div>
-                    </div>
-                    {getReservationBadge(reservation)}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">Aucune réservation aujourd'hui</p>
-              </div>
-            )}
-          </Card>
-        </motion.div>
-
-        {/* Demain */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <CalendarDays className="w-5 h-5 text-blue-500" />
-                Demain
-                {tomorrowReservations.length > 0 && (
-                  <Badge variant="info">{tomorrowReservations.length}</Badge>
-                )}
-              </h3>
-            </div>
-
-            {tomorrowReservations.length > 0 ? (
-              <div className="space-y-3">
-                {tomorrowReservations.slice(0, 5).map((reservation) => (
-                  <div
-                    key={reservation.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Clock className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">
-                          {reservation.utilisateur?.prenom} {reservation.utilisateur?.nom}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          {reservation.espace?.nom} - {format(new Date(reservation.dateDebut), "HH:mm")} - {format(new Date(reservation.dateFin), "HH:mm")}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant={reservation.statut === "confirmee" ? "success" : "warning"}>
-                      {reservation.statut === "confirmee" ? "Confirmée" : "En attente"}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">Aucune réservation demain</p>
-              </div>
-            )}
-          </Card>
-        </motion.div>
-      </div>
-
-      {/* Accès rapide */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-      >
-        <Card className="p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-5">Accès rapide</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            <Link to="/app/admin/aujourdhui">
-              <div className="p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors text-center">
-                <CalendarDays className="w-8 h-8 text-amber-600 mx-auto mb-2" />
-                <p className="font-medium text-amber-900 text-sm">Aujourd'hui</p>
-                <p className="text-xs text-amber-600">{todayReservations.length} réservations</p>
-              </div>
-            </Link>
-
-            <Link to="/app/admin/reservations">
-              <div className="p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors text-center">
-                <Calendar className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                <p className="font-medium text-blue-900 text-sm">Réservations</p>
-                <p className="text-xs text-blue-600">{pendingReservations} en attente</p>
-              </div>
-            </Link>
-
-            <Link to="/app/admin/caisse">
-              <div className="p-4 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors text-center">
-                <UserPlus className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-                <p className="font-medium text-emerald-900 text-sm">Caisse</p>
-                <p className="text-xs text-emerald-600">Transactions</p>
-              </div>
-            </Link>
-
-            <Link to="/app/admin/users">
-              <div className="p-4 bg-teal-50 rounded-xl hover:bg-teal-100 transition-colors text-center">
-                <Users className="w-8 h-8 text-teal-600 mx-auto mb-2" />
-                <p className="font-medium text-teal-900 text-sm">Utilisateurs</p>
-                <p className="text-xs text-teal-600">{stats?.users.total || 0}</p>
-              </div>
-            </Link>
-
-            <Link to="/app/admin/spaces">
-              <div className="p-4 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors text-center">
-                <Building className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                <p className="font-medium text-gray-900 text-sm">Espaces</p>
-                <p className="text-xs text-gray-600">{espaces.length}</p>
-              </div>
-            </Link>
-
-            <Link to="/app/admin/domiciliations">
-              <div className="p-4 bg-teal-50 rounded-xl hover:bg-teal-100 transition-colors text-center">
-                <Mail className="w-8 h-8 text-teal-600 mx-auto mb-2" />
-                <p className="font-medium text-teal-900 text-sm">Domiciliations</p>
-                <p className="text-xs text-teal-600">{pendingDomiciliations} en attente</p>
-              </div>
-            </Link>
-
-            <Link to="/app/admin/settings">
-              <div className="p-4 bg-red-50 rounded-xl hover:bg-red-100 transition-colors text-center">
-                <Lock className="w-8 h-8 text-red-600 mx-auto mb-2" />
-                <p className="font-medium text-red-900 text-sm">Paramètres</p>
-                <p className="text-xs text-red-600">Configuration</p>
-              </div>
-            </Link>
-
-            <Link to="/app/admin/codes-promo">
-              <div className="p-4 bg-orange-50 rounded-xl hover:bg-orange-100 transition-colors text-center">
-                <FileText className="w-8 h-8 text-orange-600 mx-auto mb-2" />
-                <p className="font-medium text-orange-900 text-sm">Codes promo</p>
-                <p className="text-xs text-orange-600">Gérer</p>
-              </div>
-            </Link>
-
-            <Link to="/app/admin/parrainages">
-              <div className="p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors text-center">
-                <Gift className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                <p className="font-medium text-blue-900 text-sm">Parrainages</p>
-                <p className="text-xs text-blue-600">Suivi</p>
-              </div>
-            </Link>
-
-            <Link to="/app/admin/reports">
-              <div className="p-4 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors text-center">
-                <BarChart3 className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                <p className="font-medium text-gray-900 text-sm">Rapports</p>
-                <p className="text-xs text-gray-600">Statistiques</p>
-              </div>
-            </Link>
+      {/* Planning du jour */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b border-gray-100 flex items-center gap-3 flex-wrap">
+          <Clock className="w-4 h-4 text-gray-500" />
+          <h2 className="text-sm font-semibold text-gray-900">
+            Planning du jour
+            <span className="ml-2 text-gray-400 font-normal">
+              {todayReservations.length} réservation{todayReservations.length !== 1 ? "s" : ""}
+            </span>
+          </h2>
+          <div className="ml-auto relative">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Filtrer..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/20 w-44"
+            />
           </div>
+        </div>
+
+        <div className="p-4 space-y-4">
+          {loading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
+            </div>
+          ) : todayReservations.length === 0 ? (
+            <div className="text-center py-10">
+              <CalendarDays className="w-10 h-10 text-gray-200 mx-auto mb-2" />
+              <p className="text-sm text-gray-400">Aucune réservation aujourd'hui</p>
+            </div>
+          ) : (
+            <>
+              {categorized.activeNow.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                    En cours ({categorized.activeNow.length})
+                  </p>
+                  <div className="space-y-2">
+                    {categorized.activeNow.map((r) => <ReservationRow key={r.id} r={r} />)}
+                  </div>
+                </div>
+              )}
+              {categorized.arrivingSoon.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">Arrive bientôt ({categorized.arrivingSoon.length})</p>
+                  <div className="space-y-2">
+                    {categorized.arrivingSoon.map((r) => <ReservationRow key={r.id} r={r} />)}
+                  </div>
+                </div>
+              )}
+              {categorized.upcoming.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">À venir ({categorized.upcoming.length})</p>
+                  <div className="space-y-2">
+                    {categorized.upcoming.slice(0, 5).map((r) => <ReservationRow key={r.id} r={r} />)}
+                    {categorized.upcoming.length > 5 && (
+                      <Link to="/app/admin/reservations" className="block text-center text-xs text-gray-500 hover:text-gray-700 py-1">
+                        + {categorized.upcoming.length - 5} autres
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              )}
+              {categorized.completed.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Terminées ({categorized.completed.length})</p>
+                  <div className="space-y-2">
+                    {categorized.completed.slice(0, 3).map((r) => <ReservationRow key={r.id} r={r} />)}
+                  </div>
+                </div>
+              )}
+              {categorized.cancelled.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2">Annulées / No-show ({categorized.cancelled.length})</p>
+                  <div className="space-y-2">
+                    {categorized.cancelled.slice(0, 2).map((r) => <ReservationRow key={r.id} r={r} />)}
+                  </div>
+                </div>
+              )}
+              {searchQuery && categorized.activeNow.length === 0 && categorized.arrivingSoon.length === 0 && categorized.upcoming.length === 0 && categorized.completed.length === 0 && (
+                <p className="text-sm text-center text-gray-400 py-6">Aucun résultat pour « {searchQuery} »</p>
+              )}
+            </>
+          )}
+        </div>
+      </Card>
+
+      {/* Disponibilité espaces */}
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <MapPin className="w-4 h-4 text-gray-500" />
+          <h2 className="text-sm font-semibold text-gray-900">Disponibilité espaces</h2>
+          <div className="ml-auto flex items-center gap-3 text-xs text-gray-400">
+            {[
+              { color: "bg-emerald-400", label: "Libre" },
+              { color: "bg-orange-400", label: "Réservé + tard" },
+              { color: "bg-red-400", label: "Occupé" },
+            ].map(({ color, label }) => (
+              <span key={label} className="flex items-center gap-1">
+                <span className={`w-2 h-2 rounded-full ${color}`} />{label}
+              </span>
+            ))}
+          </div>
+        </div>
+        {loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 rounded-lg" />)}
+          </div>
+        ) : espaces.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">Aucun espace configuré</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {espacesStatus.map(({ espace, color, who, capacite }) => {
+              const cm = {
+                green:  { bg: "bg-emerald-50", border: "border-emerald-200", dot: "bg-emerald-400", text: "text-emerald-700", label: "Disponible" },
+                orange: { bg: "bg-orange-50",  border: "border-orange-200",  dot: "bg-orange-400",  text: "text-orange-700",  label: "Réservé + tard" },
+                red:    { bg: "bg-red-50",     border: "border-red-200",     dot: "bg-red-400",     text: "text-red-700",     label: "Occupé" },
+              }[color];
+              const isMulti = capacite !== undefined;
+              return (
+                <div key={espace.id} className={`rounded-lg border p-3 ${cm.bg} ${cm.border}`}>
+                  <div className="flex items-start gap-2">
+                    <span className={`w-2 h-2 rounded-full mt-1 shrink-0 ${cm.dot}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 truncate">{espace.nom}</p>
+                      <p className={`text-xs font-medium ${cm.text}`}>
+                        {cm.label}{isMulti && who.length > 0 ? ` · ${who.length}/${capacite}` : ""}
+                      </p>
+                      {who.length > 0 && (
+                        isMulti ? (
+                          <div className="mt-1 space-y-0.5">
+                            {who.map((name, i) => (
+                              <p key={i} className="text-xs text-gray-500 truncate">{name}</p>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-500 truncate mt-0.5">{who[0]}</p>
+                        )
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
+      {/* Alertes */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Abonnements en attente */}
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertCircle className="w-4 h-4 text-amber-500" />
+            <h3 className="text-sm font-semibold text-gray-900">Abonnements à valider</h3>
+            <span className="ml-auto">
+              <Badge variant={opData && opData.abonnements_en_attente.length > 0 ? "warning" : "neutral"}>
+                {opData?.abonnements_en_attente.length ?? "…"}
+              </Badge>
+            </span>
+          </div>
+          {opLoading ? (
+            <div className="space-y-2"><Skeleton className="h-10 w-full rounded" /><Skeleton className="h-10 w-full rounded" /></div>
+          ) : !opData || opData.abonnements_en_attente.length === 0 ? (
+            <div className="flex items-center gap-2 text-sm text-emerald-600 py-2">
+              <CheckCircle className="w-4 h-4" /><span>Tout est traité</span>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-1.5 max-h-44 overflow-y-auto">
+                {opData.abonnements_en_attente.map((a) => (
+                  <div key={a.id} className="p-2 rounded-lg bg-amber-50 border border-amber-100 text-xs">
+                    <p className="font-medium text-gray-900">{a.user_prenom} {a.user_nom}</p>
+                    <p className="text-gray-500">{a.abonnement_nom || "Abonnement"}</p>
+                  </div>
+                ))}
+              </div>
+              <Link to="/app/admin/abonnements" className="mt-2 block text-xs text-amber-600 hover:underline">
+                Gérer les souscriptions →
+              </Link>
+            </>
+          )}
         </Card>
-      </motion.div>
+
+        {/* Domiciliations expirantes */}
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <XCircle className="w-4 h-4 text-red-400" />
+            <h3 className="text-sm font-semibold text-gray-900">Domiciliations expirantes</h3>
+            <span className="ml-auto">
+              <Badge variant={opData && opData.domiciliations_expirantes.length > 0 ? "danger" : "neutral"}>
+                {opData?.domiciliations_expirantes.length ?? "…"}
+              </Badge>
+            </span>
+          </div>
+          {opLoading ? (
+            <div className="space-y-2"><Skeleton className="h-10 w-full rounded" /><Skeleton className="h-10 w-full rounded" /></div>
+          ) : !opData || opData.domiciliations_expirantes.length === 0 ? (
+            <div className="flex items-center gap-2 text-sm text-emerald-600 py-2">
+              <CheckCircle className="w-4 h-4" /><span>Aucune dans les 30 jours</span>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-1.5 max-h-44 overflow-y-auto">
+                {opData.domiciliations_expirantes.map((d) => (
+                  <div key={d.id} className="p-2 rounded-lg bg-red-50 border border-red-100 text-xs">
+                    <p className="font-medium text-gray-900 truncate">{d.raison_sociale || "—"}</p>
+                    <p className="text-gray-500">Expire le {formatDate(d.date_fin)}</p>
+                  </div>
+                ))}
+              </div>
+              <Link to="/app/admin/domiciliations" className="mt-2 block text-xs text-red-600 hover:underline">
+                Gérer les domiciliations →
+              </Link>
+            </>
+          )}
+        </Card>
+
+        {/* Courriers non traités */}
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Mail className="w-4 h-4 text-blue-400" />
+            <h3 className="text-sm font-semibold text-gray-900">Courriers non traités</h3>
+            <span className="ml-auto">
+              <Badge variant={opData && opData.courriers_non_traites.length > 0 ? "info" : "neutral"}>
+                {opData?.courriers_non_traites.length ?? "…"}
+              </Badge>
+            </span>
+          </div>
+          {opLoading ? (
+            <div className="space-y-2"><Skeleton className="h-10 w-full rounded" /><Skeleton className="h-10 w-full rounded" /></div>
+          ) : !opData || opData.courriers_non_traites.length === 0 ? (
+            <div className="flex items-center gap-2 text-sm text-emerald-600 py-2">
+              <CheckCircle className="w-4 h-4" /><span>Aucun courrier en attente</span>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-1.5 max-h-44 overflow-y-auto">
+                {opData.courriers_non_traites.map((c) => (
+                  <div key={c.id} className="p-2 rounded-lg bg-blue-50 border border-blue-100 text-xs">
+                    <p className="font-medium text-gray-900 truncate">{c.raison_sociale || c.expediteur || "—"}</p>
+                    <p className="text-gray-500">{c.type} — {formatDate(c.date_reception)}</p>
+                  </div>
+                ))}
+              </div>
+              <Link to="/app/admin/courrier" className="mt-2 block text-xs text-blue-600 hover:underline">
+                Gérer le courrier →
+              </Link>
+            </>
+          )}
+        </Card>
+      </div>
+
+      {/* Lien vers Rapports */}
+      <Card className="p-4 flex items-center gap-4 bg-gray-50 border-dashed">
+        <TrendingUp className="w-5 h-5 text-gray-400 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-700">Analyses & KPIs mensuels</p>
+          <p className="text-xs text-gray-500">Revenus, taux d'occupation, top clients et tendances dans les Rapports</p>
+        </div>
+        <Link to="/app/admin/reports">
+          <Button variant="outline" size="sm" className="gap-1.5 shrink-0">
+            Voir les rapports <ArrowUpRight className="w-3.5 h-3.5" />
+          </Button>
+        </Link>
+      </Card>
     </div>
   );
 };
+
+// ─── User Dashboard ───────────────────────────────────────────────────────────
 
 const UserDashboard = () => {
   const { user } = useAuthStore();
@@ -546,7 +769,7 @@ const UserDashboard = () => {
     );
   }
 
-  const userReservations = reservations.filter((r) => r.userId === user.id);
+  const userReservations = reservations.filter((r) => r.personId === user.id || r.userId === user.id);
   const upcomingReservations = userReservations.filter(
     (r) => new Date(r.dateDebut) > new Date() && r.statut !== "annulee",
   ).sort((a, b) => new Date(a.dateDebut).getTime() - new Date(b.dateDebut).getTime());
@@ -566,7 +789,7 @@ const UserDashboard = () => {
     : null;
 
   const activeSubscription = abonnementsUtilisateurs.find(
-    (s) => s.userId === user.id && s.statut === "actif"
+    (s) => (s.personId === user.id || s.userId === user.id) && s.statut === "actif"
   );
 
   const subscriptionAlert = (() => {
@@ -646,7 +869,7 @@ const UserDashboard = () => {
                 <p className="text-white/80 text-sm">{getHour(nextReservation.dateDebut)} — {getHour(nextReservation.dateFin)}</p>
               </div>
               <div className="text-right flex-shrink-0">
-                <span className={`text-xs font-semibold px-3 py-1 rounded-full ${nextReservation.statut === "confirmee" ? "bg-white/20 text-white" : "bg-white/30 text-white"}`}>
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-white/20 text-white">
                   {nextReservation.statut === "confirmee" ? "Confirmée" : "En attente"}
                 </span>
                 {nextReservation.montantTotal > 0 && (
@@ -752,21 +975,14 @@ const UserDashboard = () => {
         </motion.div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <Link to="/app/reservations">
-          <Card
-            hover
-            className="p-4 sm:p-6 border-2 border-transparent hover:border-amber-500 group transition-all"
-          >
+          <Card hover className="p-4 sm:p-6 border-2 border-transparent hover:border-amber-500 group transition-all">
             <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform shadow-lg">
               <Plus className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
-            <h3 className="font-bold text-gray-900 mb-1 sm:mb-2 text-sm sm:text-lg">
-              Nouvelle Réservation
-            </h3>
-            <p className="text-gray-600 text-xs sm:text-sm mb-2 sm:mb-3">
-              Réserver un espace
-            </p>
+            <h3 className="font-bold text-gray-900 mb-1 sm:mb-2 text-sm sm:text-lg">Nouvelle Réservation</h3>
+            <p className="text-gray-600 text-xs sm:text-sm mb-2 sm:mb-3">Réserver un espace</p>
             <div className="flex items-center text-amber-600 text-xs sm:text-sm font-semibold">
               Commencer <ArrowUpRight className="w-4 h-4 ml-1" />
             </div>
@@ -774,19 +990,12 @@ const UserDashboard = () => {
         </Link>
 
         <Link to="/app/mon-espace">
-          <Card
-            hover
-            className="p-4 sm:p-6 border-2 border-transparent hover:border-teal-500 group transition-all"
-          >
+          <Card hover className="p-4 sm:p-6 border-2 border-transparent hover:border-teal-500 group transition-all">
             <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform shadow-lg">
               <Building className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
-            <h3 className="font-bold text-gray-900 mb-1 sm:mb-2 text-sm sm:text-lg">
-              Mon Espace Pro
-            </h3>
-            <p className="text-gray-600 text-xs sm:text-sm mb-2 sm:mb-3">
-              Domiciliation & Entreprise
-            </p>
+            <h3 className="font-bold text-gray-900 mb-1 sm:mb-2 text-sm sm:text-lg">Mon Espace Pro</h3>
+            <p className="text-gray-600 text-xs sm:text-sm mb-2 sm:mb-3">Domiciliation & Entreprise</p>
             <div className="flex items-center text-teal-600 text-xs sm:text-sm font-semibold">
               Accéder <ArrowUpRight className="w-4 h-4 ml-1" />
             </div>
@@ -794,37 +1003,25 @@ const UserDashboard = () => {
         </Link>
 
         <Link to="/app/profil">
-          <Card
-            hover
-            className="p-4 sm:p-6 border-2 border-transparent hover:border-emerald-500 group transition-all"
-          >
+          <Card hover className="p-4 sm:p-6 border-2 border-transparent hover:border-emerald-500 group transition-all">
             <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform shadow-lg">
               <Users className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
-            <h3 className="font-bold text-gray-900 mb-1 sm:mb-2 text-sm sm:text-lg">
-              Mon Profil
-            </h3>
+            <h3 className="font-bold text-gray-900 mb-1 sm:mb-2 text-sm sm:text-lg">Mon Profil</h3>
             <p className="text-gray-600 text-xs sm:text-sm mb-2 sm:mb-3">Gérer mes informations</p>
             <div className="flex items-center text-emerald-600 text-xs sm:text-sm font-semibold">
               Modifier <ArrowUpRight className="w-4 h-4 ml-1" />
             </div>
           </Card>
         </Link>
-
       </div>
 
       <Card className="p-4 sm:p-6">
-        <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
-          Mes Réservations Récentes
-        </h3>
-
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">Mes Réservations Récentes</h3>
         {upcomingReservations.length > 0 ? (
           <div className="space-y-3 sm:space-y-4">
             {upcomingReservations.slice(0, 3).map((reservation) => (
-              <div
-                key={reservation.id}
-                className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg"
-              >
+              <div key={reservation.id} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <MapPin className="w-5 h-5 text-gray-400 hidden sm:block" />
                   <div>
@@ -832,19 +1029,12 @@ const UserDashboard = () => {
                       {reservation.espace?.nom || "Espace"}
                     </p>
                     <p className="text-xs sm:text-sm text-gray-600">
-                      {formatDate(reservation.dateDebut)} à{" "}
-                      {formatTime(reservation.dateDebut)}
+                      {formatDate(reservation.dateDebut)} à {formatTime(reservation.dateDebut)}
                     </p>
                   </div>
                 </div>
-                <Badge
-                  variant={
-                    reservation.statut === "confirmee" ? "success" : "warning"
-                  }
-                >
-                  {reservation.statut === "confirmee"
-                    ? "Confirmée"
-                    : "En attente"}
+                <Badge variant={reservation.statut === "confirmee" ? "success" : "warning"}>
+                  {reservation.statut === "confirmee" ? "Confirmée" : "En attente"}
                 </Badge>
               </div>
             ))}
@@ -865,6 +1055,8 @@ const UserDashboard = () => {
     </div>
   );
 };
+
+// ─── Root entry ───────────────────────────────────────────────────────────────
 
 const DashboardHome = () => {
   const { user } = useAuthStore();
@@ -907,9 +1099,7 @@ const DashboardHome = () => {
   if (!user) {
     return (
       <div className="text-center py-20">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          Erreur d'authentification
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Erreur d'authentification</h2>
         <p className="text-gray-600">Veuillez vous reconnecter</p>
       </div>
     );

@@ -111,7 +111,7 @@ export default function ContactDetail() {
         </div>
 
         <div className="flex gap-2">
-          {!contact.userId && (
+          {!contact.personId && (
             <Button
               variant="outline"
               onClick={() => setShowCreateUserModal(true)}
@@ -367,7 +367,7 @@ export default function ContactDetail() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate(`/app/admin/users/${contact.userId}`)}
+                onClick={() => navigate(`/app/admin/users/${contact.personId}`)}
                 className="mt-4 w-full"
               >
                 Voir le profil utilisateur

@@ -24,7 +24,7 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Deploy to cPanel via FTP
+      - name: Deploy frontend (dist) to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -32,5 +32,18 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
           server-dir: ./public_html/
-          # Cette option évite de tout supprimer sur le serveur, il ne fait que mettre à jour
           dangerous-clean-slate: false
+
+      - name: Deploy API (PHP) to cPanel via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./api/
+          server-dir: ./public_html/api/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.cache/**
+            **/uploads/**
+            **/.htaccess.backup

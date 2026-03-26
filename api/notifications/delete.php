@@ -22,21 +22,16 @@ try {
     $database = Database::getInstance();
     $db = $database->getConnection();
 
-    $query = "SELECT id FROM notifications WHERE id = :id AND user_id = :user_id";
+    $query = "DELETE FROM notifications WHERE id = :id AND person_id = :person_id";
     $stmt = $db->prepare($query);
     $stmt->execute([
-        ':id' => $data->id,
-        ':user_id' => $auth['id']
+        ':id'        => $data->id,
+        ':person_id' => $auth['id']
     ]);
 
     if ($stmt->rowCount() === 0) {
         Response::error("Notification non trouvée", 404);
     }
-
-    $query = "DELETE FROM notifications WHERE id = :id";
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':id', $data->id);
-    $stmt->execute();
 
     Response::success(null, "Notification supprimée");
 

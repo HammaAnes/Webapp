@@ -18,20 +18,18 @@ try {
         $id = $_GET['id'];
 
         if ($auth['role'] === 'admin') {
-            $query = "SELECT d.*, u.email, u.nom, u.prenom,
-                             c.nom AS contact_nom, c.prenom AS contact_prenom, c.email AS contact_email, c.telephone AS contact_telephone
+            $query = "SELECT d.*, p.email, p.nom, p.prenom, p.telephone
                       FROM domiciliations d
-                      LEFT JOIN users u ON d.user_id = u.id
-                      LEFT JOIN contacts c ON d.contact_id = c.id
+                      LEFT JOIN persons p ON d.person_id = p.id
                       WHERE d.id = :id";
         } else {
-            $query = "SELECT * FROM domiciliations WHERE id = :id AND user_id = :user_id";
+            $query = "SELECT * FROM domiciliations WHERE id = :id AND person_id = :person_id";
         }
 
         $stmt = $db->prepare($query);
         $stmt->bindParam(':id', $id);
         if ($auth['role'] !== 'admin') {
-            $stmt->bindParam(':user_id', $auth['id']);
+            $stmt->bindParam(':person_id', $auth['id']);
         }
         $stmt->execute();
         $domiciliation = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -71,17 +69,15 @@ try {
         $stmt->execute($params);
         $totalCount = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-        $query = "SELECT d.*, u.email, u.nom, u.prenom,
-                         c.nom AS contact_nom, c.prenom AS contact_prenom, c.email AS contact_email, c.telephone AS contact_telephone
+        $query = "SELECT d.*, p.email, p.nom, p.prenom, p.telephone
                   FROM domiciliations d
-                  LEFT JOIN users u ON d.user_id = u.id
-                  LEFT JOIN contacts c ON d.contact_id = c.id";
+                  LEFT JOIN persons p ON d.person_id = p.id";
 
         if (!empty($whereConditions)) {
             $query .= " WHERE " . implode(" AND ", $whereConditions);
         }
 
-        $query .= " ORDER BY d.created_at DESC LIMIT :limit OFFSET :offset";
+        $query .= " ORDER BY d.date_debut_contrat DESC, d.created_at DESC LIMIT :limit OFFSET :offset";
 
         $stmt = $db->prepare($query);
         foreach ($params as $key => $value) {
@@ -91,8 +87,8 @@ try {
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     } else {
         // Requête de comptage pour user
-        $countQuery = "SELECT COUNT(*) as total FROM domiciliations WHERE user_id = :user_id";
-        $params = [':user_id' => $auth['id']];
+        $countQuery = "SELECT COUNT(*) as total FROM domiciliations WHERE person_id = :person_id";
+        $params = [':person_id' => $auth['id']];
 
         if ($statut) {
             $countQuery .= " AND statut = :statut";
@@ -104,13 +100,13 @@ try {
         $totalCount = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
         // Requête des données
-        $query = "SELECT * FROM domiciliations WHERE user_id = :user_id";
+        $query = "SELECT * FROM domiciliations WHERE person_id = :person_id";
 
         if ($statut) {
             $query .= " AND statut = :statut";
         }
 
-        $query .= " ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
+        $query .= " ORDER BY date_debut_contrat DESC, created_at DESC LIMIT :limit OFFSET :offset";
 
         $stmt = $db->prepare($query);
         foreach ($params as $key => $value) {

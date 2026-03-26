@@ -33,7 +33,7 @@ try {
                 u.email, u.prenom, u.nom,
                 a.nom AS plan_nom, a.prix AS prix_mensuel
             FROM abonnements_utilisateurs ua
-            INNER JOIN users u ON ua.user_id = u.id
+            INNER JOIN persons u ON ua.person_id = u.id
             INNER JOIN abonnements a ON ua.abonnement_id = a.id
             WHERE ua.statut = 'actif'
               AND DATE(ua.date_fin) = ?
@@ -61,7 +61,7 @@ try {
                         'date_fin'     => date('d/m/Y', strtotime($ab['date_fin'])),
                         'jours_restants' => $window['days'],
                     ],
-                    $ab['user_id'],
+                    $ab['person_id'],
                     2
                 );
 

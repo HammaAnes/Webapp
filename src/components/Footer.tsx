@@ -142,7 +142,7 @@ const Footer = () => {
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
           <p className="text-gray-400 text-sm">
-            &copy; {new Date().getFullYear()} Coffice. Tous droits r\u00e9serv\u00e9s.
+            &copy; {new Date().getFullYear()} Coffice. Tous droits réservés.
           </p>
         </div>
       </div>

@@ -11,14 +11,14 @@ interface Props {
 }
 
 const ReservationDeleteModal: React.FC<Props> = ({ isOpen, onClose, onConfirm, loading }) => (
-  <Modal isOpen={isOpen} onClose={onClose} title="Supprimer la réservation" size="sm">
+  <Modal isOpen={isOpen} onClose={onClose} title="Supprimer la location" size="sm">
     <div className="space-y-5">
       <div className="flex items-start gap-4">
         <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
           <AlertCircle className="w-6 h-6 text-red-600" />
         </div>
         <p className="text-sm text-gray-600 mt-2">
-          Cette action est irréversible. La réservation sera définitivement supprimée.
+          Cette action est irréversible. La location sera définitivement supprimée.
         </p>
       </div>
       <div className="flex gap-3">

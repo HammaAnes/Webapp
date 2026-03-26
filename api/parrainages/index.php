@@ -2,7 +2,7 @@
 
 /**
  * API: Liste des parrainages
- * GET /api/parrainages/index.php?user_id=xxx
+ * GET /api/parrainages/index.php?person_id=xxx
  */
 
 require_once '../config/cors.php';
@@ -13,7 +13,7 @@ require_once '../utils/Pagination.php';
 
 try {
     $auth = Auth::verifyAuth();
-    $userId = $_GET['user_id'] ?? null;
+    $userId = $_GET['person_id'] ?? $_GET['user_id'] ?? null;
 
     $database = Database::getInstance();
     $db = $database->getConnection();
@@ -48,9 +48,9 @@ try {
                          up.nom AS parrain_nom, up.prenom AS parrain_prenom, up.email AS parrain_email,
                          p.parrain_id AS parrain_id, p.code_parrain
                   FROM parrainages_details pd
-                  LEFT JOIN users uf ON pd.filleul_id = uf.id
+                  LEFT JOIN persons uf ON pd.filleul_id = uf.id
                   LEFT JOIN parrainages p ON pd.parrainage_id = p.id
-                  LEFT JOIN users up ON p.parrain_id = up.id"
+                  LEFT JOIN persons up ON p.parrain_id = up.id"
                   . $whereClause
                   . " ORDER BY pd.date_inscription DESC LIMIT :limit OFFSET :offset";
 
@@ -89,7 +89,7 @@ try {
         // Données avec détails des filleuls
         $query = "SELECT pd.*, u.nom, u.prenom, u.email, u.created_at as date_inscription_filleul
                   FROM parrainages_details pd
-                  LEFT JOIN users u ON pd.filleul_id = u.id
+                  LEFT JOIN persons u ON pd.filleul_id = u.id
                   WHERE pd.parrainage_id = (
                     SELECT id FROM parrainages WHERE parrain_id = :parrain_id LIMIT 1
                   )";

@@ -14,6 +14,14 @@ const numberFormatter = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 0,
 });
 
+export function toLocalISOString(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  );
+}
+
 function toDate(date: Date | string | null | undefined): Date | null {
   if (!date) return null;
   if (date instanceof Date) return isNaN(date.getTime()) ? null : date;

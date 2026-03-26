@@ -24,8 +24,21 @@ try {
     $params = [];
 
     if ($authUser['role'] !== 'admin') {
-        $query .= ' AND user_id = ?';
-        $params[] = $authUser['id'];
+        // Pour une domiciliation spécifique : vérifier la propriété, puis retourner
+        // TOUS les documents de cette entité (y compris ceux uploadés par l'admin)
+        if ($entityType === 'domiciliation' && $entityId) {
+            $checkStmt = $db->prepare('SELECT id FROM domiciliations WHERE id = ? AND person_id = ?');
+            $checkStmt->execute([$entityId, $authUser['id']]);
+            if (!$checkStmt->fetch()) {
+                Response::error('Accès non autorisé', 403);
+                exit;
+            }
+            // Pas de filtre user_id : on veut tous les docs de cette domiciliation
+        } else {
+            // Cas générique : uniquement les documents de l'utilisateur
+            $query .= ' AND user_id = ?';
+            $params[] = $authUser['id'];
+        }
     }
 
     if ($entityType) {
@@ -42,7 +55,7 @@ try {
         $params[] = $entityId;
     }
 
-    $query .= ' ORDER BY uploaded_at DESC';
+    $query .= ' ORDER BY created_at DESC';
 
     $stmt = $db->prepare($query);
     $stmt->execute($params);

@@ -52,9 +52,9 @@ try {
 
     $stmt = $db->prepare('
         SELECT pr.id, pr.user_id, pr.email, pr.expires_at, pr.used_at,
-               u.id as user_exists, u.statut
+               p.id as user_exists, p.statut
         FROM password_resets pr
-        INNER JOIN users u ON pr.user_id = u.id
+        INNER JOIN persons p ON pr.user_id = p.id
         WHERE pr.token = ?
         LIMIT 1
     ');
@@ -84,10 +84,10 @@ try {
     $db->beginTransaction();
 
     try {
-        $passwordHash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 10]);
+        $passwordHash = Auth::hashPassword($password);
 
         $updateUserStmt = $db->prepare('
-            UPDATE users
+            UPDATE persons
             SET password_hash = ?,
                 updated_at = NOW()
             WHERE id = ?

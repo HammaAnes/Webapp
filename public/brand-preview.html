@@ -1,0 +1,1864 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coffice — Charte Graphique 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ════════════════════════════════════════════
+       COFFICE — CHARTE GRAPHIQUE 2026
+       Tokens & Variables
+    ════════════════════════════════════════════ */
+    :root {
+      /* Couleurs principales */
+      --navy:      #0B1629;   /* Bleu nuit profond — primaire */
+      --navy-800:  #162035;
+      --navy-700:  #1E2D47;
+      --gold:      #C4913A;   /* Or Atlas — accent premium */
+      --gold-light:#E5B96A;
+      --gold-pale: #FBF4E9;
+      --sky:       #0EA5E9;   /* Bleu ciel — secondaire */
+      --sky-light: #E0F2FE;
+      --cream:     #FAF7F2;   /* Blanc chaud — fond */
+      --sand:      #EDE5D8;   /* Sable — séparateurs */
+      --stone:     #9C8F80;   /* Pierre — texte secondaire */
+      --charcoal:  #1C2B3A;   /* Charbon — texte corps */
+      --white:     #FFFFFF;
+
+      /* Typographie */
+      --font-display: 'Playfair Display', Georgia, serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+
+      /* Rayons */
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-xl: 32px;
+
+      /* Ombres */
+      --shadow-sm: 0 1px 4px rgba(11,22,41,0.06);
+      --shadow-md: 0 4px 20px rgba(11,22,41,0.10);
+      --shadow-lg: 0 12px 48px rgba(11,22,41,0.14);
+      --shadow-gold: 0 8px 32px rgba(196,145,58,0.25);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--cream);
+      color: var(--charcoal);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── Navigation ── */
+    .brand-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--navy);
+      padding: 0 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .brand-nav .nav-logo {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.3px;
+    }
+    .brand-nav .nav-logo span { color: var(--gold); }
+    .brand-nav nav { display: flex; gap: 32px; }
+    .brand-nav nav a {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.55);
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: color 0.2s;
+    }
+    .brand-nav nav a:hover { color: var(--gold); }
+    .brand-badge {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gold);
+      background: rgba(196,145,58,0.12);
+      border: 1px solid rgba(196,145,58,0.25);
+      padding: 4px 12px;
+      border-radius: 99px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Section structure ── */
+    section { padding: 96px 48px; }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4vw, 52px);
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .section-subtitle {
+      font-size: 17px;
+      color: var(--stone);
+      max-width: 560px;
+      line-height: 1.7;
+    }
+    .max-w { max-width: 1200px; margin: 0 auto; }
+
+    /* ════════════════════════════════════════════
+       1. HERO — Simulation vraie landing page
+    ════════════════════════════════════════════ */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+      padding: 0;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('/espace-coworking.jpeg');
+      background-size: cover;
+      background-position: center 30%;
+      filter: brightness(0.4);
+      transform: scale(1.02);
+    }
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(11,22,41,0.96) 0%,
+        rgba(11,22,41,0.80) 50%,
+        rgba(196,145,58,0.25) 100%
+      );
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+      padding: 120px 80px;
+    }
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 32px;
+    }
+    .hero-eyebrow::before {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: var(--gold);
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(48px, 6vw, 80px);
+      font-weight: 900;
+      color: var(--white);
+      line-height: 1.05;
+      margin-bottom: 28px;
+      letter-spacing: -1.5px;
+    }
+    .hero-title em {
+      font-style: italic;
+      color: var(--gold);
+    }
+    .hero-desc {
+      font-size: 19px;
+      color: rgba(255,255,255,0.70);
+      line-height: 1.7;
+      max-width: 540px;
+      margin-bottom: 48px;
+    }
+    .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--gold);
+      color: var(--navy);
+      font-size: 15px;
+      font-weight: 700;
+      padding: 16px 32px;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      letter-spacing: -0.2px;
+      transition: all 0.25s;
+    }
+    .btn-primary:hover {
+      background: var(--gold-light);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-gold);
+    }
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      color: var(--white);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 16px 32px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid rgba(255,255,255,0.30);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.25s;
+    }
+    .btn-outline:hover {
+      border-color: rgba(255,255,255,0.70);
+      background: rgba(255,255,255,0.06);
+    }
+    .hero-stats {
+      position: absolute;
+      bottom: 48px;
+      left: 80px;
+      right: 80px;
+      z-index: 2;
+      display: flex;
+      gap: 48px;
+      border-top: 1px solid rgba(255,255,255,0.10);
+      padding-top: 32px;
+    }
+    .hero-stat { display: flex; flex-direction: column; }
+    .hero-stat strong {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1;
+    }
+    .hero-stat span {
+      font-size: 13px;
+      color: rgba(255,255,255,0.50);
+      margin-top: 4px;
+    }
+    /* Scroll indicator */
+    .scroll-indicator {
+      position: absolute;
+      right: 80px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      writing-mode: vertical-lr;
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.35);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .scroll-line {
+      width: 1px;
+      height: 60px;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.35), transparent);
+      margin-bottom: 4px;
+    }
+
+    /* ════════════════════════════════════════════
+       2. SECTION — Charte en cours
+    ════════════════════════════════════════════ */
+    .chapter-header {
+      background: var(--navy);
+      padding: 64px 80px;
+      color: rgba(255,255,255,0.40);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .chapter-header span {
+      font-family: var(--font-display);
+      font-size: 48px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.06);
+      line-height: 1;
+    }
+
+    /* ════════════════════════════════════════════
+       3. COULEURS
+    ════════════════════════════════════════════ */
+    .colors-section { background: var(--white); }
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+    }
+    .color-swatch {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .swatch-block {
+      height: 120px;
+      display: flex;
+      align-items: flex-end;
+      padding: 16px;
+    }
+    .swatch-hex {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(4px);
+      color: inherit;
+    }
+    .swatch-info {
+      padding: 16px;
+      background: var(--cream);
+    }
+    .swatch-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--navy);
+      margin-bottom: 2px;
+    }
+    .swatch-role {
+      font-size: 12px;
+      color: var(--stone);
+    }
+    /* Swatch couleurs individuelles */
+    .sw-navy { background-color: #0B1629; color: #fff; }
+    .sw-gold { background-color: #C4913A; color: #fff; }
+    .sw-sky { background-color: #0EA5E9; color: #fff; }
+    .sw-cream { background-color: #FAF7F2; color: #1C2B3A; border: 1px solid #EDE5D8; }
+    .sw-sand { background-color: #EDE5D8; color: #1C2B3A; }
+    .sw-stone { background-color: #9C8F80; color: #fff; }
+    .sw-charcoal { background-color: #1C2B3A; color: #fff; }
+    .sw-gold-light { background-color: #E5B96A; color: #0B1629; }
+
+    /* Palette secondaire */
+    .color-story {
+      margin-top: 64px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+    .color-story-card {
+      padding: 40px;
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .cs-dark { background: var(--navy); color: var(--white); }
+    .cs-warm { background: var(--gold-pale); color: var(--navy); }
+    .cs-title {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .cs-text { font-size: 14px; opacity: 0.65; line-height: 1.7; }
+    .cs-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+    }
+
+    /* ════════════════════════════════════════════
+       4. TYPOGRAPHIE
+    ════════════════════════════════════════════ */
+    .typo-section { background: var(--cream); }
+    .typo-showcase {
+      margin-top: 56px;
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+    }
+    .typo-row {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 32px;
+      align-items: start;
+      padding-bottom: 48px;
+      border-bottom: 1px solid var(--sand);
+    }
+    .typo-meta { padding-top: 8px; }
+    .typo-meta-name {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+    .typo-meta-desc { font-size: 13px; color: var(--stone); line-height: 1.6; }
+    .typo-d1 {
+      font-family: var(--font-display);
+      font-size: 72px;
+      font-weight: 900;
+      color: var(--navy);
+      letter-spacing: -2px;
+      line-height: 1;
+    }
+    .typo-d2 {
+      font-family: var(--font-display);
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: -1px;
+      line-height: 1.1;
+    }
+    .typo-d2 em { color: var(--gold); font-style: italic; }
+    .typo-h1 {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: -0.5px;
+    }
+    .typo-h2 {
+      font-family: var(--font-body);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--charcoal);
+      letter-spacing: -0.3px;
+    }
+    .typo-body {
+      font-family: var(--font-body);
+      font-size: 16px;
+      color: var(--charcoal);
+      line-height: 1.75;
+      max-width: 600px;
+    }
+    .typo-caption {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--stone);
+      font-weight: 500;
+    }
+    .typo-label {
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gold);
+    }
+
+    /* Font pairing demo */
+    .font-pair-demo {
+      margin-top: 64px;
+      background: var(--navy);
+      border-radius: var(--radius-xl);
+      padding: 64px;
+      color: var(--white);
+    }
+    .font-pair-demo p.tag {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gold);
+      margin-bottom: 24px;
+    }
+    .font-pair-demo h2 {
+      font-family: var(--font-display);
+      font-size: 52px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1.5px;
+      margin-bottom: 20px;
+    }
+    .font-pair-demo h2 em { font-style: italic; color: var(--gold); }
+    .font-pair-demo p.body-text {
+      font-family: var(--font-body);
+      font-size: 17px;
+      color: rgba(255,255,255,0.65);
+      max-width: 560px;
+      line-height: 1.75;
+    }
+
+    /* ════════════════════════════════════════════
+       5. LOGO
+    ════════════════════════════════════════════ */
+    .logo-section { background: var(--white); }
+    .logo-grid {
+      margin-top: 56px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .logo-card {
+      border-radius: var(--radius-lg);
+      padding: 48px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-card-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      opacity: 0.4;
+      margin-top: 16px;
+    }
+    .lc-cream { background: var(--cream); border: 1px solid var(--sand); }
+    .lc-dark { background: var(--navy); }
+    .lc-dark .logo-card-label { color: #fff; }
+    .lc-gold { background: var(--gold); }
+    .lc-gold .logo-card-label { color: var(--navy); }
+    .logo-wordmark {
+      font-family: var(--font-display);
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+    .logo-wordmark .dot { color: var(--gold); }
+    .lc-dark .logo-wordmark { color: var(--white); }
+    .lc-dark .logo-wordmark .dot { color: var(--gold); }
+    .lc-gold .logo-wordmark { color: var(--navy); }
+    .lc-gold .logo-wordmark .dot { color: var(--white); }
+    .logo-tagline {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--stone);
+    }
+    .lc-dark .logo-tagline { color: rgba(255,255,255,0.40); }
+    .lc-gold .logo-tagline { color: rgba(11,22,41,0.50); }
+
+    /* Règles d'usage */
+    .logo-rules {
+      margin-top: 48px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+    .logo-rule {
+      padding: 28px 32px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--sand);
+      background: var(--cream);
+    }
+    .logo-rule-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .rule-ok { color: #059669; }
+    .rule-no { color: #e11d48; }
+    .logo-rule p { font-size: 13px; color: var(--stone); line-height: 1.6; }
+
+    /* ════════════════════════════════════════════
+       6. COMPOSANTS UI
+    ════════════════════════════════════════════ */
+    .ui-section { background: var(--cream); }
+    .ui-grid { display: flex; flex-direction: column; gap: 64px; margin-top: 56px; }
+
+    /* Boutons */
+    .ui-group-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--stone);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .ui-group-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--sand);
+    }
+    .button-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+
+    .btn { display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer; font-family: var(--font-body); font-weight: 600; border-radius: var(--radius-sm); transition: all 0.2s; text-decoration: none; }
+    .btn-lg { font-size: 15px; padding: 16px 32px; }
+    .btn-md { font-size: 14px; padding: 12px 24px; }
+    .btn-sm { font-size: 13px; padding: 9px 18px; }
+
+    .btn-gold { background: var(--gold); color: var(--navy); }
+    .btn-gold:hover { background: var(--gold-light); transform: translateY(-1px); box-shadow: var(--shadow-gold); }
+    .btn-navy { background: var(--navy); color: var(--white); }
+    .btn-navy:hover { background: var(--navy-800); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .btn-ghost-navy { background: transparent; color: var(--navy); border: 1.5px solid var(--navy); }
+    .btn-ghost-navy:hover { background: var(--navy); color: var(--white); }
+    .btn-ghost-gold { background: transparent; color: var(--gold); border: 1.5px solid var(--gold); }
+    .btn-ghost-gold:hover { background: var(--gold-pale); }
+    .btn-text { background: transparent; color: var(--gold); padding-left: 0; padding-right: 0; }
+    .btn-text:hover { opacity: 0.75; }
+    .btn-sky { background: var(--sky); color: var(--white); }
+    .btn-sky:hover { filter: brightness(1.1); }
+    .btn-danger { background: #e11d48; color: #fff; }
+    .btn-danger:hover { background: #be123c; }
+
+    /* Badges */
+    .badge-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 600;
+      padding: 4px 12px; border-radius: 99px;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .badge-gold { background: rgba(196,145,58,0.12); color: #A07028; border: 1px solid rgba(196,145,58,0.25); }
+    .badge-gold .badge-dot { background: var(--gold); }
+    .badge-navy { background: rgba(11,22,41,0.08); color: var(--navy); border: 1px solid rgba(11,22,41,0.12); }
+    .badge-navy .badge-dot { background: var(--navy); }
+    .badge-green { background: rgba(5,150,105,0.10); color: #065f46; border: 1px solid rgba(5,150,105,0.20); }
+    .badge-green .badge-dot { background: #059669; }
+    .badge-red { background: rgba(225,29,72,0.10); color: #9f1239; border: 1px solid rgba(225,29,72,0.20); }
+    .badge-red .badge-dot { background: #e11d48; }
+    .badge-sky { background: rgba(14,165,233,0.10); color: #0369a1; border: 1px solid rgba(14,165,233,0.20); }
+    .badge-sky .badge-dot { background: var(--sky); }
+    .badge-stone { background: rgba(156,143,128,0.12); color: #6b7280; border: 1px solid rgba(156,143,128,0.20); }
+
+    /* Cards */
+    .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .card {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--white);
+      box-shadow: var(--shadow-md);
+      transition: all 0.3s;
+    }
+    .card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+    .card-img {
+      width: 100%; height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .card-img-placeholder {
+      width: 100%; height: 200px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px;
+    }
+    .cp-navy { background: var(--navy); }
+    .cp-gold { background: linear-gradient(135deg, var(--gold) 0%, #e5b96a 100%); }
+    .cp-sky { background: linear-gradient(135deg, #0369a1 0%, var(--sky) 100%); }
+    .card-body { padding: 28px; }
+    .card-eyebrow {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      color: var(--gold); margin-bottom: 10px;
+    }
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 22px; font-weight: 700;
+      color: var(--navy); margin-bottom: 10px;
+    }
+    .card-text { font-size: 14px; color: var(--stone); line-height: 1.65; margin-bottom: 24px; }
+    .card-footer {
+      padding: 0 28px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-price {
+      font-family: var(--font-display);
+      font-size: 26px; font-weight: 700; color: var(--navy);
+    }
+    .card-price small {
+      font-family: var(--font-body);
+      font-size: 12px; font-weight: 500; color: var(--stone);
+    }
+
+    /* ════════════════════════════════════════════
+       7. PHOTOGRAPHIQUE — Style & Traitement
+    ════════════════════════════════════════════ */
+    .photo-section { background: var(--navy); padding: 96px 48px; }
+    .photo-section .section-title { color: var(--white); }
+    .photo-section .section-subtitle { color: rgba(255,255,255,0.5); }
+    .photo-grid {
+      margin-top: 56px;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      grid-template-rows: 280px 280px;
+      gap: 16px;
+    }
+    .photo-item {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      position: relative;
+    }
+    .photo-item img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.6s;
+    }
+    .photo-item:hover img { transform: scale(1.04); }
+    .photo-item.span-row { grid-row: span 2; }
+    .photo-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(11,22,41,0.65) 0%, transparent 60%);
+      display: flex;
+      align-items: flex-end;
+      padding: 24px;
+    }
+    .photo-caption {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+      letter-spacing: 0.3px;
+    }
+    .photo-caption span {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 4px;
+    }
+    .photo-treatment-note {
+      margin-top: 40px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+    .pt-note {
+      padding: 24px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+    }
+    .pt-note-icon { font-size: 24px; margin-bottom: 12px; }
+    .pt-note-title { font-size: 13px; font-weight: 700; color: var(--white); margin-bottom: 6px; }
+    .pt-note-text { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.6; }
+
+    /* ════════════════════════════════════════════
+       8. SIMULATION PAGE HERO COMPLÈTE
+    ════════════════════════════════════════════ */
+    .mockup-section { background: var(--cream); }
+    .mockup-frame {
+      margin-top: 56px;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--sand);
+    }
+
+    /* Navbar mockup */
+    .mock-nav {
+      background: rgba(11,22,41,0.96);
+      backdrop-filter: blur(12px);
+      padding: 0 56px;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .mock-nav-logo {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--white);
+      letter-spacing: -0.5px;
+    }
+    .mock-nav-logo span { color: var(--gold); }
+    .mock-nav-links { display: flex; gap: 32px; }
+    .mock-nav-links a {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.60);
+      text-decoration: none;
+    }
+    .mock-nav-links a.active { color: var(--white); }
+    .mock-nav-cta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .mock-nav-cta a {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.60);
+      text-decoration: none;
+    }
+
+    /* Mock hero */
+    .mock-hero {
+      position: relative;
+      height: 600px;
+      overflow: hidden;
+    }
+    .mock-hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('/booth-atlas.jpeg');
+      background-size: cover;
+      background-position: center;
+      filter: brightness(0.35);
+    }
+    .mock-hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        120deg,
+        rgba(11,22,41,0.95) 0%,
+        rgba(11,22,41,0.75) 55%,
+        rgba(196,145,58,0.20) 100%
+      );
+    }
+    .mock-hero-content {
+      position: relative;
+      z-index: 2;
+      padding: 80px 80px 64px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      justify-content: center;
+    }
+    .mock-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2.5px;
+      color: var(--gold);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .mock-eyebrow::before { content: ''; width: 28px; height: 1px; background: var(--gold); }
+    .mock-hero-title {
+      font-family: var(--font-display);
+      font-size: 64px;
+      font-weight: 900;
+      color: var(--white);
+      line-height: 1.0;
+      letter-spacing: -2px;
+      margin-bottom: 24px;
+      max-width: 600px;
+    }
+    .mock-hero-title em { color: var(--gold); font-style: italic; }
+    .mock-hero-desc {
+      font-size: 17px;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.7;
+      max-width: 480px;
+      margin-bottom: 40px;
+    }
+    .mock-actions { display: flex; gap: 14px; }
+    .mock-bottom-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0; right: 0;
+      z-index: 3;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 24px 80px;
+      display: flex;
+      gap: 56px;
+    }
+    .mock-stat strong {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--white);
+      display: block;
+      line-height: 1;
+    }
+    .mock-stat span {
+      font-size: 12px;
+      color: rgba(255,255,255,0.40);
+      margin-top: 4px;
+      display: block;
+    }
+    .mock-stat-divider {
+      width: 1px;
+      background: rgba(255,255,255,0.10);
+    }
+
+    /* Mock cards section */
+    .mock-cards {
+      background: var(--cream);
+      padding: 72px 56px;
+    }
+    .mock-section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .mock-section-title {
+      font-family: var(--font-display);
+      font-size: 40px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -1px;
+      margin-bottom: 48px;
+      line-height: 1.1;
+    }
+    .mock-card-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .mock-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(11,22,41,0.07);
+      transition: all 0.3s;
+    }
+    .mock-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+    .mock-card-img {
+      height: 200px;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+    .mock-card-img-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(11,22,41,0.50) 0%, transparent 60%);
+      display: flex;
+      align-items: flex-end;
+      padding: 20px;
+    }
+    .mock-card-img-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--gold);
+      color: var(--navy);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .mock-card-body { padding: 28px; }
+    .mock-card-eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--gold); margin-bottom: 8px; }
+    .mock-card-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--navy); margin-bottom: 10px; letter-spacing: -0.3px; }
+    .mock-card-desc { font-size: 13px; color: var(--stone); line-height: 1.65; margin-bottom: 20px; }
+    .mock-card-price {
+      display: flex; align-items: baseline; gap: 4px;
+      margin-bottom: 20px;
+    }
+    .mock-card-price strong { font-family: var(--font-display); font-size: 28px; font-weight: 800; color: var(--navy); }
+    .mock-card-price span { font-size: 13px; color: var(--stone); }
+    .mock-card-features { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-bottom: 24px; }
+    .mock-card-features li {
+      font-size: 13px; color: var(--charcoal);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .mock-card-features li::before {
+      content: '✓';
+      width: 18px; height: 18px;
+      background: rgba(5,150,105,0.10);
+      color: #059669;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* ════════════════════════════════════════════
+       9. VOIX DE MARQUE
+    ════════════════════════════════════════════ */
+    .voice-section { background: var(--white); }
+    .voice-grid {
+      margin-top: 56px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
+    }
+    .voice-card {
+      padding: 36px 40px;
+      border-radius: var(--radius-lg);
+      background: var(--cream);
+      border: 1px solid var(--sand);
+    }
+    .voice-icon { font-size: 32px; margin-bottom: 16px; }
+    .voice-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 8px;
+    }
+    .voice-desc { font-size: 14px; color: var(--stone); line-height: 1.7; margin-bottom: 20px; }
+    .voice-do-dont {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .vdd {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 13px; line-height: 1.5;
+    }
+    .vdd-tick { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+    .vdd-ok { color: var(--charcoal); }
+    .vdd-no { color: var(--stone); text-decoration: line-through; }
+
+    /* ════════════════════════════════════════════
+       10. TAGLINE PROPOSALS
+    ════════════════════════════════════════════ */
+    .tagline-section { background: var(--navy); }
+    .tagline-section .section-title { color: var(--white); }
+    .tagline-section .section-subtitle { color: rgba(255,255,255,0.50); }
+    .tagline-grid {
+      margin-top: 56px;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: rgba(255,255,255,0.06);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .tagline-item {
+      padding: 36px 48px;
+      background: rgba(11,22,41,0.95);
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      transition: background 0.2s;
+    }
+    .tagline-item:hover { background: var(--navy-800); }
+    .tagline-num {
+      font-family: var(--font-display);
+      font-size: 48px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.06);
+      min-width: 64px;
+      line-height: 1;
+    }
+    .tagline-content { flex: 1; }
+    .tagline-text {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+    .tagline-text em { color: var(--gold); font-style: italic; }
+    .tagline-note { font-size: 13px; color: rgba(255,255,255,0.40); }
+    .tagline-pick {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--gold);
+      padding: 6px 14px;
+      border: 1px solid rgba(196,145,58,0.30);
+      border-radius: 99px;
+    }
+
+    /* ════════════════════════════════════════════
+       FOOTER BRAND PAGE
+    ════════════════════════════════════════════ */
+    .brand-footer {
+      background: var(--navy);
+      padding: 48px 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .brand-footer .footer-logo {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--white);
+    }
+    .brand-footer .footer-logo span { color: var(--gold); }
+    .brand-footer p {
+      font-size: 13px;
+      color: rgba(255,255,255,0.35);
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.7s ease both; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: var(--sand);
+      margin: 0 48px;
+    }
+    .divider-dark {
+      height: 1px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    /* ── Arrow SVG ── */
+    .arrow { display: inline-block; font-size: 18px; margin-left: 4px; }
+
+    /* Responsive basics */
+    @media (max-width: 900px) {
+      section { padding: 64px 24px; }
+      .hero-content { padding: 80px 32px; }
+      .hero-stats { left: 32px; right: 32px; flex-wrap: wrap; gap: 24px; }
+      .color-story, .logo-grid, .card-grid, .voice-grid, .mock-card-row { grid-template-columns: 1fr; }
+      .photo-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ NAV BRAND PAGE ═══════════════════════════════ -->
+<nav class="brand-nav">
+  <div class="nav-logo">Coffice<span>.</span></div>
+  <nav>
+    <a href="#couleurs">Couleurs</a>
+    <a href="#typo">Typographie</a>
+    <a href="#logo">Logo</a>
+    <a href="#composants">Composants</a>
+    <a href="#photo">Photos</a>
+    <a href="#mockup">Mockup</a>
+    <a href="#voix">Voix</a>
+  </nav>
+  <div class="brand-badge">Charte Graphique 2026</div>
+</nav>
+
+
+<!-- ═══════════════════════════════ HERO ═══════════════════════════════ -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-content fade-up">
+    <div class="hero-eyebrow">Alger, Algérie — Coworking Premium</div>
+    <h1 class="hero-title">Travaillez au<br /><em>sommet</em> de<br />votre ambition.</h1>
+    <p class="hero-desc">Coffice réunit les professionnels, entrepreneurs et entreprises d'Alger dans un espace conçu pour l'excellence.</p>
+    <div class="hero-actions">
+      <a href="#" class="btn-primary btn btn-lg">Réserver un espace <span class="arrow">→</span></a>
+      <a href="#" class="btn-outline btn btn-lg">Découvrir</a>
+    </div>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat"><strong>200m²</strong><span>Espaces de travail</span></div>
+    <div class="hero-stat"><strong>24/7</strong><span>Accès sécurisé</span></div>
+    <div class="hero-stat"><strong>3</strong><span>Box privées premium</span></div>
+    <div class="hero-stat"><strong>+200</strong><span>Membres actifs</span></div>
+  </div>
+  <div class="scroll-indicator">
+    <div class="scroll-line"></div>
+    Scroll
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SECTION 1 — COULEURS ═══════════════════════════════ -->
+<div class="chapter-header">
+  <span>01</span>
+  Palette de couleurs
+</div>
+<section class="colors-section" id="couleurs">
+  <div class="max-w">
+    <span class="section-label">Identité chromatique</span>
+    <h2 class="section-title">Une palette qui dit<br /><em style="color:var(--gold);font-style:italic;">chaleur & prestige</em></h2>
+    <p class="section-subtitle">Le bleu nuit affirme sérieux et confiance. L'or Atlas — nommé en hommage à nos montagnes — apporte chaleur, prestige et identité algérienne. Le blanc chaud crème remplace le gris froid pour une atmosphère plus accueillante.</p>
+
+    <div class="color-grid">
+      <div class="color-swatch">
+        <div class="swatch-block sw-navy">
+          <span class="swatch-hex" style="color:rgba(255,255,255,0.8)">#0B1629</span>
+        </div>
+        <div class="swatch-info">
+          <div class="swatch-name">Bleu Nuit</div>
+          <div class="swatch-role">Couleur primaire — Navy</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-block sw-gold">
+          <span class="swatch-hex">#C4913A</span>
+        </div>
+        <div class="swatch-info">
+          <div class="swatch-name">Or Atlas</div>
+          <div class="swatch-role">Accent premium — Gold</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-block sw-gold-light">
+          <span class="swatch-hex">#E5B96A</span>
+        </div>
+        <div class="swatch-info">
+          <div class="swatch-name">Or Clair</div>
+          <div class="swatch-role">Hover, variante claire</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-block sw-sky">
+          <span class="swatch-hex">#0EA5E9</span>
+        </div>
+        <div class="swatch-info">
+          <div class="swatch-name">Bleu Ciel</div>
+          <div class="swatch-role">Accent secondaire — Sky</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-block sw-cream">
+          <span class="swatch-hex">#FAF7F2</span>
+        </div>
+        <div class="swatch-info">
+          <div class="swatch-name">Crème Chaud</div>
+          <div class="swatch-role">Fond principal — Cream</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-block sw-sand">
+          <span class="swatch-hex">#EDE5D8</span>
+        </div>
+        <div class="swatch-info">
+          <div class="swatch-name">Sable</div>
+          <div class="swatch-role">Séparateurs, bordures</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-block sw-stone">
+          <span class="swatch-hex">#9C8F80</span>
+        </div>
+        <div class="swatch-info">
+          <div class="swatch-name">Pierre</div>
+          <div class="swatch-role">Texte secondaire</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-block sw-charcoal">
+          <span class="swatch-hex">#1C2B3A</span>
+        </div>
+        <div class="swatch-info">
+          <div class="swatch-name">Charbon</div>
+          <div class="swatch-role">Corps de texte</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-story">
+      <div class="color-story-card cs-dark">
+        <div class="cs-title">Mode sombre<br />& premium</div>
+        <p class="cs-text">Le fond navy avec texte blanc et accents or crée une atmosphère sophistiquée pour les sections hero, navbars et CTA forts. Utilisé pour les moments "impact".</p>
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <span style="font-size:13px;color:rgba(255,255,255,0.60);display:flex;align-items:center;gap:6px;"><span class="cs-dot" style="background:#0B1629;border:1px solid rgba(255,255,255,0.2);"></span> Navy</span>
+          <span style="font-size:13px;color:rgba(255,255,255,0.60);display:flex;align-items:center;gap:6px;"><span class="cs-dot" style="background:#C4913A;"></span> Or Atlas</span>
+          <span style="font-size:13px;color:rgba(255,255,255,0.60);display:flex;align-items:center;gap:6px;"><span class="cs-dot" style="background:#FFFFFF;"></span> Blanc</span>
+        </div>
+      </div>
+      <div class="color-story-card cs-warm">
+        <div class="cs-title">Mode clair<br />& chaleureux</div>
+        <p class="cs-text" style="color:var(--stone)">Le fond crème remplace le gris froid. Les cartes sont blanches, le texte principal en navy. Résultat : une chaleur professionnelle unique dans le coworking algérien.</p>
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <span style="font-size:13px;color:var(--stone);display:flex;align-items:center;gap:6px;"><span class="cs-dot" style="background:#FAF7F2;border:1px solid #EDE5D8;"></span> Crème</span>
+          <span style="font-size:13px;color:var(--stone);display:flex;align-items:center;gap:6px;"><span class="cs-dot" style="background:#EDE5D8;"></span> Sable</span>
+          <span style="font-size:13px;color:var(--stone);display:flex;align-items:center;gap:6px;"><span class="cs-dot" style="background:#1C2B3A;"></span> Charbon</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SECTION 2 — TYPOGRAPHIE ═══════════════════════════════ -->
+<div class="chapter-header">
+  <span>02</span>
+  Système typographique
+</div>
+<section class="typo-section" id="typo">
+  <div class="max-w">
+    <span class="section-label">Typographie</span>
+    <h2 class="section-title">Deux familles,<br />une harmonie parfaite</h2>
+    <p class="section-subtitle">Playfair Display pour l'impact et l'élégance des titres. Inter pour la clarté et la lisibilité des textes. Une combinaison utilisée par les meilleures marques premium mondiales.</p>
+
+    <div class="typo-showcase">
+      <div class="typo-row">
+        <div class="typo-meta">
+          <div class="typo-meta-name">Display XL</div>
+          <div class="typo-meta-desc">Playfair Display<br />900 · 72–80px<br />Héros, grands titres</div>
+        </div>
+        <div class="typo-d1">Coffice<br />Alger.</div>
+      </div>
+      <div class="typo-row">
+        <div class="typo-meta">
+          <div class="typo-meta-name">Display L</div>
+          <div class="typo-meta-desc">Playfair Display<br />700 · 48px<br />Titres de sections</div>
+        </div>
+        <div class="typo-d2">Votre bureau,<br /><em>votre rythme.</em></div>
+      </div>
+      <div class="typo-row">
+        <div class="typo-meta">
+          <div class="typo-meta-name">Heading 1</div>
+          <div class="typo-meta-desc">Playfair Display<br />700 · 36px<br />Sous-sections</div>
+        </div>
+        <div class="typo-h1">Box Privée Atlas — Espace 4 places</div>
+      </div>
+      <div class="typo-row">
+        <div class="typo-meta">
+          <div class="typo-meta-name">Heading 2</div>
+          <div class="typo-meta-desc">Inter<br />700 · 24px<br />Titres de cartes</div>
+        </div>
+        <div class="typo-h2">Réservation confirmée — Vendredi 21 mars 2026</div>
+      </div>
+      <div class="typo-row">
+        <div class="typo-meta">
+          <div class="typo-meta-name">Body</div>
+          <div class="typo-meta-desc">Inter<br />400 · 16px<br />Texte courant</div>
+        </div>
+        <div class="typo-body">Coffice est bien plus qu'un espace de travail. C'est une communauté d'entrepreneurs, de freelances et d'entreprises qui partagent une même ambition : travailler mieux, ensemble. Situé au cœur d'Alger, notre espace est conçu pour favoriser la concentration, la collaboration et la croissance.</div>
+      </div>
+      <div class="typo-row" style="border:none;padding:0;">
+        <div class="typo-meta">
+          <div class="typo-meta-name">Labels</div>
+          <div class="typo-meta-desc">Inter<br />700 · 11–12px<br />Eyebrows, tags</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="typo-label">Coworking Premium · Alger, Algérie</div>
+          <div class="typo-caption">Créé le 21 mars 2026 · Référence #BOX-ATLAS-001</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="font-pair-demo">
+      <p class="tag">Coffice — Association Playfair + Inter</p>
+      <h2>Le coworking<br /><em>réinventé</em> pour<br />l'Algérie moderne.</h2>
+      <p class="body-text">Des espaces pensés pour les professionnels d'aujourd'hui. Flexibles, connectés, inspirants — avec la chaleur unique de notre communauté algérienne.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SECTION 3 — LOGO ═══════════════════════════════ -->
+<div class="chapter-header">
+  <span>03</span>
+  Traitement du logo
+</div>
+<section class="logo-section" id="logo">
+  <div class="max-w">
+    <span class="section-label">Logo & Marque</span>
+    <h2 class="section-title">Le nom <em style="color:var(--gold);font-style:italic;">Coffice</em><br />comme signature</h2>
+    <p class="section-subtitle">En attendant une refonte SVG complète, voici comment le nom Coffice devrait être traité selon les contextes. Le point doré après le nom devient une signature distinctive.</p>
+
+    <div class="logo-grid">
+      <div class="logo-card lc-cream">
+        <div class="logo-wordmark" style="color:var(--navy)">Coffice<span class="dot">.</span></div>
+        <div class="logo-tagline">Coworking · Alger</div>
+        <div class="logo-card-label" style="color:var(--stone)">Fond Clair</div>
+      </div>
+      <div class="logo-card lc-dark">
+        <div class="logo-wordmark">Coffice<span class="dot">.</span></div>
+        <div class="logo-tagline">Coworking · Alger</div>
+        <div class="logo-card-label">Fond Sombre</div>
+      </div>
+      <div class="logo-card lc-gold">
+        <div class="logo-wordmark">Coffice<span class="dot" style="color:var(--white)">.</span></div>
+        <div class="logo-tagline">Coworking · Alger</div>
+        <div class="logo-card-label">Fond Or</div>
+      </div>
+    </div>
+
+    <div class="logo-rules">
+      <div class="logo-rule">
+        <div class="logo-rule-title rule-ok">✓ À faire</div>
+        <p>Utiliser le logo sur fond uni navy, blanc crème ou or. Toujours respecter une zone de protection égale à la hauteur de la lettre "C" autour du logo. Le point doré est une partie intégrante du logo.</p>
+      </div>
+      <div class="logo-rule">
+        <div class="logo-rule-title rule-no">✗ À éviter</div>
+        <p>Ne jamais étirer le logo, le placer sur une photo sans overlay sombre suffisant, changer la police, supprimer le point doré, ou utiliser le logo dans des couleurs non définies dans la charte.</p>
+      </div>
+      <div class="logo-rule">
+        <div class="logo-rule-title" style="color:var(--navy)">◎ Tagline associée</div>
+        <p>La tagline "Coworking · Alger" peut accompagner le logo dans les contextes institutionnels. Elle est toujours en Inter, uppercase, letter-spacing 2–3px, dans une teinte atténuée.</p>
+      </div>
+      <div class="logo-rule">
+        <div class="logo-rule-title" style="color:var(--navy)">◎ Nommage des espaces</div>
+        <p>Les noms des box (<strong>Atlas, Aures, Hoggar</strong>) sont des actifs de marque forts — ce sont des montagnes algériennes iconiques. Toujours les écrire avec une majuscule, en Playfair Display pour les supports premium.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SECTION 4 — COMPOSANTS ═══════════════════════════════ -->
+<div class="chapter-header">
+  <span>04</span>
+  Composants UI
+</div>
+<section class="ui-section" id="composants">
+  <div class="max-w">
+    <span class="section-label">Design System</span>
+    <h2 class="section-title">Des composants cohérents<br />sur chaque écran</h2>
+    <p class="section-subtitle">Chaque bouton, badge et carte suit la même logique chromatique. La hiérarchie des actions est immédiatement lisible.</p>
+
+    <div class="ui-grid">
+
+      <!-- Boutons -->
+      <div>
+        <div class="ui-group-title">Boutons</div>
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <div class="button-row">
+            <a class="btn btn-gold btn-lg" href="#">Réserver maintenant →</a>
+            <a class="btn btn-navy btn-lg" href="#">Accéder à l'ERP</a>
+            <a class="btn btn-sky btn-lg" href="#">En savoir plus</a>
+          </div>
+          <div class="button-row">
+            <a class="btn btn-ghost-gold btn-md" href="#">Découvrir les espaces</a>
+            <a class="btn btn-ghost-navy btn-md" href="#">Voir le dossier</a>
+            <a class="btn btn-danger btn-md" href="#">Annuler la réservation</a>
+          </div>
+          <div class="button-row">
+            <a class="btn btn-gold btn-sm" href="#">Voir les tarifs</a>
+            <a class="btn btn-navy btn-sm" href="#">Valider</a>
+            <a class="btn btn-ghost-navy btn-sm" href="#">Modifier</a>
+            <a class="btn btn-text btn-md" href="#">En savoir plus →</a>
+          </div>
+        </div>
+
+        <!-- Boutons sur fond sombre -->
+        <div style="background:var(--navy);border-radius:var(--radius-lg);padding:40px;margin-top:32px;">
+          <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.40);margin-bottom:24px;">Sur fond sombre</div>
+          <div class="button-row">
+            <a class="btn btn-gold btn-lg" href="#">Réserver un espace →</a>
+            <a class="btn btn-outline btn btn-lg" href="#">Découvrir</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Badges -->
+      <div>
+        <div class="ui-group-title">Badges & Statuts</div>
+        <div class="badge-row">
+          <span class="badge badge-gold"><span class="badge-dot"></span>Premium</span>
+          <span class="badge badge-green"><span class="badge-dot"></span>Actif</span>
+          <span class="badge badge-navy"><span class="badge-dot"></span>Domiciliation</span>
+          <span class="badge badge-sky"><span class="badge-dot"></span>En cours</span>
+          <span class="badge badge-red"><span class="badge-dot"></span>Expiré</span>
+          <span class="badge badge-stone"><span class="badge-dot"></span>En attente</span>
+        </div>
+        <div class="badge-row" style="margin-top:16px;">
+          <span class="badge badge-green">Réservé ✓</span>
+          <span class="badge badge-red">Annulé ✗</span>
+          <span class="badge badge-gold">Box Atlas</span>
+          <span class="badge badge-navy">Box Hoggar</span>
+          <span class="badge badge-sky">Box Aurès</span>
+        </div>
+      </div>
+
+      <!-- Cards -->
+      <div>
+        <div class="ui-group-title">Cartes</div>
+        <div class="card-grid">
+          <div class="card">
+            <div class="card-img-placeholder cp-navy">
+              <span style="font-size:48px;">🏔️</span>
+            </div>
+            <div class="card-body">
+              <div class="card-eyebrow">Box Privée · 4 places</div>
+              <div class="card-title">Atlas</div>
+              <div class="card-text">Bureau privatif entièrement équipé, idéal pour les équipes et les réunions concentrées.</div>
+            </div>
+            <div class="card-footer">
+              <div class="card-price">4 500 <small>DA/jour</small></div>
+              <a class="btn btn-gold btn-sm" href="#">Réserver</a>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-img-placeholder cp-gold">
+              <span style="font-size:48px;">⛰️</span>
+            </div>
+            <div class="card-body">
+              <div class="card-eyebrow">Box Privée · 3 places</div>
+              <div class="card-title">Hoggar</div>
+              <div class="card-text">Espace compact et performant pour les équipes de 2 à 3 personnes en quête d'efficacité.</div>
+            </div>
+            <div class="card-footer">
+              <div class="card-price">3 500 <small>DA/jour</small></div>
+              <a class="btn btn-gold btn-sm" href="#">Réserver</a>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-img-placeholder cp-sky">
+              <span style="font-size:48px;">🌄</span>
+            </div>
+            <div class="card-body">
+              <div class="card-eyebrow">Box Privée · 4 places</div>
+              <div class="card-title">Aurès</div>
+              <div class="card-text">Un espace lumineux et fonctionnel, parfait pour les sessions de travail intense ou les pitchs.</div>
+            </div>
+            <div class="card-footer">
+              <div class="card-price">4 000 <small>DA/jour</small></div>
+              <a class="btn btn-gold btn-sm" href="#">Réserver</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SECTION 5 — PHOTOS ═══════════════════════════════ -->
+<div class="chapter-header" style="background:var(--navy-800);">
+  <span style="color:rgba(255,255,255,0.04)">05</span>
+  Traitement photographique
+</div>
+<section class="photo-section" id="photo">
+  <div class="max-w">
+    <span class="section-label">Photographie</span>
+    <h2 class="section-title">Nos espaces méritent<br />d'être <em style="color:var(--gold);font-style:italic;">mis en scène</em></h2>
+    <p class="section-subtitle">Les photos de Coffice sont de vraies forces. Voici comment les traiter pour maximiser leur impact — avec les bons overlays, cadrages et légendes.</p>
+
+    <div class="photo-grid">
+      <div class="photo-item span-row">
+        <img src="/espace-coworking.jpeg" alt="Espace coworking Coffice" />
+        <div class="photo-overlay">
+          <div class="photo-caption">
+            <span>Open Space</span>
+            24 postes · Lumière naturelle
+          </div>
+        </div>
+      </div>
+      <div class="photo-item">
+        <img src="/booth-atlas.jpeg" alt="Box Atlas" />
+        <div class="photo-overlay">
+          <div class="photo-caption">
+            <span>Box Privée</span>
+            Atlas · 4 places
+          </div>
+        </div>
+      </div>
+      <div class="photo-item">
+        <img src="/salle-reunion.jpeg" alt="Salle de réunion" />
+        <div class="photo-overlay">
+          <div class="photo-caption">
+            <span>Salle de réunion</span>
+            Équipée · Climatisée
+          </div>
+        </div>
+      </div>
+      <div class="photo-item">
+        <img src="/booth-hoggar.jpeg" alt="Box Hoggar" />
+        <div class="photo-overlay">
+          <div class="photo-caption">
+            <span>Box Privée</span>
+            Hoggar · 3 places
+          </div>
+        </div>
+      </div>
+      <div class="photo-item">
+        <img src="/booth-aures.jpeg" alt="Box Aurès" />
+        <div class="photo-overlay">
+          <div class="photo-caption">
+            <span>Box Privée</span>
+            Aurès · 4 places
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="photo-treatment-note">
+      <div class="pt-note">
+        <div class="pt-note-icon">🎨</div>
+        <div class="pt-note-title">Overlay sombre</div>
+        <div class="pt-note-text">Toujours appliquer un gradient navy en bas des photos pour les légendes. Ratio de couverture : 0% au top → 65% au bas.</div>
+      </div>
+      <div class="pt-note">
+        <div class="pt-note-icon">✂️</div>
+        <div class="pt-note-title">Format 3:4 vertical</div>
+        <div class="pt-note-text">Les photos des booths sont déjà au bon format. Les recadrer en zone centrale pour mettre en valeur les espaces de travail, pas les murs.</div>
+      </div>
+      <div class="pt-note">
+        <div class="pt-note-icon">☀️</div>
+        <div class="pt-note-title">Lumière naturelle</div>
+        <div class="pt-note-text">Privilégier les prises de vue en journée avec lumière naturelle. Éviter les photos avec lumière artificielle jaune et flash direct.</div>
+      </div>
+      <div class="pt-note">
+        <div class="pt-note-icon">👥</div>
+        <div class="pt-note-title">Mise en situation</div>
+        <div class="pt-note-text">Les prochaines photos devraient inclure des personnes en train de travailler. Authentique, pas posé. Le coworking c'est du vivant.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SECTION 6 — MOCKUP ═══════════════════════════════ -->
+<div class="chapter-header">
+  <span>06</span>
+  Simulation — Page d'accueil
+</div>
+<section class="mockup-section" id="mockup" style="background:var(--sand);padding:96px 48px;">
+  <div class="max-w">
+    <span class="section-label">Rendu réel</span>
+    <h2 class="section-title">Voici à quoi ressemble<br />le <em style="color:var(--gold);font-style:italic;">vrai site</em> avec cette charte</h2>
+    <p class="section-subtitle">Une simulation complète de la page d'accueil avec la nouvelle charte graphique — navbar, hero, et section espaces.</p>
+
+    <div class="mockup-frame">
+      <!-- Navbar -->
+      <div class="mock-nav">
+        <div class="mock-nav-logo">Coffice<span>.</span></div>
+        <div class="mock-nav-links">
+          <a href="#" class="active">Accueil</a>
+          <a href="#">Nos espaces</a>
+          <a href="#">Domiciliation</a>
+          <a href="#">Tarifs</a>
+          <a href="#">À propos</a>
+        </div>
+        <div class="mock-nav-cta">
+          <a href="#">Connexion</a>
+          <a class="btn btn-gold btn-sm" href="#">Réserver →</a>
+        </div>
+      </div>
+
+      <!-- Hero -->
+      <div class="mock-hero">
+        <div class="mock-hero-bg"></div>
+        <div class="mock-hero-overlay"></div>
+        <div class="mock-hero-content">
+          <div class="mock-eyebrow">Alger · Coworking Premium</div>
+          <h1 class="mock-hero-title">Travaillez au<br /><em>sommet</em> de<br />votre ambition.</h1>
+          <p class="mock-hero-desc">200m² d'espaces modernes, 3 box privées nommées après les plus belles montagnes d'Algérie. Un coworking à la hauteur de vos ambitions.</p>
+          <div class="mock-actions">
+            <a class="btn btn-gold btn-lg" href="#">Réserver un espace →</a>
+            <a class="btn btn-outline btn btn-lg" href="#">Découvrir</a>
+          </div>
+        </div>
+        <div class="mock-bottom-bar">
+          <div class="mock-stat"><strong>200m²</strong><span>Superficie</span></div>
+          <div class="mock-stat-divider"></div>
+          <div class="mock-stat"><strong>24/7</strong><span>Accès sécurisé</span></div>
+          <div class="mock-stat-divider"></div>
+          <div class="mock-stat"><strong>3</strong><span>Box privées</span></div>
+          <div class="mock-stat-divider"></div>
+          <div class="mock-stat"><strong>+200</strong><span>Membres</span></div>
+        </div>
+      </div>
+
+      <!-- Cards section -->
+      <div class="mock-cards">
+        <div class="mock-section-label">Nos espaces</div>
+        <div class="mock-section-title">Choisissez votre<br />espace de travail</div>
+        <div class="mock-card-row">
+          <div class="mock-card">
+            <div class="mock-card-img" style="background-image:url('/espace-coworking.jpeg')">
+              <div class="mock-card-img-overlay">
+                <span class="mock-card-img-label">Open Space</span>
+              </div>
+            </div>
+            <div class="mock-card-body">
+              <div class="mock-card-eyebrow">Coworking · 24 postes</div>
+              <div class="mock-card-title">Open Space Coffice</div>
+              <div class="mock-card-desc">Grand espace partagé avec WiFi haut débit, lumière naturelle et ambiance propice à la productivité.</div>
+              <div class="mock-card-price"><strong>1 500</strong><span>DA / jour</span></div>
+              <ul class="mock-card-features">
+                <li>WiFi fibre optique illimité</li>
+                <li>Café & thé offerts</li>
+                <li>Imprimante & scanner</li>
+                <li>Locker personnel</li>
+              </ul>
+              <a class="btn btn-gold btn-md" href="#">Réserver →</a>
+            </div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-card-img" style="background-image:url('/booth-atlas.jpeg')">
+              <div class="mock-card-img-overlay">
+                <span class="mock-card-img-label">Box Privée</span>
+              </div>
+            </div>
+            <div class="mock-card-body">
+              <div class="mock-card-eyebrow">Box Privée · 4 places</div>
+              <div class="mock-card-title">Box Atlas</div>
+              <div class="mock-card-desc">Bureau fermé entièrement privatisé, idéal pour les réunions confidentielles et le travail concentré.</div>
+              <div class="mock-card-price"><strong>4 500</strong><span>DA / jour</span></div>
+              <ul class="mock-card-features">
+                <li>Accès exclusif et cloisonné</li>
+                <li>Écran + tableau blanc</li>
+                <li>Climatisation individuelle</li>
+                <li>Disponible demi-journée</li>
+              </ul>
+              <a class="btn btn-gold btn-md" href="#">Réserver →</a>
+            </div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-card-img" style="background-image:url('/salle-reunion.jpeg')">
+              <div class="mock-card-img-overlay">
+                <span class="mock-card-img-label">Salle de réunion</span>
+              </div>
+            </div>
+            <div class="mock-card-body">
+              <div class="mock-card-eyebrow">Réunion · 8 places</div>
+              <div class="mock-card-title">Salle de Réunion</div>
+              <div class="mock-card-desc">Espace de réunion entièrement équipé pour vos présentations, formations et sessions en équipe.</div>
+              <div class="mock-card-price"><strong>2 500</strong><span>DA / heure</span></div>
+              <ul class="mock-card-features">
+                <li>Vidéoprojecteur HD</li>
+                <li>Tableau blanc interactif</li>
+                <li>Visioconférence intégrée</li>
+                <li>Café & eau inclus</li>
+              </ul>
+              <a class="btn btn-gold btn-md" href="#">Réserver →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SECTION 7 — VOIX DE MARQUE ═══════════════════════════════ -->
+<div class="chapter-header">
+  <span>07</span>
+  Voix & Ton de marque
+</div>
+<section class="voice-section" id="voix">
+  <div class="max-w">
+    <span class="section-label">Brand Voice</span>
+    <h2 class="section-title">Comment Coffice<br /><em style="color:var(--gold);font-style:italic;">parle</em> à ses membres</h2>
+    <p class="section-subtitle">Le ton de Coffice est professionnel mais chaleureux, direct mais bienveillant. On s'adresse à des professionnels sérieux, pas à des étudiants, pas à des touristes.</p>
+
+    <div class="voice-grid">
+      <div class="voice-card">
+        <div class="voice-icon">💪</div>
+        <div class="voice-title">Confiant & Direct</div>
+        <div class="voice-desc">On ne s'excuse pas de ce qu'on propose. On affirme la qualité de nos espaces avec conviction.</div>
+        <div class="voice-do-dont">
+          <div class="vdd vdd-ok"><span class="vdd-tick">✓</span> "Nos box privées sont équipées pour votre excellence."</div>
+          <div class="vdd vdd-no"><span class="vdd-tick">✗</span> "Nous espérons que notre espace vous conviendra."</div>
+        </div>
+      </div>
+      <div class="voice-card">
+        <div class="voice-icon">🤝</div>
+        <div class="voice-title">Chaleureux & Algérien</div>
+        <div class="voice-desc">On est une marque algérienne fière. On intègre naturellement cette identité sans forcer.</div>
+        <div class="voice-do-dont">
+          <div class="vdd vdd-ok"><span class="vdd-tick">✓</span> "Box Hoggar — au cœur du Sahara, au cœur d'Alger."</div>
+          <div class="vdd vdd-no"><span class="vdd-tick">✗</span> "Meeting Room B3 — Available for booking."</div>
+        </div>
+      </div>
+      <div class="voice-card">
+        <div class="voice-icon">🎯</div>
+        <div class="voice-title">Concis & Précis</div>
+        <div class="voice-desc">Nos clients sont des professionnels occupés. On va droit au but sans fioritures inutiles.</div>
+        <div class="voice-do-dont">
+          <div class="vdd vdd-ok"><span class="vdd-tick">✓</span> "Réservation confirmée. Mercredi 25 mars, 9h–13h."</div>
+          <div class="vdd vdd-no"><span class="vdd-tick">✗</span> "Nous avons bien pris en compte votre demande de réservation et sommes heureux de vous informer que..."</div>
+        </div>
+      </div>
+      <div class="voice-card">
+        <div class="voice-icon">🌟</div>
+        <div class="voice-title">Ambitieux & Inspirant</div>
+        <div class="voice-desc">On parle à des gens qui veulent réussir. On les inspire à viser plus haut, à faire plus.</div>
+        <div class="voice-do-dont">
+          <div class="vdd vdd-ok"><span class="vdd-tick">✓</span> "Travaillez au sommet de votre ambition."</div>
+          <div class="vdd vdd-no"><span class="vdd-tick">✗</span> "Louez un bureau dans notre espace de travail partagé."</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SECTION 8 — TAGLINES ═══════════════════════════════ -->
+<div class="chapter-header" style="background:var(--navy-800)">
+  <span style="color:rgba(255,255,255,0.04)">08</span>
+  Propositions de taglines
+</div>
+<section class="tagline-section" id="taglines">
+  <div class="max-w">
+    <span class="section-label">Accroche de marque</span>
+    <h2 class="section-title">Trouver les mots<br />qui <em style="color:var(--gold);font-style:italic;">restent</em></h2>
+    <p class="section-subtitle">5 propositions de taglines pour Coffice — toutes s'appuient sur l'identité algérienne, l'ambition et le professionnalisme.</p>
+
+    <div class="tagline-grid">
+      <div class="tagline-item">
+        <div class="tagline-num">01</div>
+        <div class="tagline-content">
+          <div class="tagline-text">Travaillez au <em>sommet</em>.</div>
+          <div class="tagline-note">Court, ambitieux. Le mot "sommet" renvoie aux montagnes (Atlas, Hoggar, Aurès) et à l'excellence professionnelle.</div>
+        </div>
+        <div class="tagline-pick">★ Recommandée</div>
+      </div>
+      <div class="tagline-item">
+        <div class="tagline-num">02</div>
+        <div class="tagline-content">
+          <div class="tagline-text">Votre bureau, <em>votre rythme.</em></div>
+          <div class="tagline-note">Met en avant la flexibilité et la personnalisation. Parle directement au freelance et à l'entrepreneur.</div>
+        </div>
+      </div>
+      <div class="tagline-item">
+        <div class="tagline-num">03</div>
+        <div class="tagline-content">
+          <div class="tagline-text">L'Algérie qui <em>travaille, ici.</em></div>
+          <div class="tagline-note">Identité forte. Coffice comme espace de référence de la nouvelle génération professionnelle algéroise.</div>
+        </div>
+      </div>
+      <div class="tagline-item">
+        <div class="tagline-num">04</div>
+        <div class="tagline-content">
+          <div class="tagline-text">Ensemble, on va <em>plus loin.</em></div>
+          <div class="tagline-note">Valorise la communauté et la collaboration. Bonne pour les réseaux sociaux et les campagnes d'acquisition.</div>
+        </div>
+      </div>
+      <div class="tagline-item">
+        <div class="tagline-num">05</div>
+        <div class="tagline-content">
+          <div class="tagline-text">Le coworking <em>à la hauteur</em>.</div>
+          <div class="tagline-note">Double sens : altitude des montagnes + niveau d'exigence. Élégant et mémorable.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ FOOTER ═══════════════════════════════ -->
+<footer class="brand-footer">
+  <div class="footer-logo">Coffice<span>.</span></div>
+  <p>Charte Graphique 2026 — Document de référence interne · Alger, Algérie</p>
+  <p style="color:rgba(255,255,255,0.20);font-size:12px;">Playfair Display · Inter · Or Atlas #C4913A</p>
+</footer>
+
+</body>
+</html>

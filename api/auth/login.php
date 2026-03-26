@@ -14,11 +14,10 @@ require_once '../utils/Validator.php';
 require_once '../utils/RateLimiter.php';
 
 try {
-    // Rate limiting basé sur IP
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     $rateLimitKey = 'login_' . $ip;
 
-    $maxAttempts = (int)(getenv('RATE_LIMIT_MAX_ATTEMPTS') ?: 60);
+    $maxAttempts  = (int)(getenv('RATE_LIMIT_MAX_ATTEMPTS') ?: 60);
     $decayMinutes = (int)(getenv('RATE_LIMIT_DECAY_MINUTES') ?: 1);
 
     if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts, $decayMinutes)) {
@@ -31,32 +30,31 @@ try {
 
     RateLimiter::hit($rateLimitKey);
 
-    $rawInput = file_get_contents("php://input");
-    $data = json_decode($rawInput);
-
+    $data = json_decode(file_get_contents("php://input"));
     if (json_last_error() !== JSON_ERROR_NONE) {
         Response::validationError("Données JSON invalides");
     }
 
-    // Utiliser la classe Validator
     $validator = new Validator();
-
     $validator->validateRequired($data->email ?? '', 'email');
     $validator->validateEmail($data->email ?? '', 'email');
     $validator->validateRequired($data->password ?? '', 'password');
-
     if ($validator->hasErrors()) {
         Response::validationError($validator->getFirstError());
     }
 
     $db = Database::getInstance()->getConnection();
 
-    $query = "SELECT id, email, password_hash, nom, prenom, role, statut, code_parrainage, credit
-              FROM users
-              WHERE email = :email
-              LIMIT 1";
+    $data->email = strtolower(trim($data->email));
 
-    $stmt = $db->prepare($query);
+    $stmt = $db->prepare("
+        SELECT id, email, password_hash, nom, prenom, role, statut, code_parrainage, credit
+        FROM persons
+        WHERE LOWER(email) = :email
+          AND role IS NOT NULL
+          AND password_hash IS NOT NULL
+        LIMIT 1
+    ");
     $stmt->bindParam(':email', $data->email);
     $stmt->execute();
 
@@ -64,39 +62,36 @@ try {
         Response::error("Email ou mot de passe incorrect", 401);
     }
 
-    $user = $stmt->fetch();
+    $person = $stmt->fetch();
 
-    if ($user['statut'] !== 'actif') {
+    if ($person['statut'] !== 'actif') {
         Response::error("Compte inactif ou suspendu", 403);
     }
 
-    if (!Auth::verifyPassword($data->password, $user['password_hash'])) {
+    if (!Auth::verifyPassword($data->password, $person['password_hash'])) {
         Response::error("Email ou mot de passe incorrect", 401);
     }
 
-    $token = Auth::generateToken($user['id'], $user['email'], $user['role']);
-    $refreshToken = Auth::generateRefreshToken($user['id'], $user['email'], $user['role']);
+    $db->prepare("UPDATE persons SET derniere_connexion = NOW() WHERE id = :id")
+       ->execute([':id' => $person['id']]);
 
-    // Mettre à jour la dernière connexion
-    $query = "UPDATE users SET derniere_connexion = NOW() WHERE id = :id";
-    $stmt = $db->prepare($query);
-    $stmt->execute([':id' => $user['id']]);
-
-    // Connexion réussie - clear rate limit
     RateLimiter::clear($rateLimitKey);
 
+    $token        = Auth::generateToken($person['id'], $person['email'], $person['role']);
+    $refreshToken = Auth::generateRefreshToken($person['id'], $person['email'], $person['role']);
+
     Response::success([
-        'token' => $token,
+        'token'        => $token,
         'refreshToken' => $refreshToken,
         'user' => [
-            'id' => $user['id'],
-            'email' => $user['email'],
-            'nom' => $user['nom'],
-            'prenom' => $user['prenom'],
-            'role' => $user['role'],
-            'codeParrainage' => $user['code_parrainage'],
-            'credit' => (float)($user['credit'] ?? 0)
-        ]
+            'id'             => $person['id'],
+            'email'          => $person['email'],
+            'nom'            => $person['nom'],
+            'prenom'         => $person['prenom'],
+            'role'           => $person['role'],
+            'codeParrainage' => $person['code_parrainage'],
+            'credit'         => (float)($person['credit'] ?? 0),
+        ],
     ], "Connexion réussie");
 
 } catch (PDOException $e) {

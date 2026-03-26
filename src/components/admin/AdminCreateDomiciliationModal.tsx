@@ -1,4 +1,5 @@
 import React, { useReducer, useEffect } from "react";
+import { addMonths } from "date-fns";
 import { Building2, Save, User, ChevronLeft, ChevronRight, Check, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import Modal from "../ui/Modal";
@@ -13,7 +14,7 @@ import ContratSummary from "../../features/domiciliation/components/ContratSumma
 import { useOccupiedBureaux } from "../../features/domiciliation/hooks";
 import { FORMES_JURIDIQUES, OPTIONS_DOMICILIATION } from "../../features/domiciliation/constants";
 import { calculateContractDurationMonths } from "../../features/domiciliation/utils";
-import type { DomiciliationOptions } from "../../features/domiciliation/types";
+import type { DomiciliationOptions } from "../../domiciliation/domain/types";
 
 interface Props {
   isOpen: boolean;
@@ -59,40 +60,43 @@ interface FormState {
   options: DomiciliationOptions;
 }
 
-const INITIAL_STATE: FormState = {
-  step: "user",
-  selectedUser: null,
-  situationAdministrative: "en_cours_creation",
-  typeStructure: "societe",
-  raisonSociale: "",
-  formeJuridique: "SARL",
-  nif: "",
-  nis: "",
-  registreCommerce: "",
-  articleImposition: "",
-  codeNae: "",
-  activiteExercee: "",
-  numeroAutoEntrepreneur: "",
-  repNom: "",
-  repPrenom: "",
-  repTel: "",
-  repEmail: "",
-  repVille: "",
-  repAdresse: "",
-  repFonction: "",
-  numeroBureau: 0,
-  referenceContratNotarie: "",
-  dateDebutContrat: new Date().toISOString().split("T")[0],
-  dateFinContrat: new Date(Date.now() + 183 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-  montantMensuel: 12000,
-  options: {
-    domiciliationSimple: true,
-    receptionCourrier: false,
-    scanNotificationEmail: false,
-    reexpeditionCourrier: false,
-    accesPonctuelEspaces: false,
-  },
-};
+function freshInitialState(): FormState {
+  const today = new Date();
+  return {
+    step: "user",
+    selectedUser: null,
+    situationAdministrative: "en_cours_creation",
+    typeStructure: "societe",
+    raisonSociale: "",
+    formeJuridique: "SARL",
+    nif: "",
+    nis: "",
+    registreCommerce: "",
+    articleImposition: "",
+    codeNae: "",
+    activiteExercee: "",
+    numeroAutoEntrepreneur: "",
+    repNom: "",
+    repPrenom: "",
+    repTel: "",
+    repEmail: "",
+    repVille: "",
+    repAdresse: "",
+    repFonction: "",
+    numeroBureau: 0,
+    referenceContratNotarie: "",
+    dateDebutContrat: today.toISOString().split("T")[0],
+    dateFinContrat: addMonths(today, 6).toISOString().split("T")[0],
+    montantMensuel: 12000,
+    options: {
+      domiciliationSimple: true,
+      receptionCourrier: false,
+      scanNotificationEmail: false,
+      reexpeditionCourrier: false,
+      accesPonctuelEspaces: false,
+    },
+  };
+}
 
 type Action =
   | { type: "RESET" }
@@ -104,7 +108,7 @@ type Action =
 function reducer(state: FormState, action: Action): FormState {
   switch (action.type) {
     case "RESET":
-      return INITIAL_STATE;
+      return freshInitialState();
     case "SET_STEP":
       return { ...state, step: action.payload };
     case "SET_USER": {
@@ -131,7 +135,7 @@ function reducer(state: FormState, action: Action): FormState {
 }
 
 export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreated }: Props) {
-  const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
+  const [state, dispatch] = useReducer(reducer, undefined, freshInitialState);
   const [submitting, setSubmitting] = React.useState(false);
   const occupiedBureaux = useOccupiedBureaux();
 
@@ -170,7 +174,7 @@ export default function AdminCreateDomiciliationModal({ isOpen, onClose, onCreat
     setSubmitting(true);
     try {
       const payload: Record<string, unknown> = {
-        userId: state.selectedUser.id,
+        personId: state.selectedUser.id,
         situationAdministrative: state.situationAdministrative,
         typeStructure: state.typeStructure,
         raisonSociale: state.raisonSociale,

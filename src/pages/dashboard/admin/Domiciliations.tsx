@@ -27,6 +27,7 @@ import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import AdminCreateDomiciliationModal from "../../../components/admin/AdminCreateDomiciliationModal";
+import AdminPageHeader from "../../../components/admin/AdminPageHeader";
 import StatutBadge from "../../../features/domiciliation/components/StatutBadge";
 import DomiciliationKanban from "../../../features/domiciliation/components/DomiciliationKanban";
 import QuickPreviewPanel from "../../../features/domiciliation/components/QuickPreviewPanel";
@@ -35,7 +36,7 @@ import { formatDate, formatCurrency } from "../../../utils/formatters";
 import { getDisplayName, getSituationLabel, exportDomiciliationsCSV } from "../../../features/domiciliation/utils";
 import { STATUS_FILTERS, STATUT_CONFIG } from "../../../features/domiciliation/constants";
 import toast from "react-hot-toast";
-import type { DemandeDomiciliation } from "../../../features/domiciliation/types";
+import type { DemandeDomiciliation } from "../../../domiciliation/domain/types";
 
 const PAGE_SIZE = 15;
 type SortKey = "entreprise" | "bureau" | "statut" | "date";
@@ -198,57 +199,44 @@ export default function AdminDomiciliations() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Domiciliations</h1>
-          <p className="text-gray-500 mt-1">
-            {demandesDomiciliation.length} domiciliation
-            {demandesDomiciliation.length !== 1 ? "s" : ""}
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <div className="flex border border-gray-200 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setViewMode("list")}
-              className={`px-3 py-2 flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                viewMode === "list"
-                  ? "bg-amber-500 text-white"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <List className="w-4 h-4" />
-              Liste
-            </button>
-            <button
-              onClick={() => setViewMode("kanban")}
-              className={`px-3 py-2 flex items-center gap-1.5 text-sm font-medium transition-colors border-l border-gray-200 ${
-                viewMode === "kanban"
-                  ? "bg-amber-500 text-white"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-              Kanban
-            </button>
-          </div>
-          <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-            Actualiser
-          </Button>
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="w-4 h-4" />
-            Export
-          </Button>
-          <Button onClick={() => setShowCreateModal(true)}>
-            <Plus className="w-4 h-4" />
-            Nouvelle
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Domiciliations"
+        subtitle={`${demandesDomiciliation.length} domiciliation${demandesDomiciliation.length !== 1 ? "s" : ""}`}
+        actions={
+          <>
+            <div className="flex bg-gray-100 rounded-lg p-0.5">
+              <button
+                onClick={() => setViewMode("list")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  viewMode === "list" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <List className="w-3.5 h-3.5" /> Liste
+              </button>
+              <button
+                onClick={() => setViewMode("kanban")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  viewMode === "kanban" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" /> Kanban
+              </button>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing} className="gap-1.5">
+              {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              <span className="hidden sm:inline">Actualiser</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExport} className="gap-1.5">
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export</span>
+            </Button>
+            <Button size="sm" onClick={() => setShowCreateModal(true)} className="gap-1.5 bg-gray-900 hover:bg-gray-800 text-white">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Nouvelle</span>
+            </Button>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {[

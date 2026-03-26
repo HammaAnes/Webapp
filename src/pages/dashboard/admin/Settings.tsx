@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Settings as SettingsIcon, Building2, Mail, Bell, Users, Wrench } from "lucide-react";
+import { Settings as SettingsIcon, Building2, Mail, Bell, Users, Wrench, TrendingUp } from "lucide-react";
 import { apiClient } from "../../../lib/api-client";
 import toast from "react-hot-toast";
 import { logger } from "../../../utils/logger";
@@ -9,6 +9,7 @@ import MailingTab from "./settings/MailingTab";
 import NotificationsTab from "./settings/NotificationsTab";
 import ComptesTab from "./settings/ComptesTab";
 import MaintenanceTab from "./settings/MaintenanceTab";
+import PrevisionTab from "./settings/PrevisionTab";
 
 interface GeneralSettings {
   nom_entreprise: string;
@@ -66,14 +67,15 @@ const defaultSettings: AllSettings = {
   },
 };
 
-type SettingsTab = "general" | "mailing" | "notifications" | "comptes" | "maintenance";
+type SettingsTab = "general" | "mailing" | "notifications" | "comptes" | "maintenance" | "previsions";
 
 const TABS: { id: SettingsTab; name: string; icon: typeof Building2 }[] = [
-  { id: "general", name: "Général", icon: Building2 },
-  { id: "mailing", name: "Mailing", icon: Mail },
-  { id: "notifications", name: "Notifications", icon: Bell },
-  { id: "comptes", name: "Comptes", icon: Users },
-  { id: "maintenance", name: "Maintenance", icon: Wrench },
+  { id: "general",    name: "Général",       icon: Building2   },
+  { id: "mailing",    name: "Mailing",        icon: Mail        },
+  { id: "notifications", name: "Notifications", icon: Bell      },
+  { id: "comptes",    name: "Comptes",        icon: Users       },
+  { id: "previsions", name: "Prévisions CA",  icon: TrendingUp  },
+  { id: "maintenance", name: "Maintenance",   icon: Wrench      },
 ];
 
 const Settings = () => {
@@ -184,6 +186,7 @@ const Settings = () => {
           />
         )}
         {activeTab === "comptes" && <ComptesTab />}
+        {activeTab === "previsions" && <PrevisionTab />}
         {activeTab === "maintenance" && <MaintenanceTab />}
       </motion.div>
     </div>

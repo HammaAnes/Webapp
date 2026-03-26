@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Gift,
@@ -63,19 +63,14 @@ const Parrainage = () => {
   const [filleuls, setFilleuls] = useState<ParrainageDetail[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadParrainageData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
-
-  const loadParrainageData = async () => {
-    if (!user?.id) {
+  const loadParrainageData = useCallback(async () => {
+    if (!userId) {
       setLoading(false);
       return;
     }
     try {
       setLoading(true);
-      const response = await apiClient.getParrainages(user.id);
+      const response = await apiClient.getParrainages(userId);
 
       if (response.success && response.data) {
         const rd = response.data as Record<string, unknown>;
@@ -113,7 +108,7 @@ const Parrainage = () => {
           recompensesTotales,
           recompensesPayees,
           recompensesEnAttente,
-          codeParrainage: user.codeParrainage || "",
+          codeParrainage: user?.codeParrainage || "",
         });
       }
     } catch (error) {
@@ -122,7 +117,11 @@ const Parrainage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, user?.codeParrainage]);
+
+  useEffect(() => {
+    loadParrainageData();
+  }, [loadParrainageData]);
 
   const getCode = () => stats.codeParrainage || user?.codeParrainage || "";
 

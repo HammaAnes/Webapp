@@ -7,10 +7,9 @@ function camelToSnake(str: string): string {
   return str.replace(/[A-Z]/g, (letter, index) => `${index > 0 ? "_" : ""}${letter.toLowerCase()}`);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function objectToSnakeCase<T extends JsonObject = JsonObject>(obj: any): T {
+export function objectToSnakeCase<T extends JsonObject = JsonObject>(obj: unknown): T {
   if (obj === null || obj === undefined) {
-    return obj as T;
+    return obj as unknown as T;
   }
 
   if (Array.isArray(obj)) {
@@ -26,11 +25,12 @@ export function objectToSnakeCase<T extends JsonObject = JsonObject>(obj: any): 
   }
 
   const result: JsonObject = {};
+  const record = obj as Record<string, unknown>;
 
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+  for (const key in record) {
+    if (Object.prototype.hasOwnProperty.call(record, key)) {
       const snakeKey = camelToSnake(key);
-      const value = (obj as Record<string, unknown>)[key];
+      const value = record[key];
 
       if (value !== null && typeof value === "object" && !Array.isArray(value) && !(value instanceof Date)) {
         result[snakeKey] = objectToSnakeCase(value);
@@ -46,4 +46,3 @@ export function objectToSnakeCase<T extends JsonObject = JsonObject>(obj: any): 
 
   return result as T;
 }
-

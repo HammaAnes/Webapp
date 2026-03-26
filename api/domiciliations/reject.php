@@ -65,15 +65,15 @@ try {
         Response::serverError('Erreur lors du rejet');
     }
 
-    if (!empty($domiciliation['user_id'])) {
+    if (!empty($domiciliation['person_id'])) {
         $notificationId = UuidHelper::generate();
         $query = "INSERT INTO notifications
-                  (id, user_id, type, titre, message, lue, created_at)
-                  VALUES (:id, :user_id, 'domiciliation', :titre, :message, 0, NOW())";
+                  (id, person_id, type, titre, message, lue, created_at)
+                  VALUES (:id, :person_id, 'domiciliation', :titre, :message, 0, NOW())";
 
         $stmt = $db->prepare($query);
         $stmt->bindParam(':id', $notificationId);
-        $stmt->bindParam(':user_id', $domiciliation['user_id']);
+        $stmt->bindParam(':person_id', $domiciliation['person_id']);
         $titre = 'Demande de domiciliation refusée';
         $message = 'Votre demande de domiciliation a été refusée. Raison: ' . $data['commentaire'];
         $stmt->bindParam(':titre', $titre);
@@ -81,10 +81,10 @@ try {
         $stmt->execute();
     }
 
-    if (!empty($domiciliation['user_id'])) {
+    if (!empty($domiciliation['person_id'])) {
         try {
-            $userStmt = $db->prepare("SELECT email, prenom, nom FROM users WHERE id = ?");
-            $userStmt->execute([$domiciliation['user_id']]);
+            $userStmt = $db->prepare("SELECT email, prenom, nom FROM persons WHERE id = ?");
+            $userStmt->execute([$domiciliation['person_id']]);
             $user = $userStmt->fetch(PDO::FETCH_ASSOC);
             if ($user) {
                 $domiciliation['motif_refus'] = $data['commentaire'];

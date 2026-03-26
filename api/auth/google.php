@@ -87,110 +87,95 @@ try {
     }
 
     $googleId = $googleData['sub'];
-    $email = $googleData['email'];
-    $prenom = $googleData['given_name'] ?? '';
-    $nom = $googleData['family_name'] ?? '';
+    $email    = $googleData['email'];
+    $prenom   = $googleData['given_name'] ?? '';
+    $nom      = $googleData['family_name'] ?? '';
 
-    $db = Database::getInstance()->getConnection();
+    // Chercher dans persons (users avec compte)
+    $stmt = $db->prepare("
+        SELECT id, email, nom, prenom, role, statut, google_id, code_parrainage, credit
+        FROM persons
+        WHERE (email = :email OR google_id = :google_id)
+          AND role IS NOT NULL
+        LIMIT 1
+    ");
+    $stmt->execute([':email' => $email, ':google_id' => $googleId]);
+    $person = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $query = "SELECT id, email, nom, prenom, role, statut, code_parrainage, credit, google_id
-              FROM users
-              WHERE email = :email OR google_id = :google_id
-              LIMIT 1";
-
-    $stmt = $db->prepare($query);
-    $stmt->execute([
-        ':email' => $email,
-        ':google_id' => $googleId
-    ]);
-
-    $user = $stmt->fetch();
     $isNewUser = false;
 
-    if ($user) {
-        if ($user['statut'] !== 'actif') {
+    if ($person) {
+        if ($person['statut'] !== 'actif') {
             Response::error("Compte inactif ou suspendu", 403);
         }
 
-        if ($user['role'] === 'admin') {
+        if ($person['role'] === 'admin') {
             Response::error("Les comptes administrateur doivent utiliser la connexion par email et mot de passe", 403);
         }
 
-        if (empty($user['google_id'])) {
-            $updateQuery = "UPDATE users SET google_id = :google_id, derniere_connexion = NOW() WHERE id = :id";
-            $updateStmt = $db->prepare($updateQuery);
-            $updateStmt->execute([
-                ':google_id' => $googleId,
-                ':id' => $user['id']
-            ]);
+        if (empty($person['google_id'])) {
+            $db->prepare("UPDATE persons SET google_id = :gid, derniere_connexion = NOW() WHERE id = :id")
+               ->execute([':gid' => $googleId, ':id' => $person['id']]);
         } else {
-            $updateQuery = "UPDATE users SET derniere_connexion = NOW() WHERE id = :id";
-            $updateStmt = $db->prepare($updateQuery);
-            $updateStmt->execute([':id' => $user['id']]);
+            $db->prepare("UPDATE persons SET derniere_connexion = NOW() WHERE id = :id")
+               ->execute([':id' => $person['id']]);
         }
 
-        $userId = $user['id'];
-        $userRole = $user['role'];
-        $codeParrainage = $user['code_parrainage'];
-        $credit = (float)($user['credit'] ?? 0);
+        $userId         = $person['id'];
+        $userRole       = $person['role'];
+        $codeParrainage = $person['code_parrainage'];
+        $credit         = (float)($person['credit'] ?? 0);
 
     } else {
         $isNewUser = true;
-        $userId = UuidHelper::generate();
+        $userId    = UuidHelper::generate();
 
+        // Générer un code parrainage unique
         $codeParrainage = 'CPF' . strtoupper(substr(str_replace('-', '', $userId), 0, 6));
-
-        $checkQuery = "SELECT id FROM users WHERE code_parrainage = :code LIMIT 1";
-        $checkStmt = $db->prepare($checkQuery);
-        $checkStmt->execute([':code' => $codeParrainage]);
-
-        while ($checkStmt->rowCount() > 0) {
+        $chkCode = $db->prepare("SELECT id FROM persons WHERE code_parrainage = ? LIMIT 1");
+        $chkCode->execute([$codeParrainage]);
+        while ($chkCode->fetch()) {
             $codeParrainage = 'CPF' . strtoupper(bin2hex(random_bytes(3)));
-            $checkStmt->execute([':code' => $codeParrainage]);
+            $chkCode->execute([$codeParrainage]);
         }
 
-        $insertQuery = "INSERT INTO users (
-            id, email, nom, prenom, google_id, role, statut,
-            code_parrainage, credit, derniere_connexion
-        ) VALUES (
-            :id, :email, :nom, :prenom, :google_id, 'user', 'actif',
-            :code_parrainage, 0, NOW()
-        )";
+        $db->beginTransaction();
 
-        $insertStmt = $db->prepare($insertQuery);
-        $result = $insertStmt->execute([
-            ':id' => $userId,
+        $db->prepare("
+            INSERT INTO persons
+              (id, email, nom, prenom, google_id, role, statut, source, crm_statut,
+               code_parrainage, derniere_connexion, created_at, updated_at)
+            VALUES
+              (:id, :email, :nom, :prenom, :gid, 'user', 'actif', 'google', 'client',
+               :code, NOW(), NOW(), NOW())
+        ")->execute([
+            ':id'    => $userId,
             ':email' => $email,
-            ':nom' => $nom,
-            ':prenom' => $prenom,
-            ':google_id' => $googleId,
-            ':code_parrainage' => $codeParrainage
+            ':nom'   => $nom,
+            ':prenom'=> $prenom,
+            ':gid'   => $googleId,
+            ':code'  => $codeParrainage,
         ]);
 
-        if (!$result) {
-            Logger::error('Failed to insert Google user', ['email' => $email]);
-            Response::error("Erreur lors de la création du compte", 500);
-        }
-
-        $parrainage_id = UuidHelper::generate();
-        $pQuery = "INSERT INTO parrainages (id, parrain_id, code_parrain, parraines, recompenses_totales)
-                   VALUES (:id, :parrain_id, :code_parrain, 0, 0)";
-        $pStmt = $db->prepare($pQuery);
-        $pStmt->execute([
-            ':id' => $parrainage_id,
-            ':parrain_id' => $userId,
-            ':code_parrain' => $codeParrainage
+        $db->prepare("
+            INSERT INTO parrainages (id, parrain_id, code_parrain, parraines, recompenses_totales)
+            VALUES (:id, :parrain_id, :code, 0, 0)
+        ")->execute([
+            ':id'        => UuidHelper::generate(),
+            ':parrain_id'=> $userId,
+            ':code'      => $codeParrainage,
         ]);
+
+        $db->commit();
 
         $userRole = 'user';
-        $credit = 0;
+        $credit   = 0;
 
         try {
-            Mailer::sendWelcomeEmail($email, $prenom . ' ' . $nom);
+            Mailer::sendWelcomeEmail($email, $prenom . ' ' . $nom, $codeParrainage, $email);
         } catch (Exception $e) {
             Logger::error('Failed to send welcome email for Google user', [
-                'email' => $email,
-                'error' => $e->getMessage()
+                'email' => $email, 'error' => $e->getMessage()
             ]);
         }
 
@@ -203,29 +188,31 @@ try {
         }
     }
 
-    $token = Auth::generateToken($userId, $email, $userRole);
+    $token        = Auth::generateToken($userId, $email, $userRole);
     $refreshToken = Auth::generateRefreshToken($userId, $email, $userRole);
 
     RateLimiter::clear($rateLimitKey);
 
     Response::success([
-        'token' => $token,
+        'token'        => $token,
         'refreshToken' => $refreshToken,
-        'user' => [
-            'id' => $userId,
-            'email' => $email,
-            'nom' => $user ? $user['nom'] : $nom,
-            'prenom' => $user ? $user['prenom'] : $prenom,
-            'role' => $userRole,
+        'user'         => [
+            'id'             => $userId,
+            'email'          => $email,
+            'nom'            => $person ? $person['nom'] : $nom,
+            'prenom'         => $person ? $person['prenom'] : $prenom,
+            'role'           => $userRole,
             'codeParrainage' => $codeParrainage,
-            'credit' => $credit
+            'credit'         => $credit,
         ]
     ], $isNewUser ? "Compte créé avec succès" : "Connexion réussie");
 
 } catch (PDOException $e) {
+    if (isset($db) && $db->inTransaction()) $db->rollBack();
     Logger::error("Database error in Google auth", ['error' => $e->getMessage()]);
-    Response::error("Erreur de base de données", 500);
+    Response::error("Erreur de base de données: " . $e->getMessage(), 500);
 } catch (Exception $e) {
+    if (isset($db) && $db->inTransaction()) $db->rollBack();
     Logger::error("Google auth error", ['error' => $e->getMessage()]);
-    Response::error("Erreur lors de l'authentification Google", 500);
+    Response::error("Erreur lors de l'authentification Google: " . $e->getMessage(), 500);
 }

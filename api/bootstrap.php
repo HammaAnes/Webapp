@@ -231,9 +231,6 @@ require_once __DIR__ . '/utils/ErrorHandler.php';
 // Mailer
 require_once __DIR__ . '/utils/Mailer.php';
 
-// Brevo Mailer
-require_once __DIR__ . '/utils/BrevoMailer.php';
-
 // Email Queue
 require_once __DIR__ . '/utils/EmailQueue.php';
 
@@ -246,6 +243,9 @@ require_once __DIR__ . '/utils/AdminNotifier.php';
 // Audit Logger
 require_once __DIR__ . '/utils/AuditLogger.php';
 
+// Caisse Helper
+require_once __DIR__ . '/utils/CaisseHelper.php';
+
 // =====================================================
 // FONCTIONS GLOBALES HELPERS
 // =====================================================
@@ -256,15 +256,6 @@ require_once __DIR__ . '/utils/AuditLogger.php';
 function getDb(): PDO
 {
     return Database::getInstance()->getConnection();
-}
-
-/**
- * Obtenir le logger
- * @deprecated Utiliser directement les méthodes statiques Logger::error(), Logger::info(), etc.
- */
-function getLogger(): string
-{
-    return 'Logger';
 }
 
 /**

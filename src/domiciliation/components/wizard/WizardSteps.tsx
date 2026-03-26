@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import {
   Building, User, MapPin, Hash, Briefcase, Info, CheckCircle,
-  HelpCircle, UserPlus, Shield, Package, Mail, ScanLine, Forward, DoorOpen, FileText, Upload, X, Scale,
+  HelpCircle, UserPlus, Shield, Mail, FileText, Upload, X, Scale,
 } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import { format } from 'date-fns';
@@ -10,12 +10,11 @@ import 'react-datepicker/dist/react-datepicker.css';
 import Badge from '../../../components/ui/Badge';
 import Input from '../../../components/ui/Input';
 import type {
-  SituationAdministrative, TypeStructure, UploadedDocument, DomiciliationOptions,
+  SituationAdministrative, TypeStructure, UploadedDocument,
   RepresentantLegal, DonneesA1, DonneesA2, DonneesB1, DonneesB2, WizardFormData,
 } from '../../domain/types';
 import { getCasLabel, getCasMetier } from '../../domain/types';
 import { CGU_TEXT, LEGAL_FORMS, getRequiredDocuments } from '../../domain/constants';
-import { OPTIONS_CONFIG, calculateMonthlyTotal, BASE_MONTHLY_PRICE } from '../../domain/pricing';
 
 const stepMotion = {
   initial: { opacity: 0, x: 20 },
@@ -606,80 +605,6 @@ export function Step6CGU({ cguAcceptees, onToggle }: { cguAcceptees: boolean; on
   );
 }
 
-export function Step7Options({ options, onUpdate }: {
-  options: DomiciliationOptions;
-  onUpdate: (p: Partial<DomiciliationOptions>) => void;
-}) {
-  const total = calculateMonthlyTotal(options);
-  return (
-    <motion.div key="step7" {...stepMotion} className="space-y-4">
-      <div className="text-center mb-4">
-        <Badge className="bg-amber-100 text-amber-700 mb-3">Options de domiciliation</Badge>
-        <h3 className="font-bold text-xl text-gray-900">Services complémentaires</h3>
-        <p className="text-gray-500 text-sm mt-1">Sélectionnez les options souhaitées</p>
-      </div>
-      <div className="space-y-3">
-        {OPTIONS_CONFIG.map(opt => {
-          const icons: Record<string, React.ReactNode> = {
-            domiciliationSimple: <MapPin className="w-5 h-5 text-emerald-600" />,
-            receptionCourrier: <Mail className="w-5 h-5 text-gray-600" />,
-            scanNotificationEmail: <ScanLine className="w-5 h-5 text-gray-600" />,
-            reexpeditionCourrier: <Forward className="w-5 h-5 text-gray-600" />,
-            accesPonctuelEspaces: <DoorOpen className="w-5 h-5 text-gray-600" />,
-          };
-          const checked = options[opt.key];
-          return (
-            <label
-              key={opt.key}
-              className={`flex items-start gap-4 p-4 border-2 rounded-xl transition-colors ${
-                opt.included
-                  ? 'bg-emerald-50 border-emerald-200'
-                  : checked
-                    ? 'border-amber-300 bg-amber-50/50'
-                    : 'border-gray-200 cursor-pointer hover:border-amber-300 hover:bg-amber-50/50'
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={!!checked}
-                disabled={opt.included}
-                onChange={e => onUpdate({ [opt.key]: e.target.checked })}
-                className={`w-5 h-5 mt-0.5 border-2 rounded focus:ring-amber-500 ${
-                  opt.included ? 'text-emerald-600 border-emerald-300' : 'text-amber-600 border-gray-300'
-                }`}
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  {icons[opt.key]}
-                  <span className="font-medium text-gray-900">{opt.label}</span>
-                  {opt.included && <Badge variant="success" className="text-xs">Inclus</Badge>}
-                </div>
-                <p className="text-sm text-gray-600 mt-1">{opt.description}</p>
-              </div>
-              <div className="text-right flex-shrink-0">
-                {opt.included ? (
-                  <span className="text-sm font-semibold text-emerald-600">Inclus</span>
-                ) : (
-                  <span className="text-sm font-bold text-gray-900">+{opt.price.toLocaleString()} <span className="text-xs font-normal text-gray-500">DA/mois</span></span>
-                )}
-              </div>
-            </label>
-          );
-        })}
-      </div>
-      <div className="mt-6 p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border-2 border-amber-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-amber-700">Estimation mensuelle</p>
-            <p className="text-xs text-amber-600 mt-0.5">Base {BASE_MONTHLY_PRICE.toLocaleString()} DA + options sélectionnées</p>
-          </div>
-          <p className="text-2xl font-bold text-amber-800">{total.toLocaleString()} <span className="text-sm font-normal">DA/mois</span></p>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
 function SummarySection({ title, icon, bg, children }: { title: string; icon: React.ReactNode; bg: string; children: React.ReactNode }) {
   return (
     <div className={`${bg} rounded-xl p-4`}>
@@ -698,7 +623,7 @@ function SummaryItem({ label, value, italic, colSpan2 }: { label: string; value:
   );
 }
 
-export function Step8Summary({ situation, typeStructure, formData, uploadedDocuments }: {
+export function Step7Summary({ situation, typeStructure, formData, uploadedDocuments }: {
   situation: SituationAdministrative;
   typeStructure: TypeStructure;
   formData: WizardFormData;
@@ -708,7 +633,7 @@ export function Step8Summary({ situation, typeStructure, formData, uploadedDocum
   const casLabel = getCasLabel(cas);
   const entreprise = formData.entreprise as Record<string, unknown> | null;
   return (
-    <motion.div key="step8" {...stepMotion} className="space-y-4">
+    <motion.div key="step7" {...stepMotion} className="space-y-4">
       <div className="text-center mb-4">
         <Badge className="bg-emerald-100 text-emerald-700 mb-3">Récapitulatif final</Badge>
         <h3 className="font-bold text-xl text-gray-900">Validation du dossier</h3>
@@ -774,15 +699,6 @@ export function Step8Summary({ situation, typeStructure, formData, uploadedDocum
           ) : (
             <p className="text-sm text-gray-500">Aucun document uploadé</p>
           )}
-        </SummarySection>
-        <SummarySection title="Options sélectionnées" icon={<Package className="w-4 h-4 text-teal-500" />} bg="bg-teal-50">
-          <div className="space-y-1 text-sm">
-            {OPTIONS_CONFIG.filter(o => formData.options[o.key]).map(o => (
-              <p key={o.key} className="flex items-center gap-2 text-gray-700">
-                <CheckCircle className="w-3 h-3 text-teal-500" /> {o.label}
-              </p>
-            ))}
-          </div>
         </SummarySection>
         <SummarySection title="Conditions générales" icon={<Scale className="w-4 h-4 text-gray-500" />} bg="bg-gray-50">
           <p className="text-sm"><span className="text-gray-500">CGU acceptées :</span> <span className="font-medium text-emerald-600">Oui</span></p>

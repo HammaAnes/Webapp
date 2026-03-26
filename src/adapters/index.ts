@@ -12,14 +12,7 @@ import type {
   TypeReservation,
 } from "../types";
 import { logger } from "../utils/logger";
-
-function toLocalISOString(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return (
-    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
-  );
-}
+import { toLocalISOString } from "../utils/formatters";
 
 type ApiRecord = Record<string, unknown>;
 
@@ -93,22 +86,24 @@ function parseDateSafe(value: unknown, fallback: Date = new Date()): Date {
 export const reservationAdapter = {
   fromAPI: (apiData: ApiRecord): Reservation => ({
     id: String(apiData.id || ""),
-    userId: apiData.user_id ? String(apiData.user_id) : undefined,
-    contactId: apiData.contact_id ? String(apiData.contact_id) : undefined,
+    personId: apiData.person_id ? String(apiData.person_id) : undefined,
+    userId: (apiData.user_id || apiData.person_id) ? String(apiData.user_id || apiData.person_id) : undefined,
     espaceId: String(apiData.espace_id || ""),
     dateDebut: parseDateSafe(apiData.date_debut),
     dateFin: parseDateSafe(apiData.date_fin),
     statut: String(apiData.statut || "en_attente") as Reservation["statut"],
     typeReservation: apiData.type_reservation as TypeReservation | undefined,
-    montantTotal: parseFloat(String(apiData.montant_total || 0)),
-    reduction: parseFloat(String(apiData.reduction || 0)),
-    montantPaye: parseFloat(String(apiData.montant_paye || 0)),
+    montantTotal: parseFloat(String(apiData.montant_total)) || 0,
+    reduction: parseFloat(String(apiData.reduction)) || 0,
+    montantPaye: parseFloat(String(apiData.montant_paye)) || 0,
     modePaiement: apiData.mode_paiement as string | undefined,
     participants: apiData.participants != null ? parseInt(String(apiData.participants), 10) || 1 : 1,
     notes: apiData.notes as string | undefined,
     codePromo: (apiData.code_promo_id || apiData.code_promo) as string | undefined,
     noShow: apiData.no_show === 1 || apiData.no_show === true || apiData.no_show === "1",
+    abonnementCouvert: apiData.abonnement_couvert === 1 || apiData.abonnement_couvert === true || apiData.abonnement_couvert === "1",
     checkinId: apiData.checkin_id ? String(apiData.checkin_id) : undefined,
+    heureArriveeReelle: apiData.heure_arrivee_reelle ? String(apiData.heure_arrivee_reelle) : undefined,
     dateCreation: apiData.created_at ? parseDate(apiData.created_at) : undefined,
     createdAt: apiData.created_at ? String(apiData.created_at) : undefined,
     updatedAt: apiData.updated_at ? String(apiData.updated_at) : undefined,
@@ -119,12 +114,13 @@ export const reservationAdapter = {
           type: String(apiData.espace_type || "bureau") as EspaceType,
         }
       : undefined,
-    utilisateur: apiData.user_nom
+    utilisateur: (apiData.user_nom || apiData.person_nom)
       ? ({
-          id: String(apiData.user_id || ""),
-          nom: String(apiData.user_nom || ""),
-          prenom: String(apiData.user_prenom || ""),
-          email: String(apiData.user_email || ""),
+          id: String(apiData.user_id || apiData.person_id || ""),
+          nom: String(apiData.user_nom || apiData.person_nom || ""),
+          prenom: String(apiData.user_prenom || apiData.person_prenom || ""),
+          email: String(apiData.user_email || apiData.person_email || ""),
+          telephone: (apiData.user_telephone || apiData.person_telephone) ? String(apiData.user_telephone || apiData.person_telephone) : undefined,
           role: (String(apiData.user_role || "user")) as "admin" | "user",
         } as User)
       : undefined,
@@ -132,8 +128,8 @@ export const reservationAdapter = {
 
   toAPI: (reservation: Partial<Reservation>): ApiRecord => {
     const data: ApiRecord = {};
-    if (reservation.userId !== undefined) data.user_id = reservation.userId;
-    if (reservation.contactId !== undefined) data.contact_id = reservation.contactId;
+    if (reservation.personId !== undefined) data.person_id = reservation.personId;
+    else if (reservation.userId !== undefined) data.person_id = reservation.userId;
     if (reservation.espaceId !== undefined) data.espace_id = reservation.espaceId;
     if (reservation.dateDebut !== undefined) {
       const d = reservation.dateDebut instanceof Date
@@ -235,7 +231,6 @@ export const userAdapter = {
     capital: apiData.capital as string | undefined,
     siegeSocial: (apiData.siege_social || apiData.siegeSocial) as string | undefined,
     activitePrincipale: (apiData.activite_principale || apiData.activitePrincipale) as string | undefined,
-    formeJuridique: (apiData.forme_juridique || apiData.formeJuridique) as string | undefined,
     codeParrainage: (apiData.code_parrainage || apiData.codeParrainage) as string | undefined,
     carteIdentiteUrl: (apiData.carte_identite_url || apiData.carteIdentiteUrl) as string | undefined,
     absences: apiData.absences as number | undefined,
@@ -273,7 +268,6 @@ export const userAdapter = {
       capital: "capital",
       siegeSocial: "siege_social",
       activitePrincipale: "activite_principale",
-      formeJuridique: "forme_juridique",
       carteIdentiteUrl: "carte_identite_url",
     };
 
@@ -350,39 +344,21 @@ export const domiciliationAdapter = {
     let utilisateur: User | undefined;
     if (apiData.utilisateur && typeof apiData.utilisateur === "object") {
       utilisateur = userAdapter.fromAPI(apiData.utilisateur as ApiRecord);
-    } else if (apiData.user_nom) {
+    } else if (apiData.user_nom || apiData.person_nom) {
       utilisateur = {
-        id: String(apiData.user_id || ""),
-        nom: String(apiData.user_nom || ""),
-        prenom: String(apiData.user_prenom || ""),
-        email: String(apiData.user_email || ""),
+        id: String(apiData.user_id || apiData.person_id || ""),
+        nom: String(apiData.user_nom || apiData.person_nom || ""),
+        prenom: String(apiData.user_prenom || apiData.person_prenom || ""),
+        email: String(apiData.user_email || apiData.person_email || ""),
         role: "user" as const,
-      };
-    }
-
-    let contact: Contact | undefined;
-    if (apiData.contact && typeof apiData.contact === "object") {
-      contact = contactAdapter.fromAPI(apiData.contact as ApiRecord);
-    } else if (apiData.contact_nom) {
-      contact = {
-        id: String(apiData.contact_id || ""),
-        nom: String(apiData.contact_nom || ""),
-        prenom: String(apiData.contact_prenom || ""),
-        email: apiData.contact_email as string | undefined,
-        source: "autre" as const,
-        statut: "prospect" as const,
-        createdBy: "",
-        createdAt: "",
-        updatedAt: "",
       };
     }
 
     return {
       id: String(apiData.id || ""),
-      userId: apiData.user_id ? String(apiData.user_id) : undefined,
-      contactId: apiData.contact_id ? String(apiData.contact_id) : undefined,
+      personId: apiData.person_id ? String(apiData.person_id) : undefined,
+      userId: (apiData.user_id || apiData.person_id) ? String(apiData.user_id || apiData.person_id) : undefined,
       utilisateur,
-      contact,
       situationAdministrative: (apiData.situation_administrative || "deja_creee") as DemandeDomiciliation["situationAdministrative"],
       typeStructure: (apiData.type_structure || "societe") as DemandeDomiciliation["typeStructure"],
       raisonSociale: String(apiData.raison_sociale || ""),
@@ -440,8 +416,8 @@ export const domiciliationAdapter = {
       return v instanceof Date ? v.toISOString().split("T")[0] : String(v);
     };
 
-    if (domiciliation.userId !== undefined) data.user_id = domiciliation.userId;
-    if (domiciliation.contactId !== undefined) data.contact_id = domiciliation.contactId;
+    if (domiciliation.personId !== undefined) data.person_id = domiciliation.personId;
+    else if (domiciliation.userId !== undefined) data.person_id = domiciliation.userId;
     if (domiciliation.situationAdministrative !== undefined) data.situation_administrative = domiciliation.situationAdministrative;
     if (domiciliation.typeStructure !== undefined) data.type_structure = domiciliation.typeStructure;
     if (domiciliation.raisonSociale !== undefined) data.raison_sociale = domiciliation.raisonSociale;
@@ -492,38 +468,6 @@ export const domiciliationAdapter = {
     if (domiciliation.complementsDemandes !== undefined) data.complements_demandes = domiciliation.complementsDemandes;
     if (domiciliation.visibleSurSite !== undefined) data.visible_sur_site = domiciliation.visibleSurSite;
 
-    return data;
-  },
-};
-
-export const contactAdapter = {
-  fromAPI: (apiData: ApiRecord): Contact => ({
-    id: String(apiData.id || ""),
-    nom: String(apiData.nom || ""),
-    prenom: String(apiData.prenom || ""),
-    email: apiData.email as string | undefined,
-    telephone: apiData.telephone as string | undefined,
-    entreprise: apiData.entreprise as string | undefined,
-    source: (String(apiData.source || "autre")) as ContactSource,
-    statut: (String(apiData.statut || "prospect")) as ContactStatut,
-    notes: apiData.notes as string | undefined,
-    userId: apiData.user_id ? String(apiData.user_id) : undefined,
-    createdBy: String(apiData.created_by || ""),
-    createdAt: String(apiData.created_at || ""),
-    updatedAt: String(apiData.updated_at || ""),
-  }),
-
-  toAPI: (contact: Partial<Contact>): ApiRecord => {
-    const data: ApiRecord = {};
-    if (contact.nom !== undefined) data.nom = contact.nom;
-    if (contact.prenom !== undefined) data.prenom = contact.prenom;
-    if (contact.email !== undefined) data.email = contact.email;
-    if (contact.telephone !== undefined) data.telephone = contact.telephone;
-    if (contact.entreprise !== undefined) data.entreprise = contact.entreprise;
-    if (contact.source !== undefined) data.source = contact.source;
-    if (contact.statut !== undefined) data.statut = contact.statut;
-    if (contact.notes !== undefined) data.notes = contact.notes;
-    if (contact.userId !== undefined) data.user_id = contact.userId;
     return data;
   },
 };

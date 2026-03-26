@@ -32,7 +32,7 @@ try {
         exit;
     }
 
-    $stmt = $db->prepare('SELECT id, email, nom, prenom, statut FROM users WHERE email = ? LIMIT 1');
+    $stmt = $db->prepare('SELECT id, email, nom, prenom, statut FROM persons WHERE email = ? AND role IS NOT NULL LIMIT 1');
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 

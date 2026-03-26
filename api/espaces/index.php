@@ -12,7 +12,7 @@ require_once '../utils/Response.php';
 try {
     $db = Database::getInstance()->getConnection();
 
-    $query = "SELECT id, nom, type, capacite, prix_heure, prix_demi_journee, prix_jour, prix_semaine,
+    $query = "SELECT id, nom, type, capacite, prix_heure, prix_demi_journee, prix_jour, prix_semaine, prix_mois,
                      description, equipements, disponible, etage, image_url
               FROM espaces
               ORDER BY nom ASC";

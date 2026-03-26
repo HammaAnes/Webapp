@@ -17,12 +17,12 @@ try {
     $db = $database->getConnection();
 
     $query = "SELECT * FROM notifications
-              WHERE user_id = :user_id
+              WHERE person_id = :person_id
               ORDER BY created_at DESC
               LIMIT 50";
 
     $stmt = $db->prepare($query);
-    $stmt->bindParam(':user_id', $auth['id']);
+    $stmt->bindParam(':person_id', $auth['id']);
     $stmt->execute();
 
     $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);

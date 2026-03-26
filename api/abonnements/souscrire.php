@@ -14,6 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $abonnementId = $data['abonnement_id'];
 
+        $db = Database::getInstance()->getConnection();
+
         $stmt = $db->prepare("SELECT * FROM abonnements WHERE id = ? AND actif = 1");
         $stmt->execute([$abonnementId]);
         $abonnement = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -36,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $checkStmt = $db->prepare("
             SELECT id FROM abonnements_utilisateurs
-            WHERE user_id = ? AND statut = 'actif'
+            WHERE person_id = ? AND statut = 'actif' AND date_fin > CURDATE()
             LIMIT 1
             FOR UPDATE
         ");
@@ -49,8 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = UuidHelper::generate();
         $insertStmt = $db->prepare("
             INSERT INTO abonnements_utilisateurs
-            (id, user_id, abonnement_id, date_debut, date_fin, statut, commentaire, date_debut_souhaitee, entreprise)
-            VALUES (?, ?, ?, ?, ?, 'actif', ?, ?, ?)
+            (id, person_id, abonnement_id, date_debut, date_fin, statut, commentaire, date_debut_souhaitee, entreprise)
+            VALUES (?, ?, ?, ?, ?, 'en_attente', ?, ?, ?)
         ");
 
         $insertStmt->execute([
@@ -64,35 +66,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $entreprise
         ]);
 
-        $transactionId = UuidHelper::generate();
-        $transStmt = $db->prepare("
-            INSERT INTO transactions
-            (id, user_id, type, montant, statut, mode_paiement, reference, description, date_paiement)
-            VALUES (?, ?, 'abonnement', ?, 'en_attente', 'cash', ?, ?, NOW())
-        ");
-        $transStmt->execute([
-            $transactionId,
-            $userId,
-            $prixAbonnement,
-            'ABO-' . date('YmdHis') . '-' . substr($id, 0, 8),
-            'Souscription ' . ($abonnement['nom'] ?? 'Abonnement') . ' du ' . $dateDebut . ' au ' . $dateFin,
+        CaisseHelper::insert($db, [
+            'abonnement_utilisateur_id' => $id,
+            'person_id'                 => $userId,
+            'type_transaction'          => 'abonnement',
+            'montant'                   => $prixAbonnement,
+            'mode_paiement'             => 'cash',
+            'statut'                    => 'en_attente',
+            'notes'                     => 'Souscription ' . ($abonnement['nom'] ?? 'Abonnement') . ' du ' . $dateDebut . ' au ' . $dateFin,
         ]);
 
         $notifId = UuidHelper::generate();
         $notifStmt = $db->prepare("
-            INSERT INTO notifications (id, user_id, type, titre, message, lue)
+            INSERT INTO notifications (id, person_id, type, titre, message, lue)
             VALUES (?, ?, 'abonnement', 'Abonnement souscrit', ?, 0)
         ");
         $notifStmt->execute([
             $notifId,
             $userId,
-            'Votre abonnement ' . ($abonnement['nom'] ?? '') . ' est actif jusqu\'au ' . date('d/m/Y', strtotime($dateFin)) . '.',
+            'Votre demande d\'abonnement ' . ($abonnement['nom'] ?? '') . ' a bien été reçue et est en attente de validation.',
         ]);
 
         $db->commit();
 
         try {
-            $userStmt = $db->prepare("SELECT prenom, nom, email FROM users WHERE id = ?");
+            $userStmt = $db->prepare("SELECT prenom, nom, email FROM persons WHERE id = ?");
             $userStmt->execute([$userId]);
             $user = $userStmt->fetch(PDO::FETCH_ASSOC);
             if ($user) {
@@ -109,8 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         Response::success([
-            'id' => $id,
-            'transaction_id' => $transactionId,
+            'id'      => $id,
             'message' => 'Abonnement souscrit avec succès'
         ]);
     } catch (Exception $e) {

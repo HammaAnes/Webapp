@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -9,6 +9,8 @@ import {
   Scale,
   AlertTriangle,
   Loader2,
+  Upload,
+  X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Button from "../../../components/ui/Button";
@@ -17,7 +19,8 @@ import ContratSummary from "./ContratSummary";
 import ActionHistoryLog from "./ActionHistoryLog";
 import { useOccupiedBureaux } from "../hooks";
 import { toDateInputValue } from "../utils";
-import type { DemandeDomiciliation, ActionKey, ActionData } from "../types";
+import { apiClient } from "../../../lib/api-client";
+import type { DemandeDomiciliation, ActionKey, ActionData } from "../../../domiciliation/domain/types";
 
 interface Props {
   demande: DemandeDomiciliation;
@@ -43,6 +46,9 @@ export default function ActionsSidebar({ demande, onAction, loading }: Props) {
   const [openAction, setOpenAction] = useState<ActionKey | null>(null);
   const [confirmDestructive, setConfirmDestructive] = useState<ActionKey | null>(null);
   const [motif, setMotif] = useState("");
+  const [contractFile, setContractFile] = useState<File | null>(null);
+  const [contractUploading, setContractUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const occupiedBureaux = useOccupiedBureaux(demande.id);
 
   const [contratData, setContratData] = useState({
@@ -59,6 +65,7 @@ export default function ActionsSidebar({ demande, onAction, loading }: Props) {
     setOpenAction((prev) => (prev === key ? null : key));
     setConfirmDestructive(null);
     setMotif("");
+    if (key !== "signer") setContractFile(null);
   };
 
   const handleAction = async (action: ActionKey, data?: ActionData) => {
@@ -104,6 +111,20 @@ export default function ActionsSidebar({ demande, onAction, loading }: Props) {
     }
 
     await handleAction(action, data);
+
+    // Upload du contrat scanné après la signature
+    if (action === "signer" && contractFile) {
+      setContractUploading(true);
+      try {
+        await apiClient.uploadDocument(contractFile, "domiciliation", demande.id, "contrat");
+        toast.success("Contrat scanné téléversé avec succès");
+        setContractFile(null);
+      } catch {
+        toast.error("Erreur lors du téléversement du contrat — veuillez le téléverser manuellement dans l'onglet Documents");
+      } finally {
+        setContractUploading(false);
+      }
+    }
   };
 
   const canValider = ["dossier_preparatoire", "en_attente_complements"].includes(statut);
@@ -190,8 +211,40 @@ export default function ActionsSidebar({ demande, onAction, loading }: Props) {
                           <input type="number" value={contratData.montantMensuel} onChange={(e) => setContratData((p) => ({ ...p, montantMensuel: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-400" />
                         </div>
                         <ContratSummary dateDebut={contratData.dateDebutContrat} dateFin={contratData.dateFinContrat} montantMensuel={contratData.montantMensuel} />
-                        <Button variant="primary" size="sm" className="w-full" onClick={() => validateAndSubmit("signer")} loading={loading}>
-                          <Scale className="w-4 h-4" /> Confirmer la signature
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Contrat scanné <span className="text-gray-400 font-normal">(PDF ou image — facultatif)</span>
+                          </label>
+                          <label className={`flex items-center gap-2 px-3 py-2.5 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${contractFile ? "border-sky-400 bg-sky-50" : "border-gray-200 hover:border-sky-300 hover:bg-sky-50/50"}`}>
+                            <Upload className="w-4 h-4 text-sky-500 flex-shrink-0" />
+                            <span className="text-sm text-gray-600 truncate flex-1">
+                              {contractFile ? contractFile.name : "Choisir le contrat notarié scanné…"}
+                            </span>
+                            {contractFile && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); setContractFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                                className="text-gray-400 hover:text-red-500 transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            )}
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              className="hidden"
+                              onChange={(e) => setContractFile(e.target.files?.[0] ?? null)}
+                            />
+                          </label>
+                          {contractFile && (
+                            <p className="text-xs text-sky-600 mt-1">
+                              ✓ {(contractFile.size / 1024).toFixed(0)} Ko sélectionné
+                            </p>
+                          )}
+                        </div>
+                        <Button variant="primary" size="sm" className="w-full" onClick={() => validateAndSubmit("signer")} loading={loading || contractUploading}>
+                          <Scale className="w-4 h-4" /> {contractUploading ? "Téléversement en cours…" : "Confirmer la signature"}
                         </Button>
                       </div>
                     )}

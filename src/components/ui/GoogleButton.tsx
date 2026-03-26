@@ -1,5 +1,5 @@
 import React from "react";
-import Button from "./Button";
+import { Loader2 } from "lucide-react";
 import { logger } from "../../utils/logger";
 
 interface GoogleButtonProps {
@@ -33,7 +33,7 @@ declare global {
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 const GoogleIcon = () => (
-  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+  <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
     <path
       fill="#4285F4"
       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -53,6 +53,9 @@ const GoogleIcon = () => (
   </svg>
 );
 
+const baseButtonClass =
+  "w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 text-sm font-medium shadow-sm transition-all duration-200";
+
 export const GoogleButton: React.FC<GoogleButtonProps> = ({
   onSuccess,
   onError,
@@ -61,12 +64,14 @@ export const GoogleButton: React.FC<GoogleButtonProps> = ({
   disabled = false,
   loading = false,
 }) => {
-  const buttonRef = React.useRef<HTMLDivElement>(null);
+  const nativeButtonRef = React.useRef<HTMLDivElement>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const [isScriptLoaded, setIsScriptLoaded] = React.useState(false);
   const [scriptError, setScriptError] = React.useState(false);
 
   const hasClientId = Boolean(GOOGLE_CLIENT_ID);
 
+  // Charger le script GSI de Google
   React.useEffect(() => {
     if (!hasClientId) return;
 
@@ -86,7 +91,10 @@ export const GoogleButton: React.FC<GoogleButtonProps> = ({
         clearInterval(checkLoaded);
         if (!window.google?.accounts?.id) setScriptError(true);
       }, 5000);
-      return () => { clearInterval(checkLoaded); clearTimeout(timeout); };
+      return () => {
+        clearInterval(checkLoaded);
+        clearTimeout(timeout);
+      };
     }
 
     const script = document.createElement("script");
@@ -99,8 +107,9 @@ export const GoogleButton: React.FC<GoogleButtonProps> = ({
     document.body.appendChild(script);
   }, [hasClientId]);
 
+  // Initialiser et rendre le bouton natif Google (invisible, en overlay)
   React.useEffect(() => {
-    if (!isScriptLoaded || !window.google || !buttonRef.current || disabled || !hasClientId) {
+    if (!isScriptLoaded || !window.google || !nativeButtonRef.current || disabled || !hasClientId) {
       return;
     }
 
@@ -114,64 +123,85 @@ export const GoogleButton: React.FC<GoogleButtonProps> = ({
         cancel_on_tap_outside: true,
       });
 
-      window.google.accounts.id.renderButton(buttonRef.current, {
+      const width = containerRef.current?.offsetWidth || 400;
+      window.google.accounts.id.renderButton(nativeButtonRef.current, {
         theme: "outline",
         size: "large",
-        width: buttonRef.current.offsetWidth || 320,
+        width,
         text: "continue_with",
         shape: "rectangular",
       });
     } catch (error) {
-      logger.error("Error initializing Google Sign-In:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "Error initializing Google Sign-In:",
+        error instanceof Error ? error.message : String(error)
+      );
       setScriptError(true);
     }
   }, [isScriptLoaded, onSuccess, onError, disabled, hasClientId]);
 
-  if (!hasClientId || scriptError) {
-    return (
-      <Button
-        type="button"
-        variant="outline"
-        className={`w-full ${className}`}
-        disabled
-      >
-        <GoogleIcon />
-        {text}
-      </Button>
-    );
-  }
-
+  // État chargement
   if (loading) {
     return (
-      <Button
+      <button
         type="button"
-        variant="outline"
-        className={`w-full ${className}`}
+        className={`${baseButtonClass} opacity-70 cursor-not-allowed ${className}`}
         disabled
-        loading
       >
-        Connexion en cours...
-      </Button>
+        <Loader2 className="w-5 h-5 animate-spin text-gray-500 flex-shrink-0" />
+        <span>Connexion en cours...</span>
+      </button>
     );
   }
 
-  if (!isScriptLoaded) {
+  // État erreur ou pas de client ID : bouton désactivé
+  if (!hasClientId || scriptError) {
     return (
-      <Button
+      <button
         type="button"
-        variant="outline"
-        className={`w-full ${className}`}
+        className={`${baseButtonClass} opacity-50 cursor-not-allowed ${className}`}
         disabled
       >
         <GoogleIcon />
-        {text}
-      </Button>
+        <span>{text}</span>
+      </button>
     );
   }
 
+  // État script en cours de chargement : squelette avec icône
+  if (!isScriptLoaded) {
+    return (
+      <button
+        type="button"
+        className={`${baseButtonClass} opacity-60 cursor-wait ${className}`}
+        disabled
+      >
+        <GoogleIcon />
+        <span>{text}</span>
+      </button>
+    );
+  }
+
+  // État actif : bouton custom visible + bouton natif Google invisible en overlay
+  // (le bouton Google gère le clic, le bouton custom est purement décoratif)
   return (
-    <div className={`relative ${className}`}>
-      <div ref={buttonRef} className="w-full" />
+    <div ref={containerRef} className={`relative w-full ${className}`}>
+      {/* Bouton visible (décoratif, non interactif) */}
+      <div
+        className={`${baseButtonClass} hover:bg-gray-50 hover:border-gray-400`}
+        style={{ pointerEvents: "none" }}
+        aria-hidden="true"
+      >
+        <GoogleIcon />
+        <span>{text}</span>
+      </div>
+
+      {/* Bouton natif Google en overlay invisible — gère le vrai clic */}
+      <div
+        ref={nativeButtonRef}
+        className="absolute inset-0 overflow-hidden rounded-lg"
+        style={{ opacity: 0 }}
+      />
     </div>
   );
 };

@@ -39,10 +39,12 @@ export function useAvailability({
   spaceCapacity = 12,
   enabled = true,
 }: UseAvailabilityOptions): UseAvailabilityResult {
-  const store = useAvailabilityStore();
+  // Use stable selectors to avoid re-renders on every cache update
+  const fetchMonth = useAvailabilityStore((s) => s.fetchMonth);
+  const getMonthData = useAvailabilityStore((s) => s.getMonthData);
   const lastGlobalRefresh = useAvailabilityStore((s) => s.lastGlobalRefresh);
 
-  const monthData = store.getMonthData(espaceId, currentMonth);
+  const monthData = getMonthData(espaceId, currentMonth);
   const isLoading = monthData?.loading ?? false;
   const hasError = monthData?.error ?? false;
   const isStale = !monthData || (lastGlobalRefresh > 0 && (monthData?.fetchedAt ?? 0) < lastGlobalRefresh);
@@ -50,9 +52,10 @@ export function useAvailability({
   const doFetch = useCallback(
     (force = false) => {
       if (!espaceId || !enabled) return;
-      store.fetchMonth(espaceId, currentMonth, force);
+      fetchMonth(espaceId, currentMonth, force);
     },
-    [espaceId, currentMonth, enabled, store],
+    // fetchMonth is a stable Zustand action reference — safe to include
+    [espaceId, currentMonth, enabled, fetchMonth],
   );
 
   const refresh = useCallback(() => doFetch(true), [doFetch]);
@@ -66,7 +69,7 @@ export function useAvailability({
     if (lastGlobalRefresh > 0 && enabled && espaceId) {
       doFetch(true);
     }
-  }, [lastGlobalRefresh]);
+  }, [lastGlobalRefresh, doFetch, enabled, espaceId]);
 
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);

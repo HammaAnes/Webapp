@@ -26,7 +26,7 @@ interface ContactState {
   createContact: (data: Partial<Contact>) => Promise<Contact>;
   updateContact: (id: string, data: Partial<Contact>) => Promise<Contact>;
   deleteContact: (id: string) => Promise<void>;
-  convertToUser: (contactId: string, sendWelcomeEmail?: boolean) => Promise<{ userId: string; temporaryPassword: string }>;
+  convertToUser: (contactId: string, sendWelcomeEmail?: boolean) => Promise<{ personId: string; temporaryPassword: string }>;
   setFilters: (filters: Partial<ContactFilters>) => void;
   setPage: (page: number) => void;
   clearError: () => void;
@@ -62,9 +62,9 @@ export const useContactStore = create<ContactState>((set, get) => ({
       });
 
       if (response.success && response.data) {
-        const data = response.data as { contacts?: Contact[]; pagination?: typeof pagination };
+        const data = response.data as { persons?: Contact[]; contacts?: Contact[]; pagination?: typeof pagination };
         set({
-          contacts: data.contacts || [],
+          contacts: data.persons || data.contacts || [],
           pagination: data.pagination || pagination,
           loading: false,
         });
@@ -87,7 +87,9 @@ export const useContactStore = create<ContactState>((set, get) => ({
     try {
       const response = await apiClient.getContact(id);
       if (response.success && response.data) {
-        set({ currentContact: response.data as Contact, loading: false });
+        const d = response.data as { person?: Contact } | Contact;
+        const contact = (d as { person?: Contact }).person ?? d as Contact;
+        set({ currentContact: contact, loading: false });
       } else {
         set({
           error: response.error || 'Erreur lors du chargement du contact',
@@ -141,16 +143,19 @@ export const useContactStore = create<ContactState>((set, get) => ({
         throw new Error(response.error || 'Erreur lors de la mise à jour du contact');
       }
 
-      const responseData = response.data as { contact?: Contact } | Contact;
-      const updatedContact = (responseData as { contact?: Contact })?.contact || responseData as Contact;
+      // Re-fetch to get the updated full object
+      const showResp = await apiClient.getContact(id);
+      const d = showResp.data as { person?: Contact } | Contact | null;
+      const existing = get().contacts.find(c => c.id === id);
+      const updatedContact = d ? ((d as { person?: Contact }).person ?? d as Contact) : existing ? { ...existing, ...data } : { id, ...data } as Contact;
 
       set((state) => ({
-        contacts: state.contacts.map((c) => c.id === id ? updatedContact : c),
-        currentContact: state.currentContact?.id === id ? updatedContact : state.currentContact,
+        contacts: state.contacts.map((c) => c.id === id ? updatedContact as Contact : c),
+        currentContact: state.currentContact?.id === id ? updatedContact as Contact : state.currentContact,
         loading: false,
       }));
 
-      return updatedContact;
+      return updatedContact as Contact;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erreur lors de la mise à jour du contact';
       set({ error: message, loading: false });
@@ -188,7 +193,7 @@ export const useContactStore = create<ContactState>((set, get) => ({
         throw new Error(response.error || 'Erreur lors de la conversion en utilisateur');
       }
 
-      const data = response.data as { userId?: string; user_id?: string; temporaryPassword?: string; temporary_password?: string };
+      const data = response.data as { person_id?: string; personId?: string; temporaryPassword?: string; temporary_password?: string };
 
       get().fetchContacts();
       if (get().currentContact?.id === contactId) {
@@ -198,7 +203,7 @@ export const useContactStore = create<ContactState>((set, get) => ({
       set({ loading: false });
 
       return {
-        userId: data.userId || data.user_id || '',
+        personId: data.person_id || data.personId || '',
         temporaryPassword: data.temporaryPassword || data.temporary_password || '',
       };
     } catch (error: unknown) {

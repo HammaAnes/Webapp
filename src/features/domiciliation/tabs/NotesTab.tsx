@@ -3,7 +3,7 @@ import { StickyNote, Save, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import Button from "../../../components/ui/Button";
-import type { DemandeDomiciliation } from "../types";
+import type { DemandeDomiciliation } from "../../../domiciliation/domain/types";
 
 interface Props {
   demande: DemandeDomiciliation;

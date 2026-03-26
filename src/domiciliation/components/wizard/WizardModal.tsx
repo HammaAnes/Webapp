@@ -12,10 +12,9 @@ import {
   Step4Entreprise,
   Step5Documents,
   Step6CGU,
-  Step7Options,
-  Step8Summary,
+  Step7Summary,
 } from './WizardSteps';
-import { useWizard, WIZARD_STEPS, WIZARD_STEP_COUNT } from '../../hooks/useWizard';
+import { useDomiciliationWizard as useWizard, WIZARD_STEPS, WIZARD_STEP_COUNT } from '../../hooks/useDomiciliationWizard';
 import { useDraft } from '../../hooks/useDraft';
 import { isValidFile } from '../../domain/validators';
 import type { User } from '../../../types';
@@ -151,14 +150,8 @@ export default function WizardModal({ isOpen, onClose, user, onSubmit }: Props) 
               onToggle={wizard.setCguAcceptees}
             />
           )}
-          {wizard.currentStep === 7 && (
-            <Step7Options
-              options={wizard.formData.options}
-              onUpdate={wizard.updateOptions}
-            />
-          )}
-          {wizard.currentStep === 8 && wizard.formData.situation && wizard.formData.typeStructure && (
-            <Step8Summary
+          {wizard.currentStep === 7 && wizard.formData.situation && wizard.formData.typeStructure && (
+            <Step7Summary
               situation={wizard.formData.situation}
               typeStructure={wizard.formData.typeStructure}
               formData={wizard.formData}

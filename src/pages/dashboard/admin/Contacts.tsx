@@ -16,6 +16,9 @@ export default function Contacts() {
 
   useEffect(() => {
     fetchContacts();
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [fetchContacts]);
 
   const handleSearch = (value: string) => {

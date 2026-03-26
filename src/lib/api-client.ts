@@ -9,6 +9,13 @@ import { ERROR_MESSAGES } from "../constants/messages";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost/api";
 
+/** Converts any Date or ISO string to MySQL DATETIME format "YYYY-MM-DD HH:mm:ss" */
+function toMysqlDatetime(value: string | Date): string {
+  const d = value instanceof Date ? value : new Date(value);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -418,10 +425,10 @@ class ApiClient {
     });
   }
 
-  async loginWithGoogle(credential: string) {
+  async loginWithGoogle(credential: string, codeParrainage?: string) {
     return this.request("/auth/google.php", {
       method: "POST",
-      body: JSON.stringify({ credential }),
+      body: JSON.stringify({ credential, codeParrainage: codeParrainage || undefined }),
     });
   }
 
@@ -459,27 +466,74 @@ class ApiClient {
     return { success: true, message: "Déconnexion réussie" };
   }
 
-  // ============= UTILISATEURS =============
-  async getUsers() {
-    return this.request("/users/index.php");
+  // ============= PERSONS (unified users + contacts) =============
+  async getPersons(params?: { has_account?: "true" | "false" | "all"; search?: string; crm_statut?: string; page?: number; limit?: number }) {
+    const query = params ? "?" + new URLSearchParams(Object.entries(params).reduce((acc, [k, v]) => { if (v !== undefined && v !== "") acc[k] = String(v); return acc; }, {} as Record<string, string>)).toString() : "";
+    return this.request(`/persons/index.php${query}`);
   }
 
-  async getUser(id: string) {
-    return this.request(`/users/show.php?id=${id}`);
+  async getPerson(id: string) {
+    return this.request(`/persons/show.php?id=${encodeURIComponent(id)}`);
   }
 
-  async updateUser(id: string, data: Record<string, unknown>) {
+  async createPerson(data: Record<string, unknown>) {
+    return this.request("/persons/create.php", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updatePerson(id: string, data: Record<string, unknown>) {
     const snakeCaseData = objectToSnakeCase(data);
-    return this.request(`/users/update.php?id=${id}`, {
+    return this.request(`/persons/update.php?id=${encodeURIComponent(id)}`, {
       method: "PUT",
       body: JSON.stringify(snakeCaseData),
     });
   }
 
-  async deleteUser(id: string) {
-    return this.request(`/users/delete.php?id=${id}`, {
+  async deletePerson(id: string) {
+    return this.request(`/persons/delete.php?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
+  }
+
+  async convertPersonToUser(personId: string, sendWelcomeEmail = true) {
+    return this.request("/persons/convert-to-user.php", {
+      method: "POST",
+      body: JSON.stringify({ person_id: personId, send_welcome_email: sendWelcomeEmail }),
+    });
+  }
+
+  async getPersonProfile360(id: string) {
+    return this.request(`/users/profile360.php?id=${encodeURIComponent(id)}`);
+  }
+
+  // ============= UTILISATEURS (redirects to persons) =============
+  async getUsers() {
+    return this.request("/persons/index.php?has_account=true&limit=500");
+  }
+
+  async getUser(id: string) {
+    return this.getPerson(id);
+  }
+
+  async getUserProfile360(id: string) {
+    return this.getPersonProfile360(id);
+  }
+
+  async updateUser(id: string, data: Record<string, unknown>) {
+    return this.updatePerson(id, data);
+  }
+
+  async adminResetPassword(id: string, password: string) {
+    return this.request(`/users/reset-password.php?id=${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ password }),
+    });
+  }
+
+  async deleteUser(id: string) {
+    return this.deletePerson(id);
   }
 
   async get<T = unknown>(endpoint: string): Promise<ApiResponse<T>> {
@@ -517,8 +571,8 @@ class ApiClient {
   }
 
   // ============= RÉSERVATIONS =============
-  async getReservations(userId?: string) {
-    const query = userId ? `?user_id=${userId}` : "";
+  async getReservations(personId?: string) {
+    const query = personId ? `?person_id=${personId}` : "";
     return this.request(`/reservations/index.php${query}`);
   }
 
@@ -839,7 +893,11 @@ class ApiClient {
   }
 
   async searchUsers(query: string) {
-    return this.request(`/users/index.php?search=${encodeURIComponent(query)}`);
+    return this.request(`/persons/index.php?has_account=true&search=${encodeURIComponent(query)}`);
+  }
+
+  async searchPersons(query: string, limit = 15) {
+    return this.request(`/search/persons.php?q=${encodeURIComponent(query)}&limit=${limit}`);
   }
 
   // ============= ABONNEMENTS =============
@@ -882,41 +940,62 @@ class ApiClient {
     return this.request("/abonnements/index.php?souscriptions=1");
   }
 
-  // ============= CONTACTS CRM =============
-  async getContacts(params?: { page?: number; limit?: number; search?: string; statut?: string; source?: string }) {
-    const query = params ? "?" + new URLSearchParams(Object.entries(params).reduce((acc, [k, v]) => { if (v !== undefined && v !== "") acc[k] = String(v); return acc; }, {} as Record<string, string>)).toString() : "";
-    return this.request(`/contacts/index.php${query}`);
+  async validerSouscription(id: string, statut: "actif" | "refuse" | "annule", commentaire?: string, codeAcces?: string) {
+    return this.request("/abonnements/valider-souscription.php", {
+      method: "POST",
+      body: JSON.stringify({ id, statut, commentaire, code_acces: codeAcces || null }),
+    });
   }
 
-  async getContact(id: string) {
-    return this.request(`/contacts/show.php?id=${encodeURIComponent(id)}`);
-  }
-
-  async createContact(data: Record<string, unknown>) {
-    return this.request("/contacts/create.php", {
+  async adminCreateSouscription(data: Record<string, unknown>) {
+    return this.request("/abonnements/admin-souscription.php", {
       method: "POST",
       body: JSON.stringify(data),
     });
   }
 
-  async updateContact(id: string, data: Record<string, unknown>) {
-    return this.request("/contacts/update.php", {
+  async adminUpdateSouscription(id: string, data: Record<string, unknown>) {
+    return this.request("/abonnements/admin-souscription.php", {
       method: "PUT",
-      body: JSON.stringify({ ...data, id }),
+      body: JSON.stringify({ id, ...data }),
     });
+  }
+
+  async adminDeleteSouscription(id: string) {
+    return this.request("/abonnements/admin-souscription.php", {
+      method: "DELETE",
+      body: JSON.stringify({ id }),
+    });
+  }
+
+  // ============= CONTACTS CRM (redirects to persons) =============
+  async getContacts(params?: { page?: number; limit?: number; search?: string; statut?: string; source?: string; crm_statut?: string }) {
+    const { statut, crm_statut, ...rest } = params || {};
+    const merged: Record<string, string> = { has_account: "false" };
+    if (statut) merged.crm_statut = statut;
+    if (crm_statut) merged.crm_statut = crm_statut;
+    Object.entries(rest).forEach(([k, v]) => { if (v !== undefined && v !== "") merged[k] = String(v); });
+    return this.request(`/persons/index.php?${new URLSearchParams(merged).toString()}`);
+  }
+
+  async getContact(id: string) {
+    return this.getPerson(id);
+  }
+
+  async createContact(data: Record<string, unknown>) {
+    return this.createPerson(data);
+  }
+
+  async updateContact(id: string, data: Record<string, unknown>) {
+    return this.updatePerson(id, data);
   }
 
   async deleteContact(id: string) {
-    return this.request(`/contacts/delete.php?id=${encodeURIComponent(id)}`, {
-      method: "DELETE",
-    });
+    return this.deletePerson(id);
   }
 
   async convertContactToUser(contactId: string, sendWelcomeEmail = true) {
-    return this.request("/contacts/convert-to-user.php", {
-      method: "POST",
-      body: JSON.stringify({ contact_id: contactId, send_welcome_email: sendWelcomeEmail }),
-    });
+    return this.convertPersonToUser(contactId, sendWelcomeEmail);
   }
 
   // ============= CODES PROMO =============
@@ -972,8 +1051,8 @@ class ApiClient {
   }
 
   // ============= PARRAINAGES =============
-  async getParrainages(userId?: string) {
-    const query = userId ? `?user_id=${userId}` : "";
+  async getParrainages(personId?: string) {
+    const query = personId ? `?person_id=${personId}` : "";
     return this.request(`/parrainages/index.php${query}`);
   }
 
@@ -992,8 +1071,8 @@ class ApiClient {
   }
 
   // ============= STATISTIQUES =============
-  async getAdminStats() {
-    return this.request("/admin/stats.php");
+  async getAnalytics(period: "day" | "week" | "month" | "year") {
+    return this.request(`/admin/analytics.php?period=${period}`);
   }
 
   // ============= NOTIFICATIONS =============
@@ -1002,8 +1081,9 @@ class ApiClient {
   }
 
   async markNotificationRead(id: string) {
-    return this.request(`/notifications/read.php?id=${id}`, {
+    return this.request("/notifications/read.php", {
       method: "PUT",
+      body: JSON.stringify({ id }),
     });
   }
 
@@ -1014,8 +1094,9 @@ class ApiClient {
   }
 
   async deleteNotification(id: string) {
-    return this.request(`/notifications/delete.php?id=${id}`, {
+    return this.request("/notifications/delete.php", {
       method: "DELETE",
+      body: JSON.stringify({ id }),
     });
   }
 
@@ -1085,9 +1166,13 @@ class ApiClient {
 
   // ============= CHECK-INS =============
   async createCheckin(data: Record<string, unknown>) {
+    const normalized = { ...data };
+    if (normalized.heure_arrivee_reelle) {
+      normalized.heure_arrivee_reelle = toMysqlDatetime(normalized.heure_arrivee_reelle as string);
+    }
     return this.request("/checkins/create.php", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify(normalized),
     });
   }
 
@@ -1096,7 +1181,7 @@ class ApiClient {
       method: "PUT",
       body: JSON.stringify({
         checkin_id: checkinId,
-        heure_depart_reel: heureDepart,
+        heure_depart_reel: heureDepart ? toMysqlDatetime(heureDepart) : undefined,
       }),
     });
   }
@@ -1110,6 +1195,26 @@ class ApiClient {
   async getTransactionsCaisse(date?: string) {
     const dateParam = date || new Date().toISOString().split("T")[0];
     return this.request(`/caisse/transactions.php?date=${dateParam}`);
+  }
+
+  async getAllTransactionsCaisse(filters: {
+    date_from?: string;
+    date_to?: string;
+    type?: string;
+    mode?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  } = {}) {
+    const params = new URLSearchParams({ all: "1" });
+    if (filters.date_from) params.set("date_from", filters.date_from);
+    if (filters.date_to)   params.set("date_to",   filters.date_to);
+    if (filters.type)      params.set("type",       filters.type);
+    if (filters.mode)      params.set("mode",       filters.mode);
+    if (filters.search)    params.set("search",     filters.search);
+    if (filters.page)      params.set("page",       String(filters.page));
+    if (filters.limit)     params.set("limit",      String(filters.limit));
+    return this.request(`/caisse/transactions.php?${params.toString()}`);
   }
 
   async createTransactionCaisse(data: Record<string, unknown>) {
@@ -1159,11 +1264,6 @@ class ApiClient {
 
   async getBlocages() {
     return this.request("/reservations/index.php?blocages=1");
-  }
-
-  async getRevenue(params?: { period?: string; dateDebut?: string; dateFin?: string }) {
-    const query = params ? "?" + new URLSearchParams(params as Record<string, string>).toString() : "";
-    return this.request(`/admin/revenue.php${query}`);
   }
 
   async forgotPassword(email: string) {

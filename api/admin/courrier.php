@@ -12,57 +12,55 @@ try {
         $domiciliationId = $_GET['domiciliation_id'] ?? null;
 
         if ($userRole !== 'admin' && $domiciliationId) {
-            $checkStmt = $db->prepare("SELECT user_id FROM domiciliations WHERE id = ?");
+            $checkStmt = $db->prepare("SELECT person_id FROM domiciliations WHERE id = ?");
             $checkStmt->execute([$domiciliationId]);
             $domiciliation = $checkStmt->fetch(PDO::FETCH_ASSOC);
-            if (!$domiciliation || $domiciliation['user_id'] !== $userId) {
+            if (!$domiciliation || $domiciliation['person_id'] !== $userId) {
                 Response::forbidden('Accès refusé');
             }
+        }
+
+        $page = max(1, intval($_GET['page'] ?? 1));
+        $limit = min(100, max(1, intval($_GET['limit'] ?? 50)));
+        $offset = ($page - 1) * $limit;
+
+        $where = "WHERE 1=1";
+        $params = [];
+
+        if ($domiciliationId) {
+            $where .= " AND c.domiciliation_id = ?";
+            $params[] = $domiciliationId;
+        } elseif ($userRole !== 'admin') {
+            $where .= " AND d.person_id = ?";
+            $params[] = $userId;
         }
 
         $query = "
             SELECT
                 c.*,
                 d.raison_sociale,
-                d.user_id,
-                u.email, u.prenom, u.nom
+                d.person_id,
+                u.email, u.prenom, u.nom,
+                COUNT(*) OVER() AS _total
             FROM courriers c
             LEFT JOIN domiciliations d ON c.domiciliation_id = d.id
-            LEFT JOIN users u ON d.user_id = u.id
-            WHERE 1=1
+            LEFT JOIN persons u ON d.person_id = u.id
+            $where
+            ORDER BY c.date_reception DESC
+            LIMIT ? OFFSET ?
         ";
-        $params = [];
-
-        if ($domiciliationId) {
-            $query .= " AND c.domiciliation_id = ?";
-            $params[] = $domiciliationId;
-        } elseif ($userRole !== 'admin') {
-            $query .= " AND d.user_id = ?";
-            $params[] = $userId;
-        }
-
-        $countQuery = "SELECT COUNT(*) as total FROM courriers c LEFT JOIN domiciliations d ON c.domiciliation_id = d.id WHERE 1=1";
-        $countParams = [];
-        if ($domiciliationId) {
-            $countQuery .= " AND c.domiciliation_id = ?";
-            $countParams[] = $domiciliationId;
-        } elseif ($userRole !== 'admin') {
-            $countQuery .= " AND d.user_id = ?";
-            $countParams[] = $userId;
-        }
-        $countStmt = $db->prepare($countQuery);
-        $countStmt->execute($countParams);
-        $total = (int) $countStmt->fetchColumn();
-
-        $page = max(1, intval($_GET['page'] ?? 1));
-        $limit = min(100, max(1, intval($_GET['limit'] ?? 50)));
-        $offset = ($page - 1) * $limit;
-
-        $query .= " ORDER BY c.date_reception DESC LIMIT $limit OFFSET $offset";
+        $params[] = $limit;
+        $params[] = $offset;
 
         $stmt = $db->prepare($query);
         $stmt->execute($params);
-        $courriers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $total = !empty($rows) ? (int) $rows[0]['_total'] : 0;
+        $courriers = array_map(function($row) {
+            unset($row['_total']);
+            return $row;
+        }, $rows);
 
         Response::success([
             'courriers' => $courriers,
@@ -85,7 +83,7 @@ try {
             Response::error('Données manquantes: domiciliation_id, type requis', 400);
         }
 
-        $domStmt = $db->prepare("SELECT user_id, raison_sociale FROM domiciliations WHERE id = ?");
+        $domStmt = $db->prepare("SELECT person_id, raison_sociale FROM domiciliations WHERE id = ?");
         $domStmt->execute([$data['domiciliation_id']]);
         $domRow = $domStmt->fetch(PDO::FETCH_ASSOC);
         if (!$domRow) {
@@ -111,11 +109,38 @@ try {
         $userStmt = $db->prepare("
             SELECT u.email, u.prenom, u.nom, d.raison_sociale
             FROM domiciliations d
-            LEFT JOIN users u ON d.user_id = u.id
+            LEFT JOIN persons u ON d.person_id = u.id
             WHERE d.id = ?
         ");
         $userStmt->execute([$data['domiciliation_id']]);
         $domiciliation = $userStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($domiciliation && $domiciliation['email']) {
+            try {
+                $notifId = UuidHelper::generate();
+                $notifStmt = $db->prepare("
+                    INSERT INTO notifications (id, person_id, type, titre, message, lue)
+                    VALUES (?, ?, 'domiciliation', ?, ?, 0)
+                ");
+                $notifStmt->execute([
+                    $notifId,
+                    $domRow['person_id'],
+                    'Nouveau courrier reçu',
+                    "Un nouveau courrier a été reçu pour {$domiciliation['raison_sociale']}",
+                ]);
+            } catch (Exception $e) {
+                Logger::warning('Courrier notification insert failed', ['error' => $e->getMessage()]);
+            }
+        }
+
+        http_response_code(200);
+        echo json_encode(['success' => true, 'data' => ['id' => $id, 'message' => 'Courrier enregistré et client notifié']]);
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } else {
+            if (ob_get_level() > 0) { ob_end_flush(); }
+            flush();
+        }
 
         if ($domiciliation && $domiciliation['email']) {
             try {
@@ -134,28 +159,7 @@ try {
             } catch (Exception $e) {
                 Logger::warning('Courrier email notification failed', ['error' => $e->getMessage()]);
             }
-
-            try {
-                $notifId = UuidHelper::generate();
-                $notifStmt = $db->prepare("
-                    INSERT INTO notifications (id, user_id, type, titre, message, lue)
-                    VALUES (?, ?, 'domiciliation', ?, ?, 0)
-                ");
-                $notifStmt->execute([
-                    $notifId,
-                    $domRow['user_id'],
-                    'Nouveau courrier reçu',
-                    "Un nouveau courrier a été reçu pour {$domiciliation['raison_sociale']}",
-                ]);
-            } catch (Exception $e) {
-                Logger::warning('Courrier notification insert failed', ['error' => $e->getMessage()]);
-            }
         }
-
-        Response::success([
-            'id' => $id,
-            'message' => 'Courrier enregistré et client notifié'
-        ]);
 
     } elseif ($method === 'PUT') {
         $rawInput = file_get_contents('php://input');
@@ -171,7 +175,7 @@ try {
         }
 
         $checkStmt = $db->prepare("
-            SELECT c.*, d.user_id
+            SELECT c.*, d.person_id
             FROM courriers c
             LEFT JOIN domiciliations d ON c.domiciliation_id = d.id
             WHERE c.id = ?
@@ -183,7 +187,7 @@ try {
             Response::notFound('Courrier non trouvé');
         }
 
-        if ($userRole !== 'admin' && $courrier['user_id'] !== $userId) {
+        if ($userRole !== 'admin' && $courrier['person_id'] !== $userId) {
             Response::forbidden('Accès refusé');
         }
 
@@ -234,6 +238,33 @@ try {
                 WHERE id = ?
             ");
             $updateStmt->execute([$instruction, $courrierId]);
+
+            // Notifier l'admin quand c'est le client qui donne une instruction (pas l'admin lui-même)
+            if ($userRole !== 'admin') {
+                try {
+                    $instrInfoStmt = $db->prepare("
+                        SELECT d.raison_sociale, u.email
+                        FROM domiciliations d
+                        LEFT JOIN persons u ON d.person_id = u.id
+                        WHERE d.id = ?
+                        LIMIT 1
+                    ");
+                    $instrInfoStmt->execute([$courrier['domiciliation_id']]);
+                    $instrInfo = $instrInfoStmt->fetch(PDO::FETCH_ASSOC);
+                    if ($instrInfo) {
+                        AdminNotifier::courrierInstruction(
+                            $instrInfo['raison_sociale'] ?? '',
+                            $instrInfo['email'] ?? '',
+                            $instruction,
+                            $courrier['expediteur'] ?? '',
+                            $courrier['type'] ?? ''
+                        );
+                    }
+                } catch (Exception $notifErr) {
+                    Logger::error('Admin courrier instruction notification failed', ['error' => $notifErr->getMessage()]);
+                }
+            }
+
             Response::success(['message' => 'Instruction enregistrée']);
 
         } elseif (isset($data['statut'])) {

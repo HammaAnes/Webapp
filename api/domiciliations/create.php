@@ -23,7 +23,7 @@ try {
     $reglesDom = $rules['domiciliation'];
     $reglesIds  = $rules['identifiants_fiscaux'];
 
-    if (empty($data->raison_sociale) && empty($data->forme_juridique)) {
+    if (($data->type_structure ?? 'societe') === 'societe' && empty($data->raison_sociale) && empty($data->forme_juridique)) {
         Response::error("Raison sociale ou forme juridique requise", 400);
     }
 
@@ -65,62 +65,29 @@ try {
     $database = Database::getInstance();
     $db = $database->getConnection();
 
-    $target_user_id = null;
-    $target_contact_id = null;
+    $target_person_id  = null;
     $is_admin_creation = false;
 
     if ($auth['role'] === 'admin') {
         $is_admin_creation = true;
 
-        if (!empty($data->user_id) && !empty($data->contact_id)) {
-            Response::error("Une domiciliation ne peut être liée qu'à un utilisateur OU un contact, pas les deux", 400);
-        }
-
-        if (!empty($data->user_id)) {
-            $target_user_id = $data->user_id;
-
-            $query = "SELECT id FROM users WHERE id = :user_id";
-            $stmt = $db->prepare($query);
-            $stmt->execute([':user_id' => $target_user_id]);
-            if (!$stmt->fetch()) {
-                Response::error("Utilisateur introuvable", 404);
-            }
-        } elseif (!empty($data->contact_id)) {
-            $target_contact_id = $data->contact_id;
-
-            $query = "SELECT id FROM contacts WHERE id = :contact_id";
-            $stmt = $db->prepare($query);
-            $stmt->execute([':contact_id' => $target_contact_id]);
-            if (!$stmt->fetch()) {
-                Response::error("Contact introuvable", 404);
-            }
-        } else {
+        $target_person_id = $data->person_id ?? $data->user_id ?? null;
+        if (empty($target_person_id)) {
             Response::error("Un utilisateur ou un contact est requis", 400);
         }
+
+        $stmt = $db->prepare("SELECT id FROM persons WHERE id = :id");
+        $stmt->execute([':id' => $target_person_id]);
+        if (!$stmt->fetch()) {
+            Response::error("Personne introuvable", 404);
+        }
     } else {
-        $target_user_id = $auth['id'];
+        $target_person_id = $auth['id'];
     }
 
     $db->beginTransaction();
 
-    if ($target_user_id) {
-        $query = "SELECT id FROM domiciliations
-                  WHERE user_id = :user_id
-                  AND statut IN ('dossier_preparatoire', 'en_attente_signature', 'domiciliation_creee', 'en_attente_complements', 'active')
-                  FOR UPDATE";
-
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(':user_id', $target_user_id);
-        $stmt->execute();
-
-        if ($stmt->rowCount() > 0) {
-            $db->rollBack();
-            $msg = $is_admin_creation
-                ? "Cet utilisateur a déjà une domiciliation en cours ou active"
-                : "Vous avez déjà une demande de domiciliation en cours ou active";
-            Response::error($msg, 400);
-        }
-    }
+    // Plusieurs domiciliations (sociétés différentes) sont autorisées pour un même utilisateur.
 
     if (!empty($data->numero_bureau)) {
         $numBureau = intval($data->numero_bureau);
@@ -158,13 +125,19 @@ try {
 
     $statut_initial = $is_admin_creation && !empty($data->statut) ? $data->statut : 'dossier_preparatoire';
 
+    // Résoudre le montant mensuel avec fallback sur le défaut pour les domiciliations actives admin
+    $montantMensuelResolu = isset($data->montant_mensuel) ? floatval($data->montant_mensuel) : null;
+    if ($is_admin_creation && in_array($statut_initial, ['active', 'domiciliation_creee']) && $montantMensuelResolu === null) {
+        $montantMensuelResolu = $reglesDom['montant_mensuel_defaut'];
+    }
+
     $options_json = null;
     if (isset($data->options)) {
         $options_json = is_string($data->options) ? $data->options : json_encode($data->options);
     }
 
     $query = "INSERT INTO domiciliations
-              (id, user_id, contact_id, situation_administrative, type_structure,
+              (id, person_id, situation_administrative, type_structure,
                raison_sociale, forme_juridique, capital,
                activite_principale, nif, nis, registre_commerce, article_imposition,
                numero_auto_entrepreneur, code_nae, activite_exercee, description_activite,
@@ -177,7 +150,7 @@ try {
                options, cgu_acceptees, date_cgu_acceptation, date_debut_souhaitee,
                statut, montant_mensuel, date_debut, date_fin, notes_admin, commentaire_admin)
               VALUES
-              (:id, :user_id, :contact_id, :situation_administrative, :type_structure,
+              (:id, :person_id, :situation_administrative, :type_structure,
                :raison_sociale, :forme_juridique, :capital,
                :activite_principale, :nif, :nis, :registre_commerce, :article_imposition,
                :numero_auto_entrepreneur, :code_nae, :activite_exercee, :description_activite,
@@ -191,10 +164,9 @@ try {
                :statut, :montant_mensuel, :date_debut, :date_fin, :notes_admin, :commentaire_admin)";
 
     $stmt = $db->prepare($query);
-    $stmt->execute([
-        ':id' => $id,
-        ':user_id' => $target_user_id,
-        ':contact_id' => $target_contact_id,
+    $params = [
+        ':id'        => $id,
+        ':person_id' => $target_person_id,
         ':situation_administrative' => $data->situation_administrative ?? 'deja_creee',
         ':type_structure' => $data->type_structure ?? 'societe',
         ':raison_sociale' => $data->raison_sociale ?? null,
@@ -232,15 +204,16 @@ try {
         ':date_cgu_acceptation' => !empty($data->cgu_acceptees) ? date('Y-m-d H:i:s') : null,
         ':date_debut_souhaitee' => $data->date_debut_souhaitee ?? null,
         ':statut' => $statut_initial,
-        ':montant_mensuel' => isset($data->montant_mensuel) ? floatval($data->montant_mensuel) : null,
+        ':montant_mensuel' => $montantMensuelResolu,
         ':date_debut' => $data->date_debut ?? null,
         ':date_fin' => $data->date_fin ?? null,
         ':notes_admin' => $data->notes_admin ?? null,
-        ':commentaire_admin' => $data->commentaire_admin ?? null
-    ]);
+        ':commentaire_admin' => $data->commentaire_admin ?? null,
+    ];
+    $stmt->execute($params);
 
-    if ($is_admin_creation && $target_user_id && in_array($statut_initial, ['active', 'domiciliation_creee']) && !empty($data->montant_mensuel)) {
-        $montant_mensuel = floatval($data->montant_mensuel);
+    if ($is_admin_creation && $target_person_id && in_array($statut_initial, ['active', 'domiciliation_creee']) && $montantMensuelResolu > 0) {
+        $montant_mensuel = $montantMensuelResolu;
         $mois = 6;
         if (!empty($data->date_debut_contrat) && !empty($data->date_fin_contrat)) {
             try {
@@ -260,28 +233,22 @@ try {
         }
         $montant_total = $montant_mensuel * $mois;
 
-        $transaction_id = UuidHelper::generate();
-        $transQuery = "INSERT INTO transactions
-                  (id, user_id, type, montant, statut, mode_paiement, reference, description, date_paiement)
-                  VALUES
-                  (:id, :user_id, 'domiciliation', :montant, 'completee', :mode_paiement, :reference, :description, NOW())";
-
-        $transStmt = $db->prepare($transQuery);
-        $transStmt->execute([
-            ':id' => $transaction_id,
-            ':user_id' => $target_user_id,
-            ':montant' => $montant_total,
-            ':mode_paiement' => $data->mode_paiement ?? 'cash',
-            ':reference' => 'DOM-' . date('YmdHis'),
-            ':description' => 'Domiciliation ' . $mois . ' mois - ' . ($data->raison_sociale ?? '')
+        CaisseHelper::insert($db, [
+            'domiciliation_id'  => $id,
+            'person_id'         => $target_person_id,
+            'type_transaction'  => 'domiciliation',
+            'montant'           => $montant_total,
+            'mode_paiement'     => $data->mode_paiement ?? 'cash',
+            'statut'            => 'encaisse',
+            'notes'             => 'Domiciliation ' . $mois . ' mois - ' . ($data->raison_sociale ?? ''),
         ]);
     }
 
     $db->commit();
 
     try {
-        $userStmt = $db->prepare("SELECT prenom, nom, email FROM users WHERE id = ?");
-        $userStmt->execute([$target_user_id]);
+        $userStmt = $db->prepare("SELECT prenom, nom, email FROM persons WHERE id = ?");
+        $userStmt->execute([$target_person_id]);
         $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
         if ($userRow) {
             if (!$is_admin_creation) {
@@ -309,5 +276,5 @@ try {
         $db->rollBack();
     }
     error_log("Create domiciliation error: " . $e->getMessage());
-    Response::serverError();
+    Response::serverError("Erreur lors de la création : " . $e->getMessage());
 }

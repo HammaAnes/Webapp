@@ -14,6 +14,7 @@ export interface CreateReservationForm {
   heure_fin: string;
   participants: number;
   notes: string;
+  reduction: number;
 }
 
 interface Props {
@@ -39,7 +40,7 @@ const ReservationCreateModal: React.FC<Props> = ({
   espaces,
   loading,
 }) => (
-  <Modal isOpen={isOpen} onClose={onClose} title="Nouvelle Réservation" subtitle="Créer une réservation pour un client" size="lg">
+  <Modal isOpen={isOpen} onClose={onClose} title="Nouvelle Location" subtitle="Créer une location pour un client" size="lg">
     <form onSubmit={onSubmit} className="space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <UserSelector value={selectedUser} onChange={setSelectedUser} label="Client" required />
@@ -89,7 +90,7 @@ const ReservationCreateModal: React.FC<Props> = ({
         ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Participants</label>
           <input
@@ -97,6 +98,17 @@ const ReservationCreateModal: React.FC<Props> = ({
             value={formData.participants}
             onChange={(e) => setFormData({ ...formData, participants: parseInt(e.target.value) || 1 })}
             min="1"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Remise (DA)</label>
+          <input
+            type="number"
+            value={formData.reduction}
+            onChange={(e) => setFormData({ ...formData, reduction: Math.max(0, parseInt(e.target.value) || 0) })}
+            min="0"
+            placeholder="0"
             className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm"
           />
         </div>
@@ -117,7 +129,7 @@ const ReservationCreateModal: React.FC<Props> = ({
           Annuler
         </Button>
         <Button type="submit" disabled={loading} className="flex-1 bg-gray-900 hover:bg-gray-800 text-white" loading={loading}>
-          Créer la réservation
+          Créer la location
         </Button>
       </div>
     </form>

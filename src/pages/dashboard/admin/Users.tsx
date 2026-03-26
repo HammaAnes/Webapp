@@ -23,6 +23,8 @@ import Card from "../../../components/ui/Card";
 import Badge from "../../../components/ui/Badge";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
+import AdminPageHeader from "../../../components/admin/AdminPageHeader";
+import AdminKpiCard from "../../../components/admin/AdminKpiCard";
 import { CreateUserModal } from "../../../components/admin/CreateUserModal";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { useConfirm } from "../../../hooks/useConfirm";
@@ -180,7 +182,7 @@ const Users = () => {
   }, [users]);
 
   const getUserReservations = (userId: string) => {
-    return reservations.filter((r) => r.userId === userId);
+    return reservations.filter((r) => r.personId === userId);
   };
 
   const exportToCSV = () => {
@@ -218,85 +220,32 @@ const Users = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Gestion des Utilisateurs
-        </h1>
-        <div className="flex gap-2">
-          <Button
-            onClick={handleRefresh}
-            variant="ghost"
-            className="gap-2"
-            disabled={isLoading}
-          >
-            <RefreshCw
-              className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
-            />
-            Actualiser
-          </Button>
-          <Button onClick={exportToCSV} variant="ghost" className="gap-2">
-            <Download className="w-4 h-4" />
-            Exporter CSV
-          </Button>
-          <Button onClick={() => setShowCreateModal(true)} className="gap-2">
-            <UserPlus className="w-4 h-4" />
-            Nouvel Utilisateur
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Utilisateurs"
+        subtitle={`${stats.total} compte${stats.total > 1 ? "s" : ""} enregistrés`}
+        actions={
+          <>
+            <Button onClick={handleRefresh} variant="ghost" size="sm" className="gap-1.5" disabled={isLoading}>
+              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline">Actualiser</span>
+            </Button>
+            <Button onClick={exportToCSV} variant="outline" size="sm" className="gap-1.5">
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Exporter</span>
+            </Button>
+            <Button onClick={() => setShowCreateModal(true)} size="sm" className="gap-1.5 bg-gray-900 hover:bg-gray-800 text-white">
+              <UserPlus className="w-4 h-4" />
+              <span className="hidden sm:inline">Nouvel utilisateur</span>
+            </Button>
+          </>
+        }
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-              <UsersIcon className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Actifs</p>
-              <p className="text-2xl font-bold text-green-600">
-                {stats.actifs}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-              <UserCheck className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Admins</p>
-              <p className="text-2xl font-bold text-teal-600">{stats.admins}</p>
-            </div>
-            <div className="w-12 h-12 bg-teal-50 rounded-lg flex items-center justify-center">
-              <Shield className="w-6 h-6 text-teal-600" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Nouveaux ce mois</p>
-              <p className="text-2xl font-bold text-orange-600">
-                {stats.nouveaux}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-orange-600" />
-            </div>
-          </div>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <AdminKpiCard icon={UsersIcon}   label="Total"          value={stats.total}    color="blue"    />
+        <AdminKpiCard icon={UserCheck}   label="Actifs"         value={stats.actifs}   color="emerald" />
+        <AdminKpiCard icon={Shield}      label="Admins"         value={stats.admins}   color="teal"    />
+        <AdminKpiCard icon={TrendingUp}  label="Nouveaux / mois" value={stats.nouveaux} color="orange"  />
       </div>
 
       <Card className="p-6">

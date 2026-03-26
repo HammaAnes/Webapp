@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { differenceInDays } from "date-fns";
 import { Building2, User, CheckCircle, Scale, PlayCircle, XCircle, AlertCircle } from "lucide-react";
-import type { DemandeDomiciliation } from "../types";
+import type { DemandeDomiciliation } from "../../../domiciliation/domain/types";
 import { getDisplayName } from "../utils";
 
 interface Props {

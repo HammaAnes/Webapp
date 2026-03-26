@@ -23,7 +23,7 @@ export interface MonthAvailabilityData {
 
 export function isClosedDay(date: Date): boolean {
   const day = getDay(date);
-  return day === 5 || day === 6;
+  return day === 5; // vendredi uniquement
 }
 
 interface ApiDayData {
@@ -60,7 +60,7 @@ export async function fetchMonthAvailability(
   monthEnd: string,
 ): Promise<MonthAvailabilityData> {
   const response = await apiClient.request(
-    `/reservations/availability.php?espace_id=${espaceId}&date_debut=${monthStart}&date_fin=${monthEnd}`,
+    `/reservations/availability.php?espace_id=${encodeURIComponent(espaceId)}&date_debut=${encodeURIComponent(monthStart)}&date_fin=${encodeURIComponent(monthEnd)}`,
   );
 
   if (response.success && response.data) {

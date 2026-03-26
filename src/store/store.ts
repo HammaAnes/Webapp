@@ -17,34 +17,23 @@ import type {
   User,
   Espace,
   Reservation,
-  Transaction,
   DemandeDomiciliation,
   CodePromo,
   CreateReservationData,
   CreateDomiciliationData,
   Abonnement,
   AbonnementUtilisateur,
-  NotificationSettings,
 } from "../types";
-
-function toLocalISOString(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return (
-    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
-  );
-}
+import { toLocalISOString } from "../utils/formatters";
 
 interface AppState {
   users: User[];
   espaces: Espace[];
   reservations: Reservation[];
-  transactions: Transaction[];
   demandesDomiciliation: DemandeDomiciliation[];
   codesPromo: CodePromo[];
   abonnements: Abonnement[];
   abonnementsUtilisateurs: AbonnementUtilisateur[];
-  notificationSettings: NotificationSettings;
   initialized: boolean;
   loading: boolean;
   initError: string | null;
@@ -83,7 +72,7 @@ interface AppState {
   loadCodesPromo: () => Promise<void>;
 
   loadDemandesDomiciliation: () => Promise<void>;
-  getUserDemandeDomiciliation: (userId: string) => DemandeDomiciliation | null;
+  getUserDemandeDomiciliation: (personId: string) => DemandeDomiciliation | null;
   createDemandeDomiciliation: (
     data: CreateDomiciliationData,
   ) => Promise<{ success: boolean; error?: string; id?: string }>;
@@ -91,20 +80,11 @@ interface AppState {
   loadUsers: () => Promise<void>;
   addUser: (
     data: Partial<User>,
-  ) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<{ success: boolean; error?: string; user?: User; tempPassword?: string }>;
   updateUser: (userId: string, data: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>;
   deleteUser: (userId: string) => Promise<{ success: boolean; error?: string }>;
 
-  getNotificationSettings: () => NotificationSettings;
-  updateNotificationSettings: (settings: Partial<NotificationSettings>) => void;
 }
-
-const defaultNotificationSettings: NotificationSettings = {
-  emailNotificationsEnabled: true,
-  reservationReminders: true,
-  paymentNotifications: true,
-  maintenanceAlerts: true,
-};
 
 function extractArray(data: unknown): Record<string, unknown>[] {
   if (Array.isArray(data)) return data as Record<string, unknown>[];
@@ -121,12 +101,10 @@ export const useAppStore = create<AppState>()(
       users: [],
       espaces: [],
       reservations: [],
-      transactions: [],
       demandesDomiciliation: [],
       codesPromo: [],
       abonnements: [],
       abonnementsUtilisateurs: [],
-      notificationSettings: defaultNotificationSettings,
       initialized: false,
       loading: false,
       initError: null,
@@ -169,10 +147,8 @@ export const useAppStore = create<AppState>()(
           const response = await apiClient.getEspaces();
           if (response.success && response.data) {
             const dataArray = extractArray(response.data);
-            if (dataArray.length > 0 || Array.isArray(response.data)) {
-              const espaces = dataArray.map((e) => espaceAdapter.fromAPI(e));
-              set({ espaces });
-            }
+            const espaces = dataArray.map((e) => espaceAdapter.fromAPI(e));
+            set({ espaces });
           }
         } catch (error) {
           logger.error("Erreur chargement espaces:", error instanceof Error ? error.message : String(error));
@@ -242,7 +218,7 @@ export const useAppStore = create<AppState>()(
             const rawData = extractArray(response.data);
             const abonnementsUtilisateurs = rawData.map((a: Record<string, unknown>) => ({
               id: String(a.id || ""),
-              userId: String(a.user_id || ""),
+              personId: String(a.person_id || ""),
               abonnementId: String(a.abonnement_id || ""),
               dateDebut: String(a.date_debut || ""),
               dateFin: String(a.date_fin || ""),
@@ -373,9 +349,9 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      getUserDemandeDomiciliation: (userId) => {
-        if (!userId) return null;
-        const userDemandes = get().demandesDomiciliation.filter((d) => d.userId === userId);
+      getUserDemandeDomiciliation: (personId) => {
+        if (!personId) return null;
+        const userDemandes = get().demandesDomiciliation.filter((d) => d.personId === personId);
         if (userDemandes.length === 0) return null;
         const activePriority = ["active", "domiciliation_creee", "en_attente_complements", "en_attente_signature", "dossier_preparatoire"];
         for (const statut of activePriority) {
@@ -412,7 +388,10 @@ export const useAppStore = create<AppState>()(
         try {
           const response = await apiClient.getUsers();
           if (response.success && response.data) {
-            const rawData = extractArray(response.data);
+            const d = response.data as Record<string, unknown>;
+            const rawData = Array.isArray(d.persons)
+              ? (d.persons as Record<string, unknown>[])
+              : extractArray(response.data);
             const users = rawData.map((u) => userAdapter.fromAPI(u));
             set({ users });
           }
@@ -479,21 +458,10 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      getNotificationSettings: () => {
-        return get().notificationSettings;
-      },
-
-      updateNotificationSettings: (settings) => {
-        set((state) => ({
-          notificationSettings: { ...state.notificationSettings, ...settings },
-        }));
-      },
     }),
     {
       name: "coffice-app-storage",
-      partialize: (state) => ({
-        notificationSettings: state.notificationSettings,
-      }),
+      partialize: () => ({}),
     },
   ),
 );

@@ -5,10 +5,7 @@
  * POST /api/codes-promo/create.php
  */
 
-require_once '../config/cors.php';
-require_once '../config/database.php';
-require_once '../utils/Auth.php';
-require_once '../utils/Response.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 try {
     $auth = Auth::requireAdmin();
@@ -22,15 +19,9 @@ try {
         Response::error("Type invalide. Doit être 'pourcentage' ou 'montant_fixe'", 400);
     }
 
-    $database = Database::getInstance();
-    $db = $database->getConnection();
-
     // Vérifier que le code n'existe pas déjà
-    $query = "SELECT COUNT(*) as count FROM codes_promo WHERE code = :code";
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':code', $data->code);
-    $stmt->execute();
-
+    $stmt = $db->prepare("SELECT COUNT(*) as count FROM codes_promo WHERE code = ?");
+    $stmt->execute([strtoupper($data->code)]);
     if ($stmt->fetch()['count'] > 0) {
         Response::error("Ce code promo existe déjà", 400);
     }
@@ -46,32 +37,34 @@ try {
     }
 
     // Créer le code promo
-    $query = "INSERT INTO codes_promo (
-                id, code, type, valeur, date_debut, date_fin,
-                utilisations_max, montant_min, types_application,
-                actif, description, conditions
-              ) VALUES (
-                UUID(), :code, :type, :valeur, :date_debut, :date_fin,
-                :utilisations_max, :montant_min, :types_application,
-                :actif, :description, :conditions
-              )";
-
-    $stmt = $db->prepare($query);
+    $id = UuidHelper::generate();
+    $stmt = $db->prepare("
+        INSERT INTO codes_promo (
+            id, code, type, valeur, date_debut, date_fin,
+            utilisations_max, montant_min, types_application,
+            actif, description, conditions
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?,
+            ?, ?, ?,
+            ?, ?, ?
+        )
+    ");
     $stmt->execute([
-        ':code' => strtoupper($data->code),
-        ':type' => $data->type,
-        ':valeur' => $data->valeur,
-        ':date_debut' => $data->date_debut,
-        ':date_fin' => $data->date_fin,
-        ':utilisations_max' => $data->utilisations_max ?? null,
-        ':montant_min' => $data->montant_min ?? 0,
-        ':types_application' => $typesApplication,
-        ':actif' => $data->actif ?? true,
-        ':description' => $data->description ?? null,
-        ':conditions' => $data->conditions ?? null
+        $id,
+        strtoupper($data->code),
+        $data->type,
+        $data->valeur,
+        $data->date_debut,
+        $data->date_fin,
+        $data->utilisations_max ?? null,
+        $data->montant_min ?? 0,
+        $typesApplication,
+        isset($data->actif) ? (int)(bool)$data->actif : 1,
+        $data->description ?? null,
+        $data->conditions ?? null,
     ]);
 
-    Response::success(['code' => strtoupper($data->code)], "Code promo créé avec succès", 201);
+    Response::success(['id' => $id, 'code' => strtoupper($data->code)], "Code promo créé avec succès", 201);
 
 } catch (Exception $e) {
     error_log("Create promo error: " . $e->getMessage());

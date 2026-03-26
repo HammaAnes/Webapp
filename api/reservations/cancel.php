@@ -22,8 +22,6 @@ try {
 
     $id = $data['id'];
 
-    $db = Database::getInstance()->getConnection();
-
     $stmt = $db->prepare("SELECT * FROM reservations WHERE id = ?");
     $stmt->execute([$id]);
     $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -32,7 +30,7 @@ try {
         Response::error("Reservation introuvable", 404);
     }
 
-    if (!$isAdmin && $reservation['user_id'] !== $userId) {
+    if (!$isAdmin && $reservation['person_id'] !== $userId) {
         Response::error("Acces refuse", 403);
     }
 
@@ -55,12 +53,16 @@ try {
     }
 
     if (!empty($reservation['code_promo_id'])) {
-        $stmtPromo = $db->prepare("
+        $db->prepare("
             UPDATE codes_promo
             SET utilisations_actuelles = GREATEST(utilisations_actuelles - 1, 0)
             WHERE id = ?
-        ");
-        $stmtPromo->execute([$reservation['code_promo_id']]);
+        ")->execute([$reservation['code_promo_id']]);
+
+        // BUG 5.3 fix: supprimer aussi l'enregistrement d'utilisation individuel
+        $db->prepare("
+            DELETE FROM utilisations_codes_promo WHERE reservation_id = ?
+        ")->execute([$id]);
     }
 
     $db->commit();
@@ -74,8 +76,17 @@ try {
     $stmt->execute([$id]);
     $updated = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    http_response_code(200);
+    echo json_encode(['success' => true, 'data' => $updated, 'message' => 'Reservation annulee']);
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    } else {
+        if (ob_get_level() > 0) { ob_end_flush(); }
+        flush();
+    }
+
     try {
-        $userStmt = $db->prepare("SELECT prenom, nom, email FROM users WHERE id = ?");
+        $userStmt = $db->prepare("SELECT prenom, nom, email FROM persons WHERE id = ?");
         $userStmt->execute([$userId]);
         $user = $userStmt->fetch(PDO::FETCH_ASSOC);
         if ($user) {
@@ -84,8 +95,6 @@ try {
     } catch (Exception $notifErr) {
         error_log("Admin notification error: " . $notifErr->getMessage());
     }
-
-    Response::success($updated, "Reservation annulee");
 
 } catch (Exception $e) {
     if (isset($db) && $db->inTransaction()) {

@@ -26,14 +26,15 @@ try {
     $espace = $stmtEspace->fetch(PDO::FETCH_ASSOC);
     if (!$espace) Response::error("Espace introuvable", 404);
 
-    $isOpenSpace = strtolower($espace['type']) === 'open_space';
+    $typeNorm = strtolower(str_replace([' ', '-'], '_', $espace['type'] ?? ''));
+    $isOpenSpace = in_array($typeNorm, ['open_space', 'openspace', 'coworking', 'flex', 'flex_office']);
     $capacite = max(1, intval($espace['capacite']));
 
     $dateDebutFull = (strlen($dateDebut) <= 10) ? $dateDebut . ' 00:00:00' : $dateDebut;
     $dateFinFull   = (strlen($dateFin) <= 10)   ? $dateFin . ' 23:59:59'   : $dateFin;
 
     $stmt = $db->prepare("
-        SELECT date_debut, date_fin, GREATEST(COALESCE(participants, 1), 1) as participants, statut, user_id
+        SELECT date_debut, date_fin, GREATEST(COALESCE(participants, 1), 1) as participants, statut
         FROM reservations
         WHERE espace_id = ?
         AND statut NOT IN ('annulee', 'terminee')
@@ -53,11 +54,15 @@ try {
     $current = strtotime(substr($dateDebut, 0, 10));
     $end     = strtotime(substr($dateFin, 0, 10));
 
+    if ($current === false || $end === false) {
+        Response::error("Format de date invalide", 400);
+    }
+
     while ($current <= $end) {
         $dayStr    = date('Y-m-d', $current);
         $dayOfWeek = (int)date('N', $current);
 
-        if ($dayOfWeek == 5 || $dayOfWeek == 6) {
+        if ($dayOfWeek == 5) { // vendredi uniquement fermé
             $current += 86400;
             continue;
         }

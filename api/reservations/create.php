@@ -71,7 +71,7 @@ try {
     $auth = Auth::verifyAuth();
     $authUserId = $auth['id'];
 
-    $stmtUser = $db->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
+    $stmtUser = $db->prepare("SELECT * FROM persons WHERE id = ? AND role IS NOT NULL LIMIT 1");
     $stmtUser->execute([$authUserId]);
     $authUser = $stmtUser->fetch(PDO::FETCH_ASSOC);
     if (!$authUser) {
@@ -85,32 +85,27 @@ try {
         Response::error("Donnees JSON invalides", 400);
     }
 
-    $targetUserId = $data['user_id'] ?? null;
-    $targetContactId = $data['contact_id'] ?? null;
+    $targetPersonId  = $data['person_id'] ?? $data['user_id'] ?? null;
     $espaceId = $data['espace_id'] ?? null;
     $dateDebut = $data['date_debut'] ?? null;
     $dateFin = $data['date_fin'] ?? null;
     $participants = max(1, isset($data['participants']) ? intval($data['participants']) : 1);
     $notes = isset($data['notes']) ? trim($data['notes']) : '';
+    if (strlen($notes) > 1000) {
+        Response::error("Les notes ne peuvent pas dépasser 1000 caractères", 400);
+    }
     $codePromo = $data['code_promo'] ?? null;
     $statutDemande = $data['statut'] ?? null;
 
-    $db = Database::getInstance()->getConnection();
-
     $allowedStatuts = ['en_attente', 'confirmee', 'en_cours', 'terminee', 'annulee'];
     if ($authUser['role'] === 'admin') {
-        if ($targetUserId && $targetContactId) {
-            Response::error("Une reservation ne peut etre liee qu'a un utilisateur OU un contact, pas les deux", 400);
-        }
-        if (!$targetUserId && !$targetContactId) {
+        if (!$targetPersonId) {
             Response::error("Un utilisateur ou un contact est requis pour la reservation", 400);
         }
-        $userId = $targetUserId;
-        $contactId = $targetContactId;
+        $personId      = $targetPersonId;
         $statutInitial = ($statutDemande && in_array($statutDemande, $allowedStatuts)) ? $statutDemande : 'en_attente';
     } else {
-        $userId = $authUserId;
-        $contactId = null;
+        $personId      = $authUserId;
         $statutInitial = 'en_attente';
 
         $stmtCni = $db->prepare("SELECT id FROM documents_uploads WHERE user_id = ? AND type_document = 'carte_identite' LIMIT 1");
@@ -164,11 +159,11 @@ try {
 
     $debutDow = (int)date('N', $debut);
     $finDow   = (int)date('N', $fin);
-    if ($debutDow == 5 || $debutDow == 6) {
-        Response::error("Coffice est fermé le vendredi et le samedi", 400);
+    if ($debutDow == 5) {
+        Response::error("Coffice est fermé le vendredi", 400);
     }
-    if ($finDow == 5 || $finDow == 6) {
-        Response::error("La date de fin tombe un jour de fermeture (vendredi ou samedi)", 400);
+    if ($finDow == 5) {
+        Response::error("La date de fin tombe un vendredi (jour de fermeture)", 400);
     }
 
     $debutHour    = (int)date('H', $debut);
@@ -190,7 +185,7 @@ try {
     $debutMysql = date('Y-m-d H:i:s', $debut);
     $finMysql   = date('Y-m-d H:i:s', $fin);
 
-    $stmt = $db->prepare("SELECT id, nom, type, capacite, disponible FROM espaces WHERE id = ?");
+    $stmt = $db->prepare("SELECT id, nom, type, capacite, disponible, prix_heure, prix_demi_journee, prix_jour, prix_semaine, prix_mois FROM espaces WHERE id = ?");
     $stmt->execute([$espaceId]);
     $espace = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -219,9 +214,7 @@ try {
 
     $rules = require __DIR__ . '/../config/business-rules.php';
 
-    $stmtTarifs = $db->prepare("SELECT prix_heure, prix_demi_journee, prix_jour, prix_semaine, prix_mois FROM espaces WHERE id = ?");
-    $stmtTarifs->execute([$espaceId]);
-    $tarifs = $stmtTarifs->fetch(PDO::FETCH_ASSOC);
+    $tarifs = $espace; // prix_* sont déjà dans le même fetch
 
     $priceResult = computeReservationPrice($tarifs, $debut, $fin, $rules);
     $montant     = $priceResult['montant'];
@@ -234,6 +227,15 @@ try {
     $reduction = 0;
     $codePromoId = null;
     $montantAvantReduction = $montant;
+
+    // Remise admin manuelle
+    if (!empty($data->reduction_admin) && $auth['role'] === 'admin') {
+        $reductionAdmin = floatval($data->reduction_admin);
+        if ($reductionAdmin > 0) {
+            $reduction = min($reductionAdmin, $montant);
+            $montant   = max(0, $montant - $reduction);
+        }
+    }
 
     $db->beginTransaction();
 
@@ -267,8 +269,8 @@ try {
             AND statut NOT IN ('annulee', 'terminee')
             AND date_debut < ?
             AND date_fin > ?
-            FOR UPDATE
             LIMIT 1
+            FOR UPDATE
         ");
         $stmtAvail->execute([$espaceId, $finMysql, $debutMysql]);
         if ($stmtAvail->fetch()) {
@@ -279,7 +281,7 @@ try {
 
     if (!empty($codePromo)) {
         $stmt = $db->prepare("
-            SELECT id, type, valeur, montant_min, utilisations_max, utilisations_actuelles, utilisations_par_user, date_fin, actif
+            SELECT id, type, valeur, montant_min, utilisations_max, utilisations_actuelles, utilisations_par_user, date_debut, date_fin, actif
             FROM codes_promo
             WHERE code = ? AND actif = 1
             FOR UPDATE
@@ -294,6 +296,10 @@ try {
                 $isValid = false;
             }
 
+            if ($promo['date_debut'] && strtotime($promo['date_debut']) > time()) {
+                $isValid = false;
+            }
+
             if ($promo['utilisations_max'] > 0 && $promo['utilisations_actuelles'] >= $promo['utilisations_max']) {
                 $isValid = false;
             }
@@ -302,12 +308,12 @@ try {
                 $isValid = false;
             }
 
-            if ($isValid && $userId && !empty($promo['utilisations_par_user']) && intval($promo['utilisations_par_user']) > 0) {
+            if ($isValid && $personId && !empty($promo['utilisations_par_user']) && intval($promo['utilisations_par_user']) > 0) {
                 $userUsageStmt = $db->prepare("
                     SELECT COUNT(*) as cnt FROM utilisations_codes_promo
                     WHERE code_promo_id = ? AND user_id = ?
                 ");
-                $userUsageStmt->execute([$promo['id'], $userId]);
+                $userUsageStmt->execute([$promo['id'], $personId]);
                 $userUsageRow = $userUsageStmt->fetch(PDO::FETCH_ASSOC);
                 if (intval($userUsageRow['cnt']) >= intval($promo['utilisations_par_user'])) {
                     $isValid = false;
@@ -330,20 +336,20 @@ try {
 
     $stmt = $db->prepare("
         INSERT INTO reservations
-        (id, user_id, contact_id, espace_id, date_debut, date_fin, statut, type_reservation, montant_total, montant_paye, participants, notes, code_promo_id, created_at)
+        (id, person_id, espace_id, date_debut, date_fin, statut, type_reservation, montant_total, reduction, montant_paye, participants, notes, code_promo_id, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, NOW())
     ");
 
     $result = $stmt->execute([
         $id,
-        $userId,
-        $contactId,
+        $personId,
         $espaceId,
         $debutMysql,
         $finMysql,
         $statutInitial,
         $type,
         $montant,
+        $reduction,
         $participants,
         $notes,
         $codePromoId
@@ -361,7 +367,7 @@ try {
         $db->prepare("
             INSERT INTO utilisations_codes_promo (id, code_promo_id, user_id, reservation_id, montant_reduction, montant_avant, montant_apres, type_utilisation, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, 'reservation', NOW())
-        ")->execute([UuidHelper::generate(), $codePromoId, $userId, $id, $reduction, $montantAvant, $montant]);
+        ")->execute([UuidHelper::generate(), $codePromoId, $personId, $id, $reduction, $montantAvant, $montant]);
         $db->prepare("UPDATE codes_promo SET utilisations_actuelles = utilisations_actuelles + 1 WHERE id = ?")->execute([$codePromoId]);
     }
 
@@ -369,41 +375,45 @@ try {
 
     $stmt = $db->prepare("
         SELECT r.*, e.nom as espace_nom, e.type as espace_type,
-               u.nom as user_nom, u.prenom as user_prenom, u.email as user_email,
-               c.nom as contact_nom, c.prenom as contact_prenom, c.email as contact_email
+               p.nom as user_nom, p.prenom as user_prenom, p.email as user_email
         FROM reservations r
         JOIN espaces e ON r.espace_id = e.id
-        LEFT JOIN users u ON r.user_id = u.id
-        LEFT JOIN contacts c ON r.contact_id = c.id
+        LEFT JOIN persons p ON r.person_id = p.id
         WHERE r.id = ?
     ");
     $stmt->execute([$id]);
     $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    try {
-        $clientName = '';
-        $clientEmail = '';
+    $clientName  = trim(($reservation['user_prenom'] ?? '') . ' ' . ($reservation['user_nom'] ?? ''));
+    $clientEmail = $reservation['user_email'] ?? '';
 
-        if ($userId) {
-            $clientName = $reservation['user_prenom'] . ' ' . $reservation['user_nom'];
-            $clientEmail = $reservation['user_email'];
-        } elseif ($contactId) {
-            $clientName = $reservation['contact_prenom'] . ' ' . $reservation['contact_nom'];
-            $clientEmail = $reservation['contact_email'] ?? '';
+    // ── Réponse HTTP immédiate ──────────────────────────────────────────────
+    // On envoie la réponse au client avant l'envoi SMTP (qui peut bloquer 15s+)
+    http_response_code(201);
+    echo json_encode(['success' => true, 'data' => $reservation, 'message' => 'Reservation creee avec succes']);
+
+    // Libère la connexion HTTP (PHP-FPM) → le client reçoit la réponse maintenant
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    } else {
+        // Fallback non-FPM : flush les buffers PHP/Apache
+        if (ob_get_level() > 0) {
+            ob_end_flush();
         }
+        flush();
+    }
 
+    // ── Envoi emails en arrière-plan (n'impacte plus le temps de réponse) ──
+    try {
         if ($clientName) {
             AdminNotifier::newReservation($reservation, $clientName, $clientEmail);
         }
-
         if (!empty($clientEmail)) {
             Mailer::sendReservationConfirmation($clientEmail, $reservation);
         }
     } catch (Exception $notifErr) {
         Logger::warning('Notification error on reservation create', ['error' => $notifErr->getMessage()]);
     }
-
-    Response::success($reservation, "Reservation creee avec succes", 201);
 
 } catch (PDOException $e) {
     Logger::error('Reservation create PDO error', ['error' => $e->getMessage()]);

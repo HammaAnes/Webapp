@@ -10,4 +10,4 @@ export { default as DemandeSummary } from './components/dashboard/DemandeSummary
 export { default as EntrepriseTab } from './components/dashboard/EntrepriseTab';
 export { default as CourrierUtilisateur } from './components/dashboard/CourrierUtilisateur';
 export { default as DocumentsEntreprise } from './components/dashboard/DocumentsEntreprise';
-export { useDomiciliation, useOccupiedBureaux, useCourrier, useDocuments } from './hooks/useDomiciliation';
+export { useDomiciliation, useCourrier, useDocuments } from './hooks/useDomiciliation';

@@ -27,7 +27,7 @@ try {
                u.email, u.nom, u.prenom,
                e.nom as espace_nom
         FROM reservations r
-        INNER JOIN users u ON r.user_id = u.id
+        INNER JOIN persons u ON r.person_id = u.id
         INNER JOIN espaces e ON r.espace_id = e.id
         WHERE r.statut IN ("confirmee", "en_attente")
         AND r.date_debut >= ?
@@ -53,7 +53,7 @@ try {
                 'Rappel – Réservation demain à ' . date('H:i', strtotime($reservation['date_debut'])),
                 'reservation-reminder',
                 ['reservation' => $reservation],
-                $reservation['user_id'],
+                $reservation['person_id'],
                 2
             );
 
@@ -68,12 +68,12 @@ try {
                 $notificationId = UuidHelper::generate();
                 $notificationStmt = $db->prepare('
                     INSERT INTO notifications
-                    (id, user_id, titre, message, type, created_at)
+                    (id, person_id, titre, message, type, created_at)
                     VALUES (?, ?, ?, ?, ?, NOW())
                 ');
                 $notificationStmt->execute([
                     $notificationId,
-                    $reservation['user_id'],
+                    $reservation['person_id'],
                     'Rappel: Réservation demain',
                     'Votre réservation pour ' . $reservation['espace_nom'] . ' commence demain à ' . date('H:i', strtotime($reservation['date_debut'])),
                     'reservation'
@@ -84,7 +84,7 @@ try {
 
                 Logger::info('Reminder queued', [
                     'reservation_id' => $reservation['id'],
-                    'user_id' => $reservation['user_id'],
+                    'user_id' => $reservation['person_id'],
                     'email' => $reservation['email'],
                     'queue_id' => $queueId
                 ]);

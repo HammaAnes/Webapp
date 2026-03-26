@@ -10,7 +10,13 @@ require_once __DIR__ . '/../bootstrap.php';
 try {
     $auth = Auth::verifyAuth();
 
-    $data = json_decode(file_get_contents("php://input"));
+    $rawBody = file_get_contents("php://input");
+    $data = json_decode($rawBody);
+
+    if ($data === null || !is_object($data)) {
+        error_log("Update domiciliation: invalid JSON body: " . substr($rawBody, 0, 200));
+        Response::error("Corps de la requête invalide", 400);
+    }
 
     if (empty($data->id)) {
         Response::error("ID requis", 400);
@@ -19,7 +25,7 @@ try {
     $database = Database::getInstance();
     $db = $database->getConnection();
 
-    $query = "SELECT user_id, statut FROM domiciliations WHERE id = :id";
+    $query = "SELECT person_id, statut FROM domiciliations WHERE id = :id";
     $stmt = $db->prepare($query);
     $stmt->bindParam(':id', $data->id);
     $stmt->execute();
@@ -30,7 +36,7 @@ try {
         Response::error("Demande non trouvée", 404);
     }
 
-    if ($auth['role'] !== 'admin' && $demande['user_id'] !== $auth['id']) {
+    if ($auth['role'] !== 'admin' && $demande['person_id'] !== $auth['id']) {
         Response::error("Accès refusé", 403);
     }
 
@@ -103,9 +109,9 @@ try {
     $stmt = $db->prepare($query);
     $stmt->execute($params);
 
-    if (isset($data->statut) && $auth['role'] === 'admin' && !empty($demande['user_id'])) {
+    if (isset($data->statut) && $auth['role'] === 'admin' && !empty($demande['person_id'])) {
         $notifId = UuidHelper::generate();
-        $notifStmt = $db->prepare("INSERT INTO notifications (id, user_id, type, titre, message, lue, created_at) VALUES (?, ?, 'domiciliation', ?, ?, 0, NOW())");
+        $notifStmt = $db->prepare("INSERT INTO notifications (id, person_id, type, titre, message, lue, created_at) VALUES (?, ?, 'domiciliation', ?, ?, 0, NOW())");
         $statusLabels = [
             'en_attente_signature' => 'Dossier validé — signature requise',
             'domiciliation_creee' => 'Domiciliation créée',
@@ -116,27 +122,51 @@ try {
         ];
         $titre = $statusLabels[$data->statut] ?? 'Mise à jour de votre domiciliation';
         $message = 'Le statut de votre domiciliation a été mis à jour : ' . ($statusLabels[$data->statut] ?? $data->statut);
-        $notifStmt->execute([$notifId, $demande['user_id'], $titre, $message]);
+        $notifStmt->execute([$notifId, $demande['person_id'], $titre, $message]);
 
         if ($data->statut === 'domiciliation_creee' && isset($data->montant_mensuel)) {
-            $transactionId = UuidHelper::generate();
             $domForTx = $db->prepare("SELECT raison_sociale FROM domiciliations WHERE id = ?");
             $domForTx->execute([$data->id]);
             $domRow = $domForTx->fetch(PDO::FETCH_ASSOC);
-            $reference = 'DOM-' . date('YmdHis') . '-' . substr($transactionId, 0, 8);
-            $description = 'Signature domiciliation - ' . ($domRow['raison_sociale'] ?? '');
-            $modePaiement = $data->mode_paiement ?? 'cash';
-            $txStmt = $db->prepare("INSERT INTO transactions (id, user_id, type, montant, statut, mode_paiement, reference, description, date_paiement, created_at) VALUES (?, ?, 'domiciliation', ?, 'en_attente', ?, ?, ?, NOW(), NOW())");
-            $txStmt->execute([$transactionId, $demande['user_id'], $data->montant_mensuel, $modePaiement, $reference, $description]);
+            CaisseHelper::insert($db, [
+                'domiciliation_id' => $data->id,
+                'person_id'        => $demande['person_id'],
+                'type_transaction' => 'domiciliation',
+                'montant'          => $data->montant_mensuel,
+                'mode_paiement'    => $data->mode_paiement ?? 'cash',
+                'statut'           => 'en_attente',
+                'notes'            => 'Signature domiciliation - ' . ($domRow['raison_sociale'] ?? ''),
+            ]);
         }
     }
 
     $db->commit();
 
-    if (isset($data->statut) && $auth['role'] === 'admin' && !empty($demande['user_id'])) {
+    // Notifier l'admin quand un client met à jour son dossier (pas une action admin)
+    if ($auth['role'] !== 'admin') {
         try {
-            $userStmt = $db->prepare("SELECT email, prenom, nom FROM users WHERE id = ?");
-            $userStmt->execute([$demande['user_id']]);
+            $userStmt = $db->prepare("SELECT prenom, nom, email FROM persons WHERE id = ?");
+            $userStmt->execute([$auth['id']]);
+            $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
+            $domStmt = $db->prepare("SELECT raison_sociale FROM domiciliations WHERE id = ?");
+            $domStmt->execute([$data->id]);
+            $domRow = $domStmt->fetch(PDO::FETCH_ASSOC);
+            if ($userRow && $domRow) {
+                AdminNotifier::dossierUpdated(
+                    $userRow['prenom'] . ' ' . $userRow['nom'],
+                    $userRow['email'],
+                    $domRow['raison_sociale'] ?? ''
+                );
+            }
+        } catch (Exception $notifErr) {
+            error_log("Admin dossier notification failed: " . $notifErr->getMessage());
+        }
+    }
+
+    if (isset($data->statut) && $auth['role'] === 'admin' && !empty($demande['person_id'])) {
+        try {
+            $userStmt = $db->prepare("SELECT email, prenom, nom FROM persons WHERE id = ?");
+            $userStmt->execute([$demande['person_id']]);
             $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
             if ($userRow) {
                 $domStmt = $db->prepare("SELECT * FROM domiciliations WHERE id = ?");
@@ -153,10 +183,10 @@ try {
 
     Response::success(null, "Demande mise à jour avec succès");
 
-} catch (Exception $e) {
+} catch (\Throwable $e) {
     if (isset($db) && $db->inTransaction()) {
         $db->rollBack();
     }
-    error_log("Update domiciliation error: " . $e->getMessage());
+    error_log("Update domiciliation error [" . get_class($e) . "]: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
     Response::serverError();
 }

@@ -9,6 +9,7 @@ import { useAuthStore } from "../store/authStore";
 import { validationRules } from "../utils/validation";
 import Logo from "../components/Logo";
 import { useSEO } from "../hooks/useSEO";
+import { analytics } from "../lib/analytics";
 
 interface LoginForm {
   email: string;
@@ -18,9 +19,9 @@ interface LoginForm {
 
 const FEATURES = [
   { icon: Coffee, text: "Espaces de travail premium" },
-  { icon: Wifi, text: "Connexion haut debit" },
-  { icon: Users, text: "Communaute professionnelle" },
-  { icon: Shield, text: "Domiciliation legale" },
+  { icon: Wifi, text: "Connexion haut débit" },
+  { icon: Users, text: "Communauté professionnelle" },
+  { icon: Shield, text: "Domiciliation légale" },
 ];
 
 const Login = () => {
@@ -57,6 +58,7 @@ const Login = () => {
         sessionStorage.removeItem("coffice-session-only");
       }
       await login(data.email, data.password);
+      analytics.login('email');
       navigate("/app");
     } catch {
       // handled by authStore
@@ -69,6 +71,7 @@ const Login = () => {
     setIsGoogleLoading(true);
     try {
       await loginWithGoogle(credential);
+      analytics.login('google');
       navigate("/app");
     } catch {
       // handled by authStore
@@ -79,6 +82,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex">
+      {/* Panneau gauche — illustration */}
       <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -102,11 +106,11 @@ const Login = () => {
               <h1 className="text-4xl font-bold text-white leading-tight">
                 Votre espace de
                 <br />
-                travail ideal
+                travail idéal
               </h1>
               <p className="mt-4 text-white/80 text-lg leading-relaxed max-w-md">
-                Rejoignez une communaute de professionnels et entrepreneurs au
-                coeur d'Alger.
+                Rejoignez une communauté de professionnels et d'entrepreneurs au
+                cœur d'Alger.
               </p>
             </motion.div>
 
@@ -131,11 +135,12 @@ const Login = () => {
           </div>
 
           <div className="text-white/50 text-sm">
-            Mohammadia Mall, 4eme etage, Alger
+            Mohammadia Mall, 4ème étage — Alger
           </div>
         </div>
       </div>
 
+      {/* Panneau droit — formulaire */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-8 bg-gray-50/50">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -154,7 +159,7 @@ const Login = () => {
               Bon retour parmi nous
             </h2>
             <p className="mt-2 text-gray-500">
-              Connectez-vous pour acceder a votre espace
+              Connectez-vous pour accéder à votre espace
             </p>
           </div>
 
@@ -165,7 +170,7 @@ const Login = () => {
 
           <div className="relative my-7">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
+              <div className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center">
               <span className="px-4 bg-gray-50/50 text-gray-400 text-sm">ou</span>
@@ -174,7 +179,7 @@ const Login = () => {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <Input
-              label="Adresse email"
+              label="Adresse e-mail"
               type="email"
               icon={<Mail className="w-5 h-5" />}
               placeholder="votre@email.com"
@@ -202,13 +207,18 @@ const Login = () => {
                 to="/mot-de-passe-oublie"
                 className="text-sm font-medium text-accent hover:text-accent-dark transition-colors"
               >
-                Mot de passe oublie ?
+                Mot de passe oublié ?
               </Link>
             </div>
 
-            <Button type="submit" loading={isLoading} className="w-full" size="lg">
+            <Button
+              type="submit"
+              loading={isLoading}
+              className="w-full"
+              size="lg"
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+            >
               Se connecter
-              <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
           </form>
 
@@ -218,7 +228,7 @@ const Login = () => {
               to="/inscription"
               className="text-accent font-semibold hover:text-accent-dark transition-colors"
             >
-              Creer un compte
+              Créer un compte
             </Link>
           </p>
 
@@ -227,7 +237,7 @@ const Login = () => {
               to="/"
               className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
             >
-              Retour a l'accueil
+              Retour à l'accueil
             </Link>
           </div>
         </motion.div>

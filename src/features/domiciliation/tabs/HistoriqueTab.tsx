@@ -1,7 +1,7 @@
 import React from "react";
 import { Info } from "lucide-react";
 import ActionHistoryLog from "../components/ActionHistoryLog";
-import type { DemandeDomiciliation } from "../types";
+import type { DemandeDomiciliation } from "../../../domiciliation/domain/types";
 
 interface Props {
   demande: DemandeDomiciliation;

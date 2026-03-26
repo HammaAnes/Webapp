@@ -26,7 +26,6 @@ const AdminCodesPromo = lazy(() => import("./dashboard/admin/CodesPromo"));
 const AdminParrainages = lazy(() => import("./dashboard/admin/Parrainages"));
 const AdminSettings = lazy(() => import("./dashboard/admin/Settings"));
 const AdminAbonnements = lazy(() => import("./dashboard/admin/Abonnements"));
-const Aujourdhui = lazy(() => import("./dashboard/admin/Aujourdhui"));
 const Caisse = lazy(() => import("./dashboard/admin/Caisse"));
 const AdminContacts = lazy(() => import("./dashboard/admin/Contacts"));
 const ContactDetail = lazy(() => import("./dashboard/admin/ContactDetail"));
@@ -64,7 +63,6 @@ const Dashboard = () => {
           <Route path="profil" element={<Profile />} />
 
           <Route path="admin/*" element={<AdminGuard />}>
-            <Route path="aujourdhui" element={<Aujourdhui />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="users/:id" element={<UserDetail />} />
             <Route path="contacts" element={<AdminContacts />} />

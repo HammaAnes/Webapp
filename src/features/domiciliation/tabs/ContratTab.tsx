@@ -20,7 +20,7 @@ import ContratSummary from "../components/ContratSummary";
 import { useOccupiedBureaux } from "../hooks";
 import { formatDate, formatCurrency } from "../../../utils/formatters";
 import { getContractExpirationAlert, toDateInputValue } from "../utils";
-import type { DemandeDomiciliation } from "../types";
+import type { DemandeDomiciliation } from "../../../domiciliation/domain/types";
 
 interface Props {
   demande: DemandeDomiciliation;

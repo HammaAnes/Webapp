@@ -22,10 +22,17 @@ try {
             $query = "
                 SELECT au.*,
                        a.nom AS abonnement_nom, a.prix AS abonnement_prix, a.type AS abonnement_type,
-                       u.nom AS user_nom, u.prenom AS user_prenom, u.email AS user_email
+                       p.nom AS user_nom, p.prenom AS user_prenom, p.email AS user_email,
+                       COALESCE(tc.montant_encaisse, 0) AS montant_encaisse
                 FROM abonnements_utilisateurs au
                 LEFT JOIN abonnements a ON au.abonnement_id = a.id
-                LEFT JOIN users u ON au.user_id = u.id
+                LEFT JOIN persons p ON au.person_id = p.id
+                LEFT JOIN (
+                    SELECT abonnement_utilisateur_id, SUM(montant) AS montant_encaisse
+                    FROM transactions_caisse
+                    WHERE statut = 'encaisse'
+                    GROUP BY abonnement_utilisateur_id
+                ) tc ON tc.abonnement_utilisateur_id = au.id
                 ORDER BY au.created_at DESC
             ";
             $stmt = $db->prepare($query);
@@ -37,11 +44,11 @@ try {
                        a.duree_mois AS abonnement_duree_mois, a.avantages AS abonnement_avantages
                 FROM abonnements_utilisateurs au
                 LEFT JOIN abonnements a ON au.abonnement_id = a.id
-                WHERE au.user_id = :user_id
+                WHERE au.person_id = :person_id
                 ORDER BY au.created_at DESC
             ";
             $stmt = $db->prepare($query);
-            $stmt->execute([':user_id' => $auth['id']]);
+            $stmt->execute([':person_id' => $auth['id']]);
         }
 
         $souscriptions = $stmt->fetchAll(PDO::FETCH_ASSOC);

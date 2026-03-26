@@ -9,7 +9,7 @@ import Modal from "../../../components/ui/Modal";
 import { apiClient } from "../../../lib/api-client";
 import { useCourrier } from "../hooks";
 import { COURRIER_TYPE_CONFIG, COURRIER_STATUT_CONFIG, COURRIER_INACTIVE_STATUTS } from "../constants";
-import type { DemandeDomiciliation, CourrierItem } from "../types";
+import type { DemandeDomiciliation, CourrierItem } from "../../../domiciliation/domain/types";
 
 interface Props {
   demande: DemandeDomiciliation;

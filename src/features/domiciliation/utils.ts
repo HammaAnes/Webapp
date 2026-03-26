@@ -1,5 +1,5 @@
-import { differenceInMonths, differenceInDays } from "date-fns";
-import type { DemandeDomiciliation, DocumentRecord, DocumentSlot } from "./types";
+import { differenceInMonths, differenceInDays, addMonths } from "date-fns";
+import type { DemandeDomiciliation, DocumentSlot } from "../../domiciliation/domain/types";
 import {
   SOCIETE_DOCS,
   AUTO_ENTREPRENEUR_DOCS,
@@ -9,6 +9,8 @@ import {
   REQUIRED_DOCS_EXISTING_SOCIETE,
   REQUIRED_DOCS_EXISTING_AUTO_ENTREPRENEUR,
 } from "./constants";
+// Mappers consolidés — source unique dans apiAdapter
+export { mapApiDocument, mapApiCourrier } from "../../domiciliation/adapters/apiAdapter";
 
 export function getDisplayName(d: DemandeDomiciliation): string {
   if (d.raisonSociale) return d.raisonSociale;
@@ -33,7 +35,10 @@ export function calculateContractDurationMonths(dateDebut: string, dateFin: stri
   try {
     const debut = new Date(dateDebut);
     const fin = new Date(dateFin);
-    return Math.max(0, differenceInMonths(fin, debut));
+    const months = differenceInMonths(fin, debut);
+    // Ceiling : si des jours restent après les mois complets, on arrondit au mois supérieur (identique à la logique PHP)
+    const remainder = differenceInDays(fin, addMonths(debut, months));
+    return Math.max(0, months + (remainder > 0 ? 1 : 0));
   } catch {
     return 0;
   }
@@ -64,50 +69,6 @@ export function getContractExpirationAlert(demande: DemandeDomiciliation): {
   }
 }
 
-export function mapApiDocument(raw: Record<string, unknown>): DocumentRecord {
-  return {
-    id: String(raw.id || ""),
-    documentType: String(raw.type_document || raw.document_type || raw.documentType || "autre"),
-    fileName: String(raw.nom_original || raw.nom_fichier || raw.file_name || raw.fileName || ""),
-    fileSize: raw.taille
-      ? Number(raw.taille)
-      : raw.file_size
-      ? Number(raw.file_size)
-      : raw.fileSize
-      ? Number(raw.fileSize)
-      : undefined,
-    createdAt: String(raw.created_at || raw.uploaded_at || raw.createdAt || ""),
-    url: raw.download_url || raw.url ? String(raw.download_url || raw.url) : undefined,
-    status: (raw.statut || raw.status || "en_attente") as DocumentRecord["status"],
-    commentaireRejet: raw.commentaire_rejet
-      ? String(raw.commentaire_rejet)
-      : raw.commentaireRejet
-      ? String(raw.commentaireRejet)
-      : undefined,
-  };
-}
-
-export function mapApiCourrier(raw: Record<string, unknown>) {
-  return {
-    id: String(raw.id || ""),
-    type: String(raw.type || "autre") as "lettre" | "colis" | "recommande" | "officiel" | "autre",
-    expediteur: String(raw.expediteur || ""),
-    description: raw.description ? String(raw.description) : undefined,
-    statut: String(raw.statut || "recu") as
-      | "recu"
-      | "notifie"
-      | "en_attente_instruction"
-      | "recupere"
-      | "scanne"
-      | "reexpedier"
-      | "traite",
-    dateReception: String(raw.date_reception || raw.dateReception || raw.created_at || ""),
-    dateTraitement: raw.date_traitement ? String(raw.date_traitement) : undefined,
-    notesAdmin: raw.notes_admin ? String(raw.notes_admin) : undefined,
-    instructionClient: raw.instruction_client ? String(raw.instruction_client) : undefined,
-  };
-}
-
 export function formatFileSize(bytes?: number): string {
   if (!bytes) return "";
   if (bytes < 1024) return `${bytes} o`;
@@ -130,15 +91,22 @@ export function getRequiredDocSlots(
 }
 
 export function getAllDocSlots(situation: string, typeStructure: string): DocumentSlot[] {
-  const apiSlots =
-    typeStructure === "auto_entrepreneur" ? AUTO_ENTREPRENEUR_DOCS : SOCIETE_DOCS;
+  // Slots requis selon la situation courante (ce que le wizard demande)
   const wizardSlots = getRequiredDocSlots(situation, typeStructure);
-  const all = [...apiSlots, ...COMMON_DOCS];
-  for (const ws of wizardSlots) {
-    if (!all.some((s) => s.type === ws.type)) {
-      all.push(ws);
-    }
+
+  // Slots additionnels du type de structure (pour complétion post-création), marqués non-requis
+  const typeSlots = typeStructure === "auto_entrepreneur" ? AUTO_ENTREPRENEUR_DOCS : SOCIETE_DOCS;
+  const extraSlots = typeSlots
+    .filter((s) => !wizardSlots.some((w) => w.type === s.type))
+    .map((s) => ({ ...s, required: false }));
+
+  const all = [...wizardSlots, ...extraSlots];
+
+  // Slot "autre" toujours en dernier
+  if (!all.some((s) => s.type === "autre")) {
+    all.push(...COMMON_DOCS);
   }
+
   return all;
 }
 

@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import Card from "../../../components/ui/Card";
 import Badge from "../../../components/ui/Badge";
 import Button from "../../../components/ui/Button";
+import AdminPageHeader from "../../../components/admin/AdminPageHeader";
 import Modal from "../../../components/ui/Modal";
 import { apiClient } from "../../../lib/api-client";
 import { useAppStore } from "../../../store/store";
@@ -198,21 +199,21 @@ export default function AdminCourrier() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestion du courrier</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Courrier reçu pour les domiciliations actives</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={handleRefresh} loading={refreshing}>
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-          <Button variant="primary" size="sm" onClick={() => setShowCreateModal(true)}>
-            <Plus className="w-4 h-4 mr-1.5" />
-            Enregistrer courrier
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Courrier"
+        subtitle="Courrier reçu pour les domiciliations actives"
+        actions={
+          <>
+            <Button variant="ghost" size="sm" onClick={handleRefresh} loading={refreshing} className="gap-1.5">
+              <RefreshCw className="w-4 h-4" />
+              <span className="hidden sm:inline">Actualiser</span>
+            </Button>
+            <Button size="sm" onClick={() => setShowCreateModal(true)} className="gap-1.5 bg-gray-900 hover:bg-gray-800 text-white">
+              <Plus className="w-4 h-4" /> Enregistrer courrier
+            </Button>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[

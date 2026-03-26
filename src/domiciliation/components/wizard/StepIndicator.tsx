@@ -1,11 +1,11 @@
 import React from 'react';
 import {
-  HelpCircle, Building, User, Briefcase, FileText, Shield, Package, CheckCircle,
+  HelpCircle, Building, User, Briefcase, FileText, Shield, CheckCircle,
 } from 'lucide-react';
-import type { WizardStepConfig } from '../../hooks/useWizard';
+import type { WizardStepConfig } from '../../hooks/useDomiciliationWizard';
 
 const ICON_MAP: Record<string, React.ElementType> = {
-  HelpCircle, Building, User, Briefcase, FileText, Shield, Package, CheckCircle,
+  HelpCircle, Building, User, Briefcase, FileText, Shield, CheckCircle,
 };
 
 interface Props {

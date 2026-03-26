@@ -1,7 +1,7 @@
 import React from "react";
 import { CheckCircle, AlertTriangle, FileText } from "lucide-react";
 import { STATUT_CONFIG, WORKFLOW_STEPS } from "../constants";
-import type { DomiciliationStatut } from "../types";
+import type { DomiciliationStatut } from "../../../domiciliation/domain/types";
 
 interface Props {
   statut: DomiciliationStatut;

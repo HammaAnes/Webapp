@@ -25,11 +25,15 @@ export function useIntersectionObserver(
 
     if (!element) return;
 
-    if (freezeOnceVisible && isVisible) return;
-
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setIsVisible(entry.isIntersecting);
+        setIsVisible((prev) => {
+          if (freezeOnceVisible && prev) return prev;
+          return entry.isIntersecting;
+        });
+        if (freezeOnceVisible && entry.isIntersecting) {
+          observer.disconnect();
+        }
       },
       { threshold, root, rootMargin }
     );
@@ -39,7 +43,7 @@ export function useIntersectionObserver(
     return () => {
       observer.disconnect();
     };
-  }, [elementRef, threshold, root, rootMargin, freezeOnceVisible, isVisible]);
+  }, [elementRef, threshold, root, rootMargin, freezeOnceVisible]);
 
   return [elementRef, isVisible];
 }

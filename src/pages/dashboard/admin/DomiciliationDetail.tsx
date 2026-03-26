@@ -28,8 +28,8 @@ import CourrierTab from "../../../features/domiciliation/tabs/CourrierTab";
 import DocumentsTab from "../../../features/domiciliation/tabs/DocumentsTab";
 import NotesTab from "../../../features/domiciliation/tabs/NotesTab";
 import HistoriqueTab from "../../../features/domiciliation/tabs/HistoriqueTab";
-import type { DemandeDomiciliation } from "../../../features/domiciliation/types";
-import type { ActionKey, ActionData } from "../../../features/domiciliation/types";
+import type { DemandeDomiciliation, ActionKey, ActionData } from "../../../domiciliation/domain/types";
+import { useDocuments } from "../../../features/domiciliation/hooks";
 
 const TABS = [
   { key: "infos", label: "Informations" },
@@ -78,6 +78,7 @@ export default function AdminDomiciliationDetail() {
   const [activeTab, setActiveTab] = useState<TabKey>("infos");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const { docs } = useDocuments(id ?? "");
 
   const demande: DemandeDomiciliation | undefined = demandesDomiciliation.find(
     (d) => d.id === id
@@ -87,8 +88,7 @@ export default function AdminDomiciliationDetail() {
     if (!demande) {
       loadDemandesDomiciliation();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, demande, loadDemandesDomiciliation]);
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -300,8 +300,8 @@ export default function AdminDomiciliationDetail() {
         <KpiCard
           icon={FileText}
           label="Documents"
-          value="—"
-          sub="Voir onglet Documents"
+          value={docs.length > 0 ? `${docs.filter(d => d.status === "valide").length}/${docs.length}` : "0"}
+          sub={docs.length > 0 ? `${docs.filter(d => d.status === "valide").length} validé${docs.filter(d => d.status === "valide").length !== 1 ? "s" : ""}` : "Aucun document"}
           color="bg-blue-500"
         />
         <KpiCard
@@ -356,7 +356,7 @@ export default function AdminDomiciliationDetail() {
 
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
             <h3 className="font-bold text-gray-900 text-sm mb-4">Complétude du dossier</h3>
-            <DossierCompleteness demande={demande} />
+            <DossierCompleteness demande={demande} docs={docs} />
           </div>
         </div>
       </div>

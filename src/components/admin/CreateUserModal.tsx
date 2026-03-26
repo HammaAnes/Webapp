@@ -69,8 +69,8 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated, initialData }:
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault();
     if (!validate()) return;
 
     setLoading(true);
@@ -80,7 +80,7 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated, initialData }:
       if (initialData?.contactId) {
         const result = await convertToUser(initialData.contactId, true);
         user = {
-          id: result.userId,
+          id: result.personId,
           email: formData.email,
           nom: formData.nom,
           prenom: formData.prenom,
@@ -106,10 +106,8 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated, initialData }:
           return;
         }
 
-        const resultData = result as Record<string, unknown>;
-        const createdUserData = resultData.user as Record<string, unknown> | undefined;
         user = {
-          id: String(createdUserData?.id || ''),
+          id: result.user?.id || '',
           email: formData.email.trim(),
           nom: formData.nom.trim(),
           prenom: formData.prenom.trim(),
@@ -117,7 +115,7 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated, initialData }:
           entreprise: formData.entreprise.trim() || undefined,
           profession: formData.profession.trim() || undefined,
           role: formData.role,
-          tempPassword: resultData.tempPassword as string | undefined,
+          tempPassword: result.tempPassword,
         };
       }
 
@@ -192,7 +190,7 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated, initialData }:
                 </button>
               </div>
               <p className="text-xs text-amber-600 mt-2">
-                Communiquez ce mot de passe à l'utilisateur. Il pourra le modifier depuis son profil.
+                Un email avec ces identifiants a été envoyé à l'utilisateur. Conservez aussi une copie ci-dessus.
               </p>
             </div>
           )}
@@ -209,7 +207,7 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated, initialData }:
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Créer un compte utilisateur">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-4">
         {isFromContact && (
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
             Le compte sera créé à partir des informations du contact. Un mot de passe temporaire sera généré automatiquement.
@@ -328,11 +326,11 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated, initialData }:
           <Button type="button" variant="outline" onClick={handleClose} className="flex-1" disabled={loading}>
             Annuler
           </Button>
-          <Button type="submit" className="flex-1" disabled={loading}>
+          <Button type="button" onClick={handleSubmit} className="flex-1" disabled={loading}>
             {loading ? 'Création...' : 'Créer le compte'}
           </Button>
         </div>
-      </form>
+      </div>
     </Modal>
   );
 }

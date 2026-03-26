@@ -53,7 +53,7 @@ try {
         Response::error("Reservation introuvable", 404);
     }
 
-    if (!$isAdmin && $reservation['user_id'] !== $userId) {
+    if (!$isAdmin && $reservation['person_id'] !== $userId) {
         Response::error("Acces refuse", 403);
     }
 
@@ -83,11 +83,19 @@ try {
     }
 
     if ($isAdmin && isset($data['montant_paye'])) {
+        $montantPaye = floatval($data['montant_paye']);
+        if ($montantPaye < 0) {
+            Response::error("Le montant payé ne peut pas être négatif", 400);
+        }
         $updates[] = "montant_paye = ?";
-        $params[] = floatval($data['montant_paye']);
+        $params[] = $montantPaye;
     }
 
+    $modesValides = ['cash', 'tpe', 'virement', 'cheque', 'credit'];
     if ($isAdmin && isset($data['mode_paiement'])) {
+        if (!in_array($data['mode_paiement'], $modesValides)) {
+            Response::error("Mode de paiement invalide", 400);
+        }
         $updates[] = "mode_paiement = ?";
         $params[] = $data['mode_paiement'];
     }
@@ -98,8 +106,12 @@ try {
     }
 
     if (isset($data['notes'])) {
+        $trimmedNotes = trim($data['notes']);
+        if (strlen($trimmedNotes) > 1000) {
+            Response::error("Les notes ne peuvent pas dépasser 1000 caractères", 400);
+        }
         $updates[] = "notes = ?";
-        $params[] = trim($data['notes']);
+        $params[] = $trimmedNotes;
     }
 
     // Bug 7 — Support date changes with availability re-check
@@ -188,7 +200,7 @@ try {
     $stmt->execute([$id]);
     $updated = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($isAdmin && isset($data['statut']) && !empty($reservation['user_id'])) {
+    if ($isAdmin && isset($data['statut']) && !empty($reservation['person_id'])) {
         try {
             $notifId = UuidHelper::generate();
             $statusMessages = [
@@ -199,8 +211,8 @@ try {
                 'no_show'    => 'Vous avez été marqué absent pour votre réservation.',
             ];
             $message = $statusMessages[$data['statut']] ?? 'Le statut de votre réservation a été mis à jour.';
-            $notifStmt = $db->prepare("INSERT INTO notifications (id, user_id, type, titre, message, lue, created_at) VALUES (?, ?, 'reservation', 'Mise à jour réservation', ?, 0, NOW())");
-            $notifStmt->execute([$notifId, $reservation['user_id'], $message]);
+            $notifStmt = $db->prepare("INSERT INTO notifications (id, person_id, type, titre, message, lue, created_at) VALUES (?, ?, 'reservation', 'Mise à jour réservation', ?, 0, NOW())");
+            $notifStmt->execute([$notifId, $reservation['person_id'], $message]);
         } catch (Exception $notifErr) {
             error_log("Notification error on reservation update: " . $notifErr->getMessage());
         }
