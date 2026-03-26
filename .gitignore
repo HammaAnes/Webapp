@@ -25,17 +25,10 @@ vite.config.ts.timestamp*
 *.njsproj
 *.sln
 *.sw?
-
+api
 # Environment
 .env
 
 # Composer binary (use system composer instead)
 composer.phar
 
-# PHP cache
-api/.cache/
-
-# Uploads (user content, not versioned)
-api/uploads/documents/*
-!api/uploads/documents/.gitkeep
-api
