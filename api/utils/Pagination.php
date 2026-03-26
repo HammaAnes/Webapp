@@ -28,7 +28,7 @@ class Pagination
             'total' => (int) $total,
             'page' => (int) $page,
             'limit' => (int) $limit,
-            'total_pages' => $totalPages,
+            'pages' => $totalPages,
             'has_prev' => $page > 1,
             'has_next' => $page < $totalPages,
         ];
@@ -115,8 +115,8 @@ class Pagination
         return [
             'page' => $this->page,
             'limit' => $this->limit,
-            'total_items' => $this->totalItems ?? 0,
-            'total_pages' => $this->totalPages ?? 0,
+            'total' => $this->totalItems ?? 0,
+            'pages' => $this->totalPages ?? 0,
             'has_next' => $this->hasNext(),
             'has_prev' => $this->hasPrev()
         ];

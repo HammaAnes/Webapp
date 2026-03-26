@@ -1,25 +1,45 @@
 <?php
-ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/error.log');
-error_reporting(E_ALL);
 
 /**
  * API: Liste des demandes de domiciliation
  * GET /api/domiciliations/index.php
  */
 
-require_once '../config/cors.php';
-require_once '../config/database.php';
-require_once '../utils/Auth.php';
-require_once '../utils/Response.php';
-require_once '../utils/Pagination.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 try {
     $auth = Auth::verifyAuth();
-    error_log("AUTH OK: " . json_encode($auth));
 
     $database = Database::getInstance();
     $db = $database->getConnection();
+
+    // Si un ID est fourni, retourner une seule domiciliation
+    if (isset($_GET['id']) && !empty($_GET['id'])) {
+        $id = $_GET['id'];
+
+        if ($auth['role'] === 'admin') {
+            $query = "SELECT d.*, p.email, p.nom, p.prenom, p.telephone
+                      FROM domiciliations d
+                      LEFT JOIN persons p ON d.person_id = p.id
+                      WHERE d.id = :id";
+        } else {
+            $query = "SELECT * FROM domiciliations WHERE id = :id AND person_id = :person_id";
+        }
+
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':id', $id);
+        if ($auth['role'] !== 'admin') {
+            $stmt->bindParam(':person_id', $auth['id']);
+        }
+        $stmt->execute();
+        $domiciliation = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$domiciliation) {
+            Response::notFound('Domiciliation introuvable');
+        }
+
+        Response::success(['data' => $domiciliation]);
+    }
 
     // Paramètres de pagination
     $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -47,18 +67,17 @@ try {
 
         $stmt = $db->prepare($countQuery);
         $stmt->execute($params);
-        $totalCount = $stmt->fetch()['total'];
+        $totalCount = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-        // Requête des données avec pagination
-        $query = "SELECT d.*, u.email, u.nom, u.prenom
+        $query = "SELECT d.*, p.email, p.nom, p.prenom, p.telephone
                   FROM domiciliations d
-                  LEFT JOIN users u ON d.user_id = u.id";
+                  LEFT JOIN persons p ON d.person_id = p.id";
 
         if (!empty($whereConditions)) {
             $query .= " WHERE " . implode(" AND ", $whereConditions);
         }
 
-        $query .= " ORDER BY d.created_at DESC LIMIT :limit OFFSET :offset";
+        $query .= " ORDER BY d.date_debut_contrat DESC, d.created_at DESC LIMIT :limit OFFSET :offset";
 
         $stmt = $db->prepare($query);
         foreach ($params as $key => $value) {
@@ -68,8 +87,8 @@ try {
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     } else {
         // Requête de comptage pour user
-        $countQuery = "SELECT COUNT(*) as total FROM domiciliations WHERE user_id = :user_id";
-        $params = [':user_id' => $auth['id']];
+        $countQuery = "SELECT COUNT(*) as total FROM domiciliations WHERE person_id = :person_id";
+        $params = [':person_id' => $auth['id']];
 
         if ($statut) {
             $countQuery .= " AND statut = :statut";
@@ -78,16 +97,16 @@ try {
 
         $stmt = $db->prepare($countQuery);
         $stmt->execute($params);
-        $totalCount = $stmt->fetch()['total'];
+        $totalCount = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
         // Requête des données
-        $query = "SELECT * FROM domiciliations WHERE user_id = :user_id";
+        $query = "SELECT * FROM domiciliations WHERE person_id = :person_id";
 
         if ($statut) {
             $query .= " AND statut = :statut";
         }
 
-        $query .= " ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
+        $query .= " ORDER BY date_debut_contrat DESC, created_at DESC LIMIT :limit OFFSET :offset";
 
         $stmt = $db->prepare($query);
         foreach ($params as $key => $value) {

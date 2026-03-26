@@ -55,7 +55,10 @@ ini_set('post_max_size', '10M');
 
 // Session configuration (si nécessaire pour certains endpoints)
 ini_set('session.cookie_httponly', '1');
-ini_set('session.cookie_secure', '0'); // Mettre à 1 en HTTPS
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+    || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443);
+ini_set('session.cookie_secure', $isHttps ? '1' : '0');
 ini_set('session.use_strict_mode', '1');
 ini_set('session.cookie_samesite', 'Lax');
 
@@ -145,7 +148,7 @@ set_error_handler(function ($errno, $errstr, $errfile, $errline) {
 });
 
 // Gestionnaire d'exceptions non capturées
-set_exception_handler(function ($exception) {
+set_exception_handler(function ($exception) use ($isProduction) {
     Logger::error('Uncaught Exception: ' . $exception->getMessage(), [
         'exception' => get_class($exception),
         'file' => $exception->getFile(),
@@ -228,6 +231,21 @@ require_once __DIR__ . '/utils/ErrorHandler.php';
 // Mailer
 require_once __DIR__ . '/utils/Mailer.php';
 
+// Email Queue
+require_once __DIR__ . '/utils/EmailQueue.php';
+
+// Email Logger
+require_once __DIR__ . '/utils/EmailLogger.php';
+
+// Admin Notifier
+require_once __DIR__ . '/utils/AdminNotifier.php';
+
+// Audit Logger
+require_once __DIR__ . '/utils/AuditLogger.php';
+
+// Caisse Helper
+require_once __DIR__ . '/utils/CaisseHelper.php';
+
 // =====================================================
 // FONCTIONS GLOBALES HELPERS
 // =====================================================
@@ -238,15 +256,6 @@ require_once __DIR__ . '/utils/Mailer.php';
 function getDb(): PDO
 {
     return Database::getInstance()->getConnection();
-}
-
-/**
- * Obtenir le logger
- * @deprecated Utiliser directement les méthodes statiques Logger::error(), Logger::info(), etc.
- */
-function getLogger(): string
-{
-    return 'Logger';
 }
 
 /**

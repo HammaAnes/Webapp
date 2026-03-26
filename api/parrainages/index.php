@@ -2,7 +2,7 @@
 
 /**
  * API: Liste des parrainages
- * GET /api/parrainages/index.php?user_id=xxx
+ * GET /api/parrainages/index.php?person_id=xxx
  */
 
 require_once '../config/cors.php';
@@ -13,7 +13,7 @@ require_once '../utils/Pagination.php';
 
 try {
     $auth = Auth::verifyAuth();
-    $userId = $_GET['user_id'] ?? null;
+    $userId = $_GET['person_id'] ?? $_GET['user_id'] ?? null;
 
     $database = Database::getInstance();
     $db = $database->getConnection();
@@ -28,34 +28,31 @@ try {
 
     // Admin peut voir tous les parrainages
     if ($auth['role'] === 'admin' && !$userId) {
-        // Comptage
-        $countQuery = "SELECT COUNT(*) as total FROM parrainages";
         $whereConditions = [];
         $params = [];
 
         if ($statut) {
-            $whereConditions[] = "statut = :statut";
+            $whereConditions[] = "pd.statut = :statut";
             $params[':statut'] = $statut;
         }
 
-        if (!empty($whereConditions)) {
-            $countQuery .= " WHERE " . implode(" AND ", $whereConditions);
-        }
+        $whereClause = !empty($whereConditions) ? " WHERE " . implode(" AND ", $whereConditions) : "";
 
+        $countQuery = "SELECT COUNT(*) as total FROM parrainages_details pd" . $whereClause;
         $stmt = $db->prepare($countQuery);
         $stmt->execute($params);
         $totalCount = $stmt->fetch()['total'];
 
-        // Données avec pagination
-        $query = "SELECT p.*, u.nom, u.prenom, u.email
-                  FROM parrainages p
-                  LEFT JOIN users u ON p.parrain_id = u.id";
-
-        if (!empty($whereConditions)) {
-            $query .= " WHERE " . implode(" AND ", $whereConditions);
-        }
-
-        $query .= " ORDER BY p.created_at DESC LIMIT :limit OFFSET :offset";
+        $query = "SELECT pd.*,
+                         uf.nom AS nom, uf.prenom AS prenom, uf.email AS email,
+                         up.nom AS parrain_nom, up.prenom AS parrain_prenom, up.email AS parrain_email,
+                         p.parrain_id AS parrain_id, p.code_parrain
+                  FROM parrainages_details pd
+                  LEFT JOIN persons uf ON pd.filleul_id = uf.id
+                  LEFT JOIN parrainages p ON pd.parrainage_id = p.id
+                  LEFT JOIN persons up ON p.parrain_id = up.id"
+                  . $whereClause
+                  . " ORDER BY pd.date_inscription DESC LIMIT :limit OFFSET :offset";
 
         $stmt = $db->prepare($query);
         foreach ($params as $key => $value) {
@@ -92,7 +89,7 @@ try {
         // Données avec détails des filleuls
         $query = "SELECT pd.*, u.nom, u.prenom, u.email, u.created_at as date_inscription_filleul
                   FROM parrainages_details pd
-                  LEFT JOIN users u ON pd.filleul_id = u.id
+                  LEFT JOIN persons u ON pd.filleul_id = u.id
                   WHERE pd.parrainage_id = (
                     SELECT id FROM parrainages WHERE parrain_id = :parrain_id LIMIT 1
                   )";
@@ -120,6 +117,11 @@ try {
         $parrainagesFormatted[] = [
             'id' => $p['id'],
             'parrainageId' => $p['parrainage_id'] ?? null,
+            'parrainId' => $p['parrain_id'] ?? null,
+            'parrainNom' => isset($p['parrain_prenom']) && isset($p['parrain_nom'])
+                ? $p['parrain_prenom'] . ' ' . $p['parrain_nom']
+                : null,
+            'parrainEmail' => $p['parrain_email'] ?? null,
             'filleulId' => $p['filleul_id'] ?? null,
             'filleulNom' => isset($p['nom']) && isset($p['prenom']) ? $p['prenom'] . ' ' . $p['nom'] : null,
             'filleulEmail' => $p['email'] ?? null,

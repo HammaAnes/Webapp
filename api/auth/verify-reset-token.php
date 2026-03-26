@@ -24,9 +24,9 @@ try {
     $hashedToken = hash('sha256', $token);
 
     $stmt = $db->prepare('
-        SELECT pr.id, pr.expires_at, pr.used_at, u.email
+        SELECT pr.id, pr.expires_at, pr.used_at, p.email
         FROM password_resets pr
-        INNER JOIN users u ON pr.user_id = u.id
+        INNER JOIN persons p ON pr.user_id = p.id
         WHERE pr.token = ?
         LIMIT 1
     ');

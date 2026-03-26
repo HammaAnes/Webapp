@@ -16,9 +16,9 @@ try {
     $database = Database::getInstance();
     $db = $database->getConnection();
 
-    $query = "UPDATE notifications SET lue = 1 WHERE user_id = :user_id AND lue = 0";
+    $query = "UPDATE notifications SET lue = 1 WHERE person_id = :person_id AND lue = 0";
     $stmt = $db->prepare($query);
-    $stmt->bindParam(':user_id', $auth['id']);
+    $stmt->bindParam(':person_id', $auth['id']);
     $stmt->execute();
 
     $count = $stmt->rowCount();

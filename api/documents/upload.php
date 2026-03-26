@@ -97,18 +97,18 @@ try {
 
     if ($authUser['role'] !== 'admin') {
         if ($entityType === 'domiciliation') {
-            $stmt = $db->prepare('SELECT user_id FROM domiciliations WHERE id = ?');
+            $stmt = $db->prepare('SELECT person_id FROM domiciliations WHERE id = ?');
             $stmt->execute([$entityId]);
             $entity = $stmt->fetch(PDO::FETCH_ASSOC);
-            if (!$entity || $entity['user_id'] !== $authUser['id']) {
+            if (!$entity || $entity['person_id'] !== $authUser['id']) {
                 Response::error('Accès non autorisé', 403);
                 exit;
             }
         } elseif ($entityType === 'reservation') {
-            $stmt = $db->prepare('SELECT user_id FROM reservations WHERE id = ?');
+            $stmt = $db->prepare('SELECT person_id FROM reservations WHERE id = ?');
             $stmt->execute([$entityId]);
             $entity = $stmt->fetch(PDO::FETCH_ASSOC);
-            if (!$entity || $entity['user_id'] !== $authUser['id']) {
+            if (!$entity || $entity['person_id'] !== $authUser['id']) {
                 Response::error('Accès non autorisé', 403);
                 exit;
             }
@@ -168,6 +168,26 @@ try {
         'file_name' => $originalName,
         'size' => $file['size']
     ]);
+
+    // Notifier l'admin uniquement quand c'est un client qui dépose un document
+    if ($authUser['role'] !== 'admin') {
+        try {
+            $uploaderStmt = $db->prepare("SELECT prenom, nom, email FROM persons WHERE id = ?");
+            $uploaderStmt->execute([$authUser['id']]);
+            $uploader = $uploaderStmt->fetch(PDO::FETCH_ASSOC);
+            if ($uploader) {
+                AdminNotifier::documentUploaded(
+                    $uploader['prenom'] . ' ' . $uploader['nom'],
+                    $uploader['email'],
+                    $entityType,
+                    $typeDocument,
+                    $originalName
+                );
+            }
+        } catch (Exception $notifErr) {
+            Logger::error('Admin document notification failed', ['error' => $notifErr->getMessage()]);
+        }
+    }
 
     Response::success([
         'id' => $documentId,

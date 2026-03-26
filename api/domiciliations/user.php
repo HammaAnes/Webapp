@@ -1,50 +1,36 @@
 <?php
 
 /**
- * API: Domiciliation d'un utilisateur spécifique
- * GET /api/domiciliations/user.php?user_id=xxx
+ * API: Domiciliations d'une personne
+ * GET /api/domiciliations/user.php?id=xxx  (ou ?user_id=xxx pour compat)
  */
 
-require_once '../config/cors.php';
-require_once '../config/database.php';
-require_once '../utils/Auth.php';
-require_once '../utils/Response.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 try {
     $auth = Auth::verifyAuth();
 
-    $user_id = $_GET['user_id'] ?? null;
+    $personId = $_GET['id'] ?? $_GET['user_id'] ?? null;
 
-    if (!$user_id) {
-        Response::error("ID utilisateur requis", 400);
+    if (!$personId) {
+        Response::error("ID requis", 400);
     }
 
-    // Vérifier que l'utilisateur demande ses propres données ou est admin
-    if ($auth['role'] !== 'admin' && $auth['id'] !== $user_id) {
+    if ($auth['role'] !== 'admin' && $auth['id'] !== $personId) {
         Response::error("Accès refusé", 403);
     }
 
-    $database = Database::getInstance();
-    $db = $database->getConnection();
-
-    $query = "SELECT * FROM domiciliations
-              WHERE user_id = :user_id
-              ORDER BY created_at DESC
-              LIMIT 1";
-
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':user_id', $user_id);
+    $stmt = $db->prepare("
+        SELECT * FROM domiciliations
+        WHERE person_id = :person_id
+        ORDER BY date_debut_contrat DESC, created_at DESC
+    ");
+    $stmt->bindParam(':person_id', $personId);
     $stmt->execute();
 
-    $domiciliation = $stmt->fetch();
-
-    if ($domiciliation) {
-        Response::success($domiciliation);
-    } else {
-        Response::success(null);
-    }
+    Response::success($stmt->fetchAll());
 
 } catch (Exception $e) {
-    error_log("Get user domiciliation error: " . $e->getMessage());
+    Logger::error("Get person domiciliation error: " . $e->getMessage());
     Response::serverError();
 }

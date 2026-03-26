@@ -4,8 +4,11 @@
  * Configuration CORS et chargement .env
  */
 
-// Charger le fichier .env si il existe
+// Charger le fichier .env si il existe (chercher dans api/ puis dans la racine du projet)
 $envFile = __DIR__ . '/../.env';
+if (!file_exists($envFile)) {
+    $envFile = __DIR__ . '/../../.env';
+}
 if (file_exists($envFile)) {
     $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
@@ -36,8 +39,9 @@ $allowed_origins = [
     'https://test.coffice.dz',
     'https://coffice.dz',
     'https://www.coffice.dz',
-    'http://localhost:5173', // Développement Vite
-    'http://localhost:3000'  // Développement alternatif
+    'http://localhost:5173',
+    'http://localhost:8080',
+    'http://localhost:3000'
 ];
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';

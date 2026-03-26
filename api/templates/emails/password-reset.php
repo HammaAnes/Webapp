@@ -1,12 +1,17 @@
 <?php
-$content = '
-<h2 style="font-size:24px;font-weight:800;color:#111827;margin:0 0 8px;line-height:1.3;letter-spacing:-0.3px;">R&eacute;initialisation de votre mot de passe</h2>
-<p style="font-size:15px;line-height:1.7;color:#4b5563;margin:0 0 8px;">Bonjour ' . htmlspecialchars($name) . ', vous avez demand&eacute; la r&eacute;initialisation de votre mot de passe.</p>
-<p style="font-size:15px;line-height:1.7;color:#4b5563;margin:0 0 4px;">Cliquez sur le bouton ci-dessous pour d&eacute;finir un nouveau mot de passe&nbsp;:</p>
-' . Mailer::ctaButton(htmlspecialchars($reset_url), 'R&eacute;initialiser mon mot de passe') . '
-<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top:28px;border-top:1px solid #e8eaed;">
-<tr><td style="padding-top:16px;font-size:13px;color:#9ca3af;">Ce lien est valable pendant ' . htmlspecialchars($expires_in) . '. Si vous n\'avez pas fait cette demande, ignorez simplement cet e-mail.</td></tr>
+$appUrl = env('APP_URL', 'https://coffice.dz');
+
+$securityBlock = '
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:24px 0;background-color:#fef2f2;border:1px solid #fecaca;border-radius:12px;">
+<tr><td style="padding:16px 20px;">
+  <p style="margin:0;font-size:13px;color:#991b1b;line-height:1.6;">⚠️ &nbsp;Si vous n\'avez pas fait cette demande, ignorez cet e-mail — votre mot de passe restera inchangé.</p>
+</td></tr>
 </table>';
 
-echo Mailer::wrapInLayout('Réinitialisation mot de passe', $content, 'Réinitialisation de votre mot de passe Coffice');
-?>
+$content =
+    Mailer::hero('🔐', 'Réinitialisation du mot de passe', 'Bonjour ' . htmlspecialchars($name) . ', nous avons reçu une demande de réinitialisation.', '#4f46e5') .
+    '<p style="font-size:15px;line-height:1.7;color:#374151;margin:0 0 8px;">Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe. Ce lien est valable pendant <strong>' . htmlspecialchars($expires_in) . '</strong>.</p>' .
+    Mailer::ctaButton(htmlspecialchars($reset_url), 'Réinitialiser mon mot de passe') .
+    $securityBlock;
+
+echo Mailer::wrapInLayout('Réinitialisation mot de passe – Coffice', $content, 'Réinitialisez votre mot de passe Coffice — lien valable ' . htmlspecialchars($expires_in));

@@ -9,6 +9,7 @@ require_once '../config/cors.php';
 require_once '../config/database.php';
 require_once '../utils/Auth.php';
 require_once '../utils/Response.php';
+require_once '../utils/Logger.php';
 
 try {
     $auth = Auth::requireAdmin();
@@ -18,34 +19,36 @@ try {
     // Requête optimisée unique pour toutes les statistiques
     $query = "
         SELECT
-            -- Utilisateurs
-            (SELECT COUNT(*) FROM users) as total_users,
-            (SELECT COUNT(*) FROM users WHERE statut = 'actif') as active_users,
-            (SELECT COUNT(*) FROM users WHERE statut = 'actif' AND created_at < DATE_SUB(NOW(), INTERVAL 1 MONTH)) as last_month_active_users,
+            -- Utilisateurs (persons avec compte)
+            (SELECT COUNT(*) FROM persons WHERE role IS NOT NULL) as total_users,
+            (SELECT COUNT(*) FROM persons WHERE role IS NOT NULL AND statut = 'actif') as active_users,
+            (SELECT COUNT(*) FROM persons WHERE role IS NOT NULL AND statut = 'actif' AND created_at < DATE_SUB(NOW(), INTERVAL 1 MONTH)) as last_month_active_users,
 
             -- Réservations
-            (SELECT COUNT(*) FROM reservations WHERE DATE(created_at) = CURDATE()) as today_reservations,
-            (SELECT COUNT(*) FROM reservations WHERE DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) as yesterday_reservations,
-            (SELECT COUNT(*) FROM reservations WHERE MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW())) as month_reservations,
+            (SELECT COUNT(*) FROM reservations WHERE DATE(created_at) = CURDATE() AND (abonnement_couvert IS NULL OR abonnement_couvert = 0)) as today_reservations,
+            (SELECT COUNT(*) FROM reservations WHERE DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND (abonnement_couvert IS NULL OR abonnement_couvert = 0)) as yesterday_reservations,
+            (SELECT COUNT(*) FROM reservations WHERE MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW()) AND (abonnement_couvert IS NULL OR abonnement_couvert = 0)) as month_reservations,
 
-            -- Revenus
-            (SELECT COALESCE(SUM(montant_total - COALESCE(reduction, 0)), 0)
+            -- Revenus (montant_total est deja net apres reduction appliquee, hors réservations abonnement)
+            (SELECT COALESCE(SUM(montant_total), 0)
              FROM reservations
              WHERE MONTH(created_at) = MONTH(NOW())
              AND YEAR(created_at) = YEAR(NOW())
-             AND statut IN ('confirmee', 'terminee')) as month_revenue,
+             AND statut IN ('confirmee', 'terminee')
+             AND (abonnement_couvert IS NULL OR abonnement_couvert = 0)) as month_revenue,
 
-            (SELECT COALESCE(SUM(montant_total - COALESCE(reduction, 0)), 0)
+            (SELECT COALESCE(SUM(montant_total), 0)
              FROM reservations
              WHERE MONTH(created_at) = MONTH(DATE_SUB(NOW(), INTERVAL 1 MONTH))
              AND YEAR(created_at) = YEAR(DATE_SUB(NOW(), INTERVAL 1 MONTH))
-             AND statut IN ('confirmee', 'terminee')) as last_month_revenue,
+             AND statut IN ('confirmee', 'terminee')
+             AND (abonnement_couvert IS NULL OR abonnement_couvert = 0)) as last_month_revenue,
 
             -- Abonnements
             (SELECT COUNT(*) FROM abonnements_utilisateurs WHERE statut = 'actif' AND date_fin > NOW()) as active_subscriptions,
 
-            -- Domiciliations
-            (SELECT COUNT(*) FROM domiciliations WHERE statut = 'en_attente') as pending_domiciliations,
+            -- Domiciliations attendant une action admin (dossier soumis ou complements demandes)
+            (SELECT COUNT(*) FROM domiciliations WHERE statut IN ('dossier_preparatoire', 'en_attente_complements')) as pending_domiciliations,
 
             -- Espaces et occupation
             (SELECT COUNT(*) FROM espaces) as total_spaces,
@@ -55,8 +58,8 @@ try {
              AND statut IN ('confirmee', 'en_cours')) as occupied_spaces,
 
             (SELECT COUNT(DISTINCT espace_id) FROM reservations
-             WHERE DATE(date_debut) <= LAST_DAY(DATE_SUB(NOW(), INTERVAL 1 MONTH))
-             AND DATE(date_fin) >= DATE_SUB(NOW(), INTERVAL 1 MONTH)
+             WHERE MONTH(date_debut) = MONTH(DATE_SUB(NOW(), INTERVAL 1 MONTH))
+             AND YEAR(date_debut) = YEAR(DATE_SUB(NOW(), INTERVAL 1 MONTH))
              AND statut IN ('confirmee', 'en_cours', 'terminee')) as last_month_occupied_spaces
     ";
 
@@ -117,6 +120,6 @@ try {
     ]);
 
 } catch (Exception $e) {
-    error_log("Get admin stats error: " . $e->getMessage());
+    Logger::error('Admin stats error', ['error' => $e->getMessage()]);
     Response::serverError();
 }

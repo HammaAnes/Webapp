@@ -20,9 +20,9 @@ try {
     $db = $database->getConnection();
 
     // Chercher le code parrainage
-    $query = "SELECT p.*, u.nom, u.prenom
+    $query = "SELECT p.*, per.nom, per.prenom
               FROM parrainages p
-              LEFT JOIN users u ON p.parrain_id = u.id
+              LEFT JOIN persons per ON p.parrain_id = per.id
               WHERE p.code_parrain = :code
               LIMIT 1";
 
@@ -38,7 +38,7 @@ try {
 
     Response::success([
         'code' => $parrainage['code_parrain'],
-        'parrain_nom' => $parrainage['nom'] . ' ' . $parrainage['prenom'],
+        'parrain_nom' => $parrainage['prenom'] . ' ' . $parrainage['nom'],
         'valid' => true
     ], "Code parrainage valide");
 

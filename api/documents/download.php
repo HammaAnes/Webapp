@@ -47,19 +47,19 @@ try {
 
     if ($authUser['role'] !== 'admin') {
         if ($document['entity_type'] === 'domiciliation') {
-            $checkStmt = $db->prepare('SELECT user_id FROM domiciliations WHERE id = ?');
+            $checkStmt = $db->prepare('SELECT person_id FROM domiciliations WHERE id = ?');
             $checkStmt->execute([$document['entity_id']]);
             $entity = $checkStmt->fetch(PDO::FETCH_ASSOC);
-            if (!$entity || $entity['user_id'] !== $authUser['id']) {
+            if (!$entity || $entity['person_id'] !== $authUser['id']) {
                 http_response_code(403);
                 echo json_encode(['success' => false, 'error' => 'Accès non autorisé']);
                 exit;
             }
         } elseif ($document['entity_type'] === 'reservation') {
-            $checkStmt = $db->prepare('SELECT user_id FROM reservations WHERE id = ?');
+            $checkStmt = $db->prepare('SELECT person_id FROM reservations WHERE id = ?');
             $checkStmt->execute([$document['entity_id']]);
             $entity = $checkStmt->fetch(PDO::FETCH_ASSOC);
-            if (!$entity || $entity['user_id'] !== $authUser['id']) {
+            if (!$entity || $entity['person_id'] !== $authUser['id']) {
                 http_response_code(403);
                 echo json_encode(['success' => false, 'error' => 'Accès non autorisé']);
                 exit;
@@ -73,7 +73,14 @@ try {
         }
     }
 
-    $filePath = __DIR__ . '/../' . $document['chemin_fichier'];
+    $filePath = realpath(__DIR__ . '/../' . $document['chemin_fichier']);
+    $allowedBase = realpath(__DIR__ . '/../uploads/');
+
+    if ($filePath === false || $allowedBase === false || strpos($filePath, $allowedBase) !== 0) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Chemin de fichier invalide']);
+        exit;
+    }
 
     if (!file_exists($filePath)) {
         Logger::error('Document file not found', [
@@ -87,7 +94,8 @@ try {
 
     header('Content-Description: File Transfer');
     header('Content-Type: ' . $document['type_fichier']);
-    header('Content-Disposition: attachment; filename="' . $document['nom_original'] . '"');
+    $safeFilename = preg_replace('/[^a-zA-Z0-9._\-]/', '_', $document['nom_original']);
+    header('Content-Disposition: attachment; filename="' . $safeFilename . '"');
     header('Content-Length: ' . $document['taille']);
     header('Cache-Control: must-revalidate');
     header('Pragma: public');

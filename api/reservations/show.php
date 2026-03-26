@@ -29,12 +29,12 @@ try {
                e.prix_heure,
                e.prix_jour,
                e.capacite,
-               u.nom as user_nom,
-               u.prenom as user_prenom,
-               u.email as user_email
+               p.nom as user_nom,
+               p.prenom as user_prenom,
+               p.email as user_email
         FROM reservations r
         JOIN espaces e ON r.espace_id = e.id
-        JOIN users u ON r.user_id = u.id
+        LEFT JOIN persons p ON r.person_id = p.id
         WHERE r.id = ?
     ");
     $stmt->execute([$id]);
@@ -44,7 +44,7 @@ try {
         Response::error("Reservation introuvable", 404);
     }
 
-    if ($auth['role'] !== 'admin' && $reservation['user_id'] !== $auth['id']) {
+    if ($auth['role'] !== 'admin' && $reservation['person_id'] !== $auth['id']) {
         Response::error("Acces refuse", 403);
     }
 
